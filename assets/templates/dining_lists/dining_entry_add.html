@@ -1,0 +1,55 @@
+{% extends 'dining_lists/dining_slot.html' %}
+{% load staticfiles %}
+
+
+
+{% block details%}
+    <form class="col-12 m-0 mt-2" method="post">
+        {% csrf_token %}
+
+        {% if users %}
+            <div class="mb-5">
+                <h3>Select the user you want to add</h3>
+
+                {% for user in users %}
+                    <div class="selectors">
+                        <input type="radio" id="radio{{ user }}" name="user" value="{{ user.id }}">
+                        <label for="radio{{ user }}" class="col-sm-9 offset-sm-3 btn btn-checkbox">{{ user }}</label>
+                    </div>
+                {% endfor %}
+                <div class="col-12 col-sm-9 offset-sm-3 px-0 mt-4">
+                    <input type="submit" name="button_select" value="Add user" class="col-12 btn btn-block btn-primary"/>
+                </div>
+            </div>
+            <h3>Find the user</h3>
+        {% else %}
+            <h3>Find or add user</h3>
+        {% endif %}
+
+
+
+        <div class="row m-0">
+            {% if error_input %}
+                <div class="col-12 col-sm-9 offset-sm-3">
+                    {{ error_input }}
+                </div>
+            {% endif %}
+            <div class="col-sm-3 col-10 p-0">
+                User
+            </div>
+            <input type="search" id="searchbox" name="name" class="col-12 col-sm-9" placeholder="Name" value="{{ search }}">
+        </div>
+
+        <div class="row m-0 mt-4">
+            <input type="submit" name="button_user" value="Search user"
+                   class="col-12 col-sm-6 mb-2 mb-sm-0 btn btn-block btn-primary"/>
+            <div class="col-12 col-sm-6 m-0 p-0 pr-sm-2 order-sm-first">
+                <input type="submit" name="button_external" value="Add as external*"
+                       class="col-12 btn btn-block"/>
+            </div>
+            <i class="col-12 text-size-3">* Required credits are subtracted from your account</i>
+        </div>
+    </form>
+    {{ output }}
+
+{% endblock details %}

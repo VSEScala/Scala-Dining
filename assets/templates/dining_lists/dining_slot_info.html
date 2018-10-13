@@ -1,0 +1,155 @@
+{% extends 'dining_lists/dining_slot.html' %}
+{% load staticfiles %}
+{% load form_extras %}
+
+
+
+{% block details %}
+<div class="row col-12 m-0 p-0">
+    {% if dining_list.association %}
+    <div class="col-2 slot_image" style="background-image: url({{ dining_list.association.associationdetails.image.url }})">
+    </div>
+    <div class="col-10 col-md-8 row pr-0">
+    {% else %}
+    <div class="col-12 row p-0">
+    {% endif %}
+        <div class="col-12 text-size-5 pr-0">
+            {{ dining_list.dish }}
+        </div>
+        <div class="col-12 text-size-3 pr-0 mb-3 mb-md-5">
+            by {{ dining_list.claimed_by }}
+            {% if dining_list.purchaser != None %}
+                and {{ dining_list.purchaser }}
+            {% endif %}
+        </div>
+        <div class="col-12 mt-3">
+            <div class="hide-md">
+                {{ dining_list.diners }} / {{ dining_list.max_diners }} diners on the list
+            </div>
+        </div>
+    </div>
+    <div class="show-md col-2 p-0">
+        <div class="col-12">
+            <span class="text-size-7">
+            {{ dining_list.diners }}
+            </span>
+            / {{ dining_list.max_diners }}
+        </div>
+        <div class="col-12">
+            Diners
+        </div>
+    </div>
+</div>
+<div class="row col-12 m-0 p-0">
+    <div class="col-12 pt-4">
+        {% if dining_list.dinner_cost_single %}
+            <div class="row">
+                <div class="col-2 text-size-4 text-center">
+                    &euro;{{ dining_list.dinner_cost_single }}
+                </div>
+                <div class="col-10 text-size-4">
+                    {% if dining_list.auto_pay %}
+                        automatically paid to {{ dining_list.get_purchaser }}
+                    {% elif dining_list|has_paid:request.user %}
+                        has been paid to {{ dining_list.get_purchaser }}
+                    {% else %}
+                        to be paid to {{ dining_list.get_purchaser }}
+                    {% endif %}
+                </div>
+            </div>
+        {% endif %}
+        <div class="row mb-4">
+            <div class="col-2 text-size-3 text-center">
+                {% if dining_list.dinner_cost_single %}+{% endif %}
+                &euro;{{ dining_list.kitchen_cost }}
+            </div>
+            <div class="col-10 text-size-3">
+                for the kitchen <span class="text-size-3">automatically sbutracted</span>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-2 text-center">
+                {{ dining_list.min_diners }}
+            </div>
+            <div class="col-10">
+                Minimum diners needed
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-2 text-center">
+                {{ dining_list.max_diners }}
+            </div>
+            <div class="col-10">
+                Maximum diners allowed
+            </div>
+        </div>
+    </div>
+    <hr class="col-12">
+    <div class="col-12 pt-4">
+        <div class="row">
+            <div class="col-10 offset-md-2 text-size-5">
+                {% if dining_list.is_open %}
+                    {% if dining_list.diners < dining_list.max_diners %}
+                        Signup closes
+                        {% if dining_list.sign_up_deadline.date == dining_list.date %}
+                            at {{ dining_list.sign_up_deadline.time }}
+                        {% else %}
+                            on {{ dining_list.sign_up_deadline }}
+                        {% endif %}
+                    {% else %}
+                        Max number of diners reached
+                    {% endif %}
+                {% else %}
+                    <div class="text-size-3">Dining list is closed</div>
+                    {% if dining_list|is_on_slot:request.user %}
+                        You are on the dining list!
+                    {% endif %}
+                {% endif %}
+            </div>
+
+        </div>
+        {% if dining_list.is_open %}
+            <div class="row">
+                {% with dining_list|is_on_slot:request.user as on_list %}
+                    {% if not on_list %}
+                        <div class="col-12 col-md-6 offset-md-2 text-size-6">
+                            {% if dining_list|can_join_slot:request.user %}
+                                {% url 'entry_join' day=date.day month=date.month year=date.year identifier=dining_list.association.associationdetails.shorthand as url%}
+                                <a class="btn-block btn btn-primary" href={{ url }}>Sign up</a>
+                            {% else %}
+                                <div class="btn-block btn btn-disabled">Sign up</div>
+                            {% endif %}
+                        </div>
+                    {% else %}
+                        <div class="col-12 col-md-10 offset-md-2 my-2">
+                            You are on the dining list!
+                        </div>
+                        <div class="col-12 col-md-4 offset-md-2 text-size-6">
+                            {% url 'entry_remove' day=date.day month=date.month year=date.year identifier=dining_list.association.associationdetails.shorthand as url%}
+                            <a class="btn-block btn btn-warning" href={{ url }}>Remove yourself</a>
+                        </div>
+                    {% endif %}
+                    {% url 'entry_add' day=date.day month=date.month year=date.year identifier=dining_list.association.associationdetails.shorthand as url%}
+                    {% if on_list %}
+                        <div class="col-12 col-md-6">
+                            {% if not dining_list.diners < dining_list.diner and dining_list.claimed_by != request.user %}
+                                <a class="btn-block btn mt-4 mt-md-0 btn-disabled">Add others</a>
+                            {% else %}
+                                <a href={{ url }} class="btn-block btn mt-4 mt-md-0">Add others</a>
+                            {% endif %}
+                        </div>
+                    {% else %}
+                        <div class="col-12 col-md-4">
+                            {% if not dining_list.diners < dining_list.diner or dining_list.claimed_by == request.user %}
+                                <a class="btn-block btn mt-4 mt-md-0 btn-disabled">Add others</a>
+                            {% else %}
+                                <a href="{{ url }}" class="btn-block btn mt-4 mt-md-0">Add others</a>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                {% endwith %}
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock details %}

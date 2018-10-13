@@ -1,0 +1,75 @@
+{% load staticfiles %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!--link rel="stylesheet" href="{% static 'css/bootstrap.min.css' %}"-->
+    <link rel="stylesheet" href="{% static 'css/base_sizes.css' %}">
+    <link rel="stylesheet" href="{% static 'css/base-colors.css' %}">
+    <link rel="stylesheet" href="{% static 'css/Log-in.css' %}">
+    <link href="https://fonts.googleapis.com/css?family=Titillium+Web:300" rel="stylesheet">
+
+    <!--
+    <link rel="stylesheet" href="{% static 'css/login_screen.css' %}">
+    -->
+
+    <title>Scala Dining</title>
+</head>
+<body>
+<div class="col-12  min-height-33vh min-height-sm-200px">
+    <div class="DiningLogo"></div>
+    <p class="text-center DiningTitle">Scala Dining</p>
+
+    <div class="show-sm">
+    </div>
+</div>
+
+
+<div class="container">
+    <div class="row width-max-lg text-center text-size-md-5">
+        <div class="col-sm-6 order-sm-1 min-height-25vh min-height-sm-50vh ">
+            <div class="login-veralign">
+                <div class="min-height-sm-200px">
+                    Are you hungry?
+                    <br>
+                    Sign up now and join dinner with the other culture associations.
+                </div>
+                <a class="btn btn-block btn-primary" href="{% url 'register' %}">Create Account</a>
+            </div>
+            <div class="login-horline hide-sm"></div>
+        </div>
+        <div class="col-sm-6 order-sm-0 min-height-33vh ">
+            <div class="login-verline show-sm"></div>
+
+            <div class="login-veralign">
+                <form method="post">
+                    <div class="min-height-sm-200px">
+                    <div class="hide-sm">
+                        Already have an account? Log in!
+                    </div>
+                    {% csrf_token %}
+                    <label class="col-lg-3 show-lg">username</label>
+                    <input class="col-lg-8 icon" type="text" id="username" name="username"  placeholder="Username"/><br>
+                    <label class="col-lg-3 show-lg">password</label>
+                    <input class="col-lg-8 icon" type="password" name="password" id="password" placeholder="Password"/><br>
+                    <div class="offset-lg-3 col-lg-8 p-0">
+                        {% if sign_in_error %}
+                            <div class="hasError">
+                                {{ sign_in_error }}
+                            </div>
+                            <a href="#" class="btn-block btn btn-link">Forgot password?</a>
+                        {% endif %}
+                    </div>
+                    </div>
+                    <input class="btn btn-block btn-primary" type="submit" value="Log in"/>
+                </form>
+            </div>
+        </div>
+        <!--<div class="verticalLine"></div>-->
+</div>
+</div>
+</body>
+</html>

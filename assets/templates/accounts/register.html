@@ -1,0 +1,43 @@
+{% load staticfiles %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!--link rel="stylesheet" href="{% static 'css/bootstrap.min.css' %}"-->
+    <link rel="stylesheet" href="{% static 'css/base_sizes.css' %}">
+    <link rel="stylesheet" href="{% static 'css/base-colors.css' %}">
+    <link rel="stylesheet" href="{% static 'css/Log-in.css' %}">
+
+
+    <link href="https://fonts.googleapis.com/css?family=Titillium+Web:300" rel="stylesheet">
+
+
+    <title>Register</title>
+
+
+</head>
+<body>
+
+<div class="col-12  min-height-33vh min-height-sm-200px">
+    <div class="DiningLogo"></div>
+    <p class="text-center DiningTitle">Scala Dining</p>
+
+    <div class="show-sm">
+    </div>
+</div>
+
+<div class="container">
+    <div class="row width-max-lg text-size-md-5">
+        <div class="col-12">
+            <form action="/userdetails/register/" method="post">
+                {% csrf_token %}
+                {% include 'accounts/registerFormContent.html' %}
+            </form>
+        </div>
+    </div>
+</div>
+</body>
+</html>

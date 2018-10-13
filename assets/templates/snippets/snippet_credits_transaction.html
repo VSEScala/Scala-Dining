@@ -1,0 +1,36 @@
+<div class="col-12 row p-0">
+    <div class="col-12 row p-0 m-0">
+        <div class="col-2 text-size-3">
+            {{ entry.date }}
+        </div>
+        <div class="col-1 text-size-3">
+            {% if entry.target == target %}From{% else %}To{% endif %}
+        </div>
+        <div {% if entry.source_association == target %}
+                class="col-3"
+             {% else %}
+                class="col-6"
+             {% endif %}>
+            {% if entry.target == target %}
+                {{ entry.source }}
+            {% else %}
+                {{ entry.target }}
+            {% endif %}
+        </div>
+        {% if entry.source_association == target %}
+            <div class="col-3">
+                <span class="text-size-2">by</span>  <span class="text-size-3"> {{ entry.source_user }}</span>
+
+            </div>
+        {% endif %}
+        <div class="col-2 text-right">
+            {% if entry.target == target %}
+                &euro;{{ entry.amount }}
+            {% else %}
+                <span style="color: #efa2a9">
+                -&euro;{{ entry.amount }}
+                </span>
+            {% endif %}
+        </div>
+    </div>
+</div>

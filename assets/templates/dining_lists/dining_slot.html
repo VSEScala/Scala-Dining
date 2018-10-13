@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+{% load staticfiles %}
+
+{% block title %}Scala Dining {{ date }} {% endblock %}
+
+{% block content %}
+    <div class="col-12 row p-0 m-0 pt-4 pb-5 mb-5">
+        {% block details%}
+            Contents
+        {% endblock details %}
+    </div>
+
+    {% block slot_navigation %}
+        <div class="fixed-bottom slot-nav">
+            <div class="width-max-md m-auto">
+                <div class="text-size-4 text-center slot-nav-title">
+                    {{ dining_list.association }} - {{ dining_list.date }}
+                </div>
+                <div class="row">
+                    <a class="col-4 slot-nav-info
+                        {% if nav_info %}
+                            active"
+                        {% else %}"
+                            href="{% url 'slot_details' day=date.day month=date.month year=date.year identifier=dining_list.association.associationdetails.shorthand %}"
+                        {% endif %}>
+                    </a>
+                    <a class="col-4 slot-nav-list
+                        {% if nav_list %}
+                            active"
+                        {% else %}"
+                            href="{% url 'slot_list' day=date.day month=date.month year=date.year identifier=dining_list.association.associationdetails.shorthand %}"
+                        {% endif %}>
+                    </a>
+                    <a class="col-4 slot-nav-allergy
+                        {% if nav_allergy %}
+                            active"
+                        {% else %}"
+                            href="{% url 'slot_allergy' day=date.day month=date.month year=date.year identifier=dining_list.association.associationdetails.shorthand %}"
+                        {% endif %}>
+
+                    </a>
+                </div>
+            </div>
+        </div>
+
+    {% endblock slot_navigation %}
+{% endblock %}
+
+
+{% block header %}
+
+{% endblock header %}

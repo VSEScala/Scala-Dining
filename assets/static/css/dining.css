@@ -1,0 +1,170 @@
+.slot_image{
+    height: 100%;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+}
+
+.slot{
+    background-color: #254a99;
+    border-radius: 10px;
+}
+
+.slot-back{
+    position: absolute;
+    background-color: transparent;
+
+    display: block;
+    width: 100%;
+    height:100%;
+    left: 0;
+    top: 0;
+
+    transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out, border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+
+    border: 1px solid #3d7bff;
+}
+
+.slot-back:hover{
+    border-color: white;
+}
+
+.slot-back-active{
+    border-color: white;
+    border-width: 4px;
+}
+
+.slot-signup, .slot-signed, .slot-unlist{
+    background-position: center;
+    -webkit-background-size: contain;
+    background-size: auto 75%;
+    background-repeat: no-repeat;
+}
+
+.slot-signup{
+    background-image: url("/static/images/sign_up_in.png");
+}
+
+.slot-signed{
+    background-image: url("/static/images/signed_in.png");
+}
+
+.slot-unlist{
+    background-image: url("/static/images/sign_up_out.png");
+}
+
+.btn-dining-delete{
+    background: #721c2455 url("/static/images/trash.png") center/auto 80% no-repeat;
+    border-color: #c8233355;
+}
+.btn-dining-delete:hover{
+    background-color: #721c24;
+}
+
+
+.dining_stat{
+    border-width: 1px;
+    background: center/auto 80% no-repeat;
+    height: 100%;
+}
+
+input + .dining_stat:hover{
+    opacity: 1;
+}
+
+input:checked + .dining_stat{
+    opacity: 1;
+    background-color: #3d7bff;
+}
+
+input:disabled + .dining_stat{
+    opacity: 0;
+}
+input:disabled:checked + .dining_stat{
+    opacity: 1;
+    background-color: transparent;
+    border: 0;
+}
+
+.dining-shop{
+    background-image: url("/static/images/shopping cart.png");
+    border-radius: 5px 0 0 5px;
+}
+.dining-cook{
+    background-image: url("/static/images/Cooking.png");
+    border-radius: 0;
+}
+.dining-cleaned{
+    background-image: url("/static/images/dishes.png");
+    border-radius: 0 5px 5px 0;
+}
+.dining-paid{
+    background-image: url("/static/images/checkmark.png");
+}
+
+.diningentry:hover{
+    background-color: #254a9999;
+}
+
+.diningentry-user{
+    background-color: #254a9999;
+}
+
+.dining-help-row{
+    height: 100%;
+}
+
+.slot-nav{
+    background-color: whitesmoke;
+}
+
+.slot-nav-title{
+    color: #12244c;
+}
+
+.slot-nav-info, .slot-nav-list, .slot-nav-allergy{
+    background: #3d7bff center/auto 75% no-repeat;
+    height: 50px;
+    border-style: solid;
+    border-color: whitesmoke;
+    border-width: 0 2px;
+    border-radius: 10px 10px 0 0 ;
+}
+
+.slot-nav-allergy{
+    background-image: url("/static/images/Skull.png");
+}
+
+.slot-nav-allergy.active{
+    background-image: url("/static/images/Skull_blue.png");
+    background-color: whitesmoke;
+}
+
+.slot-nav-info{
+    background-image: url("/static/images/Info.png");
+}
+
+.slot-nav-info.active{
+    background-image: url("/static/images/Info_blue.png");
+    background-color: whitesmoke;
+}
+
+.slot-nav-list{
+    background-image: url("/static/images/signed_in.png");
+}
+
+.slot-nav-list.active{
+    background-image: url("/static/images/signed_in_blue.png");
+    background-color: whitesmoke;
+}
+
+
+.collapser{
+    height:0;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+input:checked + .collapser{
+    height:auto;
+}

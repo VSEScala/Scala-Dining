@@ -1,0 +1,60 @@
+.DiningLogo{
+    background-image: url("/static/images/Scala_dining.png");
+    background-repeat: no-repeat;
+    background-position: center center;
+    -webkit-background-size: contain;
+    background-size: contain;
+    min-height: 100px;
+    margin: 20px 0 0 0;
+}
+
+.DiningTitle{
+    font-size: 3em;
+    margin: 0 0 10px 0;
+}
+
+.login-vertextalign{
+    vertical-align:bottom;
+}
+
+
+.login-verline{
+    position: absolute;
+    right: -2px;
+    width: 0;
+    height: 100%;
+    border: 2px solid white;
+    border-radius: 2px;
+}
+
+.login-horline{
+    bottom: 0;
+    width:100%;
+    height: 1px;
+    border: 1px solid white;
+    border-radius: 1px;
+    margin: 2em 0;
+}
+
+@media (min-width: 576px) {
+    .login-veralign {
+        padding-top: calc(20vh - 100px);
+    }
+
+    .DiningLogo{
+        height: 20vh;
+    }
+
+    .DiningTitle{
+        margin-bottom: 1em;
+    }
+}
+
+
+.tooltipInfo{
+    display: none;
+}
+
+.tooltip:checked ~ .tooltipInfo{
+    display: block;
+}

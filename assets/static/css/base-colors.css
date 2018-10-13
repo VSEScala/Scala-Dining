@@ -1,0 +1,93 @@
+html, body{
+    background-color: #12244c;
+    color: white;
+    font-size: 1em;
+    font-family: 'Titillium Web', sans-serif;
+    margin: 0px;
+    padding: 0px;
+}
+
+input[type="text"].icon#username{
+    background-image: url("/static/images/User.png");
+}
+
+input[type="password"].icon{
+    background-image: url("/static/images/Key.png");
+}
+
+
+a{
+    color: white;
+}
+
+
+.btn{
+    background-color: #254a99;
+    border-color: #3d7bff;
+    color: #fff;
+    text-decoration: none;
+}
+
+.btn-primary{
+    color: #fff;
+    background-color: #3d7bff;
+    font-weight: bold;
+    border-color: #3d7bff;
+    text-decoration: none;
+}
+
+.btn-warning{
+    background-color: #721c24;
+    border-color: #c82333;
+}
+
+.btn-checkbox{
+    border: 2px solid #254a99;
+    color: #3d7bff;
+}
+
+.btn-blank{
+    background-color: transparent;
+}
+
+.btn:hover{
+    border-color: white;
+}
+
+.btn-checkbox{
+    background-color: transparent;
+}
+
+.btn-disabled, btn-disabled:hover{
+    border: 0;
+    background-color: #44577f;
+    color: grey;
+}
+
+input:not(checked) ~ .btn-checkbox:hover{
+    border-color: #3d7bff;
+    color:white
+}
+
+input:checked ~ .btn-checkbox:hover{
+    border-color: #89aeff;
+}
+
+input:checked ~ .btn-checkbox{
+    border-color: white;
+    color: white;
+}
+
+select:disabled{
+    background-color: transparent;
+    -webkit-appearance: none;
+    color: white;
+}
+
+input.error, input[type=checkbox].error + label{
+    border-color: red;
+}
+
+div.error, ul.error{
+    color: red;
+}

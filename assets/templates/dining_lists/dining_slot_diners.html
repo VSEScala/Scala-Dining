@@ -1,0 +1,52 @@
+{% extends 'dining_lists/dining_slot.html' %}
+{% load staticfiles %}
+
+
+
+{% block details%}
+
+    <div class="row col-12 m-0 p-0 p-md-2 py-2 text-size-3">
+        <div class="{% if can_delete_all or can_delete_some %} col-10 col-sm-11 {% else %} col-12 {% endif %}">
+            <div class="row pr-2">
+                <div class="col-12 col-md-6 p-0 show-md">Name</div>
+                <div class=" text-center col-12 col-md-6 pr-3">
+                    <div class="row dining-help-row">
+                        <div class="col-3 p-0">Shopped</div>
+                        <div class="col-3 p-0">Cooked</div>
+                        <div class="col-3 p-0">Cleaned</div>
+                        <div class="col-3 p-0">Paid</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% if can_delete_all or can_delete_some %}
+        <div class="col-2 col-sm-1 p-0 text-center">Remove</div>
+        {% endif %}
+    </div>
+
+    <form method="post" class="col-12 p-0">
+        {% csrf_token %}
+        {% for entry in entries %}
+            <hr class="col-12 m-0">
+            {% include 'dining_lists/snippet_dining_entry.html' %}
+        {% endfor %}
+        <hr class="col-12 mt-0">
+        <div class="row col-12 m-0 p-0 p-md-2 py-2 text-size-3">
+            <div class="{% if can_delete_all or can_delete_some %} col-12 col-sm-11 {% else %} col-12 {% endif %} pl-sm-0">
+                <div class="row pr-2">
+                    {% if is_open or can_add %}
+                    <div class="col-12 col-sm-6 order-1 order-sm-0 p-0 px-sm-2">
+                        <a class="btn btn-primary btn-block" href="{% url 'entry_add' day=date.day month=date.month year=date.year identifier=dining_list.association.associationdetails.shorthand %}"> + Add Diner</a>
+                    </div>
+                    {% endif %}
+                    {% if can_edit_stats or can_edit_pay %}
+                        <input type="submit" class="btn btn-block btn-primary col-12 col-sm-6 mt-0 mb-2
+                            {% if not is_open and not can_add %} offset-sm-6 {% endif %}" value="Update user stats"/>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </form>
+{% endblock details %}
+
+

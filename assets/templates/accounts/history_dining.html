@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+{% load staticfiles %}
+
+{% block title %}{{ request.user }} - Dining history {% endblock %}
+
+{% block content %}
+    <div class="row col-12 p-0 m-0 text-size-3">
+        <div class="row col-12 m-0 p-0 p-md-2 py-2 font-bold">
+            <div class="col-4 col-sm-2 p-0">
+                Date
+            </div>
+            <div class="col-8 col-sm-3 p-0">
+                Dish
+            </div>
+            <div class="col-4 order-1 order-sm-0 col-sm-2 p-0">
+                Claimed by
+            </div>
+            <div class="col-4 col-sm-2 p-0">
+                Association
+            </div>
+            <div class="show-sm col-sm-1 p-0">
+                Diners
+            </div>
+        </div>
+        {% for entry in dining_entries_select %}
+            <hr class="col-12 m-0">
+            {% include 'snippets/snippet_history_dininglist.html' %}
+        {% endfor %}
+        <br><br>
+
+        {% if pages > 1 %}
+            <div class="col-12 mt-4 row">
+                {% for pagenumber in pages %}
+                    {% if pagenumber == page %}
+                        <a class="btn m-1 btn-disabled ">{{ pagenumber }}</a>
+                    {% else %}
+                        <a class="btn m-1" href="{% url 'history_lists' page=pagenumber %}">{{ pagenumber }}</a>
+                    {% endif %}
+                {% endfor %}
+            </div>
+        {% elif pages == 0 %}
+            You have not been part of any dining lists yet
+        {% endif %}
+    </div>
+
+{% endblock %}

@@ -1,0 +1,81 @@
+<div class="col-12 row p-0">
+    <label class="col-12 row p-0 m-0" for="{{ entry }}">
+        <div class="col-2 text-size-3">
+            {{ entry.date }}
+        </div>
+        <div class="col-1 text-size-3">
+            Dine
+        </div>
+        <div class="col-6">
+            {{ entry.dish }} <span class="text-size-2"> by {{ entry.claimed_by }}</span>
+        </div>
+        <div class="col-2 text-right">
+            {% if not entry.subtract %}
+                &euro;{{ entry.totalcost }}
+            {% else %}
+                <span style="color: #efa2a9">
+                -&euro;{{ entry.totalcost}}
+                </span>
+            {% endif %}
+        </div>
+        <div class="col-1 btn-block btn-checkbox text-center">
+            +
+        </div>
+    </label>
+    <input type="checkbox" id="{{ entry }}">
+    <div class="col-12 row p-0 m-0 text-size-3 collapser">
+        {% if entry.is_member %}
+            <hr class="offset-2 col-9">
+            <div class="offset-2 col-8">
+                Kitchen cost
+            </div>
+            <div class="col-1  text-right">
+                <span style="color: #efa2a9">
+                    -&euro;{{ entry.kitchen_cost}}
+                </span>
+            </div>
+            <div class="col-1"></div>
+            {% if entry.auto_pay %}
+                <div class="offset-2 col-8">
+                    Dining cost (automatic subtracted)
+                </div>
+                <div class="col-1 text-right">
+                <span style="color: #efa2a9">
+                    -&euro;{{ entry.dinner_cost_single}}
+                </span>
+                </div>
+                <div class="col-1"></div>
+
+                {% if entry.get_purchaser == request.user %}
+                    <div class="offset-2 col-8">
+                        Returned costs
+                    </div>
+                    <div class="col-1 text-right">
+                        &euro;{{ entry.dinner_cost_total }}
+                    </div>
+                    <div class="col-1"></div>
+                {% endif %}
+            {% endif %}
+        {% endif %}
+
+        {% if entry.has_externals %}
+            <hr class="offset-2 col-9">
+            <div class="offset-2 col-10 font-bold">
+                External entries
+            </div>
+            {% for external in entry.ext_members %}
+                <div class="offset-2 col-8">
+                    {{ external.name }}
+                </div>
+                <div class="col-1 text-right">
+                    <span style="color: #efa2a9">
+                        -&euro;{{ entry.get_credit_cost}}
+                    </span>
+                </div>
+            {% endfor %}
+        {% endif %}
+
+
+
+    </div>
+</div>

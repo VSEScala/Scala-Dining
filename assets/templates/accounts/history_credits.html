@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+{% load form_extras %}
+
+{% block content %}
+    <div class="col-12 row">
+        {% for entry in entries %}
+            {% if entry|get_class == "Transaction" %}
+                {% include 'snippets/snippet_credits_transaction.html' %}
+            {% elif entry|get_class == "DiningList" %}
+                {% include 'snippets/snippet_credits_dining_list.html' %}
+            {% else %}
+                <div class="col-11"> {{ entry }}</div>
+            {% endif %}
+            <hr class="col-12">
+        {% endfor %}
+    </div>
+
+    {% if pages > 1 %}
+        <div class="col-12 mt-4 row">
+            {% for pagenumber in pages %}
+                {% if pagenumber == page %}
+                    <a class="btn m-1 btn-disabled ">{{ pagenumber }}</a>
+                {% else %}
+                    <a class="btn m-1" href="{% url 'history_credits' page=pagenumber %}">{{ pagenumber }}</a>
+                {% endif %}
+            {% endfor %}
+        </div>
+    {% elif pages == 0 %}
+        No changes in your credits have been made yet.
+    {% endif %}
+
+{% endblock %}

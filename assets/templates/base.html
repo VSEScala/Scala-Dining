@@ -1,0 +1,93 @@
+{% load staticfiles %}
+{% load form_extras %}
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!--link rel="stylesheet" href="{% static 'css/bootstrap.min.css' %}"-->
+    <link rel="stylesheet" href="{% static 'css/base_sizes.css' %}">
+    <link rel="stylesheet" href="{% static 'css/base-colors.css' %}">
+    <link rel="stylesheet" href="{% static 'css/dining.css' %}">
+    <link rel="stylesheet" href="{% static 'css/header.css' %}">
+
+    <title>{% block title %}Scala Dining {% endblock %}</title>
+</head>
+<body>
+
+<div class="row m-0 header-main mb-3">
+    <div class="col-12 row width-max-lg">
+        <div class="header-title row">
+            <div class="header-image"></div>
+            <div class="show-sm">
+                Scala Dining
+            </div>
+            <a href="{% url 'index' %}" class="header-title-link"></a>
+        </div>
+        <div class="header-personal row m-0">
+            <div class="header-personal-text">
+                {{ request.user }}<br>
+                {% with request.user.usercredit.credit as credit %}
+                    {% if credit < 0 %}
+                        -&euro;{{ credit|multiply:-1 }}
+                    {% else %}
+                        &euro;{{ credit }}
+                    {% endif %}
+                {% endwith %}
+            </div>
+            <div class="header-personal-image"></div>
+            <label for="header-dropdown" class="header-title-link"></label>
+            <input type="checkbox" id="header-dropdown">
+            <div class="header-dropdown">
+                <hr>
+                <a class="header-dropdown-line" href="{% url 'history_lists' %}">
+                    <span href="#" class="header-dropdown-line-content" style="background-image: url(/static/images/History.png);">History</span>
+                </a>
+                <a class="header-dropdown-line" href="{% url 'history_credits' %}">
+                    <span href="#" class="header-dropdown-line-content" style="background-image: url(/static/images/euro.png);">Credits</span>
+                </a>
+                <a class="header-dropdown-line" href="#">
+                    <span href="#" class="header-dropdown-line-content" style="background-image: url(/static/images/gear.png);">Settings</span>
+                </a>
+                <a class="header-dropdown-line" href="{% url 'admin:index' %}" target="_blank">
+                    <span href="#" class="header-dropdown-line-content">Control Panel</span>
+                </a>
+                <hr>
+                {% for group in request.user.groups.all %}
+                    <a class="header-dropdown-line" href="{% url 'association_credits' association=group.associationdetails.shorthand %}">
+                        <span href="#" class="header-dropdown-line-content" style="background-image: url({{ group.associationdetails.image.url }})">
+                            {{ group.associationdetails.shorthand }}</span>
+                    </a>
+                {% endfor %}
+                <hr>
+                <a class="header-dropdown-line mb-4" href="{% url 'logout' %}">
+                    <span class="header-dropdown-line-content" style="background-image: url(/static/images/logout.png);">Log out</span>
+                </a>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+{% block header %}
+
+{% endblock header %}
+
+
+<div class="container">
+    <div class="row width-max-lg text-size-md-5">
+        <div class="col-12">
+            {% block content %}
+                EMPTY
+            {% endblock %}
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

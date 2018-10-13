@@ -1,0 +1,53 @@
+{% extends 'dining_lists/dining_slot.html' %}
+{% load staticfiles %}
+
+
+
+{% block details %}
+    <h3>You are already part of a different dining list</h3>
+
+    <div class="col-12 row">
+        <div class="col-6 row">
+
+        </div>
+        <div class="col-6 row">
+
+        </div>
+    </div>
+    <div class="col-12 row">
+        <div class="col-12 col-md-6 row mb-4 mb-md-0">
+            <div class="col-12 mx-0">
+                <div class="col-10 offset-2">
+                    Current subscription
+                </div>
+            </div>
+            {% with old_dining_list as slot %}
+                {% include 'dining_lists/snippet_diningslot.html' %}
+            {% endwith %}
+        </div>
+        <div class="col-12 col-md-6 row">
+            <div class="col-12 mx-0">
+                <div class="col-10 offset-2">
+                    New dining list
+                </div>
+            </div>
+            {% with dining_list as slot %}
+                {% include 'dining_lists/snippet_diningslot.html' %}
+            {% endwith %}
+        </div>
+    </div>
+
+    <form class="col-12 m-0 mt-5" method="post">
+        {% csrf_token %}
+        Are you sure you want to make this switch?
+        <div class="row mt-4">
+            <div class="col-12 col-sm-6 m-0 mt-2 mt-sm-0 order-1 order-sm-0">
+                <input type="submit" name="button_no" value="No" class="col-12 btn btn-block btn-primary"/>
+            </div>
+            <div class="col-12 col-sm-6 m-0">
+                <input type="submit" name="button_yes" value="Yes" class="col-12 btn btn-block"/>
+            </div>
+        </div>
+    </form>
+
+{% endblock details %}
