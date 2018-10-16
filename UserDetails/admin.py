@@ -1,5 +1,6 @@
 from django.contrib import admin
-from .models import UserInformation, UserDetail, UserMemberships, Association, AssociationDetails
+from django.contrib.auth.admin import UserAdmin
+from .models import User, UserDetail, UserMemberships, Association, AssociationDetails
 from CreditManagement.models import UserCredit
 from django import forms
 
@@ -76,7 +77,8 @@ class BoardFilter(admin.RelatedOnlyFieldListFilter):
         super(admin.RelatedOnlyFieldListFilter, self).__init__(*args, **kwargs)
         self.title = 'Boardmembers'
 
-class UserAdmin(admin.ModelAdmin):
+
+class CustomUserAdmin(UserAdmin):
     """
     Set up limited view of the user page
     """
@@ -86,7 +88,7 @@ class UserAdmin(admin.ModelAdmin):
 
     readonly_fields = ('date_joined', 'last_login',)
     inlines = [UserDetailsLink, UserCreditsLink, AssociationLinks]
-    fields = ('username', ('first_name', 'last_name'), 'date_joined', 'email')
+    # fields = ('username', ('first_name', 'last_name'), 'date_joined', 'email')
 
 
 class AssociationDetailsLink(admin.StackedInline):
@@ -100,7 +102,7 @@ class GroupAdminForm(forms.ModelForm):
     Creates a multi-select form for the group panel (instead of users where the Django framework places it)
     """
     users = forms.ModelMultipleChoiceField(
-        UserInformation.objects.all(),
+        User.objects.all(),
         widget=admin.widgets.FilteredSelectMultiple('Users', False),
         required=False,
     )
@@ -134,6 +136,6 @@ class AssociationAdmin(admin.ModelAdmin):
 """
 Unregister the basic User and Group page, re-register the new designs
 """
-admin.site.register(UserInformation, UserAdmin)
+admin.site.register(User, CustomUserAdmin)
 admin.site.register(Association, AssociationAdmin)
 

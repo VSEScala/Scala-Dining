@@ -1,16 +1,10 @@
 from django.db import models
-from django.contrib.auth.models import User, Group
+from django.contrib.auth.models import AbstractUser, Group
 
 
 # Create your models here.
 
-class UserInformation(User):
-    """
-    Create a meta class to obtain personal names instead of usernames
-    """
-    class Meta:
-        proxy = True
-
+class User(AbstractUser):
     def __str__(self):
         name = self.first_name + " " + self.last_name
         if name == " ":

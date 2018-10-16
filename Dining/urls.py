@@ -17,5 +17,6 @@ urlpatterns = [
     path('<int:day>/<int:month>/<int:year>/<identifier>/add', views.EntryAddView.as_view(), name='entry_add'),
     path('<int:day>/<int:month>/<int:year>/<identifier>/add/<search>', views.EntryAddView.as_view(), name='entry_add'),
     path('<int:day>/<int:month>/<int:year>/<identifier>/join', views.SlotJoinView.as_view(), name='entry_join'),
-    path('<identifier>', views.SlotListView.as_view(), name='new_slot'),
+    # This is unsafe and leads to errors e.g. when requesting /favicon.ico
+    #path('<identifier>', views.SlotListView.as_view(), name='new_slot'),
 ]

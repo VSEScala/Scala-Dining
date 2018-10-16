@@ -3,7 +3,7 @@ from django.http import *
 from django.template import loader
 from django.contrib.auth import authenticate, login, logout
 from django.views import View
-from .models import UserInformation
+from .models import User
 from .forms import RegisterUserForm, RegisterUserDetails, RegisterAssociationLinks
 from django.urls import reverse
 
@@ -70,7 +70,7 @@ class RegisterView(View):
 
         # User is valid, safe it to the server
         user = account_form.save()
-        user = UserInformation.objects.get(pk=user.pk)
+        user = User.objects.get(pk=user.pk)
         account_detail_form.save_as(user)
         associationlink_form.create_links_for(user)
 

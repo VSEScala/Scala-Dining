@@ -166,8 +166,6 @@ ENV/
 # CUSTOM
 
 uploads/
-migrations/
 Socrates/config.py
 .idea/
 *.iml
-!*/migrations/__init__.py

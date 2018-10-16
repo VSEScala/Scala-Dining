@@ -1,7 +1,7 @@
 from django.db import models, transaction
 from django.db.models import F
 from django.utils import timezone
-from UserDetails.models import UserInformation, Association
+from UserDetails.models import User, Association
 from CreditManagement.models import UserCredit
 from django.contrib.contenttypes.models import ContentType
 from django.core.validators import MinValueValidator
@@ -15,7 +15,7 @@ class UserDiningSettings(models.Model):
     """
     Contains setting related to the dining lists and use of the dining lists.
     """
-    user = models.OneToOneField(UserInformation, on_delete=models.CASCADE)
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
     allergies = models.CharField(max_length=100, default="", blank=True, help_text="Max 100 characters, leave empty if no allergies")
     canSubscribeDiningList = models.BooleanField(verbose_name="Can subscribe to dining lists",  default=True)
     canClaimDiningList = models.BooleanField(verbose_name="Can claim dining lists", default=True)
@@ -25,9 +25,9 @@ class UserDiningSettings(models.Model):
 
 class UserDiningStats(models.Model):
     """
-    User dinging stats, soon to be placed in seperate model
+    User dining stats, soon to be placed in separate model
     """
-    user = models.OneToOneField(UserInformation, on_delete=models.CASCADE)
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
     count_subscribed = models.IntegerField(default=0)
     count_shopped = models.IntegerField(default=0)
     count_cooked = models.IntegerField(default=0)
@@ -45,12 +45,12 @@ class DiningList(models.Model):
     dish = models.CharField(default="", max_length=30, blank=True, help_text="The dish made")
     # The days adjustable is implemented to prevent adjustment in credits or aid due to a deletion of a user account.
     days_adjustable = models.IntegerField(default=2, help_text="The amount of days after occurance that one can add/remove users etc")
-    claimed_by = models.ForeignKey(UserInformation, blank=True, related_name="dininglist_claimer", null=True, on_delete=models.SET_NULL)
+    claimed_by = models.ForeignKey(User, blank=True, related_name="dininglist_claimer", null=True, on_delete=models.SET_NULL)
     association = models.ForeignKey(Association, blank=True, null=True, on_delete=models.CASCADE, unique_for_date='date')
     # Todo: implement limit in the views.
     limit_signups_to_association_only = models.BooleanField(default=False, help_text="Whether only members of the given association can sign up")
     # The person who paid can be someone else, this is displayed in the dining list and this user can update payment status.
-    purchaser = models.ForeignKey(UserInformation, related_name="dininglist_purchaser", blank=True, null=True, on_delete=models.SET_NULL)
+    purchaser = models.ForeignKey(User, related_name="dininglist_purchaser", blank=True, null=True, on_delete=models.SET_NULL)
 
     kitchen_cost = models.DecimalField(decimal_places=2, verbose_name="kitchen cost per person", max_digits=4, default=0.50, validators=[MinValueValidator(Decimal('0.00'))])
     dinner_cost_total = models.DecimalField(decimal_places=2, verbose_name="total dinner costs", max_digits=5, default=0, validators=[MinValueValidator(Decimal('0.00'))])
@@ -270,8 +270,8 @@ class DiningEntry(models.Model):
     """
 
     dining_list = models.ForeignKey(DiningList, on_delete=models.CASCADE)
-    user = models.ForeignKey(UserInformation, on_delete=models.CASCADE)
-    added_by = models.ForeignKey(UserInformation, related_name="added_entry_on_dining", on_delete=models.SET_DEFAULT, blank=True, default=None, null=True)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    added_by = models.ForeignKey(User, related_name="added_entry_on_dining", on_delete=models.SET_DEFAULT, blank=True, default=None, null=True)
     has_shopped = models.BooleanField(default=False)
     has_cooked = models.BooleanField(default=False)
     has_cleaned = models.BooleanField(default=False)
@@ -407,7 +407,7 @@ class DiningEntryExternal(models.Model):
 
     dining_list = models.ForeignKey(DiningList, on_delete=models.CASCADE)
     name = models.CharField(max_length=40)
-    user = models.ForeignKey(UserInformation, verbose_name="added by (has cost responsibility)", on_delete=models.CASCADE)
+    user = models.ForeignKey(User, verbose_name="added by (has cost responsibility)", on_delete=models.CASCADE)
     has_paid = models.BooleanField(default=False)
 
     def save(self, *args, **kwargs):
@@ -481,7 +481,7 @@ class DiningComments(models.Model):
     """
     dining_list = models.ForeignKey(DiningList, on_delete=models.CASCADE)
     timestamp = models.DateTimeField(auto_now_add=True)
-    poster = models.ForeignKey(UserInformation, on_delete=models.CASCADE)
+    poster = models.ForeignKey(User, on_delete=models.CASCADE)
     message = models.TextField()
 
 
@@ -490,5 +490,5 @@ class DiningCommentViews(models.Model):
     Tracks whether certain comments have been read, i.e. the last time the comments page was visited.
     """
     dining_list = models.ForeignKey(DiningList, on_delete=models.CASCADE)
-    user = models.ForeignKey(UserInformation, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
     timestamp = models.DateTimeField(auto_now_add=True)

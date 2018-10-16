@@ -3,8 +3,7 @@ Contains the Scala Dining Website Design
 
 ## Prerequisites
 
-- Python 2.7 (Installed on path)
-- Django framework
+- Python 3
 
 ## Main application
 
@@ -12,13 +11,13 @@ Contains the Scala Dining Website Design
 
 This will install the project
 
-- git clone https://github.com/DutcherNL/Scala-Dining-WebApp.git
-- manage.py makemigrations`
-- manage.py migrate`
-- manage.py createsuperuser`
+- (Optionally) create virtual environment
+- `pip install -r requirements.txt`
+- `python manage.py migrate`
+- `python manage.py createsuperuser`
 
-### Running the project
+### Running the project in development
 
-- python manage.py runserver`
+- `python manage.py runserver`
 
 Now navigate to [localhost:8000](http://localhost:8000)

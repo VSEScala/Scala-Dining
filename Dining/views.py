@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 from .models import DiningList, DiningEntry, DiningEntryExternal
 from .forms import create_slot_form
 from .constants import MAX_SLOT_NUMBER
-from UserDetails.models import AssociationDetails, UserInformation
+from UserDetails.models import AssociationDetails, User
 from django.urls import reverse
 from django.db.models import Q
 
@@ -56,15 +56,11 @@ def get_list(current_date, identifier):
     # Get the dining list by the id of the association, shorthand form of the association or the person claimed
     try:
         return DiningList.objects.get(date=current_date, association_id=identifier)
-    except Exception:
+    except DiningList.DoesNotExist:
         try:
             return DiningList.objects.get(date=current_date, association__associationdetails__shorthand=identifier)
-        except Exception:
-            try:
-                return DiningList.objects.get(date=current_date, claimed_by__username=identifier)
-            except Exception:
-                # No proper identifier supplied
-                pass
+        except DiningList.DoesNotExist:
+            return DiningList.objects.get(date=current_date, claimed_by__username=identifier)
 
 
 class IndexView(View):
@@ -343,7 +339,7 @@ class EntryAddView(View):
 
         if search is not None:
             # Search all users corresponding with the typed in name
-            self.context['users'] = UserInformation.objects.filter(
+            self.context['users'] = User.objects.filter(
                 Q(first_name__contains=search) |
                 Q(last_name__contains=search) |
                 Q(username__contains=search)
@@ -387,7 +383,7 @@ class EntryAddView(View):
 
         try:
             if request.POST['button_select']:
-                user = UserInformation.objects.get(id=request.POST['user'])
+                user = User.objects.get(id=request.POST['user'])
                 if dining_list.get_entry_user(user) is None:
                     entry = DiningEntry(dining_list=dining_list, added_by=request.user, user=user)
                     print(entry)
@@ -489,6 +485,7 @@ class SlotInfoView(View):
 
         # Get the dining list by the id of the association, shorthand form of the association or the person claimed
         self.context['dining_list'] = get_list(current_date, identifier)
+        print("dining_list: {}".format(self.context['dining_list']))
 
         return render(request, self.template, self.context)
 

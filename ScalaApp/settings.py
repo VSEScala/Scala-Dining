@@ -20,7 +20,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # See https://docs.djangoproject.com/en/2.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = '^nnb_o98(2#bb&346s&h=o5td#_d&nc&qkm^=wn*k*as@)=49p'
+SECRET_KEY = 'change me, like really change me'
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -135,3 +135,9 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/2.0/howto/static-files/
 
 STATIC_URL = '/static/'
+
+# Using a custom User model
+# See this for details and why:
+# https://docs.djangoproject.com/en/2.1/topics/auth/customizing/#auth-custom-user
+
+AUTH_USER_MODEL = 'UserDetails.User'
