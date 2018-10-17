@@ -64,11 +64,11 @@
     </div>
     {% if can_delete_all %}
         <a class="col-2 col-sm-1 btn btn-block btn-dining-delete"
-        href="{% url 'entry_remove' day=date.day month=date.month year=date.year identifier=dining_list.association.associationdetails.shorthand id=entry.EID %}"></a>
+        href="{% url 'entry_remove' slot_id=dining_list.id id=entry.EID %}"></a>
     {% elif is_open and can_delete_some %}
         {% if request.user == entry.user %}
             <a class="col-2 col-sm-1 btn btn-block btn-dining-delete"
-               href="{% url 'entry_remove' day=date.day month=date.month year=date.year identifier=dining_list.association.associationdetails.shorthand id=entry.EID %}"></a>
+               href="{% url 'entry_remove' slot_id=dining_list.id id=entry.EID %}"></a>
         {% endif %}
     {% endif %}
 </div>

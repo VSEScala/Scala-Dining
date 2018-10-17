@@ -25,15 +25,15 @@
                 <div class="col-2 slot-signed"></div>
             {% endif %}
 
-            {% url 'slot_details' day=date.day month=date.month year=date.year identifier=slot.association.associationdetails.shorthand as url%}
+            {% url 'slot_details' slot_id=slot.id as url%}
             <a class="slot-back btn {% if slot|is_on_slot:request.user %} slot-back-active {% endif %}
-                " href={{ url }}></a>
+                " href="{{ url }}"></a>
             {% if can_join %}
-                {% url 'entry_join' day=date.day month=date.month year=date.year identifier=slot.association.associationdetails.shorthand as url%}
-                <a class="btn-block col-2 btn btn-primary slot-signup" href={{ url }}></a>
+                {% url 'entry_join' slot_id=slot.id as url%}
+                <a class="btn-block col-2 btn btn-primary slot-signup" href="{{ url }}"></a>
             {% elif slot|is_on_slot:request.user and slot.is_open %}
-                {% url 'entry_remove' day=date.day month=date.month year=date.year identifier=slot.association.associationdetails.shorthand as url%}
-                <a class="btn-block col-2 btn btn-primary slot-unlist" href={{ url }}></a>
+                {% url 'entry_remove' slot_id=slot.id as url %}
+                <a class="btn-block col-2 btn btn-primary slot-unlist" href="{{ url }}"></a>
             {% endif %}
         {% endwith %}
     {% endif %}

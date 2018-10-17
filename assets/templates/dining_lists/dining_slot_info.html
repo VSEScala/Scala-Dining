@@ -114,7 +114,7 @@
                     {% if not on_list %}
                         <div class="col-12 col-md-6 offset-md-2 text-size-6">
                             {% if dining_list|can_join_slot:request.user %}
-                                {% url 'entry_join' day=date.day month=date.month year=date.year identifier=dining_list.association.associationdetails.shorthand as url%}
+                                {% url 'entry_join' slot_id=dining_list.id as url%}
                                 <a class="btn-block btn btn-primary" href={{ url }}>Sign up</a>
                             {% else %}
                                 <div class="btn-block btn btn-disabled">Sign up</div>
@@ -125,17 +125,17 @@
                             You are on the dining list!
                         </div>
                         <div class="col-12 col-md-4 offset-md-2 text-size-6">
-                            {% url 'entry_remove' day=date.day month=date.month year=date.year identifier=dining_list.association.associationdetails.shorthand as url%}
-                            <a class="btn-block btn btn-warning" href={{ url }}>Remove yourself</a>
+                            {% url 'entry_remove' slot_id=dining_list.id as url %}
+                            <a class="btn-block btn btn-warning" href="{{ url }}">Remove yourself</a>
                         </div>
                     {% endif %}
-                    {% url 'entry_add' day=date.day month=date.month year=date.year identifier=dining_list.association.associationdetails.shorthand as url%}
+                    {% url 'entry_add' slot_id=dining_list.id as url %}
                     {% if on_list %}
                         <div class="col-12 col-md-6">
                             {% if not dining_list.diners < dining_list.diner and dining_list.claimed_by != request.user %}
                                 <a class="btn-block btn mt-4 mt-md-0 btn-disabled">Add others</a>
                             {% else %}
-                                <a href={{ url }} class="btn-block btn mt-4 mt-md-0">Add others</a>
+                                <a href="{{ url }}" class="btn-block btn mt-4 mt-md-0">Add others</a>
                             {% endif %}
                         </div>
                     {% else %}

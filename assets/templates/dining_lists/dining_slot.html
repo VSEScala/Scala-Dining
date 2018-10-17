@@ -21,21 +21,21 @@
                         {% if nav_info %}
                             active"
                         {% else %}"
-                            href="{% url 'slot_details' day=date.day month=date.month year=date.year identifier=dining_list.association.associationdetails.shorthand %}"
+                            href="{% url 'slot_details' slot_id=dining_list.id %}"
                         {% endif %}>
                     </a>
                     <a class="col-4 slot-nav-list
                         {% if nav_list %}
                             active"
                         {% else %}"
-                            href="{% url 'slot_list' day=date.day month=date.month year=date.year identifier=dining_list.association.associationdetails.shorthand %}"
+                            href="{% url 'slot_list' slot_id=dining_list.id %}"
                         {% endif %}>
                     </a>
                     <a class="col-4 slot-nav-allergy
                         {% if nav_allergy %}
                             active"
                         {% else %}"
-                            href="{% url 'slot_allergy' day=date.day month=date.month year=date.year identifier=dining_list.association.associationdetails.shorthand %}"
+                            href="{% url 'slot_allergy' slot_id=dining_list.id %}"
                         {% endif %}>
 
                     </a>

@@ -1,4 +1,4 @@
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.http import *
 from django.utils.decorators import method_decorator
 from django.contrib.auth.decorators import login_required
@@ -23,7 +23,7 @@ def reverse_day(name, date, **kwargs):
 def process_date(context, day, month, year):
     """
     Process the broken down date and store it in the context, returns the day as a date object
-    :param context: The context object in which the data is tored
+    :param context: The context object in which the data is stored
     :param day: The day of the year
     :param month: The month of the year
     :param year: The year
@@ -169,11 +169,12 @@ class SlotListView(View):
         self.context['nav_list'] = True
 
     @method_decorator(login_required)
-    def get(self, request, day=None, month=None, year=None, identifier=None, *args, **kwargs):
-        current_date = process_date(self.context, day, month, year)
+    def get(self, request, slot_id):
+        slot = DiningList.objects.get(pk=slot_id)
+        current_date = process_date(self.context, slot.date.day, slot.date.month, slot.date.year)
 
         # Get the dining list by the id of the association, shorthand form of the association or the person claimed
-        self.context['dining_list'] = get_list(current_date, identifier)
+        self.context['dining_list'] = slot
 
         self.context['can_delete_some'] = False
         entries = []
@@ -199,9 +200,10 @@ class SlotListView(View):
         return render(request, self.template, self.context)
 
     @method_decorator(login_required)
-    def post(self, request, day=None, month=None, year=None, identifier=None, *args, **kwargs):
-        current_date = process_date(self.context, day, month, year)
-        dining_list = get_list(current_date, identifier)
+    def post(self, request, slot_id):
+        slot = DiningList.objects.get(pk=slot_id)
+        current_date = process_date(self.context, slot.date.day, slot.date.month, slot.date.year)
+        dining_list = slot
 
         can_adjust_stats = request.user == dining_list.claimed_by
         can_adjust_paid = request.user == dining_list.get_purchaser()
@@ -247,7 +249,7 @@ class SlotListView(View):
         for entry in entries.values():
             entry.save()
 
-        return self.get(request, day=day, month=month, year=year, identifier=identifier)
+        return redirect('slot_list', slot_id)
 
 
 class EntryRemoveView(View):
@@ -258,20 +260,23 @@ class EntryRemoveView(View):
         self.context['list'] = True
 
     @method_decorator(login_required)
-    def get(self, request, day=None, month=None, year=None, identifier=None, id=None):
-        current_date = process_date(self.context, day, month, year)
-        dining_list = get_list(current_date, identifier)
+    def get(self, request, slot_id, id=None):
+        slot = DiningList.objects.get(pk=slot_id)
+        current_date = process_date(self.context, slot.date.day, slot.date.month, slot.date.year)
+        dining_list = slot
 
         if id == None:  # The active user wants to sign out
             if request.user == dining_list.claimed_by and dining_list.diners > 1:
                 # todo: handing over the dining ownership, or cancel the dining slot
-                HttpResponseRedirect(reverse_day('slot_details', current_date, identifier=identifier))
+                raise NotImplementedError
+                #HttpResponseRedirect(reverse_day('slot_details', current_date, identifier=identifier))
 
             if dining_list.claimed_by is not None and \
                     datetime.now().timestamp() > dining_list.sign_up_deadline.timestamp():
                 if dining_list.claimed_by != request.user:
                     # todo message: you can not remove yourself, ask the chef
-                    HttpResponseRedirect(reverse_day('slot_details', current_date, identifier=identifier))
+                    #return redirect('slot_details', slot_id)
+                    raise NotImplementedError
 
             entry = dining_list.get_entry_user(request.user)
             entry.delete()
@@ -281,44 +286,44 @@ class EntryRemoveView(View):
         else:
             if not dining_list.is_open() and dining_list.claimed_by != request.user:
                 # todo message: access denied, you are not the owner of the dining list and the list is closed
-                return HttpResponseRedirect(reverse_day('slot_list', current_date, identifier=identifier))
+                raise NotImplementedError
 
 
             if id.startswith('E'):      # External entry
                 entry = dining_list.get_entry_external(id[1:])
                 if entry is None:
                     # todo message, entry does not exist
-                    return HttpResponseRedirect(reverse_day('slot_list', current_date, identifier=identifier))
+                    raise NotImplementedError
 
                 if request.user != dining_list.claimed_by and request.user != entry.user:
                     # todo message: User is neither owner nor original person who added the external
-                    return HttpResponseRedirect(reverse_day('slot_list', current_date, identifier=identifier))
+                    raise NotImplementedError
                 else:
                     entry.delete()
                     if request.user != entry.user:
                         # todo: notify user who added the external one user of removal
                         pass
-                    return HttpResponseRedirect(reverse_day('slot_list', current_date, identifier=identifier))
+                    return redirect('slot_list', slot_id)
 
             else:   # Object is external
                 # if request was NOT added by the dininglist claimer, block access
                 if request.user != dining_list.claimed_by:
                     # todo: message, you are not the dining list owner, you can not do this
-                    return HttpResponseRedirect(reverse_day('slot_details', current_date, identifier=identifier))
+                    raise NotImplementedError
 
                 entry = dining_list.get_entry(id)
                 if entry is None:
                     # todo, entry does not exist
-                    return HttpResponseRedirect(reverse_day('slot_details', current_date, identifier=identifier))
+                    raise NotImplementedError
 
                 if entry.user == dining_list.claimed_by:
                     # todo: warning: removing yourself results in an unclaimed dining list
-                    return HttpResponseRedirect(reverse_day('slot_details', current_date, identifier=identifier))
+                    raise NotImplementedError
 
                 entry.delete()
                 # todo: message succes
 
-        return HttpResponseRedirect(reverse_day('slot_list', current_date, identifier=identifier))
+        return redirect('slot_list', slot_id)
 
 
 # todo: remove user from other lists when assigning or something
@@ -328,11 +333,11 @@ class EntryAddView(View):
 
 
     @method_decorator(login_required)
-    def get(self, request, day=None, month=None, year=None, identifier=None, search=None):
-        current_date = process_date(self.context, day, month, year)
+    def get(self, request, slot_id, search=None):
+        slot = DiningList.objects.get(pk=slot_id)
+        current_date = process_date(self.context, slot.date.day, slot.date.month, slot.date.year)
 
-        # Get the dining list by the id of the association, shorthand form of the association or the person claimed
-        self.context['dining_list'] = get_list(current_date, identifier)
+        self.context['dining_list'] = slot
 
         if search == "" or search == "User":
             search = None
@@ -362,37 +367,26 @@ class EntryAddView(View):
         return render(request, self.template, self.context)
 
     @method_decorator(login_required)
-    def post(self, request, day=None, month=None, year=None, identifier=None, *args, **kwargs):
-        current_date = process_date(self.context, day, month, year)
-        dining_list = get_list(current_date, identifier)
+    def post(self, request, slot_id):
+        dining_list = DiningList.objects.get(pk=slot_id)
 
-        try:
-            if request.POST['button_external']:
-                entry = DiningEntryExternal(dining_list=dining_list, user=request.user, name=request.POST['name'])
+        if "button_external" in request.POST:
+            entry = DiningEntryExternal(dining_list=dining_list, user=request.user, name=request.POST['name'])
+            entry.save()
+            return redirect('slot_list', slot_id)
+
+        if "button_user" in request.POST:
+            return redirect('entry_add', slot_id=slot_id, search=request.POST.get('name'))
+
+        if "button_select" in request.POST:
+            user = User.objects.get(id=request.POST.get('user'))
+            if dining_list.get_entry_user(user) is None:
+                entry = DiningEntry(dining_list=dining_list, added_by=request.user, user=user)
+                print(entry)
                 entry.save()
-                return HttpResponseRedirect(reverse_day('slot_list', current_date, identifier=identifier))
-        except:
-            pass
+            return redirect('slot_list', slot_id)
 
-        try:
-            if request.POST['button_user']:
-                return self.get(request, day=day, month=month, year=year,
-                                identifier=identifier, search=request.POST['name'])
-        except:
-            pass
-
-        try:
-            if request.POST['button_select']:
-                user = User.objects.get(id=request.POST['user'])
-                if dining_list.get_entry_user(user) is None:
-                    entry = DiningEntry(dining_list=dining_list, added_by=request.user, user=user)
-                    print(entry)
-                    entry.save()
-                return HttpResponseRedirect(reverse_day('slot_list', current_date, identifier=identifier))
-        except:
-            pass
-
-        return self.get(request, day=day, month=month, year=year, identifier=identifier, search=request.POST['name'])
+        return redirect('entry_add', slot_id=slot_id, search=request.POST.get('name'))
 
 
 class SlotJoinView(View):
@@ -400,16 +394,17 @@ class SlotJoinView(View):
     template = "dining_lists/dining_switch_to.html"
 
     @method_decorator(login_required)
-    def get(self, request, day=None, month=None, year=None, identifier=None):
-        current_date = process_date(self.context, day, month, year)
+    def get(self, request, slot_id):
+        slot = DiningList.objects.get(pk=slot_id)
+        current_date = process_date(self.context, slot.date.day, slot.date.month, slot.date.year)
 
         # Get the dining list by the id of the association, shorthand form of the association or the person claimed
-        self.context['dining_list'] = get_list(current_date, identifier)
+        self.context['dining_list'] = slot
 
         # If user is allready on list, inform user is already on list
         if self.context['dining_list'].get_entry_user(request.user.id) is not None:
             # user is already on the list
-            return HttpResponseRedirect(reverse_day('slot_details', current_date, identifier=identifier))
+            return redirect('slot_details', slot_id)
 
         # if dining list is not open, do not add him
         if not self.context['dining_list'].is_open():
@@ -423,7 +418,7 @@ class SlotJoinView(View):
             # User is not present on another date, add user
             entry = DiningEntry(dining_list=self.context['dining_list'], user=request.user)
             entry.save()
-            return HttpResponseRedirect(reverse_day('slot_details', current_date, identifier=identifier))
+            return redirect('slot_details', slot_id)
 
         locked_entry = None
         for entry in entries:
@@ -444,9 +439,10 @@ class SlotJoinView(View):
             return HttpResponseRedirect(reverse_day('day_view', current_date))
 
     @method_decorator(login_required)
-    def post(self, request, day=None, month=None, year=None, identifier=None, *args, **kwargs):
-        current_date = process_date(self.context, day, month, year)
-        new_list = get_list(current_date, identifier)
+    def post(self, request, slot_id):
+        slot = DiningList.objects.get(pk=slot_id)
+        current_date = process_date(self.context, slot.date.day, slot.date.month, slot.date.year)
+        new_list = slot
 
         try:
             if request.POST['button_yes']:
@@ -457,7 +453,7 @@ class SlotJoinView(View):
                         new_entry = DiningEntry(dining_list=new_list, user=request.user)
                         new_entry.save()
 
-                        return HttpResponseRedirect(reverse_day('slot_details', current_date, identifier=identifier))
+                        return redirect('slot_details', slot_id)
                     else:
                         # todo message: you are the owner of the old dining list, this action is not allowed.
                         pass
@@ -480,12 +476,12 @@ class SlotInfoView(View):
         self.context['nav_info'] = True
 
     @method_decorator(login_required)
-    def get(self, request, day=None, month=None, year=None, identifier=None):
-        current_date = process_date(self.context, day, month, year)
+    def get(self, request, slot_id):
+        slot = DiningList.objects.get(pk=slot_id)
+        current_date = process_date(self.context, slot.date.day, slot.date.month, slot.date.year)
 
         # Get the dining list by the id of the association, shorthand form of the association or the person claimed
-        self.context['dining_list'] = get_list(current_date, identifier)
-        print("dining_list: {}".format(self.context['dining_list']))
+        self.context['dining_list'] = slot
 
         return render(request, self.template, self.context)
 
@@ -498,11 +494,12 @@ class SlotAllergyView(View):
         self.context['nav_allergy'] = True
 
     @method_decorator(login_required)
-    def get(self, request, day=None, month=None, year=None, identifier=None):
-        current_date = process_date(self.context, day, month, year)
+    def get(self, request, slot_id):
+        slot = DiningList.objects.get(pk=slot_id)
+        current_date = process_date(self.context, slot.date.day, slot.date.month, slot.date.year)
 
         # Get the dining list by the id of the association, shorthand form of the association or the person claimed
-        self.context['dining_list'] = get_list(current_date, identifier)
+        self.context['dining_list'] = slot
 
         from django.db.models import CharField
         from django.db.models.functions import Length

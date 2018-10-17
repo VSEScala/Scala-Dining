@@ -4,7 +4,7 @@
 
 
 {% block details%}
-    <form class="col-12 m-0 mt-2" method="post">
+    <form class="col-12 m-0 mt-2" method="post" action="{% url 'entry_add' slot_id=dining_list.id %}">
         {% csrf_token %}
 
         {% if users %}
