@@ -159,6 +159,10 @@ class UserCredit(models.Model):
     negative_since = models.DateField(null=True, blank=True, default=None)
 
     def save(self, *args, **kwargs):
+        # Dirty fix :(
+        if self.pk:
+            self.refresh_from_db()
+
         """
         An enhanced save implementation to adjust the status of the negative since counter
         """
