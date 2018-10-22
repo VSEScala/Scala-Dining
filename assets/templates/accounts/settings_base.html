@@ -1,0 +1,34 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    {% block slot_navigation %}
+        <div class="width-max-lg m-auto">
+            <div class="row tab-list">
+                <a class=" active
+                    {% if nav_info %}
+                        active"
+                {% else %}"
+                    href=""
+                {% endif %}>
+                Personal info
+                </a>
+                <a class="
+                    {% if nav_list %}
+                        active"
+                {% else %}"
+                    href=""
+                {% endif %}>Dining settings
+                </a>
+            </div>
+        </div>
+    {% endblock slot_navigation %}
+
+
+    <div class="col-12 row p-0 m-0 pt-4 pb-5 mb-5">
+        {% block details%}
+            Contents
+        {% endblock details %}
+    </div>
+
+
+{% endblock %}

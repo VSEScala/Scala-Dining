@@ -91,3 +91,24 @@ input.error, input[type=checkbox].error + label{
 div.error, ul.error{
     color: red;
 }
+
+.tab-list{
+    border-bottom: 2px solid white;
+}
+
+.tab-list > *{
+    font-size: 0.75em;
+    border: 1px solid #3d7bff;
+    border-radius: 10px 10px 0 0;
+    border-bottom: 0;
+    text-decoration: none;
+}
+.tab-list > *:hover{
+    border-color: white;
+}
+
+
+.tab-list > .active{
+    background-color: #254a99;
+    border-color: white;
+}

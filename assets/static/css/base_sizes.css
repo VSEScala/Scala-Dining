@@ -2928,6 +2928,10 @@ input:checked ~ .checkbox:after {
 
 /*endregion*/
 
+.tab-list > *{
+    margin: 0 10px;
+    padding: 10px 30px;
+}
 
 .center-div{
     position: absolute;
