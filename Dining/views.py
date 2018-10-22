@@ -54,9 +54,9 @@ def get_list(current_date, identifier):
     :return:
     """
     # Get the dining list by the id of the association, shorthand form of the association or the person claimed
-    try:
+    if isinstance(identifier, int):
         return DiningList.objects.get(date=current_date, association_id=identifier)
-    except DiningList.DoesNotExist:
+    else:
         try:
             return DiningList.objects.get(date=current_date, association__associationdetails__shorthand=identifier)
         except DiningList.DoesNotExist:
