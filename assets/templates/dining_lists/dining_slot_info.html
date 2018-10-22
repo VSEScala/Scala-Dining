@@ -132,7 +132,7 @@
                     {% url 'entry_add' day=date.day month=date.month year=date.year identifier=dining_list.association.associationdetails.shorthand as url%}
                     {% if on_list %}
                         <div class="col-12 col-md-6">
-                            {% if not dining_list.diners < dining_list.diner and dining_list.claimed_by != request.user %}
+                            {% if not dining_list.diners < dining_list.max_diners and dining_list.claimed_by != request.user %}
                                 <a class="btn-block btn mt-4 mt-md-0 btn-disabled">Add others</a>
                             {% else %}
                                 <a href={{ url }} class="btn-block btn mt-4 mt-md-0">Add others</a>
@@ -140,7 +140,7 @@
                         </div>
                     {% else %}
                         <div class="col-12 col-md-4">
-                            {% if not dining_list.diners < dining_list.diner or dining_list.claimed_by == request.user %}
+                            {% if not dining_list.diners < dining_list.max_diners or dining_list.claimed_by == request.user %}
                                 <a class="btn-block btn mt-4 mt-md-0 btn-disabled">Add others</a>
                             {% else %}
                                 <a href="{{ url }}" class="btn-block btn mt-4 mt-md-0">Add others</a>

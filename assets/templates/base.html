@@ -49,19 +49,23 @@
                 <a class="header-dropdown-line" href="{% url 'history_credits' %}">
                     <span href="#" class="header-dropdown-line-content" style="background-image: url(/static/images/euro.png);">Credits</span>
                 </a>
-                <a class="header-dropdown-line" href="#">
+                <a class="header-dropdown-line" href="{% url 'settings' %}">
                     <span href="#" class="header-dropdown-line-content" style="background-image: url(/static/images/gear.png);">Settings</span>
                 </a>
-                <a class="header-dropdown-line" href="{% url 'admin:index' %}" target="_blank">
-                    <span href="#" class="header-dropdown-line-content">Control Panel</span>
-                </a>
-                <hr>
-                {% for group in request.user.groups.all %}
-                    <a class="header-dropdown-line" href="{% url 'association_credits' association=group.associationdetails.shorthand %}">
-                        <span href="#" class="header-dropdown-line-content" style="background-image: url({{ group.associationdetails.image.url }})">
-                            {{ group.associationdetails.shorthand }}</span>
+                {% if request.user.can_access_back %}
+                    <a class="header-dropdown-line" href="{% url 'admin:index' %}" target="_blank">
+                        <span href="#" class="header-dropdown-line-content">Control Panel</span>
                     </a>
-                {% endfor %}
+                {% endif %}
+                {% if request.user.groups.all.count > 0 %}
+                    <hr>
+                    {% for group in request.user.groups.all %}
+                        <a class="header-dropdown-line" href="{% url 'association_credits' association=group.associationdetails.shorthand %}">
+                            <span href="#" class="header-dropdown-line-content" style="background-image: url({{ group.associationdetails.image.url }})">
+                                {{ group.associationdetails.shorthand }}</span>
+                        </a>
+                    {% endfor %}
+                {% endif %}
                 <hr>
                 <a class="header-dropdown-line mb-4" href="{% url 'logout' %}">
                     <span class="header-dropdown-line-content" style="background-image: url(/static/images/logout.png);">Log out</span>

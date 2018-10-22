@@ -1,6 +1,6 @@
 from django import forms
 from .models import Transaction
-from UserDetails.models import Association, UserInformation
+from UserDetails.models import Association, User
 
 def create_transaction_form(user, transaction=None, source=None):
     """

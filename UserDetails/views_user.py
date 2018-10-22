@@ -87,7 +87,13 @@ class CreditsOverview(View):
         return render(request, self.template, self.context)
 
 
+class SettingsView(View):
+    context = {}
+    template = "accounts/settings_base.html"
 
+    @method_decorator(login_required)
+    def get(self, request):
 
+        return render(request, self.template, self.context)
 
 

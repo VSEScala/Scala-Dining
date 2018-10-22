@@ -1,14 +1,13 @@
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-from UserDetails.models import UserDetail, UserInformation, Association, AssociationDetails
-from django.contrib.auth.models import User, Group
+from UserDetails.models import UserDetail, User, Association, AssociationDetails
+from django.contrib.auth.models import Group
 
 
-@receiver(post_save, sender=UserInformation)
 @receiver(post_save, sender=User)
 def create_use_details(sender, instance=False, created=False,  **kwargs):
     if created:
-        instance = UserInformation.objects.get(pk=instance.pk)
+        instance = User.objects.get(pk=instance.pk)
         UserDetail(related_user=instance).save()
 
 

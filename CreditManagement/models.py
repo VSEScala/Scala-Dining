@@ -1,6 +1,6 @@
 from django.db import models, transaction
 from django.db.models import F
-from UserDetails.models import UserInformation, Association
+from UserDetails.models import User, Association
 from django.contrib.contenttypes.models import ContentType
 from django.core.validators import MinValueValidator
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
@@ -11,10 +11,10 @@ from datetime import datetime
 # Create your models here.
 class Transaction(models.Model):
     date = models.DateField(auto_now_add=True)
-    source_user = models.ForeignKey(UserInformation, related_name="transaction_source", on_delete=models.SET_NULL, null=True, blank=True, verbose_name="The user giving the money")
+    source_user = models.ForeignKey(User, related_name="transaction_source", on_delete=models.SET_NULL, null=True, blank=True, verbose_name="The user giving the money")
     source_association = models.ForeignKey(Association, related_name="transaction_source", on_delete=models.SET_NULL, null=True, blank=True, verbose_name="The association giving the money")
     amount = models.DecimalField(verbose_name="Money transferred", decimal_places=2, max_digits=4, validators=[MinValueValidator(Decimal('0.01'))])
-    target_user = models.ForeignKey(UserInformation, related_name="transaction_target",  on_delete=models.SET_NULL, null=True, blank=True, verbose_name="The user receiving the money")
+    target_user = models.ForeignKey(User, related_name="transaction_target", on_delete=models.SET_NULL, null=True, blank=True, verbose_name="The user receiving the money")
     target_association = models.ForeignKey(Association, related_name="transaction_target", on_delete=models.SET_NULL, null=True, blank=True, verbose_name="The association recieving the money")
     description = models.CharField(default="", blank=True, max_length=50)
 
@@ -154,7 +154,7 @@ class AssociationCredit(models.Model):
 
 
 class UserCredit(models.Model):
-    user = models.OneToOneField(UserInformation, on_delete=models.CASCADE)
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
     credit = models.DecimalField(verbose_name="Money credit", decimal_places=2, max_digits=5, default=0)
     negative_since = models.DateField(null=True, blank=True, default=None)
 
@@ -176,14 +176,21 @@ class UserCredit(models.Model):
             super(UserCredit, self).save(*args, **kwargs)
             return
 
+        super(UserCredit, self).save(*args, **kwargs)
+
+        # Check for a change in negative state
+        # This is done afterwards in case credit is an F-value
+        self.refresh_from_db()
         # If credits are now negative
         if previous_state.negative_since is None:
-            if self.credit < 0:
+            print(self.credit)
+            if False:#self.credit < 0:
                 self.negative_since = datetime.now().date()
+                super(UserCredit, self).save(update_fields=['negative_since'])
         else:   # if credits are no longer negative
             if self.credit >= 0:
                 self.negative_since = None
+                super(UserCredit, self).save(update_fields=['negative_since'])
 
-        super(UserCredit, self).save(*args, **kwargs)
         return
 

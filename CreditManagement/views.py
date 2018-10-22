@@ -2,7 +2,7 @@ from django.shortcuts import render
 from django.utils.decorators import method_decorator
 from django.contrib.auth.decorators import login_required
 from django.views.generic import View
-from UserDetails.models import UserInformation
+from UserDetails.models import User
 from .forms import create_transaction_form
 
 
@@ -40,7 +40,7 @@ class TransactionView(View):
             if request.GET['source']:
                 pass
 
-        user = UserInformation.objects.get(username=request.user.username)
+        user = User.objects.get(username=request.user.username)
 
         self.context['slot_form'] = create_transaction_form(user)
 

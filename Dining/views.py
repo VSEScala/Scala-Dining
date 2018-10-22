@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 from .models import DiningList, DiningEntry, DiningEntryExternal
 from .forms import create_slot_form
 from .constants import MAX_SLOT_NUMBER
-from UserDetails.models import AssociationDetails, UserInformation
+from UserDetails.models import AssociationDetails, Association, User
 from django.urls import reverse
 from django.db.models import Q
 
@@ -154,6 +154,12 @@ class NewSlotView(View):
         self.context['slot_form'] = create_slot_form(request.user, info=request.POST, date=current_date)
 
         if not self.context['slot_form'].is_valid():
+            return render(request, self.template, self.context)
+
+        print(self.context['slot_form'].cleaned_data['association'])
+        association = Association.objects.get(name=self.context['slot_form'].cleaned_data['association'])
+        if DiningList.objects.filter(date=current_date, association=association).count() > 0:
+            # Todo: insert message that the association already claimed a slot
             return render(request, self.template, self.context)
 
 
@@ -343,7 +349,7 @@ class EntryAddView(View):
 
         if search is not None:
             # Search all users corresponding with the typed in name
-            self.context['users'] = UserInformation.objects.filter(
+            self.context['users'] = User.objects.filter(
                 Q(first_name__contains=search) |
                 Q(last_name__contains=search) |
                 Q(username__contains=search)
@@ -387,7 +393,7 @@ class EntryAddView(View):
 
         try:
             if request.POST['button_select']:
-                user = UserInformation.objects.get(id=request.POST['user'])
+                user = User.objects.get(id=request.POST['user'])
                 if dining_list.get_entry_user(user) is None:
                     entry = DiningEntry(dining_list=dining_list, added_by=request.user, user=user)
                     print(entry)

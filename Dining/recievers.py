@@ -3,8 +3,7 @@ from django.db import transaction
 from django.dispatch import receiver
 from Dining.models import UserDiningSettings, UserDiningStats, DiningList, DiningEntry, DiningEntryExternal
 
-from UserDetails.models import UserInformation
-from django.contrib.auth.models import User
+from UserDetails.models import User
 from django.db.models import F
 
 """""""""""""""""""""""""""""""""""""""""""""""""""
@@ -65,7 +64,7 @@ def on_entry_removal(sender, instance=None, **kwargs):
 Create a dining_detail entry when a new user signs up
 """""""""""""""""""""""""""""""""""""""""""""""""""
 
-@receiver(post_save, sender=UserInformation)
+@receiver(post_save, sender=User)
 @receiver(post_save, sender=User)
 def create_user_dining_details(sender, instance=False, created=False,  **kwargs):
     """
@@ -77,6 +76,6 @@ def create_user_dining_details(sender, instance=False, created=False,  **kwargs)
     :param kwargs: not used
     """
     if created:
-        instance = UserInformation.objects.get(pk=instance.pk)
+        instance = User.objects.get(pk=instance.pk)
         UserDiningSettings(user=instance).save()
         UserDiningStats(user=instance).save()

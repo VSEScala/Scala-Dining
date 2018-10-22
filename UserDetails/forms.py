@@ -1,6 +1,6 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
-from .models import UserInformation, Association, UserMemberships
+from .models import User, Association, UserMemberships
 
 
 class LoginForm(forms.Form):
@@ -21,7 +21,7 @@ class RegisterUserForm(UserCreationForm):
     password2 = forms.CharField(widget=forms.PasswordInput, label="Password confirmation")
 
     class Meta:
-        model = UserInformation
+        model = User
         fields = ('username', 'password1', 'password2', 'email')
 
 class RegisterUserDetails(forms.ModelForm):
@@ -29,7 +29,7 @@ class RegisterUserDetails(forms.ModelForm):
     allergies = forms.CharField(max_length=100, required=False, help_text="Max 100 characters, leave empty if none")
 
     class Meta:
-        model = UserInformation
+        model = User
         fields = ['first_name', 'last_name', 'allergies']
 
     def save_as(self, user):

@@ -1,15 +1,10 @@
 from django.db import models
-from django.contrib.auth.models import User, Group
+from django.contrib.auth.models import AbstractUser, Group
 
 
 # Create your models here.
 
-class UserInformation(User):
-    """
-    Create a meta class to obtain personal names instead of usernames
-    """
-    class Meta:
-        proxy = True
+class User(AbstractUser):
 
     def __str__(self):
         name = self.first_name + " " + self.last_name
@@ -30,6 +25,11 @@ class UserInformation(User):
 
     def get_credit_containing_instance(self):
         return self.usercredit
+
+    def can_access_back(self):
+        is_a_boardmember = (self.groups.count() > 0)
+        return self.is_staff or is_a_boardmember
+
 
 
 class Association(Group):

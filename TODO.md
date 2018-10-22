@@ -1,7 +1,7 @@
 ## Big implementations
 #### Phase 1: A working Dining list system
 in order of importance
-- User settings page
+- User settings page    (Wouter mee bezig)
 - Implement action messages (as provided by Django)
 - Special Day models/ announcements.
 - Redesign info page
@@ -16,6 +16,7 @@ if time left over:
 - Limit dining list to association
 - Hide control panel link for those not allowed access
 - Display associations after user names (snippet)
+- Implement Crispy Forms (https://django-crispy-forms.readthedocs.io/en/latest/)
 
 #### Phase 2: A working money management
 - In-site transaction system
@@ -25,5 +26,5 @@ if time left over:
 
 
 #### Phase X: Future implementations
-A unique page referencing Menza when the dining date is before 2002
-A unique redesign to the Knights dining list when date is before 2007
+- A unique page referencing Mensa when the dining date is before 2002
+- A unique redesign to the Knights dining list when date is before 2018

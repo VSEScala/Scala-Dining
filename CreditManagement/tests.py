@@ -1,6 +1,6 @@
 from django.test import TestCase
 from CreditManagement.models import Transaction, AssociationCredit, UserCredit
-from UserDetails.models import UserInformation, Association
+from UserDetails.models import User, Association
 from django.utils import timezone
 from decimal import Decimal
 
@@ -11,8 +11,8 @@ class CreditTestBase(TestCase):
         self.createTestEnvironment()
 
     def createTestEnvironment(self):
-        UserInformation(pk=1, username="Person_A", password="test", email="test").save()
-        UserInformation(pk=2, username="Person_B", password="test", email="test").save()
+        User(pk=1, username="Person_A", password="test", email="test").save()
+        User(pk=2, username="Person_B", password="test", email="test").save()
 
         Association(pk=1, name="Group_1").save()
         Association(pk=2, name="Group_2").save()
@@ -43,8 +43,8 @@ class AssociationCreditsTestClass(CreditTestBase):
 class TransactionTest(CreditTestBase):
 
     def test_transaction_flow(self):
-        u1 = UserInformation.objects.get(pk=1)
-        u2 = UserInformation.objects.get(pk=2)
+        u1 = User.objects.get(pk=1)
+        u2 = User.objects.get(pk=2)
         transaction = Transaction(target_user=u2, source_user=u1, amount=5)
         transaction.save()
 

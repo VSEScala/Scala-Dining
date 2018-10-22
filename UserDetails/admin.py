@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import UserInformation, UserDetail, UserMemberships, Association, AssociationDetails
+from .models import User, UserDetail, UserMemberships, Association, AssociationDetails
 from CreditManagement.models import UserCredit
 from django import forms
 
@@ -100,7 +100,7 @@ class GroupAdminForm(forms.ModelForm):
     Creates a multi-select form for the group panel (instead of users where the Django framework places it)
     """
     users = forms.ModelMultipleChoiceField(
-        UserInformation.objects.all(),
+        User.objects.all(),
         widget=admin.widgets.FilteredSelectMultiple('Users', False),
         required=False,
     )
@@ -134,6 +134,6 @@ class AssociationAdmin(admin.ModelAdmin):
 """
 Unregister the basic User and Group page, re-register the new designs
 """
-admin.site.register(UserInformation, UserAdmin)
+admin.site.register(User, UserAdmin)
 admin.site.register(Association, AssociationAdmin)
 
