@@ -13,11 +13,12 @@ This will install the project
 
 - (Optionally) create virtual environment
 - `pip install -r requirements.txt`
-- `python manage.py migrate`
-- `python manage.py createsuperuser`
+- `./manage.py makemigrations`
+- `./manage.py migrate`
+- `./manage.py createsuperuser`
 
 ### Running the project in development
 
-- `python manage.py runserver`
+- `./manage.py runserver`
 
 Now navigate to [localhost:8000](http://localhost:8000)
