@@ -161,6 +161,7 @@ class UserCredit(models.Model):
     def save(self, *args, **kwargs):
         # Dirty fix :(
         if self.pk:
+            super(UserCredit, self).save(*args, **kwargs)
             self.refresh_from_db()
 
         """
