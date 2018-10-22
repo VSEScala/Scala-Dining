@@ -2,9 +2,7 @@ from django.db.models.signals import pre_save, post_save, pre_delete, post_delet
 from django.db import transaction
 from django.dispatch import receiver
 from Dining.models import UserDiningSettings, UserDiningStats, DiningList, DiningEntry, DiningEntryExternal
-
-from UserDetails.models import User
-from django.contrib.auth.models import User
+from django.conf import settings
 from django.db.models import F
 
 """""""""""""""""""""""""""""""""""""""""""""""""""
@@ -65,9 +63,8 @@ def on_entry_removal(sender, instance=None, **kwargs):
 Create a dining_detail entry when a new user signs up
 """""""""""""""""""""""""""""""""""""""""""""""""""
 
-@receiver(post_save, sender=User)
-@receiver(post_save, sender=User)
-def create_user_dining_details(sender, instance=False, created=False,  **kwargs):
+@receiver(post_save, sender=settings.AUTH_USER_MODEL)
+def create_user_dining_details(sender, instance, created, **kwargs):
     """
     Create a new userDiningSettingsModel upon creation of a user model (note, not userinformation as it does not catch
     the manage.py createsuperuser)
@@ -77,6 +74,5 @@ def create_user_dining_details(sender, instance=False, created=False,  **kwargs)
     :param kwargs: not used
     """
     if created:
-        instance = User.objects.get(pk=instance.pk)
         UserDiningSettings(user=instance).save()
         UserDiningStats(user=instance).save()
