@@ -112,3 +112,12 @@ div.error, ul.error{
     background-color: #254a99;
     border-color: white;
 }
+
+
+.tooltipInfo{
+    display: none;
+}
+
+.tooltip:checked ~ .tooltipInfo{
+    display: block;
+}

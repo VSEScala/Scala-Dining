@@ -33,7 +33,7 @@ class LogInView(View):
 
                 return HttpResponseRedirect(reverse('index'))
 
-        self.context['sign_in_error'] = "The username/password dit not match"
+        self.context['sign_in_error'] = "The username/password did not match"
 
         return render(request, self.template, context)
 

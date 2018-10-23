@@ -2,6 +2,7 @@ from django.shortcuts import render
 from django.utils.decorators import method_decorator
 from django.contrib.auth.decorators import login_required
 from django.views.generic import View
+from .forms import Settings_Essentials_Form
 import math
 
 from Dining.models import DiningList, DiningEntry
@@ -93,6 +94,19 @@ class SettingsView(View):
 
     @method_decorator(login_required)
     def get(self, request):
+
+        return render(request, self.template, self.context)
+
+
+class SettingView_Essentials(View):
+    context = {}
+    template = "accounts/settings_essentials.html"
+    context['tab_account'] = True
+
+    @method_decorator(login_required)
+    def get(self, request):
+        self.context['form'] = Settings_Essentials_Form(instance=request.user)
+
 
         return render(request, self.template, self.context)
 

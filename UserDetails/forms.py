@@ -1,4 +1,5 @@
 from django import forms
+from django.forms import ModelForm
 from django.contrib.auth.forms import UserCreationForm
 from .models import User, Association, UserMemberships
 
@@ -81,3 +82,18 @@ class RegisterAssociationLinks(forms.Form):
             if self.cleaned_data.get(field_name):
                 # Signed up for this association
                 UserMemberships(related_user=user, association=association).save()
+
+
+class Settings_Essentials_Form(ModelForm):
+    password_prev = forms.CharField(widget=forms.PasswordInput, label="Current password")
+    password_new = forms.CharField(widget=forms.PasswordInput, label="New password", help_text="Leave empty if you don't want to change password")
+    password_check = forms.CharField(widget=forms.PasswordInput, label="Repeat new password")
+
+    class Meta:
+        model = User
+        fields = ('username', 'email', 'password_prev', 'password_new', 'password_check')
+
+    def clean(self):
+        #self.instance
+        super(Settings_Essentials_Form, self).clean()
+
