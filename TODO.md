@@ -1,13 +1,12 @@
 ## Big implementations
 #### Phase 1: A working Dining list system
 in order of importance
-- User settings page    (Wouter mee bezig)
 - Implement action messages (as provided by Django)
 - Special Day models/ announcements.
-- Redesign info page
+- Redesign dining info page
 - Implement comments on dining slots/lists
 - - Implement comments read signals
-- Password reset
+- Password forgotton page/procedure
 - Email messages
 - Extend search method to include full name (spaces are currently not recognised)
 - Display help performance
