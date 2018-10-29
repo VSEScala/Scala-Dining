@@ -4,19 +4,19 @@
     {% block slot_navigation %}
         <div class="width-max-lg m-auto">
             <div class="row tab-list">
-                <a class=" active
-                    {% if nav_info %}
+                <a class="
+                    {% if tab_account %}
                         active"
                 {% else %}"
-                    href=""
+                    href="{% url 'settings_essential' %}"
                 {% endif %}>
-                Personal info
+                Account info
                 </a>
                 <a class="
-                    {% if nav_list %}
+                    {% if tab_dining %}
                         active"
                 {% else %}"
-                    href=""
+                    href="{% url 'settings_dining' %}"
                 {% endif %}>Dining settings
                 </a>
             </div>

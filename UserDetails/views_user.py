@@ -1,8 +1,9 @@
 from django.shortcuts import render
 from django.utils.decorators import method_decorator
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth import update_session_auth_hash
 from django.views.generic import View
-from .forms import Settings_Essentials_Form
+from .forms import Settings_Essentials_Form, Settings_Dining_Form
 import math
 
 from Dining.models import DiningList, DiningEntry
@@ -107,7 +108,38 @@ class SettingView_Essentials(View):
     def get(self, request):
         self.context['form'] = Settings_Essentials_Form(instance=request.user)
 
+        return render(request, self.template, self.context)
+
+    @method_decorator(login_required)
+    def post(self, request, *args, **kwargs):
+        self.context['form'] = Settings_Essentials_Form(request.POST, instance=request.user)
+
+        if self.context['form'].is_valid():
+            self.context['form'].save()
+            update_session_auth_hash(request, request.user)
+            return self.get(request)
 
         return render(request, self.template, self.context)
 
+
+class SettingView_Dining(View):
+    context = {}
+    template = "accounts/settings_dining.html"
+    context['tab_dining'] = True
+
+    @method_decorator(login_required)
+    def get(self, request):
+        self.context['form'] = Settings_Dining_Form(instance=request.user.userdiningsettings)
+
+        return render(request, self.template, self.context)
+
+    @method_decorator(login_required)
+    def post(self, request, *args, **kwargs):
+        self.context['form'] = Settings_Dining_Form(request.POST, instance=request.user.userdiningsettings)
+
+        if self.context['form'].is_valid():
+            self.context['form'].save()
+            return self.get(request)
+
+        return render(request, self.template, self.context)
 

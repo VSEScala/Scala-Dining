@@ -35,7 +35,7 @@ class LogInView(View):
 
         self.context['sign_in_error'] = "The username/password did not match"
 
-        return render(request, self.template, context)
+        return render(request, self.template, self.context)
 
 class RegisterView(View):
     def get(self, request):

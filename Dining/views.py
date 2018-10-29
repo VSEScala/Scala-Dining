@@ -185,6 +185,11 @@ class SlotListView(View):
         # Get the dining list by the id of the association, shorthand form of the association or the person claimed
         self.context['dining_list'] = get_list(current_date, identifier)
 
+        if self.context['dining_list'] is None:
+            # Todo: Message that this dining list does not exist
+            return HttpResponseRedirect(reverse_day('day_view', current_date))
+
+
         self.context['can_delete_some'] = False
         entries = []
         for entry in self.context['dining_list'].diningentry_set.all():

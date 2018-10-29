@@ -9,5 +9,5 @@ urlpatterns = [
     path('credits/<int:page>', views_user.CreditsOverview.as_view(), name='history_credits'),
     path('settings', views_user.SettingsView.as_view(), name='settings'),
     path('settings/essential', views_user.SettingView_Essentials.as_view(), name='settings_essential'),
-    path('settings/dining', views_user.SettingsView.as_view(), name='settings_dining'),
+    path('settings/dining', views_user.SettingView_Dining.as_view(), name='settings_dining'),
 ]

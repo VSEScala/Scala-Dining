@@ -37,5 +37,3 @@ def create_slot_form(user, info=None, date=None):
                         user=user).save()
 
     return CreateSlotForm(info)
-
-
