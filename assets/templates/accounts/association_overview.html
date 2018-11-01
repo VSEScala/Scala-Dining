@@ -30,7 +30,7 @@
         + Transfer credits
     </a>
 
-    {% if pages != 1 %}
+    {% if pages > 1 %}
         <div class="col-12 mt-4 row">
             {% for pagenumber in pages %}
                 {% if pagenumber == page %}
