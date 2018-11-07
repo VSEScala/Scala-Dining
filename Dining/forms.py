@@ -23,7 +23,7 @@ def create_slot_form(user, info=None, date=None):
 
             if len(association_set) == 1:
                 self.fields['association'].disabled = True
-                self.fields['association'].initial = 1
+                self.fields['association'].initial = association_set[0].pk
 
         def save(self):
             data = self.cleaned_data
