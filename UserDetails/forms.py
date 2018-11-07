@@ -41,6 +41,7 @@ class RegisterUserDetails(forms.ModelForm):
         user.last_name = self.cleaned_data.get('last_name')
         user.userdiningsettings.allergies = self.cleaned_data.get('allergies')
         user.save()
+        user.userdiningsettings.save()
 
 
 class RegisterAssociationLinks(forms.Form):

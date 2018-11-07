@@ -46,7 +46,7 @@ class DiningList(models.Model):
     # The days adjustable is implemented to prevent adjustment in credits or aid due to a deletion of a user account.
     days_adjustable = models.IntegerField(default=2, help_text="The amount of days after occurance that one can add/remove users etc")
     claimed_by = models.ForeignKey(User, blank=True, related_name="dininglist_claimer", null=True, on_delete=models.SET_NULL)
-    association = models.ForeignKey(Association, blank=True, null=True, on_delete=models.CASCADE, unique_for_date='date')
+    association = models.ForeignKey(Association, blank=True, null=True, on_delete=models.CASCADE)
     # Todo: implement limit in the views.
     limit_signups_to_association_only = models.BooleanField(default=False, help_text="Whether only members of the given association can sign up")
     # The person who paid can be someone else, this is displayed in the dining list and this user can update payment status.

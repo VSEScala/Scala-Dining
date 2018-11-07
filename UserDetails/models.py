@@ -45,8 +45,8 @@ class Association(Group):
 
 class AssociationDetails(models.Model):
     association = models.OneToOneField(Association, on_delete=models.CASCADE, primary_key=True)
-    image = models.ImageField(null=True, blank=True)
-    shorthand = models.SlugField(max_length=10, default="")
+    image = models.ImageField()
+    shorthand = models.SlugField(max_length=10)
 
 
 class UserDetail(models.Model):
