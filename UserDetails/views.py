@@ -73,6 +73,8 @@ class RegisterView(View):
         user = User.objects.get(pk=user.pk)
         account_detail_form.save_as(user)
         associationlink_form.create_links_for(user)
+        
+        login(request, user)
 
         return HttpResponseRedirect(reverse('index'))
 

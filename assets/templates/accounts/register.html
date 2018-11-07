@@ -32,7 +32,7 @@
 <div class="container">
     <div class="row width-max-lg text-size-md-5">
         <div class="col-12">
-            <form action="/userdetails/register/" method="post">
+            <form method="post">
                 {% csrf_token %}
                 {% include 'accounts/registerFormContent.html' %}
             </form>
