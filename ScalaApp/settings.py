@@ -76,7 +76,8 @@ WSGI_APPLICATION = 'ScalaApp.wsgi.application'
 
 LOGIN_REDIRECT_URL = '/userdetails/'
 
-STATIC_URL = '/static/'
+# (dubbelop)
+# STATIC_URL = '/static/'
 
 STATIC_ROOT = os.path.join(BASE_DIR, "static_total")
 
@@ -125,7 +126,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Europe/Amsterdam'
 
 USE_I18N = True
 
