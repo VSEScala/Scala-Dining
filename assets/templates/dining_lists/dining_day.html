@@ -32,6 +32,12 @@
         {{ message }}
     </div>
     {% endif %}
+    {% if Announcements %}
+        {% for Announcement in Announcements %}
+            {% include 'snippets/snippet_dining_day_announcement' %}
+        {% endfor %}
+
+    {% endif %}
 
     <div class="col-12 row m-0 px-0 py-3">
         {% for slot in dining_lists %}

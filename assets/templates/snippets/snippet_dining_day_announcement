@@ -1,0 +1,7 @@
+<div class="col-12 row mx-0 my-3 px-0 py-3 msg warning">
+    <div class="col-2 text-size-7 text-warning text-center">!</div>
+    <div class="col-10">
+        <b>{{ Announcement.title }}</b><br>
+        {{ Announcement.text }}
+    </div>
+</div>

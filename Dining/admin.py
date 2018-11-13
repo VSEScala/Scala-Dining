@@ -1,5 +1,5 @@
 from django.contrib import admin
-from Dining.models import UserDiningSettings, DiningList, DiningEntry, DiningEntryExternal, DiningComments, UserDiningStats
+from Dining.models import UserDiningSettings, DiningList, DiningEntry, DiningEntryExternal, DiningComments, UserDiningStats, DiningDayAnnouncements
 
 
 # Register your models here.
@@ -102,3 +102,4 @@ admin.site.register(UserDiningSettings, DiningSettingsAdmin)
 admin.site.register(DiningList, DiningListAdmin)
 admin.site.register(DiningListComment, DiningListCommentsAdmin)
 admin.site.register(UserDiningStats)
+admin.site.register(DiningDayAnnouncements)

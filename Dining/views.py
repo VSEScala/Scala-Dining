@@ -4,12 +4,12 @@ from django.utils.decorators import method_decorator
 from django.contrib.auth.decorators import login_required
 from django.views.generic import View
 from datetime import datetime, timedelta
-from .models import DiningList, DiningEntry, DiningEntryExternal
+from .models import DiningList, DiningEntry, DiningEntryExternal, DiningDayAnnouncements
 from .forms import create_slot_form
 from .constants import MAX_SLOT_NUMBER
 from UserDetails.models import AssociationDetails, Association, User
 from django.urls import reverse
-from django.db.models import Q
+from django.db.models import Q,Sum
 
 
 # Create your views here.
@@ -98,16 +98,27 @@ class IndexView(View):
 
         self.context['add_link'] = reverse_day('new_slot', current_date)
         self.context['dining_lists'] = DiningList.get_lists_on_date(current_date)
+        self.context['Announcements'] = DiningDayAnnouncements.objects.filter(date=current_date)
 
+        print("AHAHAHA")
         self.context['can_create_slot'] = False
         if current_date.weekday() > 4:
             self.context['message'] = "Kitchen can't be used on weekends"
-        elif len(self.context['dining_lists']) < MAX_SLOT_NUMBER:      # if maximum slots is not exceeded
-            if current_date > datetime.now().date():                # if day is in the future
-                    self.context['can_create_slot'] = True
-            elif (current_date - datetime.now().date()).days == 0:  # if date is today
-                    if datetime.now().hour < 17:                    # if it's not past 17:00
+        else:
+            slot_limit = DiningDayAnnouncements.objects.filter(date=current_date).aggregate(Sum('slots_occupy'))
+            print(slot_limit)
+            print(current_date)
+            if slot_limit['slots_occupy__sum'] is None:
+                slot_limit = 0
+            else:
+                slot_limit = slot_limit['slots_occupy__sum']
+
+            if len(self.context['dining_lists']) < MAX_SLOT_NUMBER - slot_limit:      # if maximum slots is not exceeded
+                if current_date > datetime.now().date():                # if day is in the future
                         self.context['can_create_slot'] = True
+                elif (current_date - datetime.now().date()).days == 0:  # if date is today
+                        if datetime.now().hour < 17:                    # if it's not past 17:00
+                            self.context['can_create_slot'] = True
 
         self.context['interactive'] = True
         return render(request, self.template, self.context)
@@ -162,8 +173,22 @@ class NewSlotView(View):
             # Todo: insert message that the association already claimed a slot
             return render(request, self.template, self.context)
 
+        self.context['can_create_slot'] = False
 
-        # todo set deadline date to this current date
+
+        if current_date.weekday() > 4:
+            # Todo: Kitchen can't be used on weekends
+            return HttpResponseRedirect(reverse_day('day_view', current_date))
+        else:
+            slot_limit = DiningDayAnnouncements.objects.filter(date=current_date).aggregate(Sum('slots_occupy'))
+            if slot_limit['slots_occupy__sum'] is None:
+                slot_limit = 0
+            else:   slot_limit = slot_limit['slots_occupy__sum']
+            if len(DiningList.get_lists_on_date(current_date)) >= MAX_SLOT_NUMBER - slot_limit:      # if maximum slots is not exceeded
+                # Todo: Message: Max slots reached
+                return HttpResponseRedirect(reverse_day('day_view', current_date))
+
+
         self.context['slot_form'].save()
         identifier = self.context['slot_form'].cleaned_data['association']
         identifier = AssociationDetails.objects.get(association__name=identifier).shorthand

@@ -121,3 +121,19 @@ div.error, ul.error{
 .tooltip:checked ~ .tooltipInfo{
     display: block;
 }
+
+
+.msg {
+    border: 2px solid #aaa;
+    -webkit-border-radius: 5px;
+    -moz-border-radius: 5px;
+    border-radius: 5px;
+}
+
+.msg.warning {
+    border-color: #ff9600;
+}
+
+.text-warning{
+    color: #ff9600;
+}

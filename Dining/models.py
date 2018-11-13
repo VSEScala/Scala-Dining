@@ -33,6 +33,7 @@ class UserDiningStats(models.Model):
     count_cooked = models.IntegerField(default=0)
     count_cleaned = models.IntegerField(default=0)
 
+
 class DiningList(models.Model):
     """
     A single dining list (slot) model.
@@ -46,7 +47,7 @@ class DiningList(models.Model):
     # The days adjustable is implemented to prevent adjustment in credits or aid due to a deletion of a user account.
     days_adjustable = models.IntegerField(default=2, help_text="The amount of days after occurance that one can add/remove users etc")
     claimed_by = models.ForeignKey(User, blank=True, related_name="dininglist_claimer", null=True, on_delete=models.SET_NULL)
-    association = models.ForeignKey(Association, blank=True, null=True, on_delete=models.CASCADE)
+    association = models.ForeignKey(Association, blank=True, null=True, on_delete=models.CASCADE, unique_for_date="date")
     # Todo: implement limit in the views.
     limit_signups_to_association_only = models.BooleanField(default=False, help_text="Whether only members of the given association can sign up")
     # The person who paid can be someone else, this is displayed in the dining list and this user can update payment status.
@@ -62,8 +63,7 @@ class DiningList(models.Model):
     min_diners = models.IntegerField(default=4)
     max_diners = models.IntegerField(default=20)
 
-    def __str__(self):
-        return str(self.date) + " #" + str(self.claimed_by)
+
 
     def save(self, *args, **kwargs):
         """
@@ -492,3 +492,13 @@ class DiningCommentViews(models.Model):
     dining_list = models.ForeignKey(DiningList, on_delete=models.CASCADE)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     timestamp = models.DateTimeField(auto_now_add=True)
+
+
+class DiningDayAnnouncements(models.Model):
+    date = models.DateField()
+    title = models.CharField(max_length=15)
+    text = models.CharField(max_length=240)
+    slots_occupy = models.IntegerField(default=0, help_text="The amount of slots this occupies")
+
+    def __str__(self):
+        return (self.title)
