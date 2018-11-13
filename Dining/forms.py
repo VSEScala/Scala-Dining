@@ -16,7 +16,7 @@ def create_slot_form(user, info=None, date=None):
 
         class Meta:
             model = DiningList
-            fields = ('dish', 'association', 'max_diners')
+            fields = ('dish', 'association', 'max_diners', 'serve_time')
 
         def __init__(self, *args, **kwargs):
             super(CreateSlotForm, self).__init__(*args, **kwargs)
