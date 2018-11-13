@@ -6,7 +6,7 @@ from CreditManagement.models import UserCredit
 from django.contrib.contenttypes.models import ContentType
 from django.core.validators import MinValueValidator
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
-from datetime import datetime
+from datetime import datetime, time
 from decimal import Decimal
 
 
@@ -40,6 +40,7 @@ class DiningList(models.Model):
     """
     date = models.DateField(default=timezone.now)
     sign_up_deadline = models.DateTimeField(blank=True, null=True, help_text="Date/time before users need to sign up")
+    serve_time = models.TimeField(default=time(18, 00))
 
     # Todo: implement name as url
     name = models.SlugField(blank=True, default="", null=True, db_index=False, max_length=30)
