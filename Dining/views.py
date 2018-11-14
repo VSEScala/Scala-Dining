@@ -4,7 +4,7 @@ from django.utils.decorators import method_decorator
 from django.contrib.auth.decorators import login_required
 from django.views.generic import View
 from datetime import datetime, timedelta
-from .models import DiningList, DiningEntry, DiningEntryExternal, DiningDayAnnouncements
+from .models import DiningList, DiningEntry, DiningEntryExternal, DiningDayAnnouncements, DiningComment, DiningCommentView
 from .forms import create_slot_form
 from .constants import MAX_SLOT_NUMBER
 from UserDetails.models import AssociationDetails, Association, User
@@ -195,99 +195,6 @@ class NewSlotView(View):
         return HttpResponseRedirect(reverse_day('slot_details', current_date, identifier=identifier))
 
 
-class SlotListView(View):
-    context = {}
-    template = "dining_lists/dining_slot_diners.html"
-
-    def __init__(self, *args, **kwargs):
-        super(SlotListView, self).__init__(*args, **kwargs)
-        self.context['nav_list'] = True
-
-    @method_decorator(login_required)
-    def get(self, request, day=None, month=None, year=None, identifier=None, *args, **kwargs):
-        current_date = process_date(self.context, day, month, year)
-
-        # Get the dining list by the id of the association, shorthand form of the association or the person claimed
-        self.context['dining_list'] = get_list(current_date, identifier)
-
-        if self.context['dining_list'] is None:
-            # Todo: Message that this dining list does not exist
-            return HttpResponseRedirect(reverse_day('day_view', current_date))
-
-
-        self.context['can_delete_some'] = False
-        entries = []
-        for entry in self.context['dining_list'].diningentry_set.all():
-            entries.append(entry)
-        for entry in self.context['dining_list'].diningentryexternal_set.all():
-            if entry.user == request.user:
-                self.context['can_delete_some'] = True
-            entries.append(entry)
-        from operator import methodcaller
-        entries.sort(key=methodcaller('__str__'))
-        self.context['entries'] = entries
-
-        self.context['is_open'] = self.context['dining_list'].is_open()
-        self.context['can_add'] = self.context['dining_list'].claimed_by == request.user
-        self.context['can_delete_some'] = self.context['can_delete_some'] * self.context['is_open']
-        self.context['can_edit_stats'] = (request.user == self.context['dining_list'].claimed_by)
-        self.context['can_delete_all'] = (request.user == self.context['dining_list'].claimed_by)
-        purchaser = self.context['dining_list'].purchaser
-        self.context['can_edit_pay'] = (request.user == purchaser or
-                                        (purchaser is None and request.user == self.context['dining_list'].claimed_by))
-
-        return render(request, self.template, self.context)
-
-    @method_decorator(login_required)
-    def post(self, request, day=None, month=None, year=None, identifier=None, *args, **kwargs):
-        current_date = process_date(self.context, day, month, year)
-        dining_list = get_list(current_date, identifier)
-
-        can_adjust_stats = request.user == dining_list.claimed_by
-        can_adjust_paid = request.user == dining_list.get_purchaser()
-
-        entries = {}
-        # Loop over all user entries, and store them
-        for entry in dining_list.diningentry_set.all():
-            if can_adjust_stats:
-                entry.has_shopped = False
-                entry.has_cooked = False
-                entry.has_cleaned = False
-            if can_adjust_paid:
-                entry.has_paid = False
-            entries[str(entry.id)] = entry
-
-        # Loop over all external entries, and store them
-        if can_adjust_paid:
-            for entry in dining_list.diningentryexternal_set.all():
-                entry.has_paid = False
-                entries["E"+str(entry.id)] = entry
-
-        # Loop over all keys,
-        for key in request.POST:
-            keysplit = key.split(":")
-            if len(keysplit) != 2:
-                continue
-
-            if keysplit[0].startswith("E"):
-                if keysplit[1] == "has_paid" and can_adjust_paid:
-                    entries[keysplit[0]].has_paid = True
-            else:
-                # its a normal entry
-                if can_adjust_stats:
-                    if keysplit[1] == "has_shopped":
-                        entries[keysplit[0]].has_shopped = True
-                    elif keysplit[1] == "has_cooked":
-                        entries[keysplit[0]].has_cooked = True
-                    elif keysplit[1] == "has_cleaned":
-                        entries[keysplit[0]].has_cleaned = True
-                if can_adjust_paid and keysplit[1] == "has_paid":
-                    entries[keysplit[0]].has_paid = True
-
-        for entry in entries.values():
-            entry.save()
-
-        return self.get(request, day=day, month=month, year=year, identifier=identifier)
 
 
 class EntryRemoveView(View):
@@ -511,6 +418,102 @@ class SlotJoinView(View):
         return HttpResponseRedirect(reverse_day('day_view', current_date))
 
 
+
+class SlotListView(View):
+    context = {}
+    template = "dining_lists/dining_slot_diners.html"
+
+    def __init__(self, *args, **kwargs):
+        super(SlotListView, self).__init__(*args, **kwargs)
+        self.context['nav_list'] = True
+
+    @method_decorator(login_required)
+    def get(self, request, day=None, month=None, year=None, identifier=None, *args, **kwargs):
+        current_date = process_date(self.context, day, month, year)
+
+        # Get the dining list by the id of the association, shorthand form of the association or the person claimed
+        self.context['dining_list'] = get_list(current_date, identifier)
+
+        if self.context['dining_list'] is None:
+            # Todo: Message that this dining list does not exist
+            return HttpResponseRedirect(reverse_day('day_view', current_date))
+
+
+        self.context['can_delete_some'] = False
+        entries = []
+        for entry in self.context['dining_list'].diningentry_set.all():
+            entries.append(entry)
+        for entry in self.context['dining_list'].diningentryexternal_set.all():
+            if entry.user == request.user:
+                self.context['can_delete_some'] = True
+            entries.append(entry)
+        from operator import methodcaller
+        entries.sort(key=methodcaller('__str__'))
+        self.context['entries'] = entries
+
+        self.context['is_open'] = self.context['dining_list'].is_open()
+        self.context['can_add'] = self.context['dining_list'].claimed_by == request.user
+        self.context['can_delete_some'] = self.context['can_delete_some'] * self.context['is_open']
+        self.context['can_edit_stats'] = (request.user == self.context['dining_list'].claimed_by)
+        self.context['can_delete_all'] = (request.user == self.context['dining_list'].claimed_by)
+        purchaser = self.context['dining_list'].purchaser
+        self.context['can_edit_pay'] = (request.user == purchaser or
+                                        (purchaser is None and request.user == self.context['dining_list'].claimed_by))
+
+        return render(request, self.template, self.context)
+
+    @method_decorator(login_required)
+    def post(self, request, day=None, month=None, year=None, identifier=None, *args, **kwargs):
+        current_date = process_date(self.context, day, month, year)
+        dining_list = get_list(current_date, identifier)
+
+        can_adjust_stats = request.user == dining_list.claimed_by
+        can_adjust_paid = request.user == dining_list.get_purchaser()
+
+        entries = {}
+        # Loop over all user entries, and store them
+        for entry in dining_list.diningentry_set.all():
+            if can_adjust_stats:
+                entry.has_shopped = False
+                entry.has_cooked = False
+                entry.has_cleaned = False
+            if can_adjust_paid:
+                entry.has_paid = False
+            entries[str(entry.id)] = entry
+
+        # Loop over all external entries, and store them
+        if can_adjust_paid:
+            for entry in dining_list.diningentryexternal_set.all():
+                entry.has_paid = False
+                entries["E"+str(entry.id)] = entry
+
+        # Loop over all keys,
+        for key in request.POST:
+            keysplit = key.split(":")
+            if len(keysplit) != 2:
+                continue
+
+            if keysplit[0].startswith("E"):
+                if keysplit[1] == "has_paid" and can_adjust_paid:
+                    entries[keysplit[0]].has_paid = True
+            else:
+                # its a normal entry
+                if can_adjust_stats:
+                    if keysplit[1] == "has_shopped":
+                        entries[keysplit[0]].has_shopped = True
+                    elif keysplit[1] == "has_cooked":
+                        entries[keysplit[0]].has_cooked = True
+                    elif keysplit[1] == "has_cleaned":
+                        entries[keysplit[0]].has_cleaned = True
+                if can_adjust_paid and keysplit[1] == "has_paid":
+                    entries[keysplit[0]].has_paid = True
+
+        for entry in entries.values():
+            entry.save()
+
+        return self.get(request, day=day, month=month, year=year, identifier=identifier)
+
+
 class SlotInfoView(View):
     context = {}
     template = "dining_lists/dining_slot_info.html"
@@ -525,6 +528,13 @@ class SlotInfoView(View):
 
         # Get the dining list by the id of the association, shorthand form of the association or the person claimed
         self.context['dining_list'] = get_list(current_date, identifier)
+        self.context['comments'] = self.context['dining_list'].diningcomment_set.order_by('-pinned_to_top', 'timestamp').all()
+        last_visit = DiningCommentView.objects.get_or_create(user=request.user,
+                                                             dining_list=self.context['dining_list']
+                                                             )[0]
+        self.context['last_visited'] = last_visit.timestamp
+        print(self.context['last_visited'])
+        #last_visit.timestamp
 
         return render(request, self.template, self.context)
 

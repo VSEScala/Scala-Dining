@@ -151,5 +151,12 @@
             </div>
         {% endif %}
     </div>
+    <hr class="col-12">
+    <div class="col-12 p-0">
+        <h3 class="offset-2 p-3 my-1">Comments</h3>
+        {% for comment in comments %}
+            {% include 'snippets/snippet_comments.html' %}
+        {% endfor %}
+    </div>
 </div>
 {% endblock details %}

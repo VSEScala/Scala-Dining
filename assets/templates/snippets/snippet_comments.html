@@ -1,0 +1,15 @@
+<div class="col-12 row
+{% if comment.pinned_to_top %}
+my-4 {% else %} my-3{% endif %}">
+
+    <div class="col-12 col-md-3 p-0 row">
+        <div class="col-md-12 col-auto font-bold">{{ comment.poster }}</div>
+        <div class="col-md-12 col-auto text-size-3">{{ comment.timestamp }}</div>
+        {% if comment.timestamp > last_visited %}
+            <div class="col-md-12 col-2 text-warning">NEW!</div>
+        {% endif %}
+    </div>
+    <div class="col-12 col-md-9 msg p-3">
+        {{ comment.message }}
+    </div>
+</div>

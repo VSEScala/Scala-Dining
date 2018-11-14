@@ -1,5 +1,5 @@
 from django.contrib import admin
-from Dining.models import UserDiningSettings, DiningList, DiningEntry, DiningEntryExternal, DiningComments, UserDiningStats, DiningDayAnnouncements
+from Dining.models import *
 
 
 # Register your models here.
@@ -69,8 +69,8 @@ class DininglistCommentsLink(admin.StackedInline):
     """
     Create the additional information on the user page (taken from a new table)
     """
-    model = DiningComments
-    fields = (('poster', 'timestamp'), 'message',)
+    model = DiningComment
+    fields = (('poster', 'timestamp'), 'message', 'pinned_to_top')
     verbose_name = ""
     verbose_name_plural = "Comments"
     readonly_fields = ('timestamp',)
@@ -103,3 +103,4 @@ admin.site.register(DiningList, DiningListAdmin)
 admin.site.register(DiningListComment, DiningListCommentsAdmin)
 admin.site.register(UserDiningStats)
 admin.site.register(DiningDayAnnouncements)
+admin.site.register(DiningCommentView)

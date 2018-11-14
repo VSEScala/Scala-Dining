@@ -476,7 +476,7 @@ class DiningEntryExternal(models.Model):
         return "E"+str(self.id)
 
 
-class DiningComments(models.Model):
+class DiningComment(models.Model):
     """
     Comments for the dining list
     """
@@ -484,15 +484,16 @@ class DiningComments(models.Model):
     timestamp = models.DateTimeField(auto_now_add=True)
     poster = models.ForeignKey(User, on_delete=models.CASCADE)
     message = models.TextField()
+    pinned_to_top = models.BooleanField(default=False)
 
 
-class DiningCommentViews(models.Model):
+class DiningCommentView(models.Model):
     """
     Tracks whether certain comments have been read, i.e. the last time the comments page was visited.
     """
     dining_list = models.ForeignKey(DiningList, on_delete=models.CASCADE)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    timestamp = models.DateTimeField(auto_now_add=True)
+    timestamp = models.DateTimeField()#auto_now_add=True)
 
 
 class DiningDayAnnouncements(models.Model):
