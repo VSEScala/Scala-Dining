@@ -18,21 +18,21 @@
                 </div>
                 <div class="row">
                     <a class="col-4 slot-nav-info
-                        {% if nav_info %}
+                        {% if tab == "info" %}
                             active"
                         {% else %}"
                             href="{% url 'slot_details' day=date.day month=date.month year=date.year identifier=dining_list.association.associationdetails.shorthand %}"
                         {% endif %}>
                     </a>
                     <a class="col-4 slot-nav-list
-                        {% if nav_list %}
+                        {% if tab == "list" %}
                             active"
                         {% else %}"
                             href="{% url 'slot_list' day=date.day month=date.month year=date.year identifier=dining_list.association.associationdetails.shorthand %}"
                         {% endif %}>
                     </a>
                     <a class="col-4 slot-nav-allergy
-                        {% if nav_allergy %}
+                        {% if tab == "allergy" %}
                             active"
                         {% else %}"
                             href="{% url 'slot_allergy' day=date.day month=date.month year=date.year identifier=dining_list.association.associationdetails.shorthand %}"

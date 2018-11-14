@@ -419,25 +419,38 @@ class SlotJoinView(View):
 
 
 
-class SlotListView(View):
+class SlotView(View):
     context = {}
+    current_date = None
+
+
+    @method_decorator(login_required)
+    def get(self, request, day=None, month=None, year=None, identifier=None, *args, **kwargs):
+        self.current_date = process_date(self.context, day, month, year)
+
+        # Get the dining list by the id of the association, shorthand form of the association or the person claimed
+        self.context['dining_list'] = get_list(self.current_date, identifier)
+
+        if self.context['dining_list'] is None:
+            # Todo: Message that this dining list does not exist
+            return HttpResponseRedirect(reverse_day('day_view', self.current_date))
+
+        self.context['is_open'] = self.context['dining_list'].is_open()
+
+        return None
+
+class SlotListView(SlotView):
     template = "dining_lists/dining_slot_diners.html"
 
     def __init__(self, *args, **kwargs):
         super(SlotListView, self).__init__(*args, **kwargs)
-        self.context['nav_list'] = True
+        self.context['tab'] = "list"
 
     @method_decorator(login_required)
     def get(self, request, day=None, month=None, year=None, identifier=None, *args, **kwargs):
-        current_date = process_date(self.context, day, month, year)
-
-        # Get the dining list by the id of the association, shorthand form of the association or the person claimed
-        self.context['dining_list'] = get_list(current_date, identifier)
-
-        if self.context['dining_list'] is None:
-            # Todo: Message that this dining list does not exist
-            return HttpResponseRedirect(reverse_day('day_view', current_date))
-
+        result = super(SlotListView, self).get(request, day, month, year, identifier, *args, **kwargs)
+        if result is not None:
+            return result
 
         self.context['can_delete_some'] = False
         entries = []
@@ -451,7 +464,7 @@ class SlotListView(View):
         entries.sort(key=methodcaller('__str__'))
         self.context['entries'] = entries
 
-        self.context['is_open'] = self.context['dining_list'].is_open()
+
         self.context['can_add'] = self.context['dining_list'].claimed_by == request.user
         self.context['can_delete_some'] = self.context['can_delete_some'] * self.context['is_open']
         self.context['can_edit_stats'] = (request.user == self.context['dining_list'].claimed_by)
@@ -514,44 +527,40 @@ class SlotListView(View):
         return self.get(request, day=day, month=month, year=year, identifier=identifier)
 
 
-class SlotInfoView(View):
-    context = {}
+class SlotInfoView(SlotView):
     template = "dining_lists/dining_slot_info.html"
 
     def __init__(self, *args, **kwargs):
         super(SlotInfoView, self).__init__(*args, **kwargs)
-        self.context['nav_info'] = True
+        self.context['tab'] = "info"
 
     @method_decorator(login_required)
-    def get(self, request, day=None, month=None, year=None, identifier=None):
-        current_date = process_date(self.context, day, month, year)
+    def get(self, request, day=None, month=None, year=None, identifier=None, *args, **kwargs):
+        result = super(SlotInfoView, self).get(request, day, month, year, identifier, *args, **kwargs)
+        if result is not None:
+            return result
 
-        # Get the dining list by the id of the association, shorthand form of the association or the person claimed
-        self.context['dining_list'] = get_list(current_date, identifier)
         self.context['comments'] = self.context['dining_list'].diningcomment_set.order_by('-pinned_to_top', 'timestamp').all()
         last_visit = DiningCommentView.objects.get_or_create(user=request.user,
                                                              dining_list=self.context['dining_list']
                                                              )[0]
         self.context['last_visited'] = last_visit.timestamp
-        print(self.context['last_visited'])
-        #last_visit.timestamp
+        # Todo: update view timestamp
 
         return render(request, self.template, self.context)
 
-class SlotAllergyView(View):
-    context = {}
+class SlotAllergyView(SlotView):
     template = "dining_lists/dining_slot_allergy.html"
 
     def __init__(self, *args, **kwargs):
         super(SlotAllergyView, self).__init__(*args, **kwargs)
-        self.context['nav_allergy'] = True
+        self.context['tab'] = "allergy"
 
     @method_decorator(login_required)
-    def get(self, request, day=None, month=None, year=None, identifier=None):
-        current_date = process_date(self.context, day, month, year)
-
-        # Get the dining list by the id of the association, shorthand form of the association or the person claimed
-        self.context['dining_list'] = get_list(current_date, identifier)
+    def get(self, request, day=None, month=None, year=None, identifier=None, *args, **kwargs):
+        result = super(SlotAllergyView, self).get(request, day, month, year, identifier, *args, **kwargs)
+        if result is not None:
+            return result
 
         from django.db.models import CharField
         from django.db.models.functions import Length
