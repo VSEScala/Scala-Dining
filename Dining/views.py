@@ -437,7 +437,22 @@ class SlotView(View):
 
         self.context['is_open'] = self.context['dining_list'].is_open()
 
+        # Get the amount of messages
+        self.context['messages'] = self.context['dining_list'].diningcomment_set.count()
+        # Get the amount of unread messages
+        self.context['messages_unread'] = self.getUnreadMessages(request.user)
+
         return None
+
+    def getUnreadMessages(self, user):
+        try:
+            viewtime = DiningCommentView.objects.get(user=user,
+                                  dining_list=self.context['dining_list']).timestamp
+            r = self.context['dining_list'].diningcomment_set.filter(timestamp__gte=viewtime).count()
+            return r
+
+        except:
+            return self.context['messages']
 
 class SlotListView(SlotView):
     template = "dining_lists/dining_slot_diners.html"
@@ -541,11 +556,15 @@ class SlotInfoView(SlotView):
             return result
 
         self.context['comments'] = self.context['dining_list'].diningcomment_set.order_by('-pinned_to_top', 'timestamp').all()
+        print("B")
+        print(request.user)
+        print(self.context['dining_list'])
         last_visit = DiningCommentView.objects.get_or_create(user=request.user,
                                                              dining_list=self.context['dining_list']
                                                              )[0]
         self.context['last_visited'] = last_visit.timestamp
-        # Todo: update view timestamp
+        last_visit.timestamp = datetime.now()
+        last_visit.save()
 
         return render(request, self.template, self.context)
 

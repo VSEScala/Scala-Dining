@@ -493,7 +493,7 @@ class DiningCommentView(models.Model):
     """
     dining_list = models.ForeignKey(DiningList, on_delete=models.CASCADE)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    timestamp = models.DateTimeField()#auto_now_add=True)
+    timestamp = models.DateTimeField(auto_now_add=True)
 
 
 class DiningDayAnnouncements(models.Model):

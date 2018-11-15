@@ -137,3 +137,7 @@ div.error, ul.error{
 .text-warning{
     color: #ff9600;
 }
+
+.no_underline{
+    text-decoration: none;
+}

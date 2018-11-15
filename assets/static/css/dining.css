@@ -129,6 +129,7 @@ input:disabled:checked + .dining_stat{
     border-color: whitesmoke;
     border-width: 0 2px;
     border-radius: 10px 10px 0 0 ;
+    text-decoration: none;
 }
 
 .slot-nav-allergy{
