@@ -9,7 +9,7 @@ my-4 {% else %} my-3{% endif %}">
             <div class="col-md-12 col-2 text-warning">NEW!</div>
         {% endif %}
     </div>
-    <div class="col-12 col-md-9 msg p-3">
+    <div class="col-12 col-md-9 msg p-3 {% if comment.pinned_to_top %}comment-pinned {% endif %}">
         {{ comment.message }}
     </div>
 </div>

@@ -448,9 +448,7 @@ class SlotView(View):
         try:
             viewtime = DiningCommentView.objects.get(user=user,
                                   dining_list=self.context['dining_list']).timestamp
-            r = self.context['dining_list'].diningcomment_set.filter(timestamp__gte=viewtime).count()
-            return r
-
+            return self.context['dining_list'].diningcomment_set.filter(timestamp__gte=viewtime).count()
         except:
             return self.context['messages']
 
@@ -556,9 +554,6 @@ class SlotInfoView(SlotView):
             return result
 
         self.context['comments'] = self.context['dining_list'].diningcomment_set.order_by('-pinned_to_top', 'timestamp').all()
-        print("B")
-        print(request.user)
-        print(self.context['dining_list'])
         last_visit = DiningCommentView.objects.get_or_create(user=request.user,
                                                              dining_list=self.context['dining_list']
                                                              )[0]

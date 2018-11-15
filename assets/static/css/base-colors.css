@@ -141,3 +141,7 @@ div.error, ul.error{
 .no_underline{
     text-decoration: none;
 }
+
+.comment-pinned{
+    background: #254a99 url("/static/images/pinned_white.png") 98% /1.5em no-repeat ;
+}
