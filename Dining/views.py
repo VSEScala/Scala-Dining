@@ -426,10 +426,12 @@ class SlotView(View):
 
     @method_decorator(login_required)
     def get(self, request, day=None, month=None, year=None, identifier=None, *args, **kwargs):
-        self.current_date = process_date(self.context, day, month, year)
+        if day is not None:
+            # If it is none, assume that date and dining list are already known
+            self.current_date = process_date(self.context, day, month, year)
 
-        # Get the dining list by the id of the association, shorthand form of the association or the person claimed
-        self.context['dining_list'] = get_list(self.current_date, identifier)
+            # Get the dining list by the id of the association, shorthand form of the association or the person claimed
+            self.context['dining_list'] = get_list(self.current_date, identifier)
 
         if self.context['dining_list'] is None:
             # Todo: Message that this dining list does not exist
@@ -443,6 +445,12 @@ class SlotView(View):
         self.context['messages_unread'] = self.getUnreadMessages(request.user)
 
         return None
+
+    @method_decorator(login_required)
+    def post(self, request, day=None, month=None, year=None, identifier=None, *args, **kwargs):
+        self.current_date = process_date(self.context, day, month, year)
+        self.context['dining_list'] = get_list(self.current_date, identifier)
+
 
     def getUnreadMessages(self, user):
         try:
@@ -562,6 +570,18 @@ class SlotInfoView(SlotView):
         last_visit.save()
 
         return render(request, self.template, self.context)
+
+    def post(self, request, day=None, month=None, year=None, identifier=None, *args, **kwargs):
+        result = super(SlotInfoView, self).post(request, day, month, year, identifier, *args, **kwargs)
+        if result is not None:
+            return result
+
+        # Add the comment
+        DiningComment(dining_list=self.context['dining_list'], poster=request.user, message=request.POST['comment']).save()
+
+        return self.get(request)
+
+
 
 class SlotAllergyView(SlotView):
     template = "dining_lists/dining_slot_allergy.html"

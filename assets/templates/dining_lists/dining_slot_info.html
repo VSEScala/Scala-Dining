@@ -157,6 +157,17 @@
         {% for comment in comments %}
             {% include 'snippets/snippet_comments.html' %}
         {% endfor %}
+        <form class="col-12 row my-3" method="post">
+
+            <div class="col-12 col-md-3 p-0 row"><!-- empty for style purposes --></div>
+            <div class="col-12 col-md-9 p-3">
+                <textarea name="comment" class="col-12"></textarea>
+                <input type="submit" value="Post" class="btn btn-block btn-primary"/>
+            </div>
+            {% csrf_token %}
+        </form>
+
+
     </div>
 </div>
 {% endblock details %}
