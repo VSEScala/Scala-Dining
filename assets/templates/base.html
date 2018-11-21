@@ -30,7 +30,7 @@
         <div class="header-personal row m-0">
             <div class="header-personal-text">
                 {{ request.user }}<br>
-                {% with request.user.usercredit.credit as credit %}
+                {% with request.user.usercredit.get_current_credits as credit %}
                     {% if credit < 0 %}
                         -&euro;{{ credit|multiply:-1 }}
                     {% else %}

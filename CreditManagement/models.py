@@ -194,3 +194,6 @@ class UserCredit(models.Model):
 
         return
 
+    def get_current_credits(self):
+        return self.credit
+        # Todo: implement retrieval of pending transactions
