@@ -30,13 +30,13 @@
         + Transfer credits
     </a>
 
-    {% if pages > 1 %}
+    {% if show_page_navigation %}
         <div class="col-12 mt-4 row">
             {% for pagenumber in pages %}
                 {% if pagenumber == page %}
                     <a class="btn m-1 btn-disabled ">{{ pagenumber }}</a>
                 {% else %}
-                    <a class="btn m-1" href="{% url 'history_credits' page=pagenumber %}">{{ pagenumber }}</a>
+                    <a class="btn m-1" href="{% url 'association_credits' page=pagenumber association_name=association_short %}">{{ pagenumber }}</a>
                 {% endif %}
             {% endfor %}
         </div>

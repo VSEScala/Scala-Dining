@@ -6,10 +6,10 @@ from django.views.generic import View
 from django.db.models import Q
 from django.core.exceptions import PermissionDenied
 import datetime
-import math
 
 from .models import Association, UserMemberships
 from CreditManagement.models import Transaction
+from General.view_classes import PageListView
 
 
 class AssociationBaseView(View):
@@ -35,60 +35,40 @@ class AssociationBaseView(View):
         self.context['association_short'] = association
 
 
-class CreditsOverview(AssociationBaseView):
+class CreditsOverview(AssociationBaseView, PageListView):
     template = "accounts/association_overview.html"
+    length = 4
 
-    def get(self, request, association=None, page=1):
-        super(MembersOverview, self).get(request, association)
+    def get(self, request, association_name=None, page=1):
+        super(CreditsOverview, self).get(request, association_name)
 
-
-        length = 5
-        lower_bound = length * (page - 1)
-        upper_bound = length * page
-
-        transactions = Transaction.objects\
-            .filter(Q(source_association=association) | Q(target_association=association))\
+        # Set up the list display
+        entries = Transaction.objects\
+            .filter(Q(source_association=self.association) | Q(target_association=self.association))\
             .order_by('-date')
+        super(CreditsOverview, self).set_up_list(entries, page)
 
-        self.context['entries'] = transactions[lower_bound:upper_bound]
-        self.context['page'] = page
-        self.context['pages'] = math.ceil(len(transactions) / length)
-        self.context['target'] = association
-        if self.context['pages'] > 1:
-            self.context['show_page_navigation'] = True
-            self.context['pages'] = range(1, self.context['pages']+1)
-
-        self.context['balance'] = association.get_credit_containing_instance()
+        # Retrieve the current balance
+        self.context['balance'] = self.association.get_credit_containing_instance()
 
         return render(request, self.template, self.context)
 
 
-class MembersOverview(AssociationBaseView):
+class MembersOverview(AssociationBaseView, PageListView):
     template = "accounts/association_members.html"
+    length = 3
 
     @method_decorator(login_required)
-    def get(self, request, association=None, page=1):
-        super(MembersOverview, self).get(request, association)
+    def get(self, request, association_name=None, page=1):
+        super(MembersOverview, self).get(request, association_name)
 
-        length = 3
-        lower_bound = length * (page - 1)
-        upper_bound = length * page
-
-        memberships = UserMemberships.objects \
+        # Set up the list display
+        entries = UserMemberships.objects \
             .filter(Q(association=self.association)) \
             .order_by('is_verified', 'created_on')
-
-        self.context['entries'] = memberships[lower_bound:upper_bound]
-        self.context['page'] = page
-        self.context['pages'] = math.ceil(len(memberships) / length)
-        self.context['target'] = association
-        if self.context['pages'] > 1:
-            self.context['show_page_navigation'] = True
-            self.context['pages'] = range(1, self.context['pages']+1)
+        super(MembersOverview, self).set_up_list(entries, page)
 
         return render(request, self.template, self.context)
-    # d[i] for i in d if b in i
-    # request.POST[i]
 
     @method_decorator(login_required)
     def post(self, request, association=None, page=1):
@@ -102,6 +82,11 @@ class MembersOverview(AssociationBaseView):
 
 
     def alter_state(self, verified, id=None):
+        """
+        Alter the state of the given usermembership
+        :param verified: yes/no(!) if it should be verified or not.
+        :param id: The id of the usermembershipobject
+        """
         memberschip = UserMemberships.objects.get(id=id)
         if verified == "yes":
             if memberschip.is_verified:

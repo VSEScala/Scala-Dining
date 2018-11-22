@@ -60,7 +60,7 @@
                 {% if request.user.groups.all.count > 0 %}
                     <hr>
                     {% for group in request.user.groups.all %}
-                        <a class="header-dropdown-line" href="{% url 'association_credits' association=group.associationdetails.shorthand %}">
+                        <a class="header-dropdown-line" href="{% url 'association_credits' association_name=group.associationdetails.shorthand %}">
                             <span href="#" class="header-dropdown-line-content" style="background-image: url({{ group.associationdetails.image.url }})">
                                 {{ group.associationdetails.shorthand }}</span>
                         </a>
