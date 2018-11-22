@@ -18,8 +18,6 @@
         {% for entry in entries %}
             {% if entry|get_class == "Transaction" %}
                 {% include 'snippets/snippet_credits_transaction.html' %}
-            {% elif entry|get_class == "DiningList" %}
-                {% include 'snippets/snippet_credits_dining_list.html' %}
             {% else %}
                 <div class="col-11"> {{ entry }}</div>
             {% endif %}

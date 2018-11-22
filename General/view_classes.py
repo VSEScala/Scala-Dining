@@ -12,7 +12,6 @@ class PageListView:
         self.context['entries'] = entries[lower_bound:upper_bound]
         self.context['page'] = page
         self.context['pages'] = math.ceil(len(entries) / self.length)
-        #self.context['target'] = association
         if self.context['pages'] > 1:
             self.context['show_page_navigation'] = True
             self.context['pages'] = range(1, self.context['pages']+1)

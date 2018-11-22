@@ -50,6 +50,7 @@ class CreditsOverview(AssociationBaseView, PageListView):
 
         # Retrieve the current balance
         self.context['balance'] = self.association.get_credit_containing_instance()
+        self.context['target'] = self.association
 
         return render(request, self.template, self.context)
 
