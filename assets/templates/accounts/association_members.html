@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+{% load form_extras %}
+
+{% block content %}
+    <form class="col-12 row" method="post">
+        {% csrf_token %}
+        {% for entry in entries %}
+            {% include 'snippets/snippet_memberdetails.html' %}
+            <hr class="col-12">
+        {% endfor %}
+    </form>
+    {% if show_page_navigation %}
+        <div class="col-12 mt-4 row">
+            {% for pagenumber in pages %}
+                {% if pagenumber == page %}
+                    <a class="btn m-1 btn-disabled ">{{ pagenumber }}</a>
+                {% else %}
+                    <a class="btn m-1" href="{% url 'association_members' page=pagenumber association=association.associationdetails.shorthand %}">{{ pagenumber }}</a>
+                {% endif %}
+            {% endfor %}
+        </div>
+    {% endif %}
+    {{ msg }}
+{% endblock %}

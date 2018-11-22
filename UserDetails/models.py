@@ -13,15 +13,12 @@ class User(AbstractUser):
         else:
             return name\
 
-    # Check if the account is verified by assessing all linked associations
     def is_verified(self):
-        links = UserMemberships.objects.filter(related_user=self)
-
-        verified = False
-        for membership in links.all():
-            if membership.isVerified:
-                verified = True
-        return verified
+        """
+        Check if the account is verified by assessing all linked associations
+        :return: Whether the user is verified
+        """
+        return self.details.is_verified()
 
     def get_credit_containing_instance(self):
         return self.usercredit
@@ -68,7 +65,7 @@ class UserDetail(models.Model):
 
         verified = False
         for membership in links.all():
-            if membership.isVerified:
+            if membership.is_verified:
                 verified = True
         return verified
 
@@ -86,4 +83,6 @@ class UserMemberships(models.Model):
     """
     related_user = models.ForeignKey(User, on_delete=models.CASCADE)
     association = models.ForeignKey(Association, on_delete=models.CASCADE)
-    isVerified = models.BooleanField(default=False)
+    is_verified = models.BooleanField(default=False)
+    verified_on = models.DateField(blank=True, null=True, default=None)
+    created_on = models.DateField(auto_created=True, blank=True, null=True)

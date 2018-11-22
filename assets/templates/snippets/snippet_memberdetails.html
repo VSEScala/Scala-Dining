@@ -1,0 +1,33 @@
+<div class="col-12 row p-0">
+    <div class="col-12 row p-0 m-0">
+        <div class="col-2 text-size-3">
+            {{ entry.related_user.get_username }}
+        </div>
+        <div class="col-2 text-size-3">
+            {{ entry.related_user.get_full_name }}
+        </div>
+        <div class="col-3 text-size-3">
+            {{ entry.related_user.email }}
+        </div>
+        <div class="col-3 text-size-3">
+            {% if entry.is_verified %}
+                Yes, on {{ entry.verified_on }}
+            {% elif entry.verified_on %}
+                Denied on {{ entry.verified_on }}
+            {% else %}
+                Requested on {{ entry.created_on }}
+            {% endif %}
+        </div>
+        {% if not entry.is_verified %}
+        <input type="submit" value="Accept" name="validate-yes-{{ entry.id }}" class="col-1 text-size-3 btn"/>
+        {% else %}
+        <div class="col-1"> </div>
+        {% endif %}
+
+        {% if entry.is_verified or not entry.verified_on %}
+        <input type="submit" value="Deny" name="validate-no-{{ entry.id }}" class="col-1 text-size-3 btn"/>
+        {% else %}
+            <div class="col-1"> </div>
+        {% endif %}
+    </div>
+</div>
