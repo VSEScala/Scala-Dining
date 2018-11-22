@@ -19,13 +19,21 @@
             {% endif %}
         </div>
         {% if not entry.is_verified %}
-        <input type="submit" value="Accept" name="validate-yes-{{ entry.id }}" class="col-1 text-size-3 btn"/>
+            {% if not entry.verified_on %}
+                <input type="submit" value="Confirm" name="validate-yes-{{ entry.id }}" class="col-1 text-size-3 btn"/>
+            {% else %}
+                <input type="submit" value="Re-enter" name="validate-yes-{{ entry.id }}" class="col-1 text-size-3 btn"/>
+            {% endif %}
         {% else %}
         <div class="col-1"> </div>
         {% endif %}
 
         {% if entry.is_verified or not entry.verified_on %}
-        <input type="submit" value="Deny" name="validate-no-{{ entry.id }}" class="col-1 text-size-3 btn"/>
+            {% if not entry.verified_on %}
+                <input type="submit" value="Deny" name="validate-no-{{ entry.id }}" class="col-1 text-size-3 btn"/>
+            {% else %}
+                <input type="submit" value="Remove" name="validate-no-{{ entry.id }}" class="col-1 text-size-3 btn"/>
+            {% endif %}
         {% else %}
             <div class="col-1"> </div>
         {% endif %}
