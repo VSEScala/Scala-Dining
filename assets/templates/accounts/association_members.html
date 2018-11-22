@@ -15,7 +15,7 @@
                 {% if pagenumber == page %}
                     <a class="btn m-1 btn-disabled ">{{ pagenumber }}</a>
                 {% else %}
-                    <a class="btn m-1" href="{% url 'association_members' page=pagenumber association=association.associationdetails.shorthand %}">{{ pagenumber }}</a>
+                    <a class="btn m-1" href="{% url 'association_members' page=pagenumber association=association_short %}">{{ pagenumber }}</a>
                 {% endif %}
             {% endfor %}
         </div>

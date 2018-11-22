@@ -1,9 +1,10 @@
 from django.shortcuts import render
-from django.http import *
+from django.shortcuts import get_object_or_404
 from django.utils.decorators import method_decorator
 from django.contrib.auth.decorators import login_required
 from django.views.generic import View
 from django.db.models import Q
+from django.core.exceptions import PermissionDenied
 import datetime
 import math
 
@@ -11,19 +12,39 @@ from .models import Association, UserMemberships
 from CreditManagement.models import Transaction
 
 
-
-class CreditsOverview(View):
+class AssociationBaseView(View):
     context = {}
-    template = "accounts/association_overview.html"
+
+    def get(self, request, association=None):
+        self.check_access(request, association)
+
+    def post(self, request, association=None):
+        self.check_access(request, association)
 
     @method_decorator(login_required)
+    def check_access(self, request, association):
+        """
+        Check whether the logged in user has permissions to access the association page data.
+        Raises 404 if association does not exist or 403 if not a boardmember of that association
+        """
+        self.association = get_object_or_404(Association, associationdetails__shorthand=association)
+        # Check if user has access to this board
+        if not request.user.groups.filter(id=self.association.id):
+            raise PermissionDenied("You are not on the board of this association")
+
+        self.context['association_short'] = association
+
+
+class CreditsOverview(AssociationBaseView):
+    template = "accounts/association_overview.html"
+
     def get(self, request, association=None, page=1):
+        super(MembersOverview, self).get(request, association)
+
+
         length = 5
         lower_bound = length * (page - 1)
         upper_bound = length * page
-
-        association = Association.objects.get(associationdetails__shorthand=association)
-        self.context['association'] = association
 
         transactions = Transaction.objects\
             .filter(Q(source_association=association) | Q(target_association=association))\
@@ -42,21 +63,19 @@ class CreditsOverview(View):
         return render(request, self.template, self.context)
 
 
-class MembersOverview(View):
-    context = {}
+class MembersOverview(AssociationBaseView):
     template = "accounts/association_members.html"
 
     @method_decorator(login_required)
     def get(self, request, association=None, page=1):
+        super(MembersOverview, self).get(request, association)
+
         length = 3
         lower_bound = length * (page - 1)
         upper_bound = length * page
 
-        association = Association.objects.get(associationdetails__shorthand=association)
-        self.context['association'] = association
-
         memberships = UserMemberships.objects \
-            .filter(Q(association=association)) \
+            .filter(Q(association=self.association)) \
             .order_by('is_verified', 'created_on')
 
         self.context['entries'] = memberships[lower_bound:upper_bound]
@@ -83,7 +102,6 @@ class MembersOverview(View):
 
 
     def alter_state(self, verified, id=None):
-        print(verified)
         memberschip = UserMemberships.objects.get(id=id)
         if verified == "yes":
             if memberschip.is_verified:
