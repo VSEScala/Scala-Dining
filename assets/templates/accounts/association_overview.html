@@ -1,7 +1,7 @@
-{% extends 'base.html' %}
+{% extends 'accounts/associations_base.html' %}
 {% load form_extras %}
 
-{% block content %}
+{% block details %}
     <div class="col-12 my-4">
         {{ association }}<br>
         Balance since {{ balance.start_date }}:
@@ -34,7 +34,7 @@
                 {% if pagenumber == page %}
                     <a class="btn m-1 btn-disabled ">{{ pagenumber }}</a>
                 {% else %}
-                    <a class="btn m-1" href="{% url 'association_credits' page=pagenumber association_name=association_short %}">{{ pagenumber }}</a>
+                    <a class="btn m-1" href="{% url 'association_credits' page=pagenumber association_name=association_name %}">{{ pagenumber }}</a>
                 {% endif %}
             {% endfor %}
         </div>

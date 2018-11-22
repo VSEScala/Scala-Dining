@@ -15,24 +15,24 @@ from General.view_classes import PageListView
 class AssociationBaseView(View):
     context = {}
 
-    def get(self, request, association=None):
-        self.check_access(request, association)
+    def get(self, request, association_name=None):
+        self.check_access(request, association_name)
 
-    def post(self, request, association=None):
-        self.check_access(request, association)
+    def post(self, request, association_name=None):
+        self.check_access(request, association_name)
 
     @method_decorator(login_required)
-    def check_access(self, request, association):
+    def check_access(self, request, association_name):
         """
         Check whether the logged in user has permissions to access the association page data.
         Raises 404 if association does not exist or 403 if not a boardmember of that association
         """
-        self.association = get_object_or_404(Association, associationdetails__shorthand=association)
+        self.association = get_object_or_404(Association, associationdetails__shorthand=association_name)
         # Check if user has access to this board
         if not request.user.groups.filter(id=self.association.id):
             raise PermissionDenied("You are not on the board of this association")
 
-        self.context['association_short'] = association
+        self.context['association_name'] = association_name
 
 
 class CreditsOverview(AssociationBaseView, PageListView):
@@ -51,13 +51,14 @@ class CreditsOverview(AssociationBaseView, PageListView):
         # Retrieve the current balance
         self.context['balance'] = self.association.get_credit_containing_instance()
         self.context['target'] = self.association
+        self.context['tab'] = "credits"
 
         return render(request, self.template, self.context)
 
 
 class MembersOverview(AssociationBaseView, PageListView):
     template = "accounts/association_members.html"
-    length = 3
+    length = 5
 
     @method_decorator(login_required)
     def get(self, request, association_name=None, page=1):
@@ -66,20 +67,21 @@ class MembersOverview(AssociationBaseView, PageListView):
         # Set up the list display
         entries = UserMemberships.objects \
             .filter(Q(association=self.association)) \
-            .order_by('is_verified', 'created_on')
+            .order_by('is_verified', 'verified_on', 'created_on')
         super(MembersOverview, self).set_up_list(entries, page)
 
+        self.context['tab'] = "members"
         return render(request, self.template, self.context)
 
     @method_decorator(login_required)
-    def post(self, request, association=None, page=1):
+    def post(self, request, association_name=None, page=1):
         for i in request.POST:
             # Seek if any of the validate buttons is pressed and change that state.
             if "validate" in i:
                 string = i.split("-")
                 self.alter_state(string[1], string[2])
 
-        return self.get(request, association, page)
+        return self.get(request, association_name, page)
 
 
     def alter_state(self, verified, id=None):
