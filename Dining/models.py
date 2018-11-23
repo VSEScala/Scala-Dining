@@ -101,9 +101,11 @@ class DiningList(models.Model):
                     costs = -self.get_credit_cost()
 
                 if costs != 0:
-                    # Costs have changed, update the credits of all diners
-                    UserCredit.objects.filter(user__diningentry__dining_list=self)\
-                        .update(credit=F('credit') + costs)
+                    # Costs have changed, alter all credits.
+                    # Done in for-loop instead of update to trigger custom save implementation (to track negatives)
+                    for DiningEntry in self.diningentry_set.all():
+                        DiningEntry.user.usercredit.credit = F('credit') + costs
+                        DiningEntry.user.usercredit.save()
                     # Adjust the credit scores for each external entry added.
                     # For loop is required to ensure that entries added by the same user are processed correctly
                     for ExternalDinerEntry in self.diningentryexternal_set.all():
