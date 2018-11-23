@@ -101,7 +101,7 @@
                     {% endif %}
                 {% else %}
                     <div class="text-size-3">Dining list is closed</div>
-                    {% if dining_list|is_on_slot:request.user %}
+                    {% if user_is_on_list %}
                         You are on the dining list!
                     {% endif %}
                 {% endif %}
@@ -110,44 +110,36 @@
         </div>
         {% if dining_list.is_open %}
             <div class="row">
-                {% with dining_list|is_on_slot:request.user as on_list %}
-                    {% if not on_list %}
-                        <div class="col-12 col-md-6 offset-md-2 text-size-6">
-                            {% if dining_list|can_join_slot:request.user %}
-                                {% url 'entry_join' day=date.day month=date.month year=date.year identifier=dining_list.association.associationdetails.shorthand as url%}
-                                <a class="btn-block btn btn-primary" href={{ url }}>Sign up</a>
-                            {% else %}
-                                <div class="btn-block btn btn-disabled">Sign up</div>
-                            {% endif %}
-                        </div>
-                    {% else %}
-                        <div class="col-12 col-md-10 offset-md-2 my-2">
-                            You are on the dining list!
-                        </div>
-                        <div class="col-12 col-md-4 offset-md-2 text-size-6">
-                            {% url 'entry_remove' day=date.day month=date.month year=date.year identifier=dining_list.association.associationdetails.shorthand as url%}
-                            <a class="btn-block btn btn-warning" href={{ url }}>Remove yourself</a>
-                        </div>
-                    {% endif %}
-                    {% url 'entry_add' day=date.day month=date.month year=date.year identifier=dining_list.association.associationdetails.shorthand as url%}
-                    {% if on_list %}
-                        <div class="col-12 col-md-6">
-                            {% if not dining_list.diners < dining_list.max_diners and dining_list.claimed_by != request.user %}
-                                <a class="btn-block btn mt-4 mt-md-0 btn-disabled">Add others</a>
-                            {% else %}
-                                <a href={{ url }} class="btn-block btn mt-4 mt-md-0">Add others</a>
-                            {% endif %}
-                        </div>
-                    {% else %}
-                        <div class="col-12 col-md-4">
-                            {% if not dining_list.diners < dining_list.max_diners or dining_list.claimed_by == request.user %}
-                                <a class="btn-block btn mt-4 mt-md-0 btn-disabled">Add others</a>
-                            {% else %}
-                                <a href="{{ url }}" class="btn-block btn mt-4 mt-md-0">Add others</a>
-                            {% endif %}
-                        </div>
-                    {% endif %}
-                {% endwith %}
+                {% if not user_is_on_list %}
+                    <div class="col-12 col-md-6 offset-md-2 text-size-6">
+                        {% if user_can_add_self %}
+                            {% url 'entry_join' day=date.day month=date.month year=date.year identifier=dining_list.association.associationdetails.shorthand as url%}
+                            <a class="btn-block btn btn-primary" href={{ url }}>Sign up</a>
+                        {% else %}
+                            <div class="btn-block btn btn-disabled">Sign up</div>
+                        {% endif %}
+                    </div>
+                {% else %}
+                    <div class="col-12 col-md-10 offset-md-2 my-2">
+                        You are on the dining list!
+                    </div>
+                    <div class="col-12 col-md-4 offset-md-2 text-size-6">
+                        {% url 'entry_remove' day=date.day month=date.month year=date.year identifier=dining_list.association.associationdetails.shorthand as url%}
+                        <a class="btn-block btn btn-warning" href={{ url }}>Remove yourself</a>
+                    </div>
+                {% endif %}
+                {% url 'entry_add' day=date.day month=date.month year=date.year identifier=dining_list.association.associationdetails.shorthand as url%}
+                {% if user_is_on_list %}
+                    <div class="col-12 col-md-6">
+                {% else %}
+                    <div class="col-12 col-md-4">
+                {% endif %}
+                        {% if dining_list.claimed_by != request.user and not user_can_add_others%}
+                            <a class="btn-block btn mt-4 mt-md-0 btn-disabled">Add others</a>
+                        {% else %}
+                            <a href="{{ url }}" class="btn-block btn mt-4 mt-md-0">Add others</a>
+                        {% endif %}
+                    </div>
             </div>
         {% endif %}
     </div>

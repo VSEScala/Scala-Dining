@@ -333,7 +333,6 @@ class EntryAddView(View):
                 user = User.objects.get(id=request.POST['user'])
                 if dining_list.get_entry_user(user) is None:
                     entry = DiningEntry(dining_list=dining_list, added_by=request.user, user=user)
-                    print(entry)
                     entry.save()
                 return HttpResponseRedirect(reverse_day('slot_list', current_date, identifier=identifier))
         except:
@@ -363,7 +362,11 @@ class SlotJoinView(View):
             # todo message: dining list is closed
             return HttpResponseRedirect(reverse_day('day_view', current_date))
 
-        print(2)
+        if self.context['dining_list'].limit_signups_to_association_only:
+            if request.user.usermemberships_set.filter(association=self.association).count() == 0:
+                # Todo message: dining list is for members only
+                return HttpResponseRedirect(reverse_day('day_view', current_date))
+
         # check if user is not on other dining lists
         entries = DiningEntry.objects.filter(dining_list__date=current_date, user=request.user)
         if len(entries) == 0:
@@ -438,6 +441,9 @@ class SlotView(View):
             return HttpResponseRedirect(reverse_day('day_view', self.current_date))
 
         self.context['is_open'] = self.context['dining_list'].is_open()
+        self.context['user_is_on_list'] = self.context['dining_list'].get_entry_user(request.user) is not None
+        self.context['user_can_add_self'] = self.context['dining_list'].can_join(request.user)
+        self.context['user_can_add_others'] = self.context['dining_list'].can_join(request.user, check_for_self=False)
 
         # Get the amount of messages
         self.context['messages'] = self.context['dining_list'].diningcomment_set.count()
@@ -486,7 +492,6 @@ class SlotListView(SlotView):
         self.context['entries'] = entries
 
 
-        self.context['can_add'] = self.context['dining_list'].claimed_by == request.user
         self.context['can_delete_some'] = self.context['can_delete_some'] * self.context['is_open']
         self.context['can_edit_stats'] = (request.user == self.context['dining_list'].claimed_by)
         self.context['can_delete_all'] = (request.user == self.context['dining_list'].claimed_by)

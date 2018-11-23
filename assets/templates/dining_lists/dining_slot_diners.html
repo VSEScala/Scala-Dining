@@ -34,14 +34,16 @@
         <div class="row col-12 m-0 p-0 p-md-2 py-2 text-size-3">
             <div class="{% if can_delete_all or can_delete_some %} col-12 col-sm-11 {% else %} col-12 {% endif %} pl-sm-0">
                 <div class="row pr-2">
-                    {% if is_open or can_add %}
+                    {% if user_can_add_others %}
                     <div class="col-12 col-sm-6 order-1 order-sm-0 p-0 px-sm-2">
-                        <a class="btn btn-primary btn-block" href="{% url 'entry_add' day=date.day month=date.month year=date.year identifier=dining_list.association.associationdetails.shorthand %}"> + Add Diner</a>
+                        <a class="btn btn-primary btn-block" href="
+                            {% url 'entry_add' day=date.day month=date.month year=date.year identifier=dining_list.association.associationdetails.shorthand %}">
+                            + Add Diner</a>
                     </div>
                     {% endif %}
                     {% if can_edit_stats or can_edit_pay %}
                         <input type="submit" class="btn btn-block btn-primary col-12 col-sm-6 mt-0 mb-2
-                            {% if not is_open and not can_add %} offset-sm-6 {% endif %}" value="Update user stats"/>
+                            {% if not is_open and not user_can_add_others %} offset-sm-6 {% endif %}" value="Update user stats"/>
                     {% endif %}
                 </div>
             </div>

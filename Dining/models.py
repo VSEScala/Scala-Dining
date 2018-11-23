@@ -220,24 +220,34 @@ class DiningList(models.Model):
         """
         return datetime.now().timestamp() < self.sign_up_deadline.timestamp()
 
-    def can_join(self, user, check_other_entries=True):
+    def can_join(self, user, check_for_self=True):
         """
         Determines if a user can join a dining list by checking the status of the list and the status of
-        other dining list subscriptions
+        other dining list subscriptions.
+        check_for_self determines whether a full check for self should take place. Default=True
         :param user: The user intending to join
         :return: If the user can join the list
         """
-        # if dining list is closed
-        if not self.is_open() or self.diners >= self.max_diners:
-            return False
-        # if user is already on list
-        if self.get_entry_user(user.id) is not None:
-            return False
-        # if user is signed up to other closed dinging lists
-        if check_other_entries:
+        if check_for_self:
+            # if user is already on list
+            if self.get_entry_user(user.id) is not None:
+                return False
+            # if user is signed up to other closed dinging lists
             if len(DiningEntry.objects.filter(dining_list__date=self.date,
                                               dining_list__sign_up_deadline__lte=datetime.now(),
                                               user=user)) > 0:
+                return False
+
+        # if user is owner, he can do anything he can set his mind to. Don't let his dreams be dreams!
+        if user == self.claimed_by:
+            return True
+
+        # if dining list is closed
+        if not self.is_open() or self.diners >= self.max_diners:
+            return False
+
+        if self.limit_signups_to_association_only:
+            if user.usermemberships_set.filter(association=self.association).count() == 0:
                 return False
         return True
 
