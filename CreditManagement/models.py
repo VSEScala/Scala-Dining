@@ -162,7 +162,6 @@ class UserCredit(models.Model):
         """
         An enhanced save implementation to adjust the status of the negative since counter
         """
-        # If dining list is no longer adjustable, block the save for anything but the has_paid update
         try:
             previous_state = UserCredit.objects.get(pk=self.pk)
         except ObjectDoesNotExist:
@@ -175,7 +174,7 @@ class UserCredit(models.Model):
 
             super(UserCredit, self).save(*args, **kwargs)
             return
-
+        # save the credits
         super(UserCredit, self).save(*args, **kwargs)
 
         # Check for a change in negative state
@@ -183,15 +182,13 @@ class UserCredit(models.Model):
         self.refresh_from_db()
         # If credits are now negative
         if previous_state.negative_since is None:
-            print(self.credit)
-            if False:#self.credit < 0:
+            if self.credit < 0:
                 self.negative_since = datetime.now().date()
                 super(UserCredit, self).save(update_fields=['negative_since'])
         else:   # if credits are no longer negative
             if self.credit >= 0:
                 self.negative_since = None
                 super(UserCredit, self).save(update_fields=['negative_since'])
-
         return
 
     def get_current_credits(self):
