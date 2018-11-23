@@ -15,3 +15,5 @@ class PageListView:
         if self.context['pages'] > 1:
             self.context['show_page_navigation'] = True
             self.context['pages'] = range(1, self.context['pages']+1)
+        else:
+            self.context['show_page_navigation'] = False

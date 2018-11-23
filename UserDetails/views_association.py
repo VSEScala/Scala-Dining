@@ -5,9 +5,10 @@ from django.contrib.auth.decorators import login_required
 from django.views.generic import View
 from django.db.models import Q
 from django.core.exceptions import PermissionDenied
+from django.db.models import prefetch_related_objects
 import datetime
 
-from .models import Association, UserMemberships
+from .models import Association, UserMemberships, User
 from CreditManagement.models import Transaction
 from General.view_classes import PageListView
 
@@ -58,23 +59,42 @@ class CreditsOverview(AssociationBaseView, PageListView):
 
 class MembersOverview(AssociationBaseView, PageListView):
     template = "accounts/association_members.html"
-    length = 5
 
-    @method_decorator(login_required)
     def get(self, request, association_name=None, page=1):
         super(MembersOverview, self).get(request, association_name)
+
+        # Set up the list display
+        entries = User.objects \
+            .filter(Q(usermemberships__association=self.association) & Q(usermemberships__is_verified=True))\
+
+
+        super(MembersOverview, self).set_up_list(entries, page)
+        prefetch_related_objects(self.context['entries'], 'usercredit')
+
+
+        self.context['tab'] = "members"
+        return render(request, self.template, self.context)
+
+
+class MembersOverviewEdit(AssociationBaseView, PageListView):
+    template = "accounts/association_members_edit.html"
+    length = 5
+
+    def get(self, request, association_name=None, page=1):
+        super(MembersOverviewEdit, self).get(request, association_name)
 
         # Set up the list display
         entries = UserMemberships.objects \
             .filter(Q(association=self.association)) \
             .order_by('is_verified', 'verified_on', 'created_on')
-        super(MembersOverview, self).set_up_list(entries, page)
+        super(MembersOverviewEdit, self).set_up_list(entries, page)
 
         self.context['tab'] = "members"
         return render(request, self.template, self.context)
 
-    @method_decorator(login_required)
     def post(self, request, association_name=None, page=1):
+        super(MembersOverviewEdit, self).post(request, association_name)
+
         for i in request.POST:
             # Seek if any of the validate buttons is pressed and change that state.
             if "validate" in i:
