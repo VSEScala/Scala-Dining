@@ -2,11 +2,32 @@
 {% load form_extras %}
 
 {% block details %}
-    <div class="col-12 row">
+    <div class="col-12 row mb-3">
         <a class="offset-9 col-3 btn btn-block" href="{% url 'association_members_edit' association_name=association_name %}">
             Edit list
         </a>
     </div>
+    <div class="col-12 row font-bold">
+        <div class="col-12 row p-0 m-0">
+            <div class="col-2 text-size-3">
+                Name
+            </div>
+            <div class="col-2 text-size-3">
+                Username
+            </div>
+            <div class="col-3 text-size-3">
+                e-mail
+            </div>
+            <div class="col-2 text-size-3">
+                Credits
+            </div>
+            <div class="col-2 text-size-3">
+                Neg. since
+            </div>
+        </div>
+        <hr class="col-12">
+    </div>
+
     <form class="col-12 row" method="post">
         {% for entry in entries %}
             {% include 'snippets/snippet_memberdetails.html' %}

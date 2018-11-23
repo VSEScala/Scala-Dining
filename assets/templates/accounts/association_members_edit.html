@@ -2,11 +2,32 @@
 {% load form_extras %}
 
 {% block details %}
-    <div class="col-12 row">
-        <a class="offset-10 col-2 btn btn-block mb-4" href="{% url 'association_members' association_name=association_name %}">
+    <div class="col-12 row mb-3">
+        <a class="offset-10 col-2 btn btn-block" href="{% url 'association_members' association_name=association_name %}">
             Back
         </a>
     </div>
+    <div class="col-12 row font-bold">
+        <div class="col-12 row p-0 m-0">
+            <div class="col-2 text-size-3">
+                Username
+            </div>
+            <div class="col-2 text-size-3">
+                Full name
+            </div>
+            <div class="col-3 text-size-3">
+                E-mail
+            </div>
+            <div class="col-3 text-size-3">
+                Status
+            </div>
+            <div class="col-2 text-size-3">
+                Action
+            </div>
+        </div>
+        <hr class="col-12">
+    </div>
+
     <form class="col-12 row" method="post">
         {% csrf_token %}
         {% for entry in entries %}
