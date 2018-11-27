@@ -173,13 +173,13 @@ class NewSlotView(View):
         print(self.context['slot_form'].cleaned_data['association'])
         association = Association.objects.get(name=self.context['slot_form'].cleaned_data['association'])
         if DiningList.objects.filter(date=current_date, association=association).count() > 0:
-            # Todo: insert message that the association already claimed a slot
+            messages.add_message(request, messages.WARNING, 'Slot can not be claimed: {0} has already claimed a slot'.format(association))
             return render(request, self.template, self.context)
 
         self.context['can_create_slot'] = False
 
         if current_date.weekday() > 4:
-            # Todo: Kitchen can't be used on weekends
+            messages.add_message(request, messages.ERROR, 'Slot can not be claimed: Kitchen can not be used in the weekends')
             return HttpResponseRedirect(reverse_day('day_view', current_date))
         else:
             slot_limit = DiningDayAnnouncements.objects.filter(date=current_date).aggregate(Sum('slots_occupy'))
@@ -189,7 +189,7 @@ class NewSlotView(View):
                 slot_limit = slot_limit['slots_occupy__sum']
             if len(DiningList.get_lists_on_date(
                     current_date)) >= MAX_SLOT_NUMBER - slot_limit:  # if maximum slots is not exceeded
-                # Todo: Message: Max slots reached
+                messages.add_message(request, messages.ERROR, 'Action failed: the dining list is already closed'.format(entry.user))
                 return HttpResponseRedirect(reverse_day('day_view', current_date))
 
         self.context['slot_form'].save()
@@ -218,27 +218,27 @@ class EntryRemoveView(View):
             if dining_list.claimed_by is not None and \
                             datetime.now().timestamp() > dining_list.sign_up_deadline.timestamp():
                 if dining_list.claimed_by != request.user:
-                    # todo message: you can not remove yourself, ask the chef
+                    messages.add_message(request, messages.WARNING, 'You can not remove yourself, ask the chef to remove you instead')
                     HttpResponseRedirect(reverse_day('slot_details', current_date, identifier=identifier))
 
             entry = dining_list.get_entry_user(request.user)
             entry.delete()
-            # todo message succes
+            messages.add_message(request, messages.SUCCES, 'You have been removed succesfully')
             return HttpResponseRedirect(reverse_day('day_view', current_date))
 
         else:
             if not dining_list.is_open() and dining_list.claimed_by != request.user:
-                # todo message: access denied, you are not the owner of the dining list and the list is closed
+                messages.add_message(request, messages.WARNING, 'Access denied: You are not the owner of the dining list and the slot is closed')
                 return HttpResponseRedirect(reverse_day('slot_list', current_date, identifier=identifier))
 
             if id.startswith('E'):  # External entry
                 entry = dining_list.get_entry_external(id[1:])
                 if entry is None:
-                    # todo message, entry does not exist
+                    messages.add_message(request, messages.ERROR, 'That entry can not be removed: it does not exist')
                     return HttpResponseRedirect(reverse_day('slot_list', current_date, identifier=identifier))
 
                 if request.user != dining_list.claimed_by and request.user != entry.user:
-                    # todo message: User is neither owner nor original person who added the external
+                    messages.add_message(request, messages.WARNING, 'Access denied: You did not add this entry, nor own the slot')
                     return HttpResponseRedirect(reverse_day('slot_list', current_date, identifier=identifier))
                 else:
                     entry.delete()
@@ -250,20 +250,20 @@ class EntryRemoveView(View):
             else:  # Object is external
                 # if request was NOT added by the dininglist claimer, block access
                 if request.user != dining_list.claimed_by:
-                    # todo: message, you are not the dining list owner, you can not do this
+                    messages.add_message(request, messages.ERROR, 'Access denied: You are not the owner of the dining list and the slot is closed')
                     return HttpResponseRedirect(reverse_day('slot_details', current_date, identifier=identifier))
 
                 entry = dining_list.get_entry(id)
                 if entry is None:
-                    # todo, entry does not exist
+                    messages.add_message(request, messages.ERROR, 'That entry can not be removed: it does not exist')
                     return HttpResponseRedirect(reverse_day('slot_details', current_date, identifier=identifier))
 
                 if entry.user == dining_list.claimed_by:
-                    # todo: warning: removing yourself results in an unclaimed dining list
+                    messages.add_message(request, messages.ERROR, 'You can not remove yourself because you are the owner')
                     return HttpResponseRedirect(reverse_day('slot_details', current_date, identifier=identifier))
 
                 entry.delete()
-                # todo: message succes
+                messages.add_message(request, messages.SUCCES, '{0} removed succesfully'.format(entry.user))
 
         return HttpResponseRedirect(reverse_day('slot_list', current_date, identifier=identifier))
 
@@ -351,19 +351,19 @@ class SlotJoinView(View):
         # Get the dining list by the id of the association, shorthand form of the association or the person claimed
         self.context['dining_list'] = get_list(current_date, identifier)
 
-        # If user is allready on list, inform user is already on list
+        # If user is already on list, inform user is already on list
         if self.context['dining_list'].get_entry_user(request.user.id) is not None:
-            # user is already on the list
+            messages.add_message(request, messages.INFO, 'You were already on this slot')
             return HttpResponseRedirect(reverse_day('slot_details', current_date, identifier=identifier))
 
         # if dining list is not open, do not add him
         if not self.context['dining_list'].is_open():
-            # todo message: dining list is closed
+            messages.add_message(request, messages.ERROR, 'Subscription failed: the dining list is already closed')
             return HttpResponseRedirect(reverse_day('day_view', current_date))
 
         if self.context['dining_list'].limit_signups_to_association_only:
             if request.user.usermemberships_set.filter(association=self.association).count() == 0:
-                # Todo message: dining list is for members only
+                messages.add_message(request, messages.ERROR, 'Subscription failed: dining list is only for members of {0}'.format(self.assocation.details.shorthand))
                 return HttpResponseRedirect(reverse_day('day_view', current_date))
 
         # check if user is not on other dining lists
@@ -389,7 +389,7 @@ class SlotJoinView(View):
             pass
         else:
             # can not change to dining list
-            # todo message: allready part of a closed dining list
+            messages.add_message(request, messages.ERROR, 'Addition failed: You are already part of a closed dining list')
             return HttpResponseRedirect(reverse_day('day_view', current_date))
 
     @method_decorator(login_required)
@@ -408,10 +408,10 @@ class SlotJoinView(View):
 
                         return HttpResponseRedirect(reverse_day('slot_details', current_date, identifier=identifier))
                     else:
-                        # todo message: you are the owner of the old dining list, this action is not allowed.
+                        messages.add_message(request, messages.ERROR, 'Action failed: you own another slot on this day')
                         pass
                 else:
-                    # todo message: either dining list is locked, switch can not occur
+                    messages.add_message(request, messages.ERROR, 'Action failed: Dining list is locked')
                     pass
         except:
             pass
@@ -434,7 +434,7 @@ class SlotView(View):
             self.context['dining_list'] = get_list(self.current_date, identifier)
 
         if self.context['dining_list'] is None:
-            # Todo: Message that this dining list does not exist
+            messages.add_message(request, messages.ERROR, 'Action failed: Dining list does not exist')
             return HttpResponseRedirect(reverse_day('day_view', self.current_date))
 
         self.context['is_open'] = self.context['dining_list'].is_open()
