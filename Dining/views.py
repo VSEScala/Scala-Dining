@@ -223,7 +223,7 @@ class EntryRemoveView(View):
 
             entry = dining_list.get_entry_user(request.user)
             entry.delete()
-            messages.add_message(request, messages.SUCCES, 'You have been removed succesfully')
+            messages.add_message(request, messages.SUCCESS, 'You have been removed succesfully')
             return HttpResponseRedirect(reverse_day('day_view', current_date))
 
         else:
@@ -263,7 +263,7 @@ class EntryRemoveView(View):
                     return HttpResponseRedirect(reverse_day('slot_details', current_date, identifier=identifier))
 
                 entry.delete()
-                messages.add_message(request, messages.SUCCES, '{0} removed succesfully'.format(entry.user))
+                messages.add_message(request, messages.SUCCESS, '{0} removed succesfully'.format(entry.user))
 
         return HttpResponseRedirect(reverse_day('slot_list', current_date, identifier=identifier))
 
