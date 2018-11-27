@@ -3,7 +3,7 @@ from CreditManagement.models import Transaction, AssociationCredit, UserCredit
 from UserDetails.models import Association, UserMemberships
 from datetime import datetime, timedelta
 
-# Register your models here.
+
 class TransactionsAdmin(admin.ModelAdmin):
     """
     Set up limited view of the user page
