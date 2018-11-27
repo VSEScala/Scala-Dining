@@ -4,12 +4,14 @@ from django.utils.decorators import method_decorator
 from django.contrib.auth.decorators import login_required
 from django.views.generic import View
 from datetime import datetime, timedelta
-from .models import DiningList, DiningEntry, DiningEntryExternal, DiningDayAnnouncements, DiningComment, DiningCommentView
+from .models import DiningList, DiningEntry, DiningEntryExternal, DiningDayAnnouncements, DiningComment, \
+    DiningCommentView
 from .forms import create_slot_form
 from .constants import MAX_SLOT_NUMBER
 from UserDetails.models import AssociationDetails, Association, User
 from django.urls import reverse
-from django.db.models import Q,Sum
+from django.db.models import Q, Sum
+from django.contrib import messages
 
 
 # Create your views here.
@@ -19,6 +21,7 @@ def reverse_day(name, date, **kwargs):
                    kwargs={'day': int(date.day),
                            'month': int(date.month),
                            'year': int(date.year), **kwargs})
+
 
 def process_date(context, day, month, year):
     """
@@ -113,22 +116,23 @@ class IndexView(View):
             else:
                 slot_limit = slot_limit['slots_occupy__sum']
 
-            if len(self.context['dining_lists']) < MAX_SLOT_NUMBER - slot_limit:      # if maximum slots is not exceeded
-                if current_date > datetime.now().date():                # if day is in the future
-                        self.context['can_create_slot'] = True
+            if len(self.context['dining_lists']) < MAX_SLOT_NUMBER - slot_limit:  # if maximum slots is not exceeded
+                if current_date > datetime.now().date():  # if day is in the future
+                    self.context['can_create_slot'] = True
                 elif (current_date - datetime.now().date()).days == 0:  # if date is today
-                        if datetime.now().hour < 17:                    # if it's not past 17:00
-                            self.context['can_create_slot'] = True
+                    if datetime.now().hour < 17:  # if it's not past 17:00
+                        self.context['can_create_slot'] = True
 
         self.context['interactive'] = True
+
         return render(request, self.template, self.context)
 
     @staticmethod
     def get_next_availlable_date(current_date):
-        max_future = 7  #Define the meaximum time one can go into the future
+        max_future = 7  # Define the meaximum time one can go into the future
 
         next_date = current_date + timedelta(days=1)
-        while next_date.weekday() > 4: #i.e. 5 or 6 which is saturday or sunday
+        while next_date.weekday() > 4:  # i.e. 5 or 6 which is saturday or sunday
             next_date = next_date + timedelta(days=1)
 
         if (next_date - datetime.now().date()).days > max_future:
@@ -137,11 +141,10 @@ class IndexView(View):
 
     @staticmethod
     def get_previous_availlable_date(current_date):
-        max_history = 2 #Define the maximum time one can go in the past
-
+        max_history = 2  # Define the maximum time one can go in the past
 
         prev_date = current_date - timedelta(days=1)
-        while prev_date.weekday() > 4: #i.e. 5 or 6 which is saturday or sunday
+        while prev_date.weekday() > 4:  # i.e. 5 or 6 which is saturday or sunday
             prev_date = prev_date - timedelta(days=1)
         if (prev_date - datetime.now().date()).days < -max_history:
             return None
@@ -175,7 +178,6 @@ class NewSlotView(View):
 
         self.context['can_create_slot'] = False
 
-
         if current_date.weekday() > 4:
             # Todo: Kitchen can't be used on weekends
             return HttpResponseRedirect(reverse_day('day_view', current_date))
@@ -183,18 +185,17 @@ class NewSlotView(View):
             slot_limit = DiningDayAnnouncements.objects.filter(date=current_date).aggregate(Sum('slots_occupy'))
             if slot_limit['slots_occupy__sum'] is None:
                 slot_limit = 0
-            else:   slot_limit = slot_limit['slots_occupy__sum']
-            if len(DiningList.get_lists_on_date(current_date)) >= MAX_SLOT_NUMBER - slot_limit:      # if maximum slots is not exceeded
+            else:
+                slot_limit = slot_limit['slots_occupy__sum']
+            if len(DiningList.get_lists_on_date(
+                    current_date)) >= MAX_SLOT_NUMBER - slot_limit:  # if maximum slots is not exceeded
                 # Todo: Message: Max slots reached
                 return HttpResponseRedirect(reverse_day('day_view', current_date))
-
 
         self.context['slot_form'].save()
         identifier = self.context['slot_form'].cleaned_data['association']
         identifier = AssociationDetails.objects.get(association__name=identifier).shorthand
         return HttpResponseRedirect(reverse_day('slot_details', current_date, identifier=identifier))
-
-
 
 
 class EntryRemoveView(View):
@@ -215,7 +216,7 @@ class EntryRemoveView(View):
                 HttpResponseRedirect(reverse_day('slot_details', current_date, identifier=identifier))
 
             if dining_list.claimed_by is not None and \
-                    datetime.now().timestamp() > dining_list.sign_up_deadline.timestamp():
+                            datetime.now().timestamp() > dining_list.sign_up_deadline.timestamp():
                 if dining_list.claimed_by != request.user:
                     # todo message: you can not remove yourself, ask the chef
                     HttpResponseRedirect(reverse_day('slot_details', current_date, identifier=identifier))
@@ -230,8 +231,7 @@ class EntryRemoveView(View):
                 # todo message: access denied, you are not the owner of the dining list and the list is closed
                 return HttpResponseRedirect(reverse_day('slot_list', current_date, identifier=identifier))
 
-
-            if id.startswith('E'):      # External entry
+            if id.startswith('E'):  # External entry
                 entry = dining_list.get_entry_external(id[1:])
                 if entry is None:
                     # todo message, entry does not exist
@@ -247,7 +247,7 @@ class EntryRemoveView(View):
                         pass
                     return HttpResponseRedirect(reverse_day('slot_list', current_date, identifier=identifier))
 
-            else:   # Object is external
+            else:  # Object is external
                 # if request was NOT added by the dininglist claimer, block access
                 if request.user != dining_list.claimed_by:
                     # todo: message, you are not the dining list owner, you can not do this
@@ -273,7 +273,6 @@ class EntryAddView(View):
     context = {}
     template = "dining_lists/dining_entry_add.html"
 
-
     @method_decorator(login_required)
     def get(self, request, day=None, month=None, year=None, identifier=None, search=None):
         current_date = process_date(self.context, day, month, year)
@@ -293,7 +292,7 @@ class EntryAddView(View):
             )
             self.context['search'] = search
 
-            if len(self.context['users'])==0:
+            if len(self.context['users']) == 0:
                 self.context['error_input'] = "Error: no people with that name found"
             elif len(self.context['users']) > 10:
                 self.context['error_input'] = "Error: search produced to many results"
@@ -421,11 +420,9 @@ class SlotJoinView(View):
         return HttpResponseRedirect(reverse_day('day_view', current_date))
 
 
-
 class SlotView(View):
     context = {}
     current_date = None
-
 
     @method_decorator(login_required)
     def get(self, request, day=None, month=None, year=None, identifier=None, *args, **kwargs):
@@ -446,9 +443,9 @@ class SlotView(View):
         self.context['user_can_add_others'] = self.context['dining_list'].can_join(request.user, check_for_self=False)
 
         # Get the amount of messages
-        self.context['messages'] = self.context['dining_list'].diningcomment_set.count()
+        self.context['comments'] = self.context['dining_list'].diningcomment_set.count()
         # Get the amount of unread messages
-        self.context['messages_unread'] = self.getUnreadMessages(request.user)
+        self.context['comments_unread'] = self.getUnreadMessages(request.user)
 
         return None
 
@@ -457,14 +454,14 @@ class SlotView(View):
         self.current_date = process_date(self.context, day, month, year)
         self.context['dining_list'] = get_list(self.current_date, identifier)
 
-
     def getUnreadMessages(self, user):
         try:
             viewtime = DiningCommentView.objects.get(user=user,
-                                  dining_list=self.context['dining_list']).timestamp
+                                                     dining_list=self.context['dining_list']).timestamp
             return self.context['dining_list'].diningcomment_set.filter(timestamp__gte=viewtime).count()
         except:
-            return self.context['messages']
+            return self.context['comments']
+
 
 class SlotListView(SlotView):
     template = "dining_lists/dining_slot_diners.html"
@@ -490,7 +487,6 @@ class SlotListView(SlotView):
         from operator import methodcaller
         entries.sort(key=methodcaller('__str__'))
         self.context['entries'] = entries
-
 
         self.context['can_delete_some'] = self.context['can_delete_some'] * self.context['is_open']
         self.context['can_edit_stats'] = (request.user == self.context['dining_list'].claimed_by)
@@ -524,7 +520,7 @@ class SlotListView(SlotView):
         if can_adjust_paid:
             for entry in dining_list.diningentryexternal_set.all():
                 entry.has_paid = False
-                entries["E"+str(entry.id)] = entry
+                entries["E" + str(entry.id)] = entry
 
         # Loop over all keys,
         for key in request.POST:
@@ -566,7 +562,8 @@ class SlotInfoView(SlotView):
         if result is not None:
             return result
 
-        self.context['comments'] = self.context['dining_list'].diningcomment_set.order_by('-pinned_to_top', 'timestamp').all()
+        self.context['comments'] = self.context['dining_list'].diningcomment_set.order_by('-pinned_to_top',
+                                                                                          'timestamp').all()
         last_visit = DiningCommentView.objects.get_or_create(user=request.user,
                                                              dining_list=self.context['dining_list']
                                                              )[0]
@@ -582,10 +579,10 @@ class SlotInfoView(SlotView):
             return result
 
         # Add the comment
-        DiningComment(dining_list=self.context['dining_list'], poster=request.user, message=request.POST['comment']).save()
+        DiningComment(dining_list=self.context['dining_list'], poster=request.user,
+                      message=request.POST['comment']).save()
 
         return self.get(request)
-
 
 
 class SlotAllergyView(SlotView):
@@ -604,6 +601,7 @@ class SlotAllergyView(SlotView):
         from django.db.models import CharField
         from django.db.models.functions import Length
         CharField.register_lookup(Length)
-        self.context['allergy_entries'] = self.context['dining_list'].diningentry_set.filter(user__userdiningsettings__allergies__length__gt=1)
+        self.context['allergy_entries'] = self.context['dining_list'].diningentry_set.filter(
+            user__userdiningsettings__allergies__length__gt=1)
 
         return render(request, self.template, self.context)

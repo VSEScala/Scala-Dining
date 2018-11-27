@@ -24,7 +24,7 @@
                             href="{% url 'slot_details' day=date.day month=date.month year=date.year identifier=dining_list.association.associationdetails.shorthand %}"
                         {% endif %}>
                         <div class="offset-6 col-6">
-                            {% if messages_unread > 0 %}<span class="text-warning font-bold">{{ messages_unread }}</span>  {% endif %}
+                            {% if comments_unread > 0 %}<span class="text-warning font-bold">{{ comments_unread }}</span>  {% endif %}
                         </div>
                     </a>
                     <a class="col-4 slot-nav-list
