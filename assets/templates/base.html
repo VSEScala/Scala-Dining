@@ -111,5 +111,11 @@
     </div>
 </div>
 
+<!-- Debug info -->
+<script>
+    var sql_queries = {{ sql_queries|safe }};
+    console.log(sql_queries);
+</script>
+
 </body>
 </html>

@@ -150,3 +150,7 @@ LANGUAGES = [
 # https://docs.djangoproject.com/en/2.0/howto/static-files/
 
 STATIC_URL = '/static/'
+
+# For debugging SQL queries, see:
+# https://docs.djangoproject.com/en/2.1/ref/templates/api/#django-template-context-processors-debug
+INTERNAL_IPS = ['127.0.0.1']
