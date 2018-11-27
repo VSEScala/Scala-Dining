@@ -145,3 +145,9 @@ div.error, ul.error{
 .comment-pinned{
     background: #254a99 url("/static/images/pinned_white.png") 98% /1.5em no-repeat ;
 }
+
+
+.header-msg{
+    background: whitesmoke;
+    color: black;
+}
