@@ -103,12 +103,19 @@
 <div class="container">
     <div class="row width-max-lg text-size-md-5">
         <div class="col-12">
+            <!-- Content -->
             {% block content %}
                 EMPTY
             {% endblock %}
         </div>
     </div>
 </div>
+
+<!-- Debug info -->
+<script>
+    var sql_queries = {{ sql_queries|safe }};
+    console.log(sql_queries);
+</script>
 
 </body>
 </html>

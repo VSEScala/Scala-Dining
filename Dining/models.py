@@ -251,6 +251,7 @@ class DiningList(models.Model):
                 return False
         return True
 
+    # Todo: move static methods to the model manager
     @staticmethod
     def get_lists_on_date(day, month, year=None):
         """
