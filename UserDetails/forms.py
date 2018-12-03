@@ -109,9 +109,6 @@ class Settings_Essentials_Form(ModelForm):
                 if self.cleaned_data['password_new'] != self.cleaned_data['password_check']:
                     self.add_error('password_check', "Passwords do not match")
                     return
-        else:
-            print("No change")
-
 
         super(Settings_Essentials_Form, self).clean()
 
