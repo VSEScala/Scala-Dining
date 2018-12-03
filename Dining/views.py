@@ -105,14 +105,11 @@ class IndexView(View):
         self.context['dining_lists'] = DiningList.get_lists_on_date(current_date)
         self.context['Announcements'] = DiningDayAnnouncements.objects.filter(date=current_date)
 
-        print("AHAHAHA")
         self.context['can_create_slot'] = False
         if current_date.weekday() > 4:
             self.context['message'] = "Kitchen can't be used on weekends"
         else:
             slot_limit = DiningDayAnnouncements.objects.filter(date=current_date).aggregate(Sum('slots_occupy'))
-            print(slot_limit)
-            print(current_date)
             if slot_limit['slots_occupy__sum'] is None:
                 slot_limit = 0
             else:
@@ -171,7 +168,6 @@ class NewSlotView(View):
         if not self.context['slot_form'].is_valid():
             return render(request, self.template, self.context)
 
-        print(self.context['slot_form'].cleaned_data['association'])
         association = Association.objects.get(name=self.context['slot_form'].cleaned_data['association'])
         if DiningList.objects.filter(date=current_date, association=association).count() > 0:
             messages.add_message(request, messages.WARNING,

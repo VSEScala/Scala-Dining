@@ -29,7 +29,7 @@ class TransactionView(View):
             # Check if user is authorised to view/alter the transaction
             if not (transaction.source_user is request.user or \
                transaction.source_association in request.user.groups):
-                print(403)
+                # 403
                 return
 
         # Set up the transaction
