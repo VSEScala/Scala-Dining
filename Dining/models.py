@@ -9,6 +9,8 @@ from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from datetime import datetime, time
 from decimal import Decimal
 
+import pytz
+
 
 # Create your models here.
 class UserDiningSettings(models.Model):
@@ -16,11 +18,10 @@ class UserDiningSettings(models.Model):
     Contains setting related to the dining lists and use of the dining lists.
     """
     user = models.OneToOneField(User, on_delete=models.CASCADE)
-    allergies = models.CharField(max_length=100, default="", blank=True, help_text="Max 100 characters, leave empty if no allergies")
-    canSubscribeDiningList = models.BooleanField(verbose_name="Can subscribe to dining lists",  default=True)
+    allergies = models.CharField(max_length=100, default="", blank=True,
+                                 help_text="Max 100 characters, leave empty if no allergies")
+    canSubscribeDiningList = models.BooleanField(verbose_name="Can subscribe to dining lists", default=True)
     canClaimDiningList = models.BooleanField(verbose_name="Can claim dining lists", default=True)
-
-
 
 
 class UserDiningStats(models.Model):
@@ -46,25 +47,34 @@ class DiningList(models.Model):
     name = models.SlugField(blank=True, default="", null=True, db_index=False, max_length=30)
     dish = models.CharField(default="", max_length=30, blank=True, help_text="The dish made")
     # The days adjustable is implemented to prevent adjustment in credits or aid due to a deletion of a user account.
-    days_adjustable = models.IntegerField(default=2, help_text="The amount of days after occurance that one can add/remove users etc")
-    claimed_by = models.ForeignKey(User, blank=True, related_name="dininglist_claimer", null=True, on_delete=models.SET_NULL)
-    association = models.ForeignKey(Association, blank=True, null=True, on_delete=models.CASCADE, unique_for_date="date")
+    days_adjustable = models.IntegerField(
+        default=2,
+        help_text="The amount of days after occurance that one can add/remove users etc")
+    claimed_by = models.ForeignKey(User, blank=True, related_name="dininglist_claimer", null=True,
+                                   on_delete=models.SET_NULL)
+    association = models.ForeignKey(Association, blank=True, null=True, on_delete=models.CASCADE,
+                                    unique_for_date="date")
     # Todo: implement limit in the views.
-    limit_signups_to_association_only = models.BooleanField(default=False, help_text="Whether only members of the given association can sign up")
-    # The person who paid can be someone else, this is displayed in the dining list and this user can update payment status.
-    purchaser = models.ForeignKey(User, related_name="dininglist_purchaser", blank=True, null=True, on_delete=models.SET_NULL)
+    limit_signups_to_association_only = models.BooleanField(
+        default=False, help_text="Whether only members of the given association can sign up")
+    # The person who paid can be someone else
+    #  this is displayed in the dining list and this user can update payment status.
+    purchaser = models.ForeignKey(User, related_name="dininglist_purchaser", blank=True, null=True,
+                                  on_delete=models.SET_NULL)
 
-    kitchen_cost = models.DecimalField(decimal_places=2, verbose_name="kitchen cost per person", max_digits=4, default=0.50, validators=[MinValueValidator(Decimal('0.00'))])
-    dinner_cost_total = models.DecimalField(decimal_places=2, verbose_name="total dinner costs", max_digits=5, default=0, validators=[MinValueValidator(Decimal('0.00'))])
-    dinner_cost_single = models.DecimalField(decimal_places=2, verbose_name="dinner cost per person", max_digits=5, blank=True, null=True, default=2, validators=[MinValueValidator(Decimal('0.00'))])
+    kitchen_cost = models.DecimalField(decimal_places=2, verbose_name="kitchen cost per person", max_digits=4,
+                                       default=0.50, validators=[MinValueValidator(Decimal('0.00'))])
+    dinner_cost_total = models.DecimalField(decimal_places=2, verbose_name="total dinner costs", max_digits=5,
+                                            default=0, validators=[MinValueValidator(Decimal('0.00'))])
+    dinner_cost_single = models.DecimalField(decimal_places=2, verbose_name="dinner cost per person", max_digits=5,
+                                             blank=True, null=True, default=2,
+                                             validators=[MinValueValidator(Decimal('0.00'))])
     dinner_cost_keep_single_constant = models.BooleanField(default=False, verbose_name="Define costs from single price")
     auto_pay = models.BooleanField(default=False)
 
     diners = models.IntegerField(default=0)
     min_diners = models.IntegerField(default=4)
     max_diners = models.IntegerField(default=20)
-
-
 
     def save(self, *args, **kwargs):
         """
@@ -82,7 +92,9 @@ class DiningList(models.Model):
             # Set the sign-up deadline to it's default value if none was provided.
             if self.sign_up_deadline is None:
                 from Dining.constants import DINING_LIST_CLOSURE_TIME
-                self.sign_up_deadline = datetime.combine(self.date, DINING_LIST_CLOSURE_TIME)
+                loc_time = timezone.datetime.combine(self.date, DINING_LIST_CLOSURE_TIME)
+                loc_time = timezone.get_default_timezone().localize(loc_time)
+                self.sign_up_deadline = loc_time
 
             # Compute the individual dinner costs per person
             if not self.dinner_cost_keep_single_constant:
@@ -103,16 +115,16 @@ class DiningList(models.Model):
                 if costs != 0:
                     # Costs have changed, alter all credits.
                     # Done in for-loop instead of update to trigger custom save implementation (to track negatives)
-                    for DiningEntry in self.diningentry_set.all():
-                        DiningEntry.user.usercredit.credit = F('credit') + costs
-                        DiningEntry.user.usercredit.save()
+                    for diningEntry in self.diningentry_set.all():
+                        diningEntry.user.usercredit.credit = F('credit') + costs
+                        diningEntry.user.usercredit.save()
                     # Adjust the credit scores for each external entry added.
                     # For loop is required to ensure that entries added by the same user are processed correctly
                     for ExternalDinerEntry in self.diningentryexternal_set.all():
                         ExternalDinerEntry.user.usercredit.credit = F('credit') + costs
                         ExternalDinerEntry.user.usercredit.save()
 
-                if previous_list is None or\
+                if previous_list is None or \
                         previous_list.diners * self.diners == 0 or \
                         previous_list.auto_pay != self.auto_pay or \
                         previous_list.get_purchaser() != self.get_purchaser() or \
@@ -176,8 +188,10 @@ class DiningList(models.Model):
         if self.auto_pay:
             if self.get_purchaser() is None:
                 raise ValidationError({
-                    'claimed_by': ValidationError('When autopay is enabled, either a claimer or a purchaser must be defined.', code='invalid'),
-                    'purchaser': ValidationError('When autopay is enabled, either a claimer or a purchaser must be defined.', code='invalid'),
+                    'claimed_by': ValidationError(
+                        'When autopay is enabled, either a claimer or a purchaser must be defined.', code='invalid'),
+                    'purchaser': ValidationError(
+                        'When autopay is enabled, either a claimer or a purchaser must be defined.', code='invalid'),
                 })
 
     def get_entry_user(self, user_id):
@@ -191,25 +205,25 @@ class DiningList(models.Model):
         except ObjectDoesNotExist:
             return None
 
-    def get_entry(self, id):
+    def get_entry(self, entry_id):
         """
         Returns the entry with the given id that is affiliated with this dinging list
-        :param id: the entry object id
+        :param entry_id: the entry object id
         :return: the DindingEntry instance
         """
         try:
-            return self.diningentry_set.get(id=id)
+            return self.diningentry_set.get(id=entry_id)
         except ObjectDoesNotExist:
             return None
 
-    def get_entry_external(self, id):
+    def get_entry_external(self, entry_id):
         """
         Returns the external entry instance taht is assiliated with this dinging list
-        :param id: the external entry object id
+        :param entry_id: the external entry object id
         :return: the DiningEntry
         """
         try:
-            return self.diningentryexternal_set.get(id=id)
+            return self.diningentryexternal_set.get(id=entry_id)
         except ObjectDoesNotExist:
             return None
 
@@ -225,6 +239,7 @@ class DiningList(models.Model):
         Determines if a user can join a dining list by checking the status of the list and the status of
         other dining list subscriptions.
         check_for_self determines whether a full check for self should take place. Default=True
+        :param check_for_self: whether this user should be double checked for entries on this or other lists
         :param user: The user intending to join
         :return: If the user can join the list
         """
@@ -253,22 +268,6 @@ class DiningList(models.Model):
 
     # Todo: move static methods to the model manager
     @staticmethod
-    def get_lists_on_date(day, month, year=None):
-        """
-        Returns all dining lists on a given date
-        :param day: The day, mandatory
-        :param month: The month, mandatory
-        :param year: The year, if empty current year is used
-        :return: All dining lists on that date
-        """
-        if year is None:
-            year = timezone.now().year
-
-        date = datetime(int(year), int(month), int(day))
-
-        return DiningList.objects.filter(date=date)
-
-    @staticmethod
     def get_lists_on_date(date):
         """
         Returns all dining lists on a given date
@@ -285,7 +284,8 @@ class DiningEntry(models.Model):
 
     dining_list = models.ForeignKey(DiningList, on_delete=models.CASCADE)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    added_by = models.ForeignKey(User, related_name="added_entry_on_dining", on_delete=models.SET_DEFAULT, blank=True, default=None, null=True)
+    added_by = models.ForeignKey(User, related_name="added_entry_on_dining", on_delete=models.SET_DEFAULT, blank=True,
+                                 default=None, null=True)
     has_shopped = models.BooleanField(default=False)
     has_cooked = models.BooleanField(default=False)
     has_cleaned = models.BooleanField(default=False)
@@ -335,7 +335,8 @@ class DiningEntry(models.Model):
                 # Save both credit instances
                 with transaction.atomic():
                     self.dining_list.refresh_from_db()
-                    original.user.get_credit_containing_instance().credit = F('credit') + self.dining_list.get_credit_cost()
+                    original.user.get_credit_containing_instance().credit = F(
+                        'credit') + self.dining_list.get_credit_cost()
                     original.user.get_credit_containing_instance().save()
                     self.user.get_credit_containing_instance().credit = F('credit') - self.dining_list.get_credit_cost()
                     self.user.get_credit_containing_instance().save()
@@ -346,7 +347,6 @@ class DiningEntry(models.Model):
 
             else:  # Update the user stats based on changes in the entry
                 dine_stats = self.user.userdiningstats
-
 
                 if self.has_shopped and not original.has_shopped:
                     dine_stats.count_shopped = F('count_shopped') + 1
@@ -366,7 +366,7 @@ class DiningEntry(models.Model):
                     super(DiningEntry, self).save(*args, **kwargs)
 
         else:
-            #instance is being created
+            # instance is being created
             dine_stats = self.user.userdiningstats
             dining_list = self.dining_list
 
@@ -459,7 +459,7 @@ class DiningEntryExternal(models.Model):
                 super(DiningEntryExternal, self).save(*args, **kwargs)
 
         else:
-            #instance is being created
+            # instance is being created
             user_credit = self.user.usercredit
             dining_list = self.dining_list
 
@@ -486,7 +486,7 @@ class DiningEntryExternal(models.Model):
         return self.name + " " + str(self.dining_list.date)
 
     def EID(self):
-        return "E"+str(self.id)
+        return "E" + str(self.id)
 
 
 class DiningComment(models.Model):
@@ -516,4 +516,4 @@ class DiningDayAnnouncements(models.Model):
     slots_occupy = models.IntegerField(default=0, help_text="The amount of slots this occupies")
 
     def __str__(self):
-        return (self.title)
+        return self.title
