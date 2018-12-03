@@ -92,9 +92,9 @@
                     {% if dining_list.diners < dining_list.max_diners %}
                         Signup closes
                         {% if dining_list.sign_up_deadline.date == dining_list.date %}
-                            at {{ dining_list.sign_up_deadline.time }}
+                            at {{ dining_list.sign_up_deadline |date:"H:i" }}
                         {% else %}
-                            on {{ dining_list.sign_up_deadline }}
+                            on {{ dining_list.sign_up_deadline |date:"l H:i" }}
                         {% endif %}
                     {% else %}
                         Max number of diners reached
