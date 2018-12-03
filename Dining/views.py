@@ -3,7 +3,8 @@ from django.http import *
 from django.utils.decorators import method_decorator
 from django.contrib.auth.decorators import login_required
 from django.views.generic import View
-from datetime import datetime, timedelta
+from datetime import timedelta
+from django.utils import timezone
 from .models import DiningList, DiningEntry, DiningEntryExternal, DiningDayAnnouncements, DiningComment, \
     DiningCommentView
 from .forms import create_slot_form
@@ -12,6 +13,7 @@ from UserDetails.models import AssociationDetails, Association, User
 from django.urls import reverse
 from django.db.models import Q, Sum
 from django.contrib import messages
+from django.core.exceptions import ObjectDoesNotExist
 
 
 # Create your views here.
@@ -33,15 +35,15 @@ def process_date(context, day, month, year):
     :return: the date as a date object
     """
     if day is not None:
-        current_date = datetime(int(year), int(month), int(day)).date()
+        current_date = timezone.datetime(int(year), int(month), int(day)).date()
 
-        if (current_date - datetime.now().date()).days == 0:
+        if (current_date - timezone.now().date()).days == 0:
             context['is_today'] = True
         else:
             context['is_today'] = False
 
     else:
-        current_date = datetime.now().date()
+        current_date = timezone.now().date()
         context['is_today'] = True
 
     context['date'] = current_date
@@ -59,15 +61,15 @@ def get_list(current_date, identifier):
     # Get the dining list by the id of the association, shorthand form of the association or the person claimed
     try:
         return DiningList.objects.get(date=current_date, association_id=identifier)
-    except Exception:
+    except ObjectDoesNotExist:
         try:
             return DiningList.objects.get(date=current_date, association__associationdetails__shorthand=identifier)
-        except Exception:
+        except ObjectDoesNotExist:
             try:
                 return DiningList.objects.get(date=current_date, claimed_by__username=identifier)
-            except Exception:
+            except ObjectDoesNotExist:
                 # No proper identifier supplied
-                pass
+                return None
 
 
 class IndexView(View):
@@ -117,10 +119,11 @@ class IndexView(View):
                 slot_limit = slot_limit['slots_occupy__sum']
 
             if len(self.context['dining_lists']) < MAX_SLOT_NUMBER - slot_limit:  # if maximum slots is not exceeded
-                if current_date > datetime.now().date():  # if day is in the future
+                if current_date > timezone.now().date():  # if day is in the future
                     self.context['can_create_slot'] = True
-                elif (current_date - datetime.now().date()).days == 0:  # if date is today
-                    if datetime.now().hour < 17:  # if it's not past 17:00
+                elif (current_date - timezone.now().date()).days == 0:  # if date is today
+                    from .constants import DINING_SLOT_CLAIM_CLOSURE_TIME
+                    if timezone.now().hour < DINING_SLOT_CLAIM_CLOSURE_TIME:  # if it's not past 17:00
                         self.context['can_create_slot'] = True
 
         self.context['interactive'] = True
@@ -135,7 +138,7 @@ class IndexView(View):
         while next_date.weekday() > 4:  # i.e. 5 or 6 which is saturday or sunday
             next_date = next_date + timedelta(days=1)
 
-        if (next_date - datetime.now().date()).days > max_future:
+        if (next_date - timezone.now().date()).days > max_future:
             return None
         return next_date
 
@@ -146,7 +149,7 @@ class IndexView(View):
         prev_date = current_date - timedelta(days=1)
         while prev_date.weekday() > 4:  # i.e. 5 or 6 which is saturday or sunday
             prev_date = prev_date - timedelta(days=1)
-        if (prev_date - datetime.now().date()).days < -max_history:
+        if (prev_date - timezone.now().date()).days < -max_history:
             return None
         return prev_date
 
@@ -156,13 +159,11 @@ class NewSlotView(View):
     template = "dining_lists/dining_add.html"
 
     @method_decorator(login_required)
-    def get(self, request, day=None, month=None, year=None):
-        current_date = process_date(self.context, day, month, year)
-
+    def get(self, request):
         self.context['slot_form'] = create_slot_form(request.user)
         return render(request, self.template, self.context)
 
-    def post(self, request, day=None, month=None, year=None, *args, **kwargs):
+    def post(self, request, day=None, month=None, year=None):
         current_date = process_date(self.context, day, month, year)
 
         self.context['slot_form'] = create_slot_form(request.user, info=request.POST, date=current_date)
@@ -173,13 +174,15 @@ class NewSlotView(View):
         print(self.context['slot_form'].cleaned_data['association'])
         association = Association.objects.get(name=self.context['slot_form'].cleaned_data['association'])
         if DiningList.objects.filter(date=current_date, association=association).count() > 0:
-            messages.add_message(request, messages.WARNING, 'Slot can not be claimed: {0} has already claimed a slot'.format(association))
+            messages.add_message(request, messages.WARNING,
+                                 'Slot can not be claimed: {0} has already claimed a slot'.format(association))
             return render(request, self.template, self.context)
 
         self.context['can_create_slot'] = False
 
         if current_date.weekday() > 4:
-            messages.add_message(request, messages.ERROR, 'Slot can not be claimed: Kitchen can not be used in the weekends')
+            messages.add_message(request, messages.ERROR,
+                                 'Slot can not be claimed: Kitchen can not be used in the weekends')
             return HttpResponseRedirect(reverse_day('day_view', current_date))
         else:
             slot_limit = DiningDayAnnouncements.objects.filter(date=current_date).aggregate(Sum('slots_occupy'))
@@ -189,7 +192,8 @@ class NewSlotView(View):
                 slot_limit = slot_limit['slots_occupy__sum']
             if len(DiningList.get_lists_on_date(
                     current_date)) >= MAX_SLOT_NUMBER - slot_limit:  # if maximum slots is not exceeded
-                messages.add_message(request, messages.ERROR, 'Action failed: the dining list is already closed'.format(entry.user))
+                messages.add_message(request, messages.ERROR,
+                                     'Action failed: the dining list is already closed')
                 return HttpResponseRedirect(reverse_day('day_view', current_date))
 
         self.context['slot_form'].save()
@@ -206,19 +210,20 @@ class EntryRemoveView(View):
         self.context['list'] = True
 
     @method_decorator(login_required)
-    def get(self, request, day=None, month=None, year=None, identifier=None, id=None):
+    def get(self, request, day=None, month=None, year=None, identifier=None, user_id=None):
         current_date = process_date(self.context, day, month, year)
         dining_list = get_list(current_date, identifier)
 
-        if id == None:  # The active user wants to sign out
+        if user_id is None:  # The active user wants to sign out
             if request.user == dining_list.claimed_by and dining_list.diners > 1:
                 # todo: handing over the dining ownership, or cancel the dining slot
                 HttpResponseRedirect(reverse_day('slot_details', current_date, identifier=identifier))
 
             if dining_list.claimed_by is not None and \
-                            datetime.now().timestamp() > dining_list.sign_up_deadline.timestamp():
+                    timezone.now().timestamp() > dining_list.sign_up_deadline.timestamp():
                 if dining_list.claimed_by != request.user:
-                    messages.add_message(request, messages.WARNING, 'You can not remove yourself, ask the chef to remove you instead')
+                    messages.add_message(request, messages.WARNING,
+                                         'You can not remove yourself, ask the chef to remove you instead')
                     HttpResponseRedirect(reverse_day('slot_details', current_date, identifier=identifier))
 
             entry = dining_list.get_entry_user(request.user)
@@ -228,17 +233,19 @@ class EntryRemoveView(View):
 
         else:
             if not dining_list.is_open() and dining_list.claimed_by != request.user:
-                messages.add_message(request, messages.WARNING, 'Access denied: You are not the owner of the dining list and the slot is closed')
+                messages.add_message(request, messages.WARNING,
+                                     'Access denied: You are not the owner of the dining list and the slot is closed')
                 return HttpResponseRedirect(reverse_day('slot_list', current_date, identifier=identifier))
 
-            if id.startswith('E'):  # External entry
-                entry = dining_list.get_entry_external(id[1:])
+            if user_id.startswith('E'):  # External entry
+                entry = dining_list.get_entry_external(user_id[1:])
                 if entry is None:
                     messages.add_message(request, messages.ERROR, 'That entry can not be removed: it does not exist')
                     return HttpResponseRedirect(reverse_day('slot_list', current_date, identifier=identifier))
 
                 if request.user != dining_list.claimed_by and request.user != entry.user:
-                    messages.add_message(request, messages.WARNING, 'Access denied: You did not add this entry, nor own the slot')
+                    messages.add_message(request, messages.WARNING,
+                                         'Access denied: You did not add this entry, nor own the slot')
                     return HttpResponseRedirect(reverse_day('slot_list', current_date, identifier=identifier))
                 else:
                     entry.delete()
@@ -250,16 +257,20 @@ class EntryRemoveView(View):
             else:  # Object is external
                 # if request was NOT added by the dininglist claimer, block access
                 if request.user != dining_list.claimed_by:
-                    messages.add_message(request, messages.ERROR, 'Access denied: You are not the owner of the dining list and the slot is closed')
+                    messages.add_message(
+                        request,
+                        messages.ERROR,
+                        'Access denied: You are not the owner of the dining list and the slot is closed')
                     return HttpResponseRedirect(reverse_day('slot_details', current_date, identifier=identifier))
 
-                entry = dining_list.get_entry(id)
+                entry = dining_list.get_entry(user_id)
                 if entry is None:
                     messages.add_message(request, messages.ERROR, 'That entry can not be removed: it does not exist')
                     return HttpResponseRedirect(reverse_day('slot_details', current_date, identifier=identifier))
 
                 if entry.user == dining_list.claimed_by:
-                    messages.add_message(request, messages.ERROR, 'You can not remove yourself because you are the owner')
+                    messages.add_message(request, messages.ERROR,
+                                         'You can not remove yourself because you are the owner')
                     return HttpResponseRedirect(reverse_day('slot_details', current_date, identifier=identifier))
 
                 entry.delete()
@@ -308,7 +319,7 @@ class EntryAddView(View):
         return render(request, self.template, self.context)
 
     @method_decorator(login_required)
-    def post(self, request, day=None, month=None, year=None, identifier=None, *args, **kwargs):
+    def post(self, request, day=None, month=None, year=None, identifier=None):
         current_date = process_date(self.context, day, month, year)
         dining_list = get_list(current_date, identifier)
 
@@ -318,6 +329,7 @@ class EntryAddView(View):
                 entry.save()
                 return HttpResponseRedirect(reverse_day('slot_list', current_date, identifier=identifier))
         except:
+            messages.add_message(request, messages.ERROR, 'An error occured. User has not been added')
             pass
 
         try:
@@ -325,6 +337,7 @@ class EntryAddView(View):
                 return self.get(request, day=day, month=month, year=year,
                                 identifier=identifier, search=request.POST['name'])
         except:
+            messages.add_message(request, messages.WARNING, 'An error occured.')
             pass
 
         try:
@@ -335,6 +348,7 @@ class EntryAddView(View):
                     entry.save()
                 return HttpResponseRedirect(reverse_day('slot_list', current_date, identifier=identifier))
         except:
+            messages.add_message(request, messages.WARNING, 'An error occured. Uer has not been added succcesfully')
             pass
 
         return self.get(request, day=day, month=month, year=year, identifier=identifier, search=request.POST['name'])
@@ -362,8 +376,11 @@ class SlotJoinView(View):
             return HttpResponseRedirect(reverse_day('day_view', current_date))
 
         if self.context['dining_list'].limit_signups_to_association_only:
-            if request.user.usermemberships_set.filter(association=self.association).count() == 0:
-                messages.add_message(request, messages.ERROR, 'Subscription failed: dining list is only for members of {0}'.format(self.assocation.details.shorthand))
+            if request.user.usermemberships_set.filter(
+                    association=self.context['dining_list'].association).count() == 0:
+                messages.add_message(request, messages.ERROR,
+                                     'Subscription failed: dining list is only for members of {0}'.format(
+                                         self.context['dining_list'].assocation.details.shorthand))
                 return HttpResponseRedirect(reverse_day('day_view', current_date))
 
         # check if user is not on other dining lists
@@ -383,17 +400,18 @@ class SlotJoinView(View):
 
         if locked_entry is None:
             # display switch template
-            self.context['old_dining_list'] = entry.dining_list
+            self.context['old_dining_list'] = locked_entry.dining_list
 
             return render(request, self.template, self.context)
             pass
         else:
             # can not change to dining list
-            messages.add_message(request, messages.ERROR, 'Addition failed: You are already part of a closed dining list')
+            messages.add_message(request, messages.ERROR,
+                                 'Addition failed: You are already part of a closed dining list')
             return HttpResponseRedirect(reverse_day('day_view', current_date))
 
     @method_decorator(login_required)
-    def post(self, request, day=None, month=None, year=None, identifier=None, *args, **kwargs):
+    def post(self, request, day=None, month=None, year=None, identifier=None):
         current_date = process_date(self.context, day, month, year)
         new_list = get_list(current_date, identifier)
 
@@ -456,9 +474,9 @@ class SlotView(View):
 
     def getUnreadMessages(self, user):
         try:
-            viewtime = DiningCommentView.objects.get(user=user,
+            view_time = DiningCommentView.objects.get(user=user,
                                                      dining_list=self.context['dining_list']).timestamp
-            return self.context['dining_list'].diningcomment_set.filter(timestamp__gte=viewtime).count()
+            return self.context['dining_list'].diningcomment_set.filter(timestamp__gte=view_time).count()
         except:
             return self.context['comments']
 
@@ -568,7 +586,7 @@ class SlotInfoView(SlotView):
                                                              dining_list=self.context['dining_list']
                                                              )[0]
         self.context['last_visited'] = last_visit.timestamp
-        last_visit.timestamp = datetime.now()
+        last_visit.timestamp = timezone.now()
         last_visit.save()
 
         return render(request, self.template, self.context)
