@@ -1,37 +1,22 @@
 {% extends 'base.html' %}
 {% load staticfiles %}
+{% load humanize %}
 
 {% block title %}Scala Dining {{ date }} {% endblock %}
 
 {% block content %}
     <div class="col-12 row p-0 m-0">
-        {% if prev_link %}
-            <a href="{{ prev_link }}" class="col-2 btn btn-block btn-blank">&#x25C0;</a>
-        {% else %}
-            <a class="col-2 btn btn-block btn-blank btn-disabled">&#x25C0;</a>
-        {% endif %}
+        <a href="{% url 'day_view' day=previous_date.day month=previous_date.month year=previous_date.year %}"
+           class="col-2 btn btn-block btn-blank">&#x25C0;</a>
 
-        {% if is_today %}
-            <div class="text-center col-8 ">
-            <b>{{ datename }}</b>
-        {% else %}
-            <div class="text-center col-8">
-            {{ datename }}
-        {% endif %}
-            </div>
+        <div class="text-center col-8 ">
+            {{ date|naturalday|capfirst }}
+        </div>
 
-        {% if next_link %}
-            <a href="{{ next_link }}" class="col-2 btn btn-block btn-blank">&#x25B6;</a>
-        {% else %}
-            <a class="col-2 btn btn-block btn-disabled btn-blank">&#x25B6;</a>
-        {% endif %}
+        <a href="{% url 'day_view' year=next_date.year month=next_date.month day=next_date.day %}"
+           class="col-2 btn btn-block btn-blank">&#x25B6;</a>
     </div>
 
-    {% if message %}
-    <div class="col-12 text-center pt-2">
-        {{ message }}
-    </div>
-    {% endif %}
     {% if Announcements %}
         {% for Announcement in Announcements %}
             {% include 'snippets/snippet_dining_day_announcement' %}
@@ -45,7 +30,8 @@
         {% endfor %}
     </div>
     {% if can_create_slot %}
-        <a href="{{ add_link }}" class="col-12 btn btn-block btn-primary">Create and claim a new slot</a>
+        <a href="{% url 'new_slot' year=date.year month=date.month day=date.day %}"
+           class="col-12 btn btn-block btn-primary">Create and claim a new slot</a>
     {% endif %}
 
 

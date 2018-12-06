@@ -1,30 +1,63 @@
-from django.shortcuts import render
-from django.http import *
-from django.utils.decorators import method_decorator
+from datetime import date, timedelta
+
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.views.generic import View
-from datetime import timedelta
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.core.exceptions import ObjectDoesNotExist
+from django.db.models import Q
+from django.http import Http404, HttpResponseRedirect, HttpResponseForbidden
+from django.shortcuts import render, redirect
+from django.urls import reverse
 from django.utils import timezone
+from django.utils.decorators import method_decorator
+from django.views.generic import View, TemplateView
+
+from UserDetails.models import User
+from .forms import CreateSlotForm
 from .models import DiningList, DiningEntry, DiningEntryExternal, DiningDayAnnouncements, DiningComment, \
     DiningCommentView
-from .forms import create_slot_form
-from .constants import MAX_SLOT_NUMBER
-from UserDetails.models import AssociationDetails, Association, User
-from django.urls import reverse
-from django.db.models import Q, Sum
-from django.contrib import messages
-from django.core.exceptions import ObjectDoesNotExist
 
 
-# Create your views here.
+def index(request):
+    upcoming = timezone.now().date()
+    # If weekend, redirect to Monday after
+    if upcoming.weekday() >= 5:
+        upcoming = upcoming + timedelta(days=7 - upcoming.weekday())
+    return redirect('day_view', year=upcoming.year, month=upcoming.month, day=upcoming.day)
 
-def reverse_day(name, date, **kwargs):
-    return reverse(name,
-                   kwargs={'day': int(date.day),
-                           'month': int(date.month),
-                           'year': int(date.year), **kwargs})
+
+class AbstractDayView(LoginRequiredMixin, TemplateView):
+    """Abstract view for a day."""
+
+    # Stores the date for this day
+    date = None
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # Store date
+        self.date = date(self.kwargs['year'], self.kwargs['month'], self.kwargs['day'])
+        # Return 404 when weekend (!)
+        if self.date.weekday() >= 5:
+            raise Http404('Weekends are not available')
+        # Add useful things to context
+        context['date'] = self.date
+        return context
 
 
+def reverse_day(viewname, day_date, kwargs=None, **other_kwargs):
+    """
+    URL reverse which expands the date. See https://docs.djangoproject.com/en/2.1/ref/urlresolvers/#django.urls.reverse
+
+    This function should maybe be moved to a better place.
+    """
+    kwargs = kwargs or {}
+    kwargs['year'] = day_date.year
+    kwargs['month'] = day_date.month
+    kwargs['day'] = day_date.day
+    return reverse(viewname, kwargs=kwargs, **other_kwargs)
+
+
+# Todo: deprecate
 def process_date(context, day, month, year):
     """
     Process the broken down date and store it in the context, returns the day as a date object
@@ -51,151 +84,84 @@ def process_date(context, day, month, year):
     return current_date
 
 
+# Todo: deprecate (possibly replace with a method on DiningListManager
 def get_list(current_date, identifier):
     """
-    Returns the dining list for the given data and identifier
-    :param current_date:
-    :param identifier:
-    :return:
+    Returns the dining list for the given data and identifier.
     """
-    # Get the dining list by the id of the association, shorthand form of the association or the person claimed
-    try:
-        return DiningList.objects.get(date=current_date, association_id=identifier)
-    except ObjectDoesNotExist:
-        try:
-            return DiningList.objects.get(date=current_date, association__associationdetails__shorthand=identifier)
-        except ObjectDoesNotExist:
-            try:
-                return DiningList.objects.get(date=current_date, claimed_by__username=identifier)
-            except ObjectDoesNotExist:
-                # No proper identifier supplied
-                return None
+    return DiningList.objects.get(date=current_date, association__associationdetails__shorthand=identifier)
 
 
-class IndexView(View):
+class DayView(AbstractDayView):
     """"
     This is the view responsible for the day index
     Task:
     -   display all occupied dining slots
     -   allow for additional dining slots to be made if place is availlable
     """
-    context = {}
-    template = "dining_lists/dining_day.html"
 
-    @method_decorator(login_required)
-    def get(self, request, day=None, month=None, year=None):
-        current_date = process_date(self.context, day, month, year)
+    template_name = "dining_lists/dining_day.html"
 
-        # Clear the message to prevent message bleeding
-        self.context['message'] = None
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
 
-        next_date = self.get_next_availlable_date(current_date)
-        if next_date is not None:
-            self.context['next_link'] = reverse_day('day_view', next_date)
-        else:
-            self.context['next_link'] = None
+        context['next_date'] = self.date + timedelta(days=3 if self.date.weekday() == 4 else 1)
+        context['previous_date'] = self.date - timedelta(days=3 if self.date.weekday() == 0 else 1)
 
-        prev_date = self.get_previous_availlable_date(current_date)
-        if prev_date is not None:
-            self.context['prev_link'] = reverse_day('day_view', prev_date)
-        else:
-            self.context['prev_link'] = None
+        context['dining_lists'] = DiningList.get_lists_on_date(self.date)
+        context['Announcements'] = DiningDayAnnouncements.objects.filter(date=self.date)
 
-        self.context['add_link'] = reverse_day('new_slot', current_date)
-        self.context['dining_lists'] = DiningList.get_lists_on_date(current_date)
-        self.context['Announcements'] = DiningDayAnnouncements.objects.filter(date=current_date)
+        # Check if create slot button must be shown
+        # Todo: optionally hide claim button when time is past closure time
+        # (but I prefer to only check when claiming to reduce code)
+        in_future = self.date >= timezone.now().date()
+        context['can_create_slot'] = DiningList.objects.available_slots(self.date) >= 0 and in_future
 
-        self.context['can_create_slot'] = False
-        if current_date.weekday() > 4:
-            self.context['message'] = "Kitchen can't be used on weekends"
-        else:
-            slot_limit = DiningDayAnnouncements.objects.filter(date=current_date).aggregate(Sum('slots_occupy'))
-            if slot_limit['slots_occupy__sum'] is None:
-                slot_limit = 0
-            else:
-                slot_limit = slot_limit['slots_occupy__sum']
+        # Don't know what this is
+        context['interactive'] = True
 
-            if len(self.context['dining_lists']) < MAX_SLOT_NUMBER - slot_limit:  # if maximum slots is not exceeded
-                if current_date > timezone.now().date():  # if day is in the future
-                    self.context['can_create_slot'] = True
-                elif (current_date - timezone.now().date()).days == 0:  # if date is today
-                    from .constants import DINING_SLOT_CLAIM_CLOSURE_TIME
-                    if timezone.now().hour < DINING_SLOT_CLAIM_CLOSURE_TIME:  # if it's not past 17:00
-                        self.context['can_create_slot'] = True
-
-        self.context['interactive'] = True
-
-        return render(request, self.template, self.context)
-
-    @staticmethod
-    def get_next_availlable_date(current_date):
-        max_future = 7  # Define the meaximum time one can go into the future
-
-        next_date = current_date + timedelta(days=1)
-        while next_date.weekday() > 4:  # i.e. 5 or 6 which is saturday or sunday
-            next_date = next_date + timedelta(days=1)
-
-        if (next_date - timezone.now().date()).days > max_future:
-            return None
-        return next_date
-
-    @staticmethod
-    def get_previous_availlable_date(current_date):
-        max_history = 2  # Define the maximum time one can go in the past
-
-        prev_date = current_date - timedelta(days=1)
-        while prev_date.weekday() > 4:  # i.e. 5 or 6 which is saturday or sunday
-            prev_date = prev_date - timedelta(days=1)
-        if (prev_date - timezone.now().date()).days < -max_history:
-            return None
-        return prev_date
+        return context
 
 
-class NewSlotView(View):
-    context = {}
-    template = "dining_lists/dining_add.html"
+class NewSlotView(AbstractDayView):
+    """
+    Creation page for a new dining list.
+    """
+    template_name = "dining_lists/dining_add.html"
 
-    @method_decorator(login_required)
-    def get(self, request):
-        self.context['slot_form'] = create_slot_form(request.user)
-        return render(request, self.template, self.context)
+    def get(self, request, *args, **kwargs):
+        context = self.get_context_data()
+        context['slot_form'] = CreateSlotForm(self.request.user, self.date)
+        return self.render_to_response(context)
 
-    def post(self, request, day=None, month=None, year=None):
-        current_date = process_date(self.context, day, month, year)
+    def post(self, request, *args, **kwargs):
+        context = self.get_context_data()
 
-        self.context['slot_form'] = create_slot_form(request.user, info=request.POST, date=current_date)
+        context['slot_form'] = CreateSlotForm(request.user, self.date, request.POST)
 
-        if not self.context['slot_form'].is_valid():
-            return render(request, self.template, self.context)
+        # Check form validity
+        if not context['slot_form'].is_valid():
+            return self.render_to_response(context)
 
-        association = Association.objects.get(name=self.context['slot_form'].cleaned_data['association'])
-        if DiningList.objects.filter(date=current_date, association=association).count() > 0:
-            messages.add_message(request, messages.WARNING,
-                                 'Slot can not be claimed: {0} has already claimed a slot'.format(association))
-            return render(request, self.template, self.context)
+        dining_list = context['slot_form'].save()
+        # Create dining entry for current user
+        DiningEntry.objects.create(dining_list=dining_list, user=request.user)
 
-        self.context['can_create_slot'] = False
+        # Redirect to details page
+        return redirect(dining_list)
 
-        if current_date.weekday() > 4:
-            messages.add_message(request, messages.ERROR,
-                                 'Slot can not be claimed: Kitchen can not be used in the weekends')
-            return HttpResponseRedirect(reverse_day('day_view', current_date))
-        else:
-            slot_limit = DiningDayAnnouncements.objects.filter(date=current_date).aggregate(Sum('slots_occupy'))
-            if slot_limit['slots_occupy__sum'] is None:
-                slot_limit = 0
-            else:
-                slot_limit = slot_limit['slots_occupy__sum']
-            if len(DiningList.get_lists_on_date(
-                    current_date)) >= MAX_SLOT_NUMBER - slot_limit:  # if maximum slots is not exceeded
-                messages.add_message(request, messages.ERROR,
-                                     'Action failed: the dining list is already closed')
-                return HttpResponseRedirect(reverse_day('day_view', current_date))
-
-        self.context['slot_form'].save()
-        identifier = self.context['slot_form'].cleaned_data['association']
-        identifier = AssociationDetails.objects.get(association__name=identifier).shorthand
-        return HttpResponseRedirect(reverse_day('slot_details', current_date, identifier=identifier))
+    def dispatch(self, request, *args, year=None, month=None, day=None, **kwargs):
+        """
+        Disable page when no slots are available.
+        """
+        # Check available slots
+        # Todo: DRY violation with AbstractDayView!
+        # Todo: possibly also disable page when date is in the past or later than closure time!
+        dining_date = date(year, month, day)
+        available_slots = DiningList.objects.available_slots(dining_date)
+        if available_slots <= 0:
+            return HttpResponseForbidden('No available slots')
+        return super().dispatch(request, *args)
 
 
 class EntryRemoveView(View):
@@ -471,7 +437,7 @@ class SlotView(View):
     def getUnreadMessages(self, user):
         try:
             view_time = DiningCommentView.objects.get(user=user,
-                                                     dining_list=self.context['dining_list']).timestamp
+                                                      dining_list=self.context['dining_list']).timestamp
             return self.context['dining_list'].diningcomment_set.filter(timestamp__gte=view_time).count()
         except:
             return self.context['comments']

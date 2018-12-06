@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.humanize',
 
     'UserDetails.apps.UserDetailsConfig',
     'Dining.apps.DiningConfig',
@@ -154,3 +155,6 @@ STATIC_URL = '/static/'
 # For debugging SQL queries, see:
 # https://docs.djangoproject.com/en/2.1/ref/templates/api/#django-template-context-processors-debug
 INTERNAL_IPS = ['127.0.0.1']
+
+# Include Scala settings
+from ScalaApp.scala_settings import *

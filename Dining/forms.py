@@ -1,39 +1,38 @@
 from django import forms
-from .models import DiningList, DiningEntry
+from django.db.models import OuterRef, Exists
+
 from UserDetails.models import Association
+from .models import DiningList
 
-def create_slot_form(user, info=None, date=None):
-    """
-    Return the slot form class specefied for the specific user
-    :param user: The current user
-    :return: The form
-    """
 
-    association_set = Association.objects.filter(usermemberships__related_user=user)
+class CreateSlotForm(forms.ModelForm):
+    class Meta:
+        model = DiningList
+        fields = ('dish', 'association', 'max_diners', 'serve_time')
 
-    class CreateSlotForm(forms.ModelForm):
-        association = forms.ModelChoiceField(queryset=association_set)
+    def __init__(self, user, date, *args, **kwargs):
+        super(CreateSlotForm, self).__init__(*args, **kwargs)
 
-        class Meta:
-            model = DiningList
-            fields = ('dish', 'association', 'max_diners', 'serve_time')
+        # Filter dining lists on the current date
+        dining_lists = DiningList.objects.filter(date=date, association=OuterRef('pk'))
+        # Filter associations that the user is a member of and that do not have a dining list on the current date
+        association_set = Association.objects.annotate(occupied=Exists(dining_lists)).filter(
+            usermemberships__related_user=user, occupied=False)
 
-        def __init__(self, *args, **kwargs):
-            super(CreateSlotForm, self).__init__(*args, **kwargs)
+        self.fields['association'] = forms.ModelChoiceField(queryset=association_set)
+        self.user = user
+        self.date = date
 
-            if len(association_set) == 1:
-                self.fields['association'].disabled = True
-                self.fields['association'].initial = association_set[0].pk
+        if len(association_set) == 1:
+            self.fields['association'].disabled = True
+            self.fields['association'].initial = association_set[0].pk
 
-        def save(self):
-            data = self.cleaned_data
-            dinner_list = DiningList(dish=data['dish'],
-                                     claimed_by=user,
-                                     association=data['association'],
-                                     max_diners=data['max_diners'],
-                                     date=date,)
-            dinner_list.save()
-            DiningEntry(dining_list=dinner_list,
-                        user=user).save()
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        instance.claimed_by = self.user
+        instance.date = self.date
 
-    return CreateSlotForm(info)
+        if commit:
+            instance.save()
+
+        return instance

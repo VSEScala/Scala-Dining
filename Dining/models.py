@@ -1,5 +1,5 @@
 from django.db import models, transaction
-from django.db.models import F
+from django.db.models import F, Sum
 from django.utils import timezone
 from UserDetails.models import User, Association
 from CreditManagement.models import UserCredit
@@ -8,11 +8,9 @@ from django.core.validators import MinValueValidator
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from datetime import datetime, time
 from decimal import Decimal
+from django.conf import settings
 
-import pytz
 
-
-# Create your models here.
 class UserDiningSettings(models.Model):
     """
     Contains setting related to the dining lists and use of the dining lists.
@@ -33,6 +31,23 @@ class UserDiningStats(models.Model):
     count_shopped = models.IntegerField(default=0)
     count_cooked = models.IntegerField(default=0)
     count_cleaned = models.IntegerField(default=0)
+
+
+class DiningListManager(models.Manager):
+    def on_date(self, date):
+        """
+        Filters for lists on the given date.
+        """
+        return self.filter(date=date)
+
+    def available_slots(self, date):
+        """
+        Returns the number of available slots on given date.
+        """
+        # Get slots occupied by announcements
+        announce_slots = DiningDayAnnouncements.objects.filter(date=date).aggregate(Sum('slots_occupy'))
+        announce_slots = 0 if announce_slots['slots_occupy__sum'] is None else announce_slots['slots_occupy__sum']
+        return settings.MAX_SLOT_NUMBER - len(self.on_date(date)) - announce_slots
 
 
 class DiningList(models.Model):
@@ -75,6 +90,8 @@ class DiningList(models.Model):
     diners = models.IntegerField(default=0)
     min_diners = models.IntegerField(default=4)
     max_diners = models.IntegerField(default=20)
+
+    objects = DiningListManager()
 
     def save(self, *args, **kwargs):
         """
@@ -266,15 +283,15 @@ class DiningList(models.Model):
                 return False
         return True
 
-    # Todo: move static methods to the model manager
+    # Todo: deprecated
     @staticmethod
     def get_lists_on_date(date):
-        """
-        Returns all dining lists on a given date
-        :param date:
-        :return: All dining lists on that date
-        """
-        return DiningList.objects.filter(date=date)
+        return DiningList.objects.on_date(date)
+
+    def get_absolute_url(self):
+        from .views import reverse_day
+        slug = self.association.associationdetails.shorthand
+        return reverse_day('slot_details', self.date, kwargs={'identifier': slug})
 
 
 class DiningEntry(models.Model):
