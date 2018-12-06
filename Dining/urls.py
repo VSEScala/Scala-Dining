@@ -17,6 +17,7 @@ urlpatterns = [
             path('add/', views.EntryAddView.as_view(), name='entry_add'),
             path('add/<search>/', views.EntryAddView.as_view(), name='entry_add'),
             path('join/', views.SlotJoinView.as_view(), name='entry_join'),
+            path('change/', views.SlotInfoChangeView.as_view(), name='slot_change'),
         ])),
     ])),
 ]
