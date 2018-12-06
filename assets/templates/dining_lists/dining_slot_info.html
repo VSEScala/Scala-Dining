@@ -83,6 +83,10 @@
                 Maximum diners allowed
             </div>
         </div>
+        {% if can_change_settings %}
+            {% url 'slot_change' day=date.day month=date.month year=date.year identifier=dining_list.association.associationdetails.shorthand as url%}
+            <a class="btn-block btn btn-primary offset-2 col-6" href={{ url }}>Change information</a>
+        {% endif %}
     </div>
     <hr class="col-12">
     <div class="col-12 pt-4">

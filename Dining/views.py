@@ -7,7 +7,7 @@ from datetime import timedelta
 from django.utils import timezone
 from .models import DiningList, DiningEntry, DiningEntryExternal, DiningDayAnnouncements, DiningComment, \
     DiningCommentView
-from .forms import create_slot_form
+from .forms import *
 from .constants import MAX_SLOT_NUMBER
 from UserDetails.models import AssociationDetails, Association, User
 from django.urls import reverse
@@ -60,7 +60,10 @@ def get_list(current_date, identifier):
     """
     # Get the dining list by the id of the association, shorthand form of the association or the person claimed
     try:
-        return DiningList.objects.get(date=current_date, association_id=identifier)
+        if identifier is int:
+            return DiningList.objects.get(date=current_date, association_id=identifier)
+        else:
+            raise ObjectDoesNotExist("identifier is not an integer")
     except ObjectDoesNotExist:
         try:
             return DiningList.objects.get(date=current_date, association__associationdetails__shorthand=identifier)
@@ -120,7 +123,7 @@ class IndexView(View):
                     self.context['can_create_slot'] = True
                 elif (current_date - timezone.now().date()).days == 0:  # if date is today
                     from .constants import DINING_SLOT_CLAIM_CLOSURE_TIME
-                    if timezone.now().hour < DINING_SLOT_CLAIM_CLOSURE_TIME:  # if it's not past 17:00
+                    if timezone.now().time() < DINING_SLOT_CLAIM_CLOSURE_TIME:  # if it's not past 17:00
                         self.context['can_create_slot'] = True
 
         self.context['interactive'] = True
@@ -485,8 +488,8 @@ class SlotListView(SlotView):
         self.context['tab'] = "list"
 
     @method_decorator(login_required)
-    def get(self, request, day=None, month=None, year=None, identifier=None, *args, **kwargs):
-        result = super(SlotListView, self).get(request, day, month, year, identifier, *args, **kwargs)
+    def get(self, request, day=None, month=None, year=None, identifier=None):
+        result = super(SlotListView, self).get(request, day, month, year, identifier)
         if result is not None:
             return result
 
@@ -572,7 +575,7 @@ class SlotInfoView(SlotView):
 
     @method_decorator(login_required)
     def get(self, request, day=None, month=None, year=None, identifier=None, *args, **kwargs):
-        result = super(SlotInfoView, self).get(request, day, month, year, identifier, *args, **kwargs)
+        result = super(SlotInfoView, self).get(request, day=day, month=month, year=year, identifier=identifier)
         if result is not None:
             return result
 
@@ -584,6 +587,10 @@ class SlotInfoView(SlotView):
         self.context['last_visited'] = last_visit.timestamp
         last_visit.timestamp = timezone.now()
         last_visit.save()
+
+        if self.context['dining_list'].claimed_by == request.user or \
+            self.context['dining_list'].purchaser == request.user:
+            self.context['can_change_settings'] = True
 
         return render(request, self.template, self.context)
 
@@ -599,6 +606,75 @@ class SlotInfoView(SlotView):
         return self.get(request)
 
 
+class SlotInfoChangeView(SlotView):
+    template = "dining_lists/dining_slot_info_alter.html"
+
+    @method_decorator(login_required)
+    def get(self, request, day=None, month=None, year=None, identifier=None, *args, **kwargs):
+        result = super(SlotInfoChangeView, self).get(request, day=day, month=month, year=year, identifier=identifier)
+        if result is not None:
+            return result
+
+        if self.context['dining_list'].claimed_by == request.user:
+            self.context['info_form'] = DiningInfoForm(instance=self.context['dining_list'])
+
+        if self.context['dining_list'].get_purchaser() == request.user:
+            self.context['payment_form'] = DiningPaymentForm(instance=self.context['dining_list'])
+
+        if self.context.get('info_form') is None and self.context.get('payment_form') is None:
+            # User is not allowed on this page
+            messages.add_message(request, messages.WARNING,
+                                 'You have no permission to change the dining list info')
+            return HttpResponseRedirect(reverse_day('slot_details', self.current_date, identifier=identifier))
+
+        return render(request, self.template, self.context)
+
+    def post(self, request, day=None, month=None, year=None, identifier=None, *args, **kwargs):
+        result = super(SlotInfoChangeView, self).post(request, day, month, year, identifier, *args, **kwargs)
+        if result is not None:
+            return result
+
+        is_valid = True
+        can_change = False
+
+        self.context['payment_form'] = None
+
+        # Check if the active user is the current user, if checked after the general info, the local object could have
+        # it's information changed causing usage errors
+        is_purchaser = self.context['dining_list'].get_purchaser() == request.user
+
+        # Check general info
+        if self.context['dining_list'].claimed_by == request.user:
+            can_change = True
+            print(request.POST)
+            self.context['info_form'] = DiningInfoForm(request.POST, instance=self.context['dining_list'])
+            if self.context['info_form'].is_valid():
+                self.context['info_form'].save()
+            else:
+                is_valid = False
+
+        if is_purchaser:
+            can_change = True
+            print(request.POST)
+            self.context['payment_form'] = DiningPaymentForm(request.POST, instance=self.context['dining_list'])
+            if self.context['payment_form'].is_valid():
+                self.context['payment_form'].save()
+            else:
+                is_valid = False
+
+        # Rederict if forms were all valid, stay otherwise
+        if is_valid:
+            if can_change:
+                messages.add_message(request, messages.SUCCESS, "Changes succesfully placed")
+            else:
+                messages.add_message(request, messages.ERROR, "You were not allowed to change anything")
+
+            return HttpResponseRedirect(reverse_day('slot_details', self.current_date, identifier=identifier))
+        else:
+            return render(request, self.template, self.context)
+
+
+
 class SlotAllergyView(SlotView):
     template = "dining_lists/dining_slot_allergy.html"
 
@@ -607,8 +683,8 @@ class SlotAllergyView(SlotView):
         self.context['tab'] = "allergy"
 
     @method_decorator(login_required)
-    def get(self, request, day=None, month=None, year=None, identifier=None, *args, **kwargs):
-        result = super(SlotAllergyView, self).get(request, day, month, year, identifier, *args, **kwargs)
+    def get(self, request, day=None, month=None, year=None, identifier=None):
+        result = super(SlotAllergyView, self).get(request, day=day, month=month, year=year, identifier=identifier)
         if result is not None:
             return result
 

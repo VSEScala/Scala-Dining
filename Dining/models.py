@@ -72,6 +72,8 @@ class DiningList(models.Model):
     dinner_cost_keep_single_constant = models.BooleanField(default=False, verbose_name="Define costs from single price")
     auto_pay = models.BooleanField(default=False)
 
+    tikkie_link = models.CharField(blank=True, null=True, verbose_name="tikkie hyperlink", max_length=50)
+
     diners = models.IntegerField(default=0)
     min_diners = models.IntegerField(default=4)
     max_diners = models.IntegerField(default=20)

@@ -15,5 +15,6 @@ urlpatterns = [
     path('<int:day>/<int:month>/<int:year>/<identifier>/add', views.EntryAddView.as_view(), name='entry_add'),
     path('<int:day>/<int:month>/<int:year>/<identifier>/add/<search>', views.EntryAddView.as_view(), name='entry_add'),
     path('<int:day>/<int:month>/<int:year>/<identifier>/join', views.SlotJoinView.as_view(), name='entry_join'),
+    path('<int:day>/<int:month>/<int:year>/<identifier>/change', views.SlotInfoChangeView.as_view(), name='slot_change'),
     path('', views.IndexView.as_view(), name='index'),
 ]

@@ -1,0 +1,46 @@
+{% extends 'dining_lists/dining_slot.html' %}
+{% load staticfiles %}
+{% load form_extras %}
+
+
+
+{% block details %}
+    <form method="post" class="col-12">
+        {% csrf_token %}
+        {% if info_form %}
+            <h1>
+            General info
+            </h1>
+            {% for field in info_form %}
+                {% include 'snippets/field_snippet.html' %}
+                <br>
+            {% endfor %}
+        {% endif %}
+
+        {% if payment_form %}
+            <h1>
+                Cost and payment
+            </h1>
+            <div class="col-12">
+                Either fill in total cost or single cost
+            </div>
+            {% for field in payment_form %}
+                {% include 'snippets/field_snippet.html' %}
+                <br>
+            {% endfor %}
+        {% else %}
+            <h3>
+                Cost and payment
+            </h3>
+            <div class="col-12">
+                Control given to the purchaser: {{ dining_list.get_purchaser }}
+            </div>
+        {% endif %}
+        <br><br>
+
+        <a href="{% url 'slot_details' day=date.day month=date.month year=date.year identifier=dining_list.association.associationdetails.shorthand %}"
+           class="col-5 btn">
+            Cancel
+        </a>
+        <input type="submit" value="Save" class="col-6 btn btn-primary"/>
+{% endblock %}
