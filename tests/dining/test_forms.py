@@ -4,6 +4,7 @@ from django.test import TestCase
 
 from Dining.forms import CreateSlotForm
 from UserDetails.models import Association, User, UserMemberships
+from Dining.models import DiningList
 
 
 class CreateSlotFormTestCase(TestCase):
@@ -13,18 +14,22 @@ class CreateSlotFormTestCase(TestCase):
         Do not modify the objects created here in tests, see:
         https://docs.djangoproject.com/en/2.1/topics/testing/tools/#django.test.TestCase.setUpTestData
         """
-        cls.association1 = Association.objects.create(name="Auletes")
-        cls.association2 = Association.objects.create(name="Ensuite")
+        cls.association1 = Association.objects.create(name="Quadrivium")
+        cls.association2 = Association.objects.create(name="Knights")
+        cls.association3 = Association.objects.create(name="Scala")
         cls.user1 = User.objects.create_user('jan')
         # cls.user2 = User.objects.create_user('klaas')
-        cls.user1_membership = UserMemberships.objects.create(related_user=cls.user1, association=cls.association1,
+        cls.user1_assoc1 = UserMemberships.objects.create(related_user=cls.user1, association=cls.association1,
+                                                              is_verified=True)
+        cls.user1_assoc2 = UserMemberships.objects.create(related_user=cls.user1, association=cls.association2,
                                                               is_verified=True)
         cls.dining_date = date(2018, 12, 26)
 
     def test_creation(self):
         # Create
-        form_data = {'dish': 'Kwark', 'association': self.association1, 'max_diners': 18, 'serve_time': time(17, 00)}
-        form = CreateSlotForm(self.user1, form_data, date=self.dining_date)
+        form_data = {'dish': 'Kwark', 'association': self.association1.pk, 'max_diners': 18, 'serve_time': time(17, 00)}
+        form = CreateSlotForm(self.user1, self.dining_date, form_data)
+        self.assertTrue(form.is_valid())
         dining_list = form.save()
 
         # Assert
@@ -38,11 +43,20 @@ class CreateSlotFormTestCase(TestCase):
         """
         Tests using an association which the user is not a member of.
 
-        Association 2 with user 1.
+        Association 3 with user 1.
         """
-        # Todo: this test fails! Should add a check for the provided association
-        form_data = {'dish': 'Boter', 'association': self.association2.pk, 'max_diners': 20, 'serve_time': time(18, 00)}
-        # self.assertRaises()
-        form = CreateSlotForm(self.user1, form_data, date=self.dining_date)
-        instance = form.save()
+        form_data = {'dish': 'Boter', 'association': self.association3.pk, 'max_diners': 20, 'serve_time': time(18, 00)}
+        form = CreateSlotForm(self.user1, self.dining_date, form_data)
+        self.assertFalse(form.is_valid())
+        self.assertTrue(form.has_error('association', 'invalid_choice'))
 
+    def test_occupied_association(self):
+        """
+        Creating a dining list on a date which is already occupied for your association.
+        """
+        # Todo: this test fails
+        DiningList.objects.create(date=self.dining_date, association=self.association1)
+        form_data = {'dish': '', 'association': self.association1.pk, 'max_diners': 20, 'serve_time': time(18, 00)}
+        form = CreateSlotForm(self.user1, self.dining_date, form_data)
+        # self.assertFalse(form.is_valid())
+        # self.assertTrue(form.has_error('association', 'invalid_choice'))
