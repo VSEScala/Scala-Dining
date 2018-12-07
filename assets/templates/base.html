@@ -14,6 +14,10 @@
     <link rel="stylesheet" href="{% static 'css/dining.css' %}">
     <link rel="stylesheet" href="{% static 'css/header.css' %}">
 
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.5.0/css/all.css"
+          integrity="sha384-B4dIYHKNBt8Bc12p+WXckhzcICo0wtJAoU8YZTY5qE0Id1GSseTk6S+L3BlXeVIU" crossorigin="anonymous">
+
     <title>{% block title %}Scala Dining {% endblock %}</title>
 </head>
 <body>
@@ -44,17 +48,17 @@
             <div class="header-dropdown">
                 <hr>
                 <a class="header-dropdown-line" href="{% url 'history_lists' %}">
-                    <span href="#" class="header-dropdown-line-content" style="background-image: url(/static/images/History.png);">History</span>
+                    <span href="#" class="header-dropdown-line-content">History</span><i class="fas fa-history"></i>
                 </a>
                 <a class="header-dropdown-line" href="{% url 'history_credits' %}">
-                    <span href="#" class="header-dropdown-line-content" style="background-image: url(/static/images/euro.png);">Credits</span>
+                    <span href="#" class="header-dropdown-line-content">Credits</span><i class="fas fa-euro-sign"></i>
                 </a>
                 <a class="header-dropdown-line" href="{% url 'settings' %}">
-                    <span href="#" class="header-dropdown-line-content" style="background-image: url(/static/images/gear.png);">Settings</span>
+                    <span href="#" class="header-dropdown-line-content">Settings</span><i class="fas fa-cog"></i>
                 </a>
                 {% if request.user.can_access_back %}
                     <a class="header-dropdown-line" href="{% url 'admin:index' %}" target="_blank">
-                        <span href="#" class="header-dropdown-line-content">Control Panel</span>
+                        <span href="#" class="header-dropdown-line-content">Control Panel</span><i class="fas fa-toolbox"></i>
                     </a>
                 {% endif %}
                 {% if request.user.groups.all.count > 0 %}
@@ -68,7 +72,7 @@
                 {% endif %}
                 <hr>
                 <a class="header-dropdown-line mb-4" href="{% url 'logout' %}">
-                    <span class="header-dropdown-line-content" style="background-image: url(/static/images/logout.png);">Log out</span>
+                    <span class="header-dropdown-line-content">Log out</span><i class="fas fa-power-off"></i>
                 </a>
 
             </div>
