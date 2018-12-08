@@ -34,12 +34,6 @@ class UserDiningStats(models.Model):
 
 
 class DiningListManager(models.Manager):
-    def on_date(self, date):
-        """
-        Filters for lists on the given date.
-        """
-        return self.filter(date=date)
-
     def available_slots(self, date):
         """
         Returns the number of available slots on the given date.
@@ -47,7 +41,7 @@ class DiningListManager(models.Manager):
         # Get slots occupied by announcements
         announce_slots = DiningDayAnnouncements.objects.filter(date=date).aggregate(Sum('slots_occupy'))
         announce_slots = 0 if announce_slots['slots_occupy__sum'] is None else announce_slots['slots_occupy__sum']
-        return settings.MAX_SLOT_NUMBER - len(self.on_date(date)) - announce_slots
+        return settings.MAX_SLOT_NUMBER - len(self.filter(date=date)) - announce_slots
 
 
 class DiningList(models.Model):
@@ -288,7 +282,7 @@ class DiningList(models.Model):
     # Todo: deprecated
     @staticmethod
     def get_lists_on_date(date):
-        return DiningList.objects.on_date(date)
+        return DiningList.objects.filter(date=date)
 
     def get_absolute_url(self):
         from .views import reverse_day

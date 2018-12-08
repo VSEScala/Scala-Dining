@@ -84,7 +84,7 @@ def process_date(context, day, month, year):
     return current_date
 
 
-# Todo: deprecate (possibly replace with a method on DiningListManager
+# Todo: deprecate (possibly replace with a method on DiningListManager)
 def get_list(current_date, identifier):
     """
     Returns the dining list for the given date and identifier.

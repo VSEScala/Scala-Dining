@@ -14,28 +14,26 @@ class CreateSlotForm(forms.ModelForm):
 
     def __init__(self, user, date, *args, **kwargs):
         super(CreateSlotForm, self).__init__(*args, **kwargs)
+        self.user = user
+        self.date = date
 
         # Get associations that the user is a member of
         associations = Association.objects.filter(usermemberships__related_user=user)
 
-        # Filter available/unavailable associations (those that have a dining list already on this day)
+        # Filter out unavailable associations (those that have a dining list already on this day)
         dining_lists = DiningList.objects.filter(date=date, association=OuterRef('pk'))
         available = associations.annotate(occupied=Exists(dining_lists)).filter(occupied=False)
         unavailable = associations.annotate(occupied=Exists(dining_lists)).filter(occupied=True)
 
-        if len(unavailable) > 0:
+        if unavailable:
             help_text = _(
                 'Some of your associations are not available since they already have a dining list for this date.')
         else:
             help_text = ''
 
-        # Use a select widget with disabled options
         widget = SelectWithDisabled(disabled_choices=[(a.pk, a.name) for a in unavailable])
 
         self.fields['association'] = forms.ModelChoiceField(queryset=available, widget=widget, help_text=help_text)
-
-        self.user = user
-        self.date = date
 
         if len(available) == 1:
             self.fields['association'].initial = available[0].pk
