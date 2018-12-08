@@ -42,7 +42,7 @@ class DiningListManager(models.Manager):
 
     def available_slots(self, date):
         """
-        Returns the number of available slots on given date.
+        Returns the number of available slots on the given date.
         """
         # Get slots occupied by announcements
         announce_slots = DiningDayAnnouncements.objects.filter(date=date).aggregate(Sum('slots_occupy'))

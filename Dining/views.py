@@ -87,7 +87,7 @@ def process_date(context, day, month, year):
 # Todo: deprecate (possibly replace with a method on DiningListManager
 def get_list(current_date, identifier):
     """
-    Returns the dining list for the given data and identifier.
+    Returns the dining list for the given date and identifier.
     """
     return DiningList.objects.get(date=current_date, association__associationdetails__shorthand=identifier)
 
@@ -117,7 +117,7 @@ class DayView(AbstractDayView):
         in_future = self.date >= timezone.now().date()
         context['can_create_slot'] = DiningList.objects.available_slots(self.date) >= 0 and in_future
 
-        # Don't know what this is
+        # Make the view clickable
         context['interactive'] = True
 
         return context
