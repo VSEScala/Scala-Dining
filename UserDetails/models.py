@@ -2,8 +2,6 @@ from django.db import models
 from django.contrib.auth.models import AbstractUser, Group
 
 
-# Create your models here.
-
 class User(AbstractUser):
 
     def __str__(self):
@@ -11,12 +9,11 @@ class User(AbstractUser):
         if name == " ":
             return "@-"+self.username
         else:
-            return name\
+            return name
 
     def is_verified(self):
         """
         Check if the account is verified by assessing all linked associations
-        :return: Whether the user is verified
         """
         return self.details.is_verified()
 
@@ -28,11 +25,7 @@ class User(AbstractUser):
         return self.is_staff or is_a_boardmember
 
 
-
 class Association(Group):
-    """
-    Create a meta class to obtain personal names instead of usernames
-    """
     class Meta:
         proxy = True
 
@@ -52,29 +45,20 @@ class UserDetail(models.Model):
     """
     related_user = models.OneToOneField(User, related_name="details", on_delete=models.CASCADE, primary_key=True)
     phone_number = models.CharField(max_length=15, blank=True)
-    profile_img = models.ImageField(blank=True)
-    profile_color = models.CharField(max_length=20, blank=True)
 
-    # Check if the account is verified by assessing all linked associations
     def is_verified(self):
         """
         Whether this user is verified as part of a Scala association
-        :return:
         """
         links = UserMemberships.objects.filter(related_user=self.related_user)
 
-        verified = False
-        for membership in links.all():
+        for membership in links:
             if membership.is_verified:
-                verified = True
-        return verified
+                return True
+        return False
 
     def __str__(self):
-        name = self.related_user.first_name + " " + self.related_user.last_name
-        if name == " ":
-            return "@-"+self.related_user.username
-        else:
-            return name
+        return self.related_user.__str__()
 
 
 class UserMemberships(models.Model):

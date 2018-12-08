@@ -92,4 +92,4 @@ class Settings_Essentials_Form(ModelForm):
 class Settings_Dining_Form(ModelForm):
     class Meta:
         model = UserDiningSettings
-        exclude = ('user', 'canSubscribeDiningList', 'canClaimDiningList')
+        exclude = ('user',)
