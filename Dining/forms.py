@@ -4,6 +4,7 @@ from django.utils.translation import gettext as _
 
 from UserDetails.models import Association, User
 from .models import DiningList
+from General.util import SelectWithDisabled
 
 
 class CreateSlotForm(forms.ModelForm):
@@ -17,23 +18,27 @@ class CreateSlotForm(forms.ModelForm):
         # Get associations that the user is a member of
         associations = Association.objects.filter(usermemberships__related_user=user)
 
-        # Filter available associations (those that do not have a dining list already on this day)
+        # Filter available/unavailable associations (those that have a dining list already on this day)
         dining_lists = DiningList.objects.filter(date=date, association=OuterRef('pk'))
-        available_associations = associations.annotate(occupied=Exists(dining_lists)).filter(occupied=False)
+        available = associations.annotate(occupied=Exists(dining_lists)).filter(occupied=False)
+        unavailable = associations.annotate(occupied=Exists(dining_lists)).filter(occupied=True)
 
-        # Todo: could optionally use disabled options for unavailable associations (requires a custom select widget)
-        if len(available_associations) < len(associations):
-            help_text = _('Some of your associations are not available since they already have a dining list for this date')
+        if len(unavailable) > 0:
+            help_text = _(
+                'Some of your associations are not available since they already have a dining list for this date.')
         else:
             help_text = ''
-        self.fields['association'] = forms.ModelChoiceField(queryset=available_associations,
-                                                            help_text=help_text)
+
+        # Use a select widget with disabled options
+        widget = SelectWithDisabled(disabled_choices=[(a.pk, a.name) for a in unavailable])
+
+        self.fields['association'] = forms.ModelChoiceField(queryset=available, widget=widget, help_text=help_text)
+
         self.user = user
         self.date = date
 
-        if len(available_associations) == 1:
-            self.fields['association'].disabled = True
-            self.fields['association'].initial = available_associations[0].pk
+        if len(available) == 1:
+            self.fields['association'].initial = available[0].pk
 
     def save(self, commit=True):
         instance = super().save(commit=False)
