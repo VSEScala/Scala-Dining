@@ -33,22 +33,9 @@
                             Already have an account? Log in!
                         </div>
                         {% csrf_token %}
-                        <label class="col-lg-3 show-lg">username</label>
-                        <input class="col-lg-8 icon" type="text" id="username" name="username"
-                               placeholder="Username"/><br>
-                        <label class="col-lg-3 show-lg">password</label>
-                        <input class="col-lg-8 icon" type="password" name="password" id="password"
-                               placeholder="Password"/><br>
-                        <div class="offset-lg-3 col-lg-8 p-0">
-                            {% if sign_in_error %}
-                                <div class="hasError">
-                                    {{ sign_in_error }}
-                                </div>
-                                <a href="#" class="btn-block btn btn-link">Forgot password?</a>
-                            {% endif %}
-                        </div>
+                        {% include "snippets/bootstrap_form.html" %}
                     </div>
-                    <input class="btn btn-block btn-primary" type="submit" value="Log in"/>
+                    <button type="submit" class="btn btn-block btn-primary" style="margin-top: -1rem;">Log in</button>
                 </form>
             </div>
         </div>

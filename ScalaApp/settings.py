@@ -80,7 +80,7 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'ScalaApp.wsgi.application'
 
-LOGIN_REDIRECT_URL = '/userdetails/'
+LOGIN_REDIRECT_URL = 'index'
 
 # (dubbelop)
 # STATIC_URL = '/static/'

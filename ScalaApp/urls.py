@@ -18,11 +18,11 @@ from django.urls import include, path
 from django.conf import settings
 from django.conf.urls.static import static
 from UserDetails import views as UDviews
+from django.contrib.auth.views import LoginView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('login/', UDviews.LogInView.as_view(), name='login'),
-    path('accounts/login/', UDviews.LogInView.as_view(), name='login'),
+    path('accounts/login/', LoginView.as_view(), name='login'),
     path('logout/', UDviews.log_out, name='logout'),
     path('register/', UDviews.RegisterView.as_view(), name='register'),
     path('user/', include('UserDetails.urls_user')),
