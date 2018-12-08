@@ -25,31 +25,35 @@
             <div class="header-dropdown">
                 <hr>
                 <a class="header-dropdown-line" href="{% url 'history_lists' %}">
-                    <span href="#" class="header-dropdown-line-content">History</span><i class="fas fa-history"></i>
+                    <span href="#" class="header-dropdown-line-content">History</span><i class="fas fa-history fa-fw"></i>
                 </a>
                 <a class="header-dropdown-line" href="{% url 'history_credits' %}">
-                    <span href="#" class="header-dropdown-line-content">Credits</span><i class="fas fa-euro-sign"></i>
+                    <span href="#" class="header-dropdown-line-content">Credits</span><i class="fas fa-euro-sign fa-fw"></i>
                 </a>
                 <a class="header-dropdown-line" href="{% url 'settings' %}">
-                    <span href="#" class="header-dropdown-line-content">Settings</span><i class="fas fa-cog"></i>
+                    <span href="#" class="header-dropdown-line-content">Settings</span><i class="fas fa-cog fa-fw"></i>
                 </a>
                 {% if request.user.can_access_back %}
                     <a class="header-dropdown-line" href="{% url 'admin:index' %}" target="_blank">
-                        <span href="#" class="header-dropdown-line-content">Control Panel</span><i class="fas fa-toolbox"></i>
+                        <span href="#" class="header-dropdown-line-content">Control Panel</span><i class="fas fa-toolbox fa-fw"></i>
                     </a>
                 {% endif %}
-                {% if request.user.groups.all.count > 0 %}
+                {% if user.groups.all.count > 0 %}
                     <hr>
-                    {% for group in request.user.groups.all %}
+                    {% for group in user.groups.all %}
                         <a class="header-dropdown-line" href="{% url 'association_credits' association_name=group.associationdetails.shorthand %}">
-                            <span href="#" class="header-dropdown-line-content" style="background-image: url({{ group.associationdetails.image.url }})">
-                                {{ group.associationdetails.shorthand }}</span>
+                            <span href="#" class="header-dropdown-line-content">
+                                {{ group.name }}
+                            </span>
+                            <i class="fas fa-fw">
+                                <img src="{{ group.associationdetails.image.url }}" style="width: 100%;">
+                            </i>
                         </a>
                     {% endfor %}
                 {% endif %}
                 <hr>
                 <a class="header-dropdown-line mb-4" href="{% url 'logout' %}">
-                    <span class="header-dropdown-line-content">Log out</span><i class="fas fa-power-off"></i>
+                    <span class="header-dropdown-line-content">Log out</span><i class="fas fa-power-off fa-fw"></i>
                 </a>
 
             </div>
