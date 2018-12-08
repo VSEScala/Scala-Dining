@@ -1,27 +1,10 @@
-{% load staticfiles %}
-{% load form_extras %}
+{% extends 'base_no_navbar.html' %}
+{% load credit_tags %}
 
+{# todo: https://fontawesome.com/how-to-use/on-the-web/styling/fixed-width-icons #}
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <!--link rel="stylesheet" href="{% static 'css/bootstrap.min.css' %}"-->
-    <link rel="stylesheet" href="{% static 'css/base_sizes.css' %}">
-    <link rel="stylesheet" href="{% static 'css/base-colors.css' %}">
-    <link rel="stylesheet" href="{% static 'css/dining.css' %}">
-    <link rel="stylesheet" href="{% static 'css/header.css' %}">
-
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.5.0/css/all.css"
-          integrity="sha384-B4dIYHKNBt8Bc12p+WXckhzcICo0wtJAoU8YZTY5qE0Id1GSseTk6S+L3BlXeVIU" crossorigin="anonymous">
-
-    <title>{% block title %}Scala Dining {% endblock %}</title>
-</head>
-<body>
-
+{% block body %}
+<!-- Navbar -->
 <div class="row m-0 header-main mb-3">
     <div class="col-12 row width-max-lg">
         <div class="header-title row">
@@ -33,14 +16,8 @@
         </div>
         <div class="header-personal row m-0">
             <div class="header-personal-text">
-                {{ request.user }}<br>
-                {% with request.user.usercredit.get_current_credits as credit %}
-                    {% if credit < 0 %}
-                        -&euro;{{ credit|multiply:-1 }}
-                    {% else %}
-                        &euro;{{ credit }}
-                    {% endif %}
-                {% endwith %}
+                {{ user }}<br>
+                {{ user.usercredit.get_current_credits|euro }}
             </div>
             <div class="header-personal-image"></div>
             <label for="header-dropdown" class="header-title-link"></label>
@@ -97,29 +74,18 @@
     {% endif %}
 </div>
 
-
-
-{% block header %}
-
-{% endblock header %}
-
-
 <div class="container">
     <div class="row width-max-lg text-size-md-5">
         <div class="col-12">
             <!-- Content -->
-            {% block content %}
-                EMPTY
-            {% endblock %}
+            {% block content %}{% endblock %}
         </div>
     </div>
 </div>
 
 <!-- Debug info -->
-<script>
-    var sql_queries = {{ sql_queries|safe }};
-    console.log(sql_queries);
-</script>
-
-</body>
-</html>
+{#<script>#}
+{#    var sql_queries = {{ sql_queries|safe }};#}
+{#    console.log(sql_queries);#}
+{#</script>#}
+{% endblock %}

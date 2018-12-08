@@ -1,15 +1,9 @@
 {% extends 'accounts/settings_base.html' %}
 
 {% block details%}
-    <form method="post" class="col-12">
+    <form method="post">
         {% csrf_token %}
-
-        {% for field in form %}
-            {% include 'snippets/field_snippet.html' %}
-            <br>
-        {% endfor %}
-
+        {% include "snippets/bootstrap_form.html" %}
         <input type="submit" value="Save" class="btn btn-block btn-primary"/>
     </form>
-
 {% endblock %}

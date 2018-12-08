@@ -45,52 +45,19 @@ class RegisterUserDetails(forms.ModelForm):
 
 
 class RegisterAssociationLinks(forms.Form):
-
-    def __init__(self, *args, **kwargs):
-        super(RegisterAssociationLinks, self).__init__(*args, **kwargs)
-
-        #get the first argument
-        postdetails = None
-        if args is not None and len(args) > 0:
-            postdetails = args[0]
-
-            #Create the checkboxes for all associations
-        for association in Association.objects.all():
-            field_name = "association_"+str(association.id)
-
-            # find argument in given arguments
-            value = False
-            if postdetails is not None:
-                if postdetails.__contains__(field_name):
-                    value = postdetails[field_name]
-
-            self.fields[field_name] = forms.BooleanField(label=association.name, initial=value, required=False, label_suffix='')
-
-    def clean(self):
-        super(RegisterAssociationLinks, self).clean()
-
-        #Check if at least one association is present
-        for association in Association.objects.all():
-            field_name = "association_"+str(association.id)
-
-            if self.cleaned_data.get(field_name):
-                return self.cleaned_data
-
-        #no association link is present
-        self.add_error(None, "You need to be member of at least one association")
+    # Could change the widget to e.g. checkboxes
+    associations = forms.MultipleChoiceField(choices=[(a.pk, a.name) for a in Association.objects.all()],
+                                             help_text='At which associations are you active?')
 
     def create_links_for(self, user):
-        for association in Association.objects.all():
-            field_name = "association_"+str(association.id)
-
-            if self.cleaned_data.get(field_name):
-                # Signed up for this association
-                UserMemberships(related_user=user, association=association).save()
+        for association in self.cleaned_data['associations']:
+            UserMemberships.objects.create(related_user=user, association=association)
 
 
 class Settings_Essentials_Form(ModelForm):
     password_prev = forms.CharField(widget=forms.PasswordInput, required=False, label="Current password")
-    password_new = forms.CharField(widget=forms.PasswordInput, required=False, label="New password", help_text="Leave empty if you don't want to change password")
+    password_new = forms.CharField(widget=forms.PasswordInput, required=False, label="New password",
+                                   help_text="Leave empty if you don't want to change password")
     password_check = forms.CharField(widget=forms.PasswordInput, required=False, label="Repeat new password")
 
     class Meta:
@@ -100,7 +67,7 @@ class Settings_Essentials_Form(ModelForm):
     def clean(self):
 
         # If the password needs to be changed (i.e. a new password is given
-        if len(self.data['password_new'])>0:
+        if len(self.data['password_new']) > 0:
             user = authenticate(username=self.instance.username, password=self.data['password_prev'])
             if user is None:
                 self.add_error('password_prev', "Password is not correct")
@@ -115,7 +82,7 @@ class Settings_Essentials_Form(ModelForm):
     def save(self, commit=True):
         super(Settings_Essentials_Form, self).save()
 
-        if len(self.data['password_new'])>0:
+        if len(self.data['password_new']) > 0:
             self.instance.set_password(self.cleaned_data["password_new"])
 
         if commit:
@@ -123,7 +90,6 @@ class Settings_Essentials_Form(ModelForm):
 
 
 class Settings_Dining_Form(ModelForm):
-
     class Meta:
         model = UserDiningSettings
         exclude = ('user', 'canSubscribeDiningList', 'canClaimDiningList')
