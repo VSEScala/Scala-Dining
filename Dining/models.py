@@ -201,7 +201,7 @@ class DiningList(models.Model):
         :return: The diningEntry instance
         """
         try:
-            return self.diningentry_set.get(user_id=user_id)
+            return self.dining_entries.get(user_id=user_id)
         except ObjectDoesNotExist:
             return None
 
@@ -210,7 +210,7 @@ class DiningList(models.Model):
         Returns the entry with the given id that is affiliated with this dining list
         """
         try:
-            return self.diningentry_set.get(id=entry_id)
+            return self.dining_entries.get(id=entry_id)
         except ObjectDoesNotExist:
             return None
 
@@ -219,7 +219,7 @@ class DiningList(models.Model):
         Returns the external entry instance that is affiliated with this dining list
         """
         try:
-            return self.diningentryexternal_set.get(id=entry_id)
+            return self.dining_entries_external.get(id=entry_id)
         except ObjectDoesNotExist:
             return None
 
@@ -272,7 +272,7 @@ class DiningList(models.Model):
         return reverse_day('slot_details', self.date, kwargs={'identifier': slug})
 
     def diner_count(self):
-        return self.diningentry_set.count() + self.diningentryexternal_set.count()
+        return self.dining_entries.count() + self.dining_entries_external.count()
 
 
 class DiningEntry(models.Model):
@@ -281,9 +281,9 @@ class DiningEntry(models.Model):
     """
 
     # Dining list value should never be changed
-    dining_list = models.ForeignKey(DiningList, on_delete=models.CASCADE, related_name='diningentry_set')
+    dining_list = models.ForeignKey(DiningList, on_delete=models.CASCADE, related_name='dining_entries')
     # User value should never be changed
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='dining_entries')
     added_by = models.ForeignKey(User, related_name="added_entry_on_dining", on_delete=models.SET_DEFAULT, blank=True,
                                  default=None, null=True)
     has_shopped = models.BooleanField(default=False)
@@ -363,10 +363,12 @@ class DiningEntryExternal(models.Model):
     Todo: has a lot of code duplication with DiningEntry, needs to be merged somehow
     """
     # Dining list value should never be changed
-    dining_list = models.ForeignKey(DiningList, on_delete=models.CASCADE, related_name='diningentryexternal_set')
+    dining_list = models.ForeignKey(DiningList, on_delete=models.CASCADE, related_name='dining_entries_external')
     name = models.CharField(max_length=40)
     # User value should never be changed
-    user = models.ForeignKey(User, verbose_name="added by (has cost responsibility)", on_delete=models.CASCADE)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, verbose_name="added by",
+                             help_text="The costs will be subtracted from this user", on_delete=models.CASCADE,
+                             related_name="dining_entries_external")
     has_paid = models.BooleanField(default=False)
 
     def save(self, *args, **kwargs):

@@ -55,7 +55,7 @@ class DiningInfoForm(forms.ModelForm):
         dining_list = kwargs.get("instance")
         super(DiningInfoForm, self).__init__(*args, **kwargs)
 
-        query = User.objects.filter(diningentry__in=dining_list.diningentry_set.all())
+        query = User.objects.filter(dining_entries__in=dining_list.dining_entries.all())
         self.fields['purchaser'].queryset = query
 
     class Meta:

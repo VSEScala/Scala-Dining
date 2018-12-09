@@ -1,124 +1,72 @@
+from datetime import datetime
+from decimal import Decimal
+
+from django.contrib.contenttypes.models import ContentType
+from django.core.exceptions import ValidationError, ObjectDoesNotExist
+from django.core.validators import MinValueValidator
 from django.db import models, transaction
 from django.db.models import F
+from django.conf import settings
+
 from UserDetails.models import User, Association
-from django.contrib.contenttypes.models import ContentType
-from django.core.validators import MinValueValidator
-from django.core.exceptions import ValidationError, ObjectDoesNotExist
-from decimal import Decimal
-from datetime import datetime
 
 
-# Create your models here.
+class TransactionManager(models.Manager):
+    pass
+
+
 class Transaction(models.Model):
-    date = models.DateField(auto_now_add=True)
-    source_user = models.ForeignKey(User, related_name="transaction_source", on_delete=models.SET_NULL, null=True, blank=True, verbose_name="The user giving the money")
-    source_association = models.ForeignKey(Association, related_name="transaction_source", on_delete=models.SET_NULL, null=True, blank=True, verbose_name="The association giving the money")
-    amount = models.DecimalField(verbose_name="Money transferred", decimal_places=2, max_digits=4, validators=[MinValueValidator(Decimal('0.01'))])
-    target_user = models.ForeignKey(User, related_name="transaction_target", on_delete=models.SET_NULL, null=True, blank=True, verbose_name="The user receiving the money")
-    target_association = models.ForeignKey(Association, related_name="transaction_target", on_delete=models.SET_NULL, null=True, blank=True, verbose_name="The association recieving the money")
-    description = models.CharField(default="", blank=True, max_length=50)
+    """
+
+    Todo: the following database constraints should be in place:
+
+    CHECK(amount > 0),
+    CHECK(source_user IS NULL OR source_association IS NULL), -- there must be at most one source
+    CHECK(target_user IS NULL OR target_association IS NULL), -- there must be at most one target
+    -- there must be at least a source or a target
+    CHECK(NOT(source_user IS NULL AND source_association IS NULL AND target_user IS NULL AND target_association IS NULL)),
+
+    These probably need to be inserted using custom migrations, however these are not yet in git.
+    """
+    moment = models.DateTimeField(auto_now_add=True)
+    source_user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name="transaction_source",
+                                    on_delete=models.PROTECT, null=True, blank=True)
+    source_association = models.ForeignKey(Association, related_name="transaction_source", on_delete=models.PROTECT,
+                                           null=True, blank=True)
+    target_user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name="transaction_target",
+                                    on_delete=models.PROTECT, null=True, blank=True)
+    target_association = models.ForeignKey(Association, related_name="transaction_target", on_delete=models.PROTECT,
+                                           null=True, blank=True)
+    amount = models.DecimalField(decimal_places=2, max_digits=16, validators=[MinValueValidator(Decimal('0.01'))])
+    notes = models.CharField(max_length=200, blank=True)
+
+    objects = TransactionManager()
 
     def source(self):
-        if self.source_association is None:
-            return self.source_user
-        else:
-            return self.source_association
+        """
+        Returns the transaction source which is a user or an association.
+        """
+        return self.source_user if self.source_user else self.source_association
 
     def target(self):
-        if self.target_association is None:
-            return self.target_user
-        else:
-            return self.target_association
+        """
+        Returns the transaction target which is a user or an association.
+        """
+        return self.target_user if self.target_user else self.target_association
 
     def save(self, *args, **kwargs):
-        # If older versions are present, retract them
-        if (self.id):
-            # There is an older version get it.
-            old_version = Transaction.objects.get(id=self.id)
-            old_source = old_version.source()
-            old_target = old_version.target()
-
-            has_source_changed = old_source != self.source()
-            has_target_changed = old_target != self.target()
-
-            amount = self.amount - old_version.amount
-
-            with transaction.atomic():
-                if has_source_changed:
-                    if old_source is not None:
-                        credit = old_source.get_credit_containing_instance()
-                        credit.credit = F('credit') + old_version.amount
-                        credit.save()
-                    if self.source() is not None:
-                        credit = self.source().get_credit_containing_instance()
-                        credit.credit = F('credit') - self.amount
-                        credit.save()
-                elif amount != 0:
-                    if self.source() is not None:
-                        credit = self.source().get_credit_containing_instance()
-                        credit.credit = F('credit') - amount
-                        credit.save()
-
-                if has_target_changed:
-                    if old_target is not None:
-                        credit = old_target.get_credit_containing_instance()
-                        credit.credit = F('credit') - old_version.amount
-                        credit.save()
-                    if self.target() is not None:
-                        credit = self.target().get_credit_containing_instance()
-                        credit.credit = F('credit') + self.amount
-                        credit.save()
-                elif amount != 0:
-                    if self.target() is not None:
-                        credit = self.target().get_credit_containing_instance()
-                        credit.credit = F('credit') + amount
-                        credit.save()
-
-                super(Transaction, self).save(*args, **kwargs)
-
-        else:
-            with transaction.atomic():
-                if self.source() is not None:
-                    credit = self.source().get_credit_containing_instance()
-                    credit.credit = F('credit') - self.amount
-                    credit.save()
-                if self.target() is not None:
-                    credit = self.target().get_credit_containing_instance()
-                    credit.credit = F('credit') + self.amount
-                    credit.save()
-
-                super(Transaction, self).save(*args, **kwargs)
+        if self.pk:
+            raise ValueError("Transaction change is not allowed")
+        super().save(*args, **kwargs)
 
     def delete(self, *args, **kwargs):
-        with transaction.atomic():
-            if self.source() is not None:
-                credit = self.source().get_credit_containing_instance()
-                credit.credit = F('credit') + self.amount
-                credit.save()
-            if self.target() is not None:
-                credit = self.target().get_credit_containing_instance()
-                credit.credit = F('credit') - self.amount
-                credit.save()
-
-            super(Transaction, self).delete(*args, **kwargs)
-
-    def clean(self):
-        if self.source() is None:
-            raise ValidationError({
-                'source_user': ValidationError('Either a user or association should be given as a source', code='invalid'),
-                'source_association': ValidationError('Either a user or association should be given as a source', code='invalid'),
-            })
-        if self.target() is None:
-            raise ValidationError({
-                'target_user': ValidationError('Either a user or association should be given as a target', code='invalid'),
-                'target_association': ValidationError('Either a user or association should be given as a target.', code='invalid'),
-            })
-        super(Transaction, self).clean()
+        raise ValueError("Transaction deletion is not allowed")
 
     def __str__(self):
-        return "€"+str(self.amount) + " " + str(self.source()) + " to " + str(self.target())
+        return "{} | {} | {} → {} | {}".format(self.moment, self.amount, self.source(), self.target(), self.notes)
 
 
+# Todo: remove
 class AssociationCredit(models.Model):
     association = models.ForeignKey(Association, on_delete=models.SET_NULL, null=True)
     start_date = models.DateField(auto_now_add=True)
@@ -148,11 +96,13 @@ class AssociationCredit(models.Model):
 
     def __str__(self):
         if self.end_date is not None:
-            return self.association.name + " [" + self.start_date.strftime('%x') + " - " + self.end_date.strftime('%x') + "]"
+            return self.association.name + " [" + self.start_date.strftime('%x') + " - " + self.end_date.strftime(
+                '%x') + "]"
         else:
             return self.association.name + " [" + self.start_date.strftime('%x') + " - now ]"
 
 
+# Todo: remove
 class UserCredit(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     credit = models.DecimalField(verbose_name="Money credit", decimal_places=2, max_digits=5, default=0)
@@ -185,7 +135,7 @@ class UserCredit(models.Model):
             if self.credit < 0:
                 self.negative_since = datetime.now().date()
                 super(UserCredit, self).save(update_fields=['negative_since'])
-        else:   # if credits are no longer negative
+        else:  # if credits are no longer negative
             if self.credit >= 0:
                 self.negative_since = None
                 super(UserCredit, self).save(update_fields=['negative_since'])

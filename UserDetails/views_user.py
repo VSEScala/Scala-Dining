@@ -39,11 +39,11 @@ class CreditsOverview(View):
         lower_bound = length * (page - 1)
         upper_bound = length * page
 
-        dining_lists = DiningList.objects.filter(diningentry__user=request.user)
-        dining_lists = DiningList.objects.filter(diningentryexternal__user=request.user).union(dining_lists)
+        dining_lists = DiningList.objects.filter(dining_entries__user=request.user)
+        dining_lists = DiningList.objects.filter(dining_entries_external__user=request.user).union(dining_lists)
 
-        transactions = Transaction.objects.filter(source_user=request.user, source_association=None)
-        transactions = Transaction.objects.filter(target_user=request.user, target_association=None).union(transactions)
+        transactions = Transaction.objects.filter(source_user=request.user)
+        transactions = Transaction.objects.filter(target_user=request.user).union(transactions)
 
         entries = []
         for entry in dining_lists:
@@ -55,7 +55,7 @@ class CreditsOverview(View):
                 entry.totalcost -= entry.get_credit_cost()
 
             # Get all the external entries
-            entry.ext_members = entry.diningentryexternal_set.filter(user=request.user)
+            entry.ext_members = entry.dining_entries_external.filter(user=request.user)
             if len(entry.ext_members) > 0:
                 entry.totalcost -= entry.get_credit_cost() * len(entry.ext_members)
                 entry.has_externals = True

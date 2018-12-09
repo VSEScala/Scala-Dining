@@ -458,9 +458,9 @@ class SlotListView(SlotView):
 
         self.context['can_delete_some'] = False
         entries = []
-        for entry in self.context['dining_list'].diningentry_set.all():
+        for entry in self.context['dining_list'].dining_entries.all():
             entries.append(entry)
-        for entry in self.context['dining_list'].diningentryexternal_set.all():
+        for entry in self.context['dining_list'].dining_entries_external.all():
             if entry.user == request.user:
                 self.context['can_delete_some'] = True
             entries.append(entry)
@@ -487,7 +487,7 @@ class SlotListView(SlotView):
 
         entries = {}
         # Loop over all user entries, and store them
-        for entry in dining_list.diningentry_set.all():
+        for entry in dining_list.dining_entries.all():
             if can_adjust_stats:
                 entry.has_shopped = False
                 entry.has_cooked = False
@@ -498,7 +498,7 @@ class SlotListView(SlotView):
 
         # Loop over all external entries, and store them
         if can_adjust_paid:
-            for entry in dining_list.diningentryexternal_set.all():
+            for entry in dining_list.dining_entries_external.all():
                 entry.has_paid = False
                 entries["E" + str(entry.id)] = entry
 
@@ -654,7 +654,7 @@ class SlotAllergyView(SlotView):
         from django.db.models import CharField
         from django.db.models.functions import Length
         CharField.register_lookup(Length)
-        self.context['allergy_entries'] = self.context['dining_list'].diningentry_set.filter(
+        self.context['allergy_entries'] = self.context['dining_list'].dining_entries.filter(
             user__userdiningsettings__allergies__length__gt=1)
 
         return render(request, self.template, self.context)
