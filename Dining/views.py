@@ -36,6 +36,12 @@ class AbstractDayView(LoginRequiredMixin, TemplateView):
         context = super().get_context_data(**kwargs)
         # Store date
         self.date = date(self.kwargs['year'], self.kwargs['month'], self.kwargs['day'])
+
+        if (self.date - timezone.now().date()).days == 0:
+            context['is_today'] = True
+        else:
+            context['is_today'] = False
+
         # Return 404 when weekend (!)
         if self.date.weekday() >= 5:
             raise Http404('Weekends are not available')

@@ -9,8 +9,9 @@
         <a href="{% url 'day_view' day=previous_date.day month=previous_date.month year=previous_date.year %}"
            class="col-2 btn btn-block btn-blank">&#x25C0;</a>
 
-        <div class="text-center col-8 ">
-            {{ date|naturalday|capfirst }}
+        <div class="text-center col-8
+            {% if is_today %} font-bold {% endif %}">
+            {{ date|date|capfirst }}
         </div>
 
         <a href="{% url 'day_view' year=next_date.year month=next_date.month day=next_date.day %}"
