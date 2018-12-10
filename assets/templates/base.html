@@ -41,7 +41,7 @@
                     {% for group in user.groups.all %}
                         <a class="header-dropdown-line" href="{% url 'association_credits' association_name=group.associationdetails.shorthand %}">
                             <span href="#" class="header-dropdown-line-content">
-                                {{ group.name }}
+                                {{ group.associationdetails.shorthand }}
                             </span>
                             <i class="fas fa-fw">
                                 <img src="{{ group.associationdetails.image.url }}" style="width: 100%;">
