@@ -1,30 +1,21 @@
 {% extends 'base.html' %}
-{% load staticfiles %}
 
-{% block title %}Scala Dining {{ date }} {% endblock %}
+{% block title %}Scala Dining {{ date }}{% endblock %}
 
 {% block content %}
     <div class="col-12 row p-0 m-0">
-        {% if is_today %}
-            <div class="offset-2 text-center col-8 ">
-            <b>{{ datename }}</b>
-            </div>
-        {% else %}
-            <div class="offset-2 text-center col-8">
-            {{ datename }}
-            </div>
-    {% endif %}
+        <div class="offset-2 text-center col-8 ">
+            {# To specify the date format, see https://docs.djangoproject.com/en/2.1/ref/settings/#date-format #}
+            {{ date }}
+        </div>
     </div>
 
-    <div class="">
-    <h3>Create new dining list</h3>
+    <div>
+        <h3>Create new dining list</h3>
         <form method="post">
             {% csrf_token %}
-            {% for field in slot_form %}
-                {% include 'snippets/field_snippet.html' %}
-                <br>
-            {% endfor %}
-            <input type="submit" value="Create Dining Slot" class="btn btn-block btn-primary"/>
+            {% include "snippets/bootstrap_form.html" with form=slot_form %}
+            <input type="submit" value="Create dining slot" class="btn btn-block btn-primary"/>
         </form>
     </div>
 {% endblock %}

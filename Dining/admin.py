@@ -2,27 +2,16 @@ from django.contrib import admin
 from Dining.models import *
 
 
-# Register your models here.
-
-
-
 class DiningSettingsAdmin(admin.ModelAdmin):
     """
     Set up limited view of the user page
     """
 
-    list_display = ('user', 'canSubscribeDiningList')
+    list_display = ('user', )
 
-    fields = ('user',
-              ('canSubscribeDiningList', 'canClaimDiningList'),
-              'allergies',)
-              #('count_subscribed', 'count_shopped', 'count_cooked', 'count_cleaned'),)
+    fields = ('user', 'allergies',)
 
     actions = ['credit_zero']
-
-    def credit_zero(self, request, queryset):
-        queryset.update(count_subscribed=0, count_shopped=0, count_cooked=0, count_cleaned=0)
-    credit_zero.short_description = "Set credit to zero"
 
     #readonly_fields = ('user',)
 
@@ -101,6 +90,5 @@ class DiningListCommentsAdmin(admin.ModelAdmin):
 admin.site.register(UserDiningSettings, DiningSettingsAdmin)
 admin.site.register(DiningList, DiningListAdmin)
 admin.site.register(DiningListComment, DiningListCommentsAdmin)
-admin.site.register(UserDiningStats)
 admin.site.register(DiningDayAnnouncements)
 admin.site.register(DiningCommentView)

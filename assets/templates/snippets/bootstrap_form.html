@@ -1,0 +1,50 @@
+{# Bootstrap 4 horizontal form #}
+
+{% load widget_tweaks %}
+
+{% for hidden in form.hidden_fields %}{{ hidden }}{% endfor %}
+
+{# Non field errors #}
+{% if form.non_field_errors %}
+    <div class="alert alert-danger" role="alert">
+        {% for error in form.non_field_errors %}
+            {{ error }}
+        {% endfor %}
+    </div>
+{% endif %}
+
+{% for field in form.visible_fields %}
+    <div class="form-group row">
+        {# The col width is hardcoded on purpose but could be softcoded as explained here: #}
+        {# https://docs.djangoproject.com/en/2.1/ref/templates/builtins/#include #}
+
+        {# Field label #}
+        <label for="{{ field.id_for_label }}" class="col-sm-3 col-form-label">
+            {{ field.label }}
+        </label>
+        <div class="col-sm-9">
+            {# Field widget #}
+            {% if form.is_bound %}
+                {% if field.errors %}
+                    {# Errors present #}
+                    {% render_field field class="form-control is-invalid" placeholder=field.label %}
+                    {% for error in field.errors %}
+                        <div class="invalid-feedback">
+                            {{ error }}
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    {# No errors #}
+                    {% render_field field class="form-control is-valid" placeholder=field.label %}
+                {% endif %}
+            {% else %}
+                {# Not submitted yet #}
+                {% render_field field class="form-control" placeholder=field.label %}
+            {% endif %}
+            {# Help text #}
+            {% if field.help_text %}
+                <small class="form-text text-muted">{{ field.help_text }}</small>
+            {% endif %}
+        </div>
+    </div>
+{% endfor %}

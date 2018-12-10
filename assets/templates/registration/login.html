@@ -1,0 +1,45 @@
+{% extends 'base_no_navbar.html' %}
+
+{% block body %}
+<div class="col-12  min-height-33vh min-height-sm-200px">
+    <div class="DiningLogo"></div>
+    <p class="text-center DiningTitle">Scala Dining</p>
+
+    <div class="show-sm">
+    </div>
+</div>
+
+
+<div class="container">
+    <div class="row width-max-lg text-center text-size-md-5">
+        <div class="col-sm-6 order-sm-1 min-height-25vh min-height-sm-50vh ">
+            <div class="login-veralign">
+                <div class="min-height-sm-200px">
+                    Are you hungry?
+                    <br>
+                    Sign up now and join dinner with the other culture associations.
+                </div>
+                <a class="btn btn-block btn-primary" href="{% url 'register' %}">Create account</a>
+            </div>
+            <div class="login-horline hide-sm"></div>
+        </div>
+        <div class="col-sm-6 order-sm-0 min-height-33vh ">
+            <div class="login-verline show-sm"></div>
+
+            <div class="login-veralign">
+                <form method="post">
+                    <div class="min-height-sm-200px">
+                        <div class="hide-sm">
+                            Already have an account? Log in!
+                        </div>
+                        {% csrf_token %}
+                        {% include "snippets/bootstrap_form.html" %}
+                    </div>
+                    <button type="submit" class="btn btn-block btn-primary" style="margin-top: -1rem;">Log in</button>
+                </form>
+            </div>
+        </div>
+        <!--<div class="verticalLine"></div>-->
+    </div>
+</div>
+{% endblock %}

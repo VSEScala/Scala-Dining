@@ -1,45 +1,52 @@
 from django import forms
-from .models import DiningList, DiningEntry
+from django.db.models import OuterRef, Exists
+from django.utils.translation import gettext as _
+
 from UserDetails.models import Association, User
+from .models import DiningList
+from General.util import SelectWithDisabled
 
 
-def create_slot_form(user, info=None, date=None):
-    """
-    Return the slot form class specefied for the specific user
-    :param date:
-    :param info:
-    :param user: The current user
-    :return: The form
-    """
+class CreateSlotForm(forms.ModelForm):
+    class Meta:
+        model = DiningList
+        fields = ('dish', 'association', 'max_diners', 'serve_time')
 
-    association_set = Association.objects.filter(usermemberships__related_user=user)
+    def __init__(self, user, date, *args, **kwargs):
+        super(CreateSlotForm, self).__init__(*args, **kwargs)
+        self.user = user
+        self.date = date
 
-    class CreateSlotForm(forms.ModelForm):
-        association = forms.ModelChoiceField(queryset=association_set)
+        # Get associations that the user is a member of
+        associations = Association.objects.filter(usermemberships__related_user=user)
 
-        class Meta:
-            model = DiningList
-            fields = ('dish', 'association', 'max_diners', 'serve_time')
+        # Filter out unavailable associations (those that have a dining list already on this day)
+        dining_lists = DiningList.objects.filter(date=date, association=OuterRef('pk'))
+        available = associations.annotate(occupied=Exists(dining_lists)).filter(occupied=False)
+        unavailable = associations.annotate(occupied=Exists(dining_lists)).filter(occupied=True)
 
-        def __init__(self, *args, **kwargs):
-            super(CreateSlotForm, self).__init__(*args, **kwargs)
+        if unavailable:
+            help_text = _(
+                'Some of your associations are not available since they already have a dining list for this date.')
+        else:
+            help_text = ''
 
-            if len(association_set) == 1:
-                self.fields['association'].disabled = True
-                self.fields['association'].initial = association_set[0].pk
+        widget = SelectWithDisabled(disabled_choices=[(a.pk, a.name) for a in unavailable])
 
-        def save(self):
-            data = self.cleaned_data
-            dinner_list = DiningList(dish=data['dish'],
-                                     claimed_by=user,
-                                     association=data['association'],
-                                     max_diners=data['max_diners'],
-                                     date=date, )
-            dinner_list.save()
-            DiningEntry(dining_list=dinner_list,
-                        user=user).save()
+        self.fields['association'] = forms.ModelChoiceField(queryset=available, widget=widget, help_text=help_text)
 
-    return CreateSlotForm(info)
+        if len(available) == 1:
+            self.fields['association'].initial = available[0].pk
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        instance.claimed_by = self.user
+        instance.date = self.date
+
+        if commit:
+            instance.save()
+
+        return instance
 
 
 class DiningInfoForm(forms.ModelForm):

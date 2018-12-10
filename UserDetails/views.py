@@ -7,35 +7,6 @@ from .models import User
 from .forms import RegisterUserForm, RegisterUserDetails, RegisterAssociationLinks
 from django.urls import reverse
 
-# Create your views here.
-
-class LogInView(View):
-    template = 'accounts/login.html'
-    context = {}
-
-    def get(self, request):
-        if request.GET:
-            self.context['next'] = request.GET['next']
-
-        return render(request, self.template, self.context)
-
-    def post(self, request, *args, **kwargs):
-        username = request.POST['username']
-        password = request.POST['password']
-
-        user = authenticate(username=username, password=password)
-        if user is not None:
-            if user.is_active:
-                login(request, user)
-
-                if self.context['next']:
-                    return HttpResponseRedirect(self.context['next'])
-
-                return HttpResponseRedirect(reverse('index'))
-
-        self.context['sign_in_error'] = "The username/password did not match"
-
-        return render(request, self.template, self.context)
 
 class RegisterView(View):
     def get(self, request):

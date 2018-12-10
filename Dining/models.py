@@ -1,5 +1,5 @@
 from django.db import models, transaction
-from django.db.models import F
+from django.db.models import F, Sum
 from django.utils import timezone
 from UserDetails.models import User, Association
 from CreditManagement.models import UserCredit
@@ -8,31 +8,27 @@ from django.core.validators import MinValueValidator
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from datetime import datetime, time
 from decimal import Decimal
+from django.conf import settings
 
-import pytz
 
-
-# Create your models here.
 class UserDiningSettings(models.Model):
     """
     Contains setting related to the dining lists and use of the dining lists.
     """
     user = models.OneToOneField(User, on_delete=models.CASCADE)
-    allergies = models.CharField(max_length=100, default="", blank=True,
-                                 help_text="Max 100 characters, leave empty if no allergies")
-    canSubscribeDiningList = models.BooleanField(verbose_name="Can subscribe to dining lists", default=True)
-    canClaimDiningList = models.BooleanField(verbose_name="Can claim dining lists", default=True)
+    allergies = models.CharField(max_length=100, blank=True, help_text="Leave empty if not applicable",
+                                 verbose_name="Allergies or dietary restrictions")
 
 
-class UserDiningStats(models.Model):
-    """
-    User dinging stats, soon to be placed in seperate model
-    """
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
-    count_subscribed = models.IntegerField(default=0)
-    count_shopped = models.IntegerField(default=0)
-    count_cooked = models.IntegerField(default=0)
-    count_cleaned = models.IntegerField(default=0)
+class DiningListManager(models.Manager):
+    def available_slots(self, date):
+        """
+        Returns the number of available slots on the given date.
+        """
+        # Get slots occupied by announcements
+        announce_slots = DiningDayAnnouncements.objects.filter(date=date).aggregate(Sum('slots_occupy'))
+        announce_slots = 0 if announce_slots['slots_occupy__sum'] is None else announce_slots['slots_occupy__sum']
+        return settings.MAX_SLOT_NUMBER - len(self.filter(date=date)) - announce_slots
 
 
 class DiningList(models.Model):
@@ -78,6 +74,8 @@ class DiningList(models.Model):
     min_diners = models.IntegerField(default=4)
     max_diners = models.IntegerField(default=20)
 
+    objects = DiningListManager()
+
     def save(self, *args, **kwargs):
         """
         Overwrite the save function to lock changes after closure
@@ -100,10 +98,10 @@ class DiningList(models.Model):
 
             # Compute the individual dinner costs per person
             if not self.dinner_cost_keep_single_constant:
-                if self.diners == 0:
+                if self.diner_count() == 0:
                     self.dinner_cost_single = 0.0
                 else:
-                    self.dinner_cost_single = self.dinner_cost_total / self.diners
+                    self.dinner_cost_single = self.dinner_cost_total / self.diner_count()
 
             # Change all the user states
             with transaction.atomic():
@@ -127,7 +125,7 @@ class DiningList(models.Model):
                         ExternalDinerEntry.user.usercredit.save()
 
                 if previous_list is None or \
-                        previous_list.diners * self.diners == 0 or \
+                        previous_list.diners * self.diner_count() == 0 or \
                         previous_list.auto_pay != self.auto_pay or \
                         previous_list.get_purchaser() != self.get_purchaser() or \
                         previous_list.dinner_cost_total != self.dinner_cost_total:
@@ -137,7 +135,7 @@ class DiningList(models.Model):
                         credit_instance.credit = F('credit') - previous_list.dinner_cost_total
                         credit_instance.save()
 
-                    if self.auto_pay and self.diners > 0:
+                    if self.auto_pay and self.diner_count() > 0:
                         credit_instance = self.get_purchaser().get_credit_containing_instance()
                         credit_instance.credit = F('credit') + self.dinner_cost_total
                         credit_instance.save()
@@ -209,9 +207,7 @@ class DiningList(models.Model):
 
     def get_entry(self, entry_id):
         """
-        Returns the entry with the given id that is affiliated with this dinging list
-        :param entry_id: the entry object id
-        :return: the DindingEntry instance
+        Returns the entry with the given id that is affiliated with this dining list
         """
         try:
             return self.diningentry_set.get(id=entry_id)
@@ -220,9 +216,7 @@ class DiningList(models.Model):
 
     def get_entry_external(self, entry_id):
         """
-        Returns the external entry instance taht is assiliated with this dinging list
-        :param entry_id: the external entry object id
-        :return: the DiningEntry
+        Returns the external entry instance that is affiliated with this dining list
         """
         try:
             return self.diningentryexternal_set.get(id=entry_id)
@@ -232,7 +226,6 @@ class DiningList(models.Model):
     def is_open(self):
         """
         Whether normal users can sign in/out for the dining list (i.e. the deadline has not expired)
-        :return: Whether the deadline has not expired.
         """
         return datetime.now().timestamp() < self.sign_up_deadline.timestamp()
 
@@ -260,7 +253,7 @@ class DiningList(models.Model):
             return True
 
         # if dining list is closed
-        if not self.is_open() or self.diners >= self.max_diners:
+        if not self.is_open() or self.diner_count() >= self.max_diners:
             return False
 
         if self.limit_signups_to_association_only:
@@ -268,15 +261,18 @@ class DiningList(models.Model):
                 return False
         return True
 
-    # Todo: move static methods to the model manager
+    # Todo: deprecated
     @staticmethod
     def get_lists_on_date(date):
-        """
-        Returns all dining lists on a given date
-        :param date:
-        :return: All dining lists on that date
-        """
         return DiningList.objects.filter(date=date)
+
+    def get_absolute_url(self):
+        from .views import reverse_day
+        slug = self.association.associationdetails.shorthand
+        return reverse_day('slot_details', self.date, kwargs={'identifier': slug})
+
+    def diner_count(self):
+        return self.diningentry_set.count() + self.diningentryexternal_set.count()
 
 
 class DiningEntry(models.Model):
@@ -284,7 +280,9 @@ class DiningEntry(models.Model):
     Represents an entry on a dining list
     """
 
-    dining_list = models.ForeignKey(DiningList, on_delete=models.CASCADE)
+    # Dining list value should never be changed
+    dining_list = models.ForeignKey(DiningList, on_delete=models.CASCADE, related_name='diningentry_set')
+    # User value should never be changed
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     added_by = models.ForeignKey(User, related_name="added_entry_on_dining", on_delete=models.SET_DEFAULT, blank=True,
                                  default=None, null=True)
@@ -292,6 +290,10 @@ class DiningEntry(models.Model):
     has_cooked = models.BooleanField(default=False)
     has_cleaned = models.BooleanField(default=False)
     has_paid = models.BooleanField(default=False)
+
+    class Meta:
+        # User should be unique for each dining list
+        unique_together = ("dining_list", "user")
 
     def save(self, *args, **kwargs):
         """
@@ -303,91 +305,29 @@ class DiningEntry(models.Model):
             if self.id:
                 # Only has_payed changes can go through
                 super(DiningEntry, self).save(update_fields=['has_paid'])
-            return
+                return
+            else:
+                raise ValueError("Dining list is locked")
 
-        # If older versions are present, retract them
         if self.id:
             # There is an older version get it.
             original = DiningEntry.objects.get(pk=self.pk)
 
-            # Change of user occured, implemented for safety, likely not used
+            # Do not allow change of user, instead create a new entry
             if self.user != original.user:
-                new_dinestats = self.user.userdiningstats
-                old_dinestats = original.user.userdiningstats
-
-                old_dinestats.count_subscribed = F('count_subscribed') - 1
-                new_dinestats.count_subscribed = F('count_subscribed') + 1
-
-                # Retract old version
-                if original.has_shopped:
-                    old_dinestats.count_shopped = F('count_shopped') - 1
-                if original.has_cooked:
-                    old_dinestats.count_cooked = F('count_cooked') - 1
-                if original.has_cleaned:
-                    old_dinestats.count_cleaned = F('count_cleaned') - 1
-
-                # Add new versions
-                if self.has_shopped:
-                    new_dinestats.count_shopped = F('count_shopped') + 1
-                if self.has_cooked:
-                    new_dinestats.count_cooked = F('count_cooked') + 1
-                if self.has_cleaned:
-                    new_dinestats.count_cleaned = F('count_cleaned') + 1
-
-                # Save both credit instances
-                with transaction.atomic():
-                    self.dining_list.refresh_from_db()
-                    original.user.get_credit_containing_instance().credit = F(
-                        'credit') + self.dining_list.get_credit_cost()
-                    original.user.get_credit_containing_instance().save()
-                    self.user.get_credit_containing_instance().credit = F('credit') - self.dining_list.get_credit_cost()
-                    self.user.get_credit_containing_instance().save()
-                    old_dinestats.save()
-                    new_dinestats.save()
-                    super(DiningEntry, self).save(*args, **kwargs)
-                return
-
-            else:  # Update the user stats based on changes in the entry
-                dine_stats = self.user.userdiningstats
-
-                if self.has_shopped and not original.has_shopped:
-                    dine_stats.count_shopped = F('count_shopped') + 1
-                elif original.has_shopped and not self.has_shopped:
-                    dine_stats.count_shopped = F('count_shopped') - 1
-                if self.has_cooked and not original.has_cooked:
-                    dine_stats.count_cooked = F('count_cooked') + 1
-                elif original.has_cooked and not self.has_cooked:
-                    dine_stats.count_cooked = F('count_cooked') - 1
-                if self.has_cleaned and not original.has_cleaned:
-                    dine_stats.count_cleaned = F('count_cleaned') + 1
-                elif original.has_cleaned and not self.has_cleaned:
-                    dine_stats.count_cleaned = F('count_cleaned') - 1
-
-                with transaction.atomic():
-                    dine_stats.save()
-                    super(DiningEntry, self).save(*args, **kwargs)
-
+                raise ValueError("User of a dining entry can't be changed")
         else:
-            # instance is being created
-            dine_stats = self.user.userdiningstats
-            dining_list = self.dining_list
+            # Instance is being created
+            # Todo: a transaction needs to be done, possibly here or when the dining list gets locked
+            pass
+        super().save(*args, **kwargs)
 
-            dine_stats.count_subscribed = F('count_subscribed') + 1
-            if self.has_shopped:
-                dine_stats.count_shopped = F('count_shopped') + 1
-            if self.has_cooked:
-                dine_stats.count_cooked = F('count_cooked') + 1
-            if self.has_cleaned:
-                dine_stats.count_cleaned = F('count_cleaned') + 1
-
-            with transaction.atomic():
-                dining_list.refresh_from_db()
-                dining_list.diners = F('diners') + 1
-                self.user.get_credit_containing_instance().credit = F('credit') - self.dining_list.get_credit_cost()
-                self.user.get_credit_containing_instance().save()
-                dine_stats.save()
-                super(DiningEntry, self).save(*args, **kwargs)
-                dining_list.save()
+    def delete(self, *args, **kwargs):
+        # Block when dining list is locked
+        if not self.dining_list.isAdjustable():
+            raise ValueError("Dining list is locked")
+        # Todo: a revert transaction possibly (depending on how transactions will be implemented)
+        super().delete(*args, **kwargs)
 
     def clean(self):
         """
@@ -419,10 +359,13 @@ class DiningEntry(models.Model):
 class DiningEntryExternal(models.Model):
     """
     Represents an external dining list entry
-    """
 
-    dining_list = models.ForeignKey(DiningList, on_delete=models.CASCADE)
+    Todo: has a lot of code duplication with DiningEntry, needs to be merged somehow
+    """
+    # Dining list value should never be changed
+    dining_list = models.ForeignKey(DiningList, on_delete=models.CASCADE, related_name='diningentryexternal_set')
     name = models.CharField(max_length=40)
+    # User value should never be changed
     user = models.ForeignKey(User, verbose_name="added by (has cost responsibility)", on_delete=models.CASCADE)
     has_paid = models.BooleanField(default=False)
 
@@ -434,44 +377,18 @@ class DiningEntryExternal(models.Model):
         if not self.dining_list.isAdjustable():
             if self.id:
                 # Only has_payed changes can go through
-                super(DiningEntryExternal, self).save(update_fields=['has_paid'])
-            return
-
-        # If older versions are present, retract them
-        if self.id:
-            # There is an older version get it.
-            original = DiningEntryExternal.objects.get(pk=self.pk)
-
-            # Change of user occured, implemented for safety, likely not used
-            if self.user.pk != original.user.pk:
-                new_usercredit = self.user.get_credit_containing_instance()
-                old_usercredit = original.user.get_credit_containing_instance()
-
-                # Save both credit instances
-                with transaction.atomic():
-                    self.dining_list.refresh_from_db()
-                    old_usercredit.credit = F('credit') + self.dining_list.get_credit_cost()
-                    old_usercredit.save()
-                    new_usercredit.credit = F('credit') - self.dining_list.get_credit_cost()
-                    new_usercredit.save()
-                    super(DiningEntryExternal, self).save(*args, **kwargs)
+                super().save(update_fields=['has_paid'])
                 return
+            else:
+                raise ValueError("Dining list is locked")
 
-            else:  # Update the user stats based on changes in the entry
-                super(DiningEntryExternal, self).save(*args, **kwargs)
+        super().save(*args, **kwargs)
 
-        else:
-            # instance is being created
-            user_credit = self.user.usercredit
-            dining_list = self.dining_list
-
-            with transaction.atomic():
-                dining_list.refresh_from_db()
-                dining_list.diners = F('diners') + 1
-                user_credit.credit = F('credit') - dining_list.get_credit_cost()
-                user_credit.save()
-                super(DiningEntryExternal, self).save(*args, **kwargs)
-                dining_list.save()
+    def delete(self, *args, **kwargs):
+        # Block when dining list is locked
+        if not self.dining_list.isAdjustable():
+            raise ValueError("Dining list is locked")
+        super().delete(*args, **kwargs)
 
     def clean(self):
         if not self.dining_list.isAdjustable():
