@@ -36,12 +36,36 @@ class AbstractDayView(LoginRequiredMixin, TemplateView):
         context = super().get_context_data(**kwargs)
         # Store date
         self.date = date(self.kwargs['year'], self.kwargs['month'], self.kwargs['day'])
+
         # Return 404 when weekend (!)
         if self.date.weekday() >= 5:
             raise Http404('Weekends are not available')
         # Add useful things to context
         context['date'] = self.date
         return context
+
+    @staticmethod
+    def get_next_availlable_date(current_date):
+        max_future = 7  # Define the meaximum time one can go into the future
+
+        next_date = current_date + timedelta(days=1)
+        while next_date.weekday() > 4:  # i.e. 5 or 6 which is saturday or sunday
+            next_date = next_date + timedelta(days=1)
+
+        if (next_date - timezone.now().date()).days > max_future:
+            return None
+        return next_date
+
+    @staticmethod
+    def get_previous_availlable_date(current_date):
+        max_history = 2  # Define the maximum time one can go in the past
+
+        prev_date = current_date - timedelta(days=1)
+        while prev_date.weekday() > 4:  # i.e. 5 or 6 which is saturday or sunday
+            prev_date = prev_date - timedelta(days=1)
+        if (prev_date - timezone.now().date()).days < -max_history:
+            return None
+        return prev_date
 
 
 def reverse_day(viewname, day_date, kwargs=None, **other_kwargs):
@@ -105,8 +129,13 @@ class DayView(AbstractDayView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
 
-        context['next_date'] = self.date + timedelta(days=3 if self.date.weekday() == 4 else 1)
-        context['previous_date'] = self.date - timedelta(days=3 if self.date.weekday() == 0 else 1)
+        context['next_date'] = self.get_next_availlable_date(self.date)
+        context['previous_date'] = self.get_previous_availlable_date(self.date)
+
+        if (self.date - timezone.now().date()).days == 0:
+            context['is_today'] = True
+        else:
+            context['is_today'] = False
 
         context['dining_lists'] = DiningList.get_lists_on_date(self.date)
         context['Announcements'] = DiningDayAnnouncements.objects.filter(date=self.date)
