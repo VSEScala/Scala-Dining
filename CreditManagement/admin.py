@@ -2,16 +2,12 @@ from datetime import datetime, timedelta
 
 from django.contrib import admin
 
-from CreditManagement.models import Transaction, UserCredit
+from CreditManagement.models import Transaction
 from UserDetails.models import Association, UserMemberships
 
 
 class TransactionAdmin(admin.ModelAdmin):
-    """
-    Set up limited view of the user page
-    """
-
-    list_display = ('pk', 'moment', 'amount', 'notes')
+    list_display = ('moment', 'source_user', 'source_association', 'target_user', 'target_association', 'amount')
     list_filter = ('moment', 'source_association', 'target_association')
     fields = (('source_user', 'source_association'), ('target_user', 'target_association'), 'amount', 'notes')
 
@@ -94,9 +90,11 @@ class NegativeCreditDateFilter(admin.SimpleListFilter):
         if self.value() is None:
             return queryset
 
+        # Todo: disabled due to switch to transactions
+        return queryset
         # Find all usercredits object that adhere the given date criteria
-        start_date = (datetime.now() - timedelta(days=int(self.value()))).date()
-        results = UserCredit.objects.filter(negative_since__lte=start_date).values_list('pk')
+        # start_date = (datetime.now() - timedelta(days=int(self.value()))).date()
+        # results = UserCredit.objects.filter(negative_since__lte=start_date).values_list('pk')
 
         # Crosslink the given user identities with the given query
-        return queryset.filter(pk__in=results)
+        # return queryset.filter(pk__in=results)

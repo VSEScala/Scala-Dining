@@ -12,7 +12,8 @@ from UserDetails.models import User, Association
 
 
 class TransactionManager(models.Manager):
-    pass
+    def balance(self, user):
+        pass
 
 
 class Transaction(models.Model):
@@ -26,7 +27,7 @@ class Transaction(models.Model):
     -- there must be at least a source or a target
     CHECK(NOT(source_user IS NULL AND source_association IS NULL AND target_user IS NULL AND target_association IS NULL)),
 
-    These probably need to be inserted using custom migrations, however these are not yet in git.
+    These probably need to be inserted using custom migration files, however these are not yet in git.
     """
     moment = models.DateTimeField(auto_now_add=True)
     source_user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name="transaction_source",
@@ -57,6 +58,26 @@ class Transaction(models.Model):
     def save(self, *args, **kwargs):
         if self.pk:
             raise ValueError("Transaction change is not allowed")
+
+        # Double-check database constraints
+        if self.source_user and self.source_association:
+            raise ValueError("There must be at most one source")
+        if self.target_user and self.target_association:
+            raise ValueError("There must be at most one target")
+        if not self.source() and not self.target():
+            raise ValueError("There must be at least a source or a target")
+
+        # Balance bottom limit
+        if self.source_user:
+            balance = self.source_user.balance
+            new_balance = balance - self.amount
+            if new_balance < settings.MINIMUM_BALANCE:
+                raise ValueError("Balance becomes too low")
+
+        # Associations cannot transfer money between each other
+        if self.source_association and self.target_association:
+            raise ValueError("Associations cannot transfer money between each other")
+
         super().save(*args, **kwargs)
 
     def delete(self, *args, **kwargs):
@@ -67,6 +88,9 @@ class Transaction(models.Model):
 
 
 # Todo: remove
+class AssociationCredit():
+    pass
+"""
 class AssociationCredit(models.Model):
     association = models.ForeignKey(Association, on_delete=models.SET_NULL, null=True)
     start_date = models.DateField(auto_now_add=True)
@@ -76,12 +100,12 @@ class AssociationCredit(models.Model):
     isLocked = models.BooleanField(default=False)
 
     def save(self, *args, **kwargs):
-        """
+        """"""
         Overwrite the save function to lock changes after closure
         :param args: not used
         :param kwargs:
         :return: None
-        """
+        """"""
         if self.end_date is not None:
             if self.isLocked is False:
                 self.isLocked = True
@@ -100,18 +124,19 @@ class AssociationCredit(models.Model):
                 '%x') + "]"
         else:
             return self.association.name + " [" + self.start_date.strftime('%x') + " - now ]"
-
+"""
 
 # Todo: remove
+"""
 class UserCredit(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     credit = models.DecimalField(verbose_name="Money credit", decimal_places=2, max_digits=5, default=0)
     negative_since = models.DateField(null=True, blank=True, default=None)
 
     def save(self, *args, **kwargs):
-        """
+        """"""
         An enhanced save implementation to adjust the status of the negative since counter
-        """
+        """"""
         try:
             previous_state = UserCredit.objects.get(pk=self.pk)
         except ObjectDoesNotExist:
@@ -144,3 +169,5 @@ class UserCredit(models.Model):
     def get_current_credits(self):
         return self.credit
         # Todo: implement retrieval of pending transactions
+
+"""

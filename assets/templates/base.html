@@ -15,7 +15,8 @@
         <div class="header-personal row m-0">
             <div class="header-personal-text">
                 {{ user }}<br>
-                {{ user.usercredit.get_current_credits|euro }}
+                {# Todo: credit #}
+                {{ user.balance|euro }}
             </div>
             <div class="header-personal-image"></div>
             <label for="header-dropdown" class="header-title-link"></label>

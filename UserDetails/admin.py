@@ -1,6 +1,5 @@
 from django.contrib import admin
 from .models import User, UserDetail, UserMemberships, Association, AssociationDetails
-from CreditManagement.models import UserCredit
 from django import forms
 
 
@@ -16,15 +15,6 @@ class UserDetailsLink(admin.StackedInline):
     verbose_name = ""
     verbose_name_plural = "More account info"
 
-class UserCreditsLink(admin.StackedInline):
-    """
-    Show the credits of the user
-    """
-    model = UserCredit
-    readonly_fields = ('credit',)
-    can_delete = False
-    verbose_name = ""
-    verbose_name_plural = "money status"
 
 class AssociationLinks(admin.TabularInline):
     """
@@ -85,7 +75,7 @@ class UserAdmin(admin.ModelAdmin):
     list_filter = [MemberOfFilter, ('groups', BoardFilter)]
 
     readonly_fields = ('date_joined', 'last_login',)
-    inlines = [UserDetailsLink, UserCreditsLink, AssociationLinks]
+    inlines = [UserDetailsLink, AssociationLinks]
     fields = ('username', ('first_name', 'last_name'), 'date_joined', 'email')
 
 

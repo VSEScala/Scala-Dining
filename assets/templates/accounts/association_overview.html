@@ -1,17 +1,13 @@
 {% extends 'accounts/associations_base.html' %}
 {% load form_extras %}
+{% load credit_tags %}
 
 {% block details %}
     <div class="col-12 my-4">
         {{ association }}<br>
         Balance since {{ balance.start_date }}:
-        {% if balance.credit > 0 %}
-            &euro;{{ balance.credit }}
-        {% else %}
-            <span style="color: #efa2a9">
-                -&euro;{{ balance.credit }}
-                </span>
-        {% endif %}
+        {# Todo: balance.credit #}
+        {{ 0|euro }}
 
     </div>
     <div class="col-12 row">

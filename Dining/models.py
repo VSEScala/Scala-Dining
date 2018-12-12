@@ -2,7 +2,6 @@ from django.db import models, transaction
 from django.db.models import F, Sum
 from django.utils import timezone
 from UserDetails.models import User, Association
-from CreditManagement.models import UserCredit
 from django.contrib.contenttypes.models import ContentType
 from django.core.validators import MinValueValidator
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
@@ -112,6 +111,8 @@ class DiningList(models.Model):
                 else:
                     costs = -self.get_credit_cost()
 
+                # Todo: update user credits
+                """
                 if costs != 0:
                     # Costs have changed, alter all credits.
                     # Done in for-loop instead of update to trigger custom save implementation (to track negatives)
@@ -139,6 +140,7 @@ class DiningList(models.Model):
                         credit_instance = self.get_purchaser().get_credit_containing_instance()
                         credit_instance.credit = F('credit') + self.dinner_cost_total
                         credit_instance.save()
+                """
             return
         else:
             if self.sign_up_deadline is None:
@@ -272,6 +274,7 @@ class DiningList(models.Model):
         return reverse_day('slot_details', self.date, kwargs={'identifier': slug})
 
     def diner_count(self):
+        # Todo: cache this query
         return self.dining_entries.count() + self.dining_entries_external.count()
 
 
