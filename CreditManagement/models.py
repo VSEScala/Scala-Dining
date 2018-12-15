@@ -1,24 +1,25 @@
-from datetime import datetime
 from decimal import Decimal
 
-from django.contrib.contenttypes.models import ContentType
-from django.core.exceptions import ValidationError, ObjectDoesNotExist
-from django.core.validators import MinValueValidator
-from django.db import models, transaction
-from django.db.models import F
 from django.conf import settings
+from django.contrib.contenttypes.models import ContentType
+from django.core.validators import MinValueValidator
+from django.db import models
+from django.db.models import Q
 
-from UserDetails.models import User, Association
+from Dining.models import DiningList
+from UserDetails.models import Association
 
 
 class TransactionManager(models.Manager):
-    def balance(self, user):
-        pass
+    def with_user(self, user):
+        return self.filter(Q(source_user=user) | Q(target_user=user))
+
+    def with_association(self, association):
+        return self.filter(Q(source_association=association) | Q(target_association=association))
 
 
 class Transaction(models.Model):
     """
-
     Todo: the following database constraints should be in place:
 
     CHECK(amount > 0),
@@ -40,6 +41,10 @@ class Transaction(models.Model):
                                            null=True, blank=True)
     amount = models.DecimalField(decimal_places=2, max_digits=16, validators=[MinValueValidator(Decimal('0.01'))])
     notes = models.CharField(max_length=200, blank=True)
+
+    # Optional reference to the dining list that caused this transaction, for informational purposes.
+    dining_list = models.ForeignKey(DiningList, related_name='transactions', on_delete=models.PROTECT, null=True,
+                                    blank=True)
 
     objects = TransactionManager()
 
@@ -90,6 +95,8 @@ class Transaction(models.Model):
 # Todo: remove
 class AssociationCredit():
     pass
+
+
 """
 class AssociationCredit(models.Model):
     association = models.ForeignKey(Association, on_delete=models.SET_NULL, null=True)
