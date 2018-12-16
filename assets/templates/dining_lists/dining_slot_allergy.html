@@ -4,34 +4,29 @@
 
 
 {% block details%}
-    <div class="row col-12 m-0 p-0 p-md-2 py-2 text-size-3">
-        <div class="{% if can_delete_all or can_delete_some %} col-10 col-sm-11 {% else %} col-12 {% endif %}">
+    <div class="row col-12 m-0 p-0 p-md-2 py-2">
+        <div class="col-12">
             <div class="row pr-2">
-                <div class="col-12 col-md-6 p-0 show-md">Name</div>
+                <div class="col-12 col-md-6 p-0 show-md"><b>Name</b></div>
                 <div class="col-12 col-md-6 pr-3">
-                    Allergy
+                    <b>Allergy</b>
                 </div>
             </div>
         </div>
-        {% if can_delete_all or can_delete_some %}
-            <div class="col-2 col-sm-1 p-0 text-center">Remove</div>
-        {% endif %}
     </div>
-    <div class="col-12 p-0">
+    <div class="row col-12 m-0 p-0 p-md-2 py-2">
         {% for entry in allergy_entries %}
             <hr class="col-12 m-0">
-            <div class="row col-12 m-0 p-0 p-md-2 py-2}">
-                <div class="col-12">
-                    <div class="row pr-2">
-                        <div class="col-12 col-md-6 p-0">
-                            {{ entry.user }}
-                        </div>
+            <div class="col-12 my-2">
+                <div class="row pr-2">
+                    <div class="col-12 col-md-6 p-0">
+                        {{ entry.user }}
+                    </div>
 
-                        <div class="text-size-3 col-12 col-md-6 pr-3">
-                            <div class="row dining-help-row">
-                                <div class="col-3">
-                                    {{ entry.user.userdiningsettings.allergies }}
-                                </div>
+                    <div class="col-12 col-md-6 pr-3">
+                        <div class="row dining-help-row">
+                            <div class="col-6">
+                                {{ entry.user.userdiningsettings.allergies }}
                             </div>
                         </div>
                     </div>
