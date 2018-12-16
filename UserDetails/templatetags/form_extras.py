@@ -24,12 +24,12 @@ def can_join_slot(slot, user):
 
 @register.filter(name='is_on_slot')
 def is_on_slot(slot, user):
-    return slot.get_entry_user(user.id) is not None
+    return slot.internal_dining_entries().filter(user=user).exists()
 
 
 @register.filter(name='has_paid')
 def has_paid(slot, user):
-    entry = slot.get_entry_user(user.id)
+    entry = slot.internal_dining_entries().get(user=user)
     if entry is not None:
         return entry.has_paid
     return False

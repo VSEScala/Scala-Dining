@@ -10,6 +10,9 @@ from decimal import Decimal
 from django.conf import settings
 
 
+# Interesting blog post: https://sunscrapers.com/blog/where-to-put-business-logic-django/
+
+
 class UserDiningSettings(models.Model):
     """
     Contains setting related to the dining lists and use of the dining lists.
@@ -33,6 +36,8 @@ class DiningListManager(models.Manager):
 class DiningList(models.Model):
     """
     A single dining list (slot) model.
+
+    The following fields may not be changed after creation: kitchen_cost, min_diners/max_diners!
     """
     date = models.DateField(default=timezone.now)
     sign_up_deadline = models.DateTimeField(blank=True, null=True, help_text="Date/time before users need to sign up")
@@ -57,9 +62,10 @@ class DiningList(models.Model):
     purchaser = models.ForeignKey(User, related_name="dininglist_purchaser", blank=True, null=True,
                                   on_delete=models.SET_NULL)
 
-    kitchen_cost = models.DecimalField(decimal_places=2, verbose_name="kitchen cost per person", max_digits=4,
-                                       default=0.50, validators=[MinValueValidator(Decimal('0.00'))])
-    dinner_cost_total = models.DecimalField(decimal_places=2, verbose_name="total dinner costs", max_digits=5,
+    # Kitchen cost may not be changed after creation
+    kitchen_cost = models.DecimalField(decimal_places=2, verbose_name="kitchen cost per person", max_digits=10,
+                                       default=Decimal('0.50'), validators=[MinValueValidator(Decimal('0.00'))])
+    dinner_cost_total = models.DecimalField(decimal_places=2, verbose_name="total dinner costs", max_digits=10,
                                             default=0, validators=[MinValueValidator(Decimal('0.00'))])
     dinner_cost_single = models.DecimalField(decimal_places=2, verbose_name="dinner cost per person", max_digits=5,
                                              blank=True, null=True, default=2,
@@ -69,25 +75,20 @@ class DiningList(models.Model):
 
     tikkie_link = models.CharField(blank=True, null=True, verbose_name="tikkie hyperlink", max_length=50)
 
-    diners = models.IntegerField(default=0)
     min_diners = models.IntegerField(default=4)
     max_diners = models.IntegerField(default=20)
+
+    diners = models.ManyToManyField(settings.AUTH_USER_MODEL, through='DiningEntry',
+                                    through_fields=('dining_list', 'user'))
 
     objects = DiningListManager()
 
     def save(self, *args, **kwargs):
         """
         Overwrite the save function to lock changes after closure
-        :param args:
-        :param kwargs:
-        :return: None
         """
-        if self.isAdjustable() is True:
-            try:
-                previous_list = DiningList.objects.get(pk=self.pk)
-            except ObjectDoesNotExist:
-                previous_list = None
 
+        if self.isAdjustable() is True:
             # Set the sign-up deadline to it's default value if none was provided.
             if self.sign_up_deadline is None:
                 from Dining.constants import DINING_LIST_CLOSURE_TIME
@@ -97,22 +98,22 @@ class DiningList(models.Model):
 
             # Compute the individual dinner costs per person
             if not self.dinner_cost_keep_single_constant:
-                if self.diner_count() == 0:
+                if self.dining_entries.count() == 0:
                     self.dinner_cost_single = 0.0
                 else:
-                    self.dinner_cost_single = self.dinner_cost_total / self.diner_count()
+                    self.dinner_cost_single = self.dinner_cost_total / self.dining_entries.count()
 
             # Change all the user states
             with transaction.atomic():
                 super(DiningList, self).save(*args, **kwargs)
                 self.refresh_from_db()
+                """
                 if previous_list is not None:
                     costs = previous_list.get_credit_cost() - self.get_credit_cost()
                 else:
                     costs = -self.get_credit_cost()
 
                 # Todo: update user credits
-                """
                 if costs != 0:
                     # Costs have changed, alter all credits.
                     # Done in for-loop instead of update to trigger custom save implementation (to track negatives)
@@ -149,18 +150,6 @@ class DiningList(models.Model):
             super(DiningList, self).save(update_fields=['days_adjustable', 'name'], **kwargs)
             return
 
-    def get_credit_cost(self):
-        """
-        Returns the total cost to be used for the credit system
-        :return: The cost of the list
-        """
-        costs = self.kitchen_cost
-        if self.auto_pay:
-            if self.dinner_cost_single is not None:
-                # If it was none, the amount of diners is 0 and the costs should not be computed
-                costs += self.dinner_cost_single
-        return costs
-
     def get_purchaser(self):
         """
         Returns the user who purchased for the dining list
@@ -196,35 +185,6 @@ class DiningList(models.Model):
                         'When autopay is enabled, either a claimer or a purchaser must be defined.', code='invalid'),
                 })
 
-    def get_entry_user(self, user_id):
-        """
-        Returns the entry for the given user id
-        :param user_id: The id of the user
-        :return: The diningEntry instance
-        """
-        try:
-            return self.dining_entries.get(user_id=user_id)
-        except ObjectDoesNotExist:
-            return None
-
-    def get_entry(self, entry_id):
-        """
-        Returns the entry with the given id that is affiliated with this dining list
-        """
-        try:
-            return self.dining_entries.get(id=entry_id)
-        except ObjectDoesNotExist:
-            return None
-
-    def get_entry_external(self, entry_id):
-        """
-        Returns the external entry instance that is affiliated with this dining list
-        """
-        try:
-            return self.dining_entries_external.get(id=entry_id)
-        except ObjectDoesNotExist:
-            return None
-
     def is_open(self):
         """
         Whether normal users can sign in/out for the dining list (i.e. the deadline has not expired)
@@ -241,9 +201,6 @@ class DiningList(models.Model):
         :return: If the user can join the list
         """
         if check_for_self:
-            # if user is already on list
-            if self.get_entry_user(user.id) is not None:
-                return False
             # if user is signed up to other closed dinging lists
             if len(DiningEntry.objects.filter(dining_list__date=self.date,
                                               dining_list__sign_up_deadline__lte=datetime.now(),
@@ -255,7 +212,7 @@ class DiningList(models.Model):
             return True
 
         # if dining list is closed
-        if not self.is_open() or self.diner_count() >= self.max_diners:
+        if not self.is_open() or self.dining_entries.count() >= self.max_diners:
             return False
 
         if self.limit_signups_to_association_only:
@@ -263,73 +220,49 @@ class DiningList(models.Model):
                 return False
         return True
 
-    # Todo: deprecated
-    @staticmethod
-    def get_lists_on_date(date):
-        return DiningList.objects.filter(date=date)
-
     def get_absolute_url(self):
-        from .views import reverse_day
+        from django.shortcuts import reverse
         slug = self.association.associationdetails.shorthand
-        return reverse_day('slot_details', self.date, kwargs={'identifier': slug})
+        d = self.date
+        return reverse('slot_details', kwargs={'year': d.year, 'month': d.month, 'day': d.day, 'identifier': slug})
 
-    def diner_count(self):
-        # Todo: cache this query
-        return self.dining_entries.count() + self.dining_entries_external.count()
+    def internal_dining_entries(self):
+        """All dining entries that are not for external people."""
+        return self.dining_entries.filter(external_name="")
 
 
 class DiningEntry(models.Model):
     """
-    Represents an entry on a dining list
+    Represents an entry on a dining list.
+
+    Do not change dining_list, user and added_by after creation!
     """
 
-    # Dining list value should never be changed
     dining_list = models.ForeignKey(DiningList, on_delete=models.CASCADE, related_name='dining_entries')
-    # User value should never be changed
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='dining_entries')
-    added_by = models.ForeignKey(User, related_name="added_entry_on_dining", on_delete=models.SET_DEFAULT, blank=True,
-                                 default=None, null=True)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='dining_entries')
+    added_by = models.ForeignKey(settings.AUTH_USER_MODEL, related_name="added_entry_on_dining",
+                                 on_delete=models.SET_DEFAULT, blank=True, default=None, null=True)
+    # When this is for someone external, put his name here (this also marks the entry as being external)
+    external_name = models.CharField(max_length=100)
+    # Stats
     has_shopped = models.BooleanField(default=False)
     has_cooked = models.BooleanField(default=False)
     has_cleaned = models.BooleanField(default=False)
     has_paid = models.BooleanField(default=False)
 
-    class Meta:
-        # User should be unique for each dining list
-        unique_together = ("dining_list", "user")
-
     def save(self, *args, **kwargs):
-        """
-        An enhanced save implementation to ensure effects trickle down to the user stats and dining list.
-        """
-
         # If dining list can not be adjusted, limit saving only to the update of the has_paid field.
         if not self.dining_list.isAdjustable():
             if self.id:
                 # Only has_payed changes can go through
                 super(DiningEntry, self).save(update_fields=['has_paid'])
                 return
-            else:
-                raise ValueError("Dining list is locked")
 
-        if self.id:
-            # There is an older version get it.
-            original = DiningEntry.objects.get(pk=self.pk)
-
-            # Do not allow change of user, instead create a new entry
-            if self.user != original.user:
-                raise ValueError("User of a dining entry can't be changed")
-        else:
-            # Instance is being created
-            # Todo: a transaction needs to be done, possibly here or when the dining list gets locked
-            pass
         super().save(*args, **kwargs)
 
     def delete(self, *args, **kwargs):
-        # Block when dining list is locked
         if not self.dining_list.isAdjustable():
             raise ValueError("Dining list is locked")
-        # Todo: a revert transaction possibly (depending on how transactions will be implemented)
         super().delete(*args, **kwargs)
 
     def clean(self):
@@ -351,66 +284,8 @@ class DiningEntry(models.Model):
     def __str__(self):
         return str(self.user) + " " + str(self.dining_list.date)
 
-    def EID(self):
-        """
-        External id as used in urls
-        :return:
-        """
-        return str(self.id)
-
-
-class DiningEntryExternal(models.Model):
-    """
-    Represents an external dining list entry
-
-    Todo: has a lot of code duplication with DiningEntry, needs to be merged somehow
-    """
-    # Dining list value should never be changed
-    dining_list = models.ForeignKey(DiningList, on_delete=models.CASCADE, related_name='dining_entries_external')
-    name = models.CharField(max_length=40)
-    # User value should never be changed
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, verbose_name="added by",
-                             help_text="The costs will be subtracted from this user", on_delete=models.CASCADE,
-                             related_name="dining_entries_external")
-    has_paid = models.BooleanField(default=False)
-
-    def save(self, *args, **kwargs):
-        """
-        An enhanced save implementation to ensure effects trickle down to the user stats and dining list.
-        """
-        # If dining list is no longer adjustable, block the save for anything but the has_paid update
-        if not self.dining_list.isAdjustable():
-            if self.id:
-                # Only has_payed changes can go through
-                super().save(update_fields=['has_paid'])
-                return
-            else:
-                raise ValueError("Dining list is locked")
-
-        super().save(*args, **kwargs)
-
-    def delete(self, *args, **kwargs):
-        # Block when dining list is locked
-        if not self.dining_list.isAdjustable():
-            raise ValueError("Dining list is locked")
-        super().delete(*args, **kwargs)
-
-    def clean(self):
-        if not self.dining_list.isAdjustable():
-            if self.has_paid:
-                if not DiningEntry.objects.get(pk=self.pk).has_paid:
-                    return super(DiningEntryExternal, self).clean()
-
-            raise ValidationError({
-                'dining_list': ValidationError('This dining list is already locked', code='invalid'),
-            })
-        return super(DiningEntryExternal, self).clean()
-
-    def __str__(self):
-        return self.name + " " + str(self.dining_list.date)
-
-    def EID(self):
-        return "E" + str(self.id)
+    def is_external(self):
+        return bool(self.external_name)
 
 
 class DiningComment(models.Model):

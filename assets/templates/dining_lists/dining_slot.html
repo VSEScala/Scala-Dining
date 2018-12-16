@@ -21,7 +21,7 @@
                         {% if tab == "info" %}
                             active"
                         {% else %}"
-                            href="{% url 'slot_details' day=date.day month=date.month year=date.year identifier=dining_list.association.associationdetails.shorthand %}"
+                            href="{% url 'slot_details' day=date.day month=date.month year=date.year identifier=association_slug %}"
                         {% endif %}>
                         <div class="offset-6 col-6">
                             {% if comments_unread > 0 %}<span class="text-warning font-bold">{{ comments_unread }}</span>  {% endif %}

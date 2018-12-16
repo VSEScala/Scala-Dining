@@ -24,14 +24,14 @@
         </div>
         <div class="col-12 mt-3">
             <div class="hide-md">
-                {{ dining_list.diners }} / {{ dining_list.max_diners }} diners on the list
+                {{ dining_list.dining_entries.count }} / {{ dining_list.max_diners }} diners on the list
             </div>
         </div>
     </div>
     <div class="show-md col-2 p-0">
         <div class="col-12">
             <span class="text-size-7">
-            {{ dining_list.diners }}
+            {{ dining_list.dining_entries.count }}
             </span>
             / {{ dining_list.max_diners }}
         </div>
@@ -93,7 +93,7 @@
         <div class="row">
             <div class="col-10 offset-md-2 text-size-5">
                 {% if dining_list.is_open %}
-                    {% if dining_list.diners < dining_list.max_diners %}
+                    {% if dining_list.dining_entries.count < dining_list.max_diners %}
                         Signup closes
                         {% if dining_list.sign_up_deadline.date == dining_list.date %}
                             at {{ dining_list.sign_up_deadline |date:"H:i" }}

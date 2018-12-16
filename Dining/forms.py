@@ -3,7 +3,7 @@ from django.db.models import OuterRef, Exists
 from django.utils.translation import gettext as _
 
 from UserDetails.models import Association, User
-from .models import DiningList
+from .models import DiningList, DiningEntry
 from General.util import SelectWithDisabled
 
 
@@ -88,3 +88,9 @@ class DiningPaymentForm(forms.ModelForm):
         print(self.instance.dinner_cost_single)
         print(self.instance.dinner_cost_total)
         self.instance.save(update_fields=self.Meta.fields)
+
+
+class DiningEntryForm(forms.ModelForm):
+    class Meta:
+        model = DiningEntry
+        fields = ['user', 'external_name', 'has_shopped', 'has_cooked', 'has_cleaned', 'has_paid']
