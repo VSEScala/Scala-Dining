@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+{% load form_extras %}
+
+{% block content %}
+    <div class="col-12 row">
+        {% for entry in entries %}
+            <div>
+                <h3><b>{{ entry.version }}</b>{{ entry.title }}</h3>
+                {{ entry.message }}
+            </div>
+        {% endfor %}
+    </div>
+
+    {{ request.get_full_path }}
+
+    {% if pages > 1 %}
+        <div class="col-12 mt-4 row">
+            {% for pagenumber in pages %}
+                {% if pagenumber == page %}
+                    <a class="btn m-1 btn-disabled ">{{ pagenumber }}</a>
+                {% else %}
+                    <a class="btn m-1" href="{% url 'history_credits' page=pagenumber %}">{{ pagenumber }}</a>
+                {% endif %}
+            {% endfor %}
+        </div>
+    {% elif pages == 0 %}
+        No changes in your credits have been made yet.
+    {% endif %}
+
+{% endblock %}

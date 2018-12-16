@@ -62,8 +62,8 @@
                     </a>
                     <div class="dropdown-menu dropdown-menu-right" style="position: absolute;">
                         <a class="dropdown-item" href="#">Rules & Regulation</a>
-                        <a class="dropdown-item" href="#">Version history</a>
-                        <a class="dropdown-item" href="#">Report Bug</a>
+                        <a class="dropdown-item" href="{% url 'site_updates' %}">Version history</a>
+                        <a class="dropdown-item" href="{% url 'site_bugreport' %}?source={{ request.get_full_path }}">Report Bug</a>
                     </div>
                 </li>
             </ul>
