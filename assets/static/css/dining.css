@@ -5,11 +5,6 @@
     background-position: center;
 }
 
-.slot{
-    background-color: #254a99;
-    border-radius: 10px;
-}
-
 .slot-back{
     position: absolute;
     background-color: transparent;
@@ -53,65 +48,8 @@
     background-image: url("/static/images/sign_up_out.png");
 }
 
-.btn-dining-delete{
-    background: #721c2455 url("/static/images/trash.png") center/auto 80% no-repeat;
-    border-color: #c8233355;
-}
-.btn-dining-delete:hover{
-    background-color: #721c24;
-}
-
-
-.dining_stat{
-    border-width: 1px;
-    background: center/auto 80% no-repeat;
-    height: 100%;
-}
-
-input + .dining_stat:hover{
-    opacity: 1;
-}
-
-input:checked + .dining_stat{
-    opacity: 1;
-    background-color: #3d7bff;
-}
-
-input:disabled + .dining_stat{
-    opacity: 0;
-}
-input:disabled:checked + .dining_stat{
-    opacity: 1;
-    background-color: transparent;
-    border: 0;
-}
-
-.dining-shop{
-    background-image: url("/static/images/shopping cart.png");
-    border-radius: 5px 0 0 5px;
-}
-.dining-cook{
-    background-image: url("/static/images/Cooking.png");
-    border-radius: 0;
-}
-.dining-cleaned{
-    background-image: url("/static/images/dishes.png");
-    border-radius: 0 5px 5px 0;
-}
-.dining-paid{
-    background-image: url("/static/images/checkmark.png");
-}
-
 .diningentry:hover{
     background-color: #254a9999;
-}
-
-.diningentry-user{
-    background-color: #254a9999;
-}
-
-.dining-help-row{
-    height: 100%;
 }
 
 .slot-nav{

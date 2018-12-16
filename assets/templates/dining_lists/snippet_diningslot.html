@@ -1,6 +1,6 @@
 {% load form_extras %}
 
-<div class="col-12 row mx-0 my-2 {% if interactive %}py-4 slot{% endif %}">
+<div class="col-12 row mx-0 my-2 {% if interactive %}py-4 bg-secondary{% endif %}">
     <div class="col-2 slot_image"
             {% if slot.association %}
                 style="background-image: url({{ slot.association.associationdetails.image.url }})"
