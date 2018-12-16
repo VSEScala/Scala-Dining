@@ -1,18 +1,22 @@
 {% extends 'base.html' %}
 
 {% block content %}
-    <div class="width-max-lg m-auto pb-3">
-        <div class="row tab-list">
-            <a class="{% if tab_account %}active{% endif %}" href="{% url 'settings_essential' %}">
+
+    <ul class="nav nav-tabs">
+        <li class="nav-item">
+            <a class="nav-link {% if tab_account %}active{% endif %}" href="{% url 'settings_essential' %}">
                 Account info
             </a>
-            <a class="{% if tab_dining %}active{% endif %}" href="{% url 'settings_dining' %}">
+        </li>
+        <li class="nav-item">
+            <a class="nav-link {% if tab_dining %}active{% endif %}" href="{% url 'settings_dining' %}">
                 Dining settings
             </a>
-        </div>
-    </div>
+        </li>
+    </ul>
 
-    <div>
+
+    <div class="pt-4">
         {% block details %}{% endblock details %}
     </div>
 

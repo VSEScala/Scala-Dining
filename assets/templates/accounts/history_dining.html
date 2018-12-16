@@ -28,19 +28,8 @@
         {% endfor %}
         <br><br>
 
-        {% if pages > 1 %}
-            <div class="col-12 mt-4 row">
-                {% for pagenumber in pages %}
-                    {% if pagenumber == page %}
-                        <a class="btn m-1 btn-disabled ">{{ pagenumber }}</a>
-                    {% else %}
-                        <a class="btn m-1" href="{% url 'history_lists' page=pagenumber %}">{{ pagenumber }}</a>
-                    {% endif %}
-                {% endfor %}
-            </div>
-        {% elif pages == 0 %}
-            You have not been part of any dining lists yet
-        {% endif %}
+        {% url 'history_lists' as url %}
+        {% include 'snippets/snippet_pagination.html' %}
     </div>
 
 {% endblock %}

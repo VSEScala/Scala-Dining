@@ -28,15 +28,7 @@
         + Transfer credits
     </a>
 
-    {% if show_page_navigation %}
-        <div class="col-12 mt-4 row">
-            {% for pagenumber in pages %}
-                {% if pagenumber == page %}
-                    <a class="btn m-1 btn-disabled ">{{ pagenumber }}</a>
-                {% else %}
-                    <a class="btn m-1" href="{% url 'association_credits' page=pagenumber association_name=association_name %}">{{ pagenumber }}</a>
-                {% endif %}
-            {% endfor %}
-        </div>
-    {% endif %}
+    {% url 'association_credits' association_name=association_name as url %}
+    {% include 'snippets/snippet_pagination.html' %}
+
 {% endblock %}

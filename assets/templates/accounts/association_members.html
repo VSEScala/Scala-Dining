@@ -34,16 +34,8 @@
             <hr class="col-12">
         {% endfor %}
     </form>
-    {% if show_page_navigation %}
-        <div class="col-12 mt-4 row">
-            {% for pagenumber in pages %}
-                {% if pagenumber == page %}
-                    <a class="btn m-1 btn-disabled ">{{ pagenumber }}</a>
-                {% else %}
-                    <a class="btn m-1" href="{% url 'association_members' page=pagenumber association_name=association_name %}">{{ pagenumber }}</a>
-                {% endif %}
-            {% endfor %}
-        </div>
-    {% endif %}
-    {{ msg }}
+
+    {% url 'association_members' association_name=association_name as url %}
+    {% include 'snippets/snippet_pagination.html' %}
+
 {% endblock %}
