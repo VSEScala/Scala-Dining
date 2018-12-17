@@ -348,6 +348,7 @@ class EntryAddView(View):
 class SlotJoinView(View):
     context = {}
     template = "dining_lists/dining_switch_to.html"
+    accept_button_name = "button_yes"
 
     @method_decorator(login_required)
     def get(self, request, day=None, month=None, year=None, identifier=None):
@@ -382,6 +383,8 @@ class SlotJoinView(View):
             entry.save()
             return HttpResponseRedirect(reverse_day('slot_details', current_date, identifier=identifier))
 
+        # Check if the dining list the user is already on is not locked. Uses a for-loop in case user is subscribed to
+        #  multiple dining lists, this should not be possible, but is implemented for safety reasons
         locked_entry = None
         for entry in entries:
             if not entry.dining_list.is_open() or entry.dining_list.claimed_by == request.user:
@@ -390,8 +393,10 @@ class SlotJoinView(View):
                 locked_entry = entry
 
         if locked_entry is None:
+            # No entries are locked, user can switch dining lists, display the affirmation page
             # display switch template
             self.context['old_dining_list'] = locked_entry.dining_list
+            self.context['accept_button_name'] = self.accept_button_name
 
             return render(request, self.template, self.context)
             pass
@@ -407,8 +412,10 @@ class SlotJoinView(View):
         new_list = get_list(current_date, identifier)
 
         try:
-            if request.POST['button_yes']:
+            # If yes has been pressed, switch the dining list the user is on
+            if request.POST[self.accept_button_name]:
                 old_entry = DiningEntry.objects.filter(dining_list__date=current_date, user=request.user)[0]
+                # Check if both dining lists are still open, if not, cancell the request
                 if new_list.is_open() and old_entry.dining_list.is_open():
                     if old_entry.dining_list.claimed_by != request.user:
                         old_entry.delete()
