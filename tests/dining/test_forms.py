@@ -3,7 +3,7 @@ from datetime import time, date
 from django.test import TestCase
 
 from Dining.forms import CreateSlotForm
-from UserDetails.models import Association, User, UserMemberships
+from UserDetails.models import Association, User, UserMembership
 from Dining.models import DiningList
 
 
@@ -19,10 +19,10 @@ class CreateSlotFormTestCase(TestCase):
         cls.association3 = Association.objects.create(name="Scala")
         cls.user1 = User.objects.create_user('jan')
         # cls.user2 = User.objects.create_user('klaas')
-        cls.user1_assoc1 = UserMemberships.objects.create(related_user=cls.user1, association=cls.association1,
-                                                              is_verified=True)
-        cls.user1_assoc2 = UserMemberships.objects.create(related_user=cls.user1, association=cls.association2,
-                                                              is_verified=True)
+        cls.user1_assoc1 = UserMembership.objects.create(related_user=cls.user1, association=cls.association1,
+                                                         is_verified=True)
+        cls.user1_assoc2 = UserMembership.objects.create(related_user=cls.user1, association=cls.association2,
+                                                         is_verified=True)
         cls.dining_date = date(2018, 12, 26)
 
     def test_creation(self):

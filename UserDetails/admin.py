@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import User, UserDetail, UserMemberships, Association, AssociationDetails
+from .models import User, UserDetail, UserMembership, Association, AssociationDetails
 from django import forms
 
 
@@ -20,7 +20,7 @@ class AssociationLinks(admin.TabularInline):
     """
     Create the membership information on the User page
     """
-    model = UserMemberships
+    model = UserMembership
     min_num = 1
     extra = 0
 
@@ -54,7 +54,7 @@ class MemberOfFilter(admin.SimpleListFilter):
             return queryset
 
         # Find all members in the UserMemberships model containing the selected association
-        a = UserMemberships.objects.filter(association=self.value()).values_list('related_user_id')
+        a = UserMembership.objects.filter(association=self.value()).values_list('related_user_id')
 
         # Crosslink the given user identities with the given query
         return queryset.filter(pk__in=a)

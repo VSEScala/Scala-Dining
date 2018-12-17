@@ -1,10 +1,12 @@
 from django import forms
 from django.db.models import OuterRef, Exists
+from django.db import transaction
 from django.utils.translation import gettext as _
 
 from UserDetails.models import Association, User
 from .models import DiningList, DiningEntry
 from General.util import SelectWithDisabled
+from CreditManagement.models import Transaction
 
 
 class CreateSlotForm(forms.ModelForm):
@@ -18,7 +20,7 @@ class CreateSlotForm(forms.ModelForm):
         self.date = date
 
         # Get associations that the user is a member of
-        associations = Association.objects.filter(usermemberships__related_user=user)
+        associations = Association.objects.filter(usermembership__related_user=user)
 
         # Filter out unavailable associations (those that have a dining list already on this day)
         dining_lists = DiningList.objects.filter(date=date, association=OuterRef('pk'))
@@ -93,4 +95,44 @@ class DiningPaymentForm(forms.ModelForm):
 class DiningEntryForm(forms.ModelForm):
     class Meta:
         model = DiningEntry
-        fields = ['user', 'external_name', 'has_shopped', 'has_cooked', 'has_cleaned', 'has_paid']
+        fields = ['has_shopped', 'has_cooked', 'has_cleaned', 'has_paid']
+
+
+class DiningEntryCreateForm(DiningEntryForm):
+    user=forms.ModelChoiceField(queryset=None)
+
+    class Meta(DiningEntryForm.Meta):
+        fields = ['user', 'external_name'] + DiningEntryForm.Meta.fields
+
+    def __init__(self, adder, dining_list, *args, **kwargs):
+        instance = DiningEntry(dining_list=dining_list, added_by=adder)
+        super().__init__(*args, **kwargs, instance=instance)
+
+        # The dining list owner can add all users, other people can only add themselves
+        if adder == dining_list.claimed_by:
+            self.fields['user'].queryset = User.objects.all()
+        else:
+            self.fields['user'].queryset = User.objects.filter(pk=adder.pk)
+
+    def save(self, commit=True):
+        """
+        Also creates a transaction when commit==True.
+        """
+        if commit:
+            with transaction.atomic():
+                # Possible race condition regarding instance validation
+                instance = super().save(commit)
+                Transaction.objects.create(amount=instance.dining_list.kitchen_cost,
+                                           source_user=instance.user,
+                                           target_association=instance.dining_list.association,
+                                           notes=_('Kitchen cost'),
+                                           dining_list=instance.dining_list)
+        else:
+            instance = super().save(commit)
+        return instance
+
+
+class DiningEntryDeleteForm(forms.ModelForm):
+    class Meta:
+        model = DiningEntry
+        fields = ['user']

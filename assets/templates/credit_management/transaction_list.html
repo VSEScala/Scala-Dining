@@ -18,7 +18,7 @@
                             | To {{ transaction.target }}
                         {% endif %}
                     {% else %}
-                        <span class="text-success">{{ transaction.amount|euro }}</span>
+                        <span class="text-success">+{{ transaction.amount|euro }}</span>
                         {% if transaction.source %}
                             | From {{ transaction.source }}
                         {% endif %}

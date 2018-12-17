@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 from django.contrib import admin
 
 from CreditManagement.models import Transaction
-from UserDetails.models import Association, UserMemberships
+from UserDetails.models import Association, UserMembership
 
 
 class TransactionAdmin(admin.ModelAdmin):
@@ -51,7 +51,7 @@ class MemberOfFilter(admin.SimpleListFilter):
             return queryset
 
         # Find all members in the UserMemberships model containing the selected association
-        a = UserMemberships.objects.filter(association=self.value()).values_list('related_user_id')
+        a = UserMembership.objects.filter(association=self.value()).values_list('related_user_id')
 
         # Crosslink the given user identities with the given query
         return queryset.filter(user__pk__in=a)

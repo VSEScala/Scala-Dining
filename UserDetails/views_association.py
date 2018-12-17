@@ -8,7 +8,7 @@ from django.core.exceptions import PermissionDenied
 from django.db.models import prefetch_related_objects
 import datetime
 
-from .models import Association, UserMemberships, User
+from .models import Association, UserMembership, User
 from CreditManagement.models import Transaction
 from General.view_classes import PageListView
 
@@ -65,7 +65,7 @@ class MembersOverview(AssociationBaseView, PageListView):
 
         # Set up the list display
         entries = User.objects \
-            .filter(Q(usermemberships__association=self.association) & Q(usermemberships__is_verified=True))\
+            .filter(Q(usermembership__association=self.association) & Q(usermembership__is_verified=True))\
 
 
         super(MembersOverview, self).set_up_list(entries, page)
@@ -84,7 +84,7 @@ class MembersOverviewEdit(AssociationBaseView, PageListView):
         super(MembersOverviewEdit, self).get(request, association_name)
 
         # Set up the list display
-        entries = UserMemberships.objects \
+        entries = UserMembership.objects \
             .filter(Q(association=self.association)) \
             .order_by('is_verified', 'verified_on', 'created_on')
         super(MembersOverviewEdit, self).set_up_list(entries, page)
@@ -110,7 +110,7 @@ class MembersOverviewEdit(AssociationBaseView, PageListView):
         :param verified: yes/no(!) if it should be verified or not.
         :param id: The id of the usermembershipobject
         """
-        memberschip = UserMemberships.objects.get(id=id)
+        memberschip = UserMembership.objects.get(id=id)
         if verified == "yes":
             if memberschip.is_verified:
                 # Todo: message that this was already verified, an error occured

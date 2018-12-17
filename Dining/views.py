@@ -1,4 +1,5 @@
 from datetime import date, timedelta
+import itertools
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -6,14 +7,17 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Q
 from django.http import Http404, HttpResponseRedirect, HttpResponseForbidden, HttpResponseBadRequest
+
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse
 from django.utils import timezone
+from django.utils.http import is_safe_url
 from django.utils.decorators import method_decorator
 from django.views.generic import View, TemplateView
+from django.views.generic.edit import CreateView
 
 from UserDetails.models import User
-from .forms import CreateSlotForm, DiningInfoForm, DiningPaymentForm
+from .forms import CreateSlotForm, DiningInfoForm, DiningPaymentForm, DiningEntryCreateForm
 from .models import DiningList, DiningEntry, DiningDayAnnouncements, DiningComment, DiningCommentView
 
 
@@ -156,11 +160,9 @@ class EntryAddView(LoginRequiredMixin, AbstractDiningListView):
     def get(self, request, *args, **kwargs):
         context = self.get_context_data()
 
+        # Search processing
         search = self.request.GET.get('search')
-        if search == "" or search == "User":
-            search = None
-
-        if search is not None:
+        if search:
             # Search all users corresponding with the typed in name
             context['users'] = User.objects.filter(
                 Q(first_name__contains=search) |
@@ -172,36 +174,47 @@ class EntryAddView(LoginRequiredMixin, AbstractDiningListView):
             if len(context['users']) == 0:
                 context['error_input'] = "Error: no people with that name found"
             elif len(context['users']) > 10:
-                context['error_input'] = "Error: search produced to many results"
+                context['error_input'] = "Error: search produced too many results"
                 context['users'] = None
             else:
                 context['error_input'] = None
-
         else:
             context['users'] = None
             context['search'] = ""
             context['error_input'] = None
+
+        # Form rendering
+        context['form'] = DiningEntryCreateForm(request.user, self.dining_list)
 
         return self.render_to_response(context)
 
     def post(self, request, *args, **kwargs):
         context = self.get_context_data()
 
-        if request.POST.get('button_external'):
-            DiningEntry.objects.create(dining_list=self.dining_list, user=request.user,
-                                       external_name=request.POST['name'])
+        # Entry user defaults to current user if omitted
+        post_data = request.POST.copy()
+        post_data.setdefault('user', request.user.pk)
+
+        # Do form shenanigans
+        form = DiningEntryCreateForm(request.user, self.dining_list, post_data)
+        if form.is_valid():
+            form.save()
+
+        # If next is provided, put possible error messages on the messages system and redirect
+        next = request.GET.get('next', None)
+        if next and is_safe_url(next, request.get_host()):
+            for field, errors in form.errors.items():
+                for error in errors:
+                    messages.add_message(request, messages.ERROR, error)
+            return HttpResponseRedirect(next)
+
+        # If next not provided, but the form was valid, redirect to the slot list
+        if form.is_valid():
             return HttpResponseRedirect(self.reverse('slot_list'))
 
-        if request.POST.get('button_user'):
-            return HttpResponseRedirect(self.reverse('entry_add') + "?search=" + request.POST['name'])
-
-        if request.POST.get('button_select'):
-            user = User.objects.get(id=request.POST['user'])
-            entry = DiningEntry(dining_list=self.dining_list, added_by=request.user, user=user)
-            entry.save()
-            return HttpResponseRedirect(self.reverse('slot_list'))
-
-        return HttpResponseBadRequest()
+        # Render form otherwise
+        context['form'] = form
+        return self.render_to_response(context)
 
 
 class EntryRemoveView(LoginRequiredMixin, AbstractDiningListView):
@@ -210,6 +223,8 @@ class EntryRemoveView(LoginRequiredMixin, AbstractDiningListView):
 
     def post(self, request, *args, user_id=None, **kwargs):
         context = self.get_context_data()
+
+        # Todo: as EntryAddView
 
         if user_id is None:  # The active user wants to sign out
             raise NotImplementedError("Should only use remove by id!")
@@ -275,94 +290,6 @@ class EntryRemoveView(LoginRequiredMixin, AbstractDiningListView):
                 messages.add_message(request, messages.SUCCESS, '{0} removed succesfully'.format(entry.user))
             """
         return HttpResponseRedirect(self.reverse('slot_list'))
-
-
-class SlotJoinView(LoginRequiredMixin, AbstractDiningListView):
-    template_name = "dining_lists/dining_switch_to.html"
-
-    def get(self, request, *args, **kwargs):
-        pass
-        """
-        current_date = process_date(self.context, day, month, year)
-
-        # Get the dining list by the id of the association, shorthand form of the association or the person claimed
-        self.context['dining_list'] = get_list(current_date, identifier)
-
-        # If user is already on list, inform user is already on list
-        if self.context['dining_list'].internal_dining_entries().filter(user=request.user).exists():
-            messages.add_message(request, messages.INFO, 'You were already on this slot')
-            return HttpResponseRedirect(reverse_day('slot_details', current_date, identifier=identifier))
-
-        # if dining list is not open, do not add him
-        if not self.context['dining_list'].is_open():
-            messages.add_message(request, messages.ERROR, 'Subscription failed: the dining list is already closed')
-            return HttpResponseRedirect(reverse_day('day_view', current_date))
-
-        if self.context['dining_list'].limit_signups_to_association_only:
-            if request.user.usermemberships_set.filter(
-                    association=self.context['dining_list'].association).count() == 0:
-                messages.add_message(request, messages.ERROR,
-                                     'Subscription failed: dining list is only for members of {0}'.format(
-                                         self.context['dining_list'].assocation.details.shorthand))
-                return HttpResponseRedirect(reverse_day('day_view', current_date))
-
-        # check if user is not on other dining lists
-        entries = DiningEntry.objects.filter(dining_list__date=current_date, user=request.user)
-        if len(entries) == 0:
-            # User is not present on another date, add user
-            entry = DiningEntry(dining_list=self.context['dining_list'], user=request.user)
-            entry.save()
-            return HttpResponseRedirect(reverse_day('slot_details', current_date, identifier=identifier))
-
-        locked_entry = None
-        for entry in entries:
-            if not entry.dining_list.is_open() or entry.dining_list.claimed_by == request.user:
-                # todo: if claimed by show error
-                # todo, ability to cancel list on small numbers
-                locked_entry = entry
-
-        if locked_entry is None:
-            # display switch template
-            # Todo: this seems to me like a bug
-            self.context['old_dining_list'] = locked_entry.dining_list
-
-            return render(request, self.template, self.context)
-            pass
-        else:
-            # can not change to dining list
-            messages.add_message(request, messages.ERROR,
-                                 'Addition failed: You are already part of a closed dining list')
-            return HttpResponseRedirect(reverse_day('day_view', current_date))
-        """
-
-    def post(self, request, *args, **kwargs):
-        pass
-        """
-        current_date = process_date(self.context, day, month, year)
-        new_list = get_list(current_date, identifier)
-
-        try:
-            if request.POST['button_yes']:
-                old_entry = DiningEntry.objects.filter(dining_list__date=current_date, user=request.user)[0]
-                if new_list.is_open() and old_entry.dining_list.is_open():
-                    if old_entry.dining_list.claimed_by != request.user:
-                        old_entry.delete()
-                        new_entry = DiningEntry(dining_list=new_list, user=request.user)
-                        new_entry.save()
-
-                        return HttpResponseRedirect(reverse_day('slot_details', current_date, identifier=identifier))
-                    else:
-                        messages.add_message(request, messages.ERROR, 'Action failed: you own another slot on this day')
-                        pass
-                else:
-                    messages.add_message(request, messages.ERROR, 'Action failed: Dining list is locked')
-                    pass
-        except:
-            pass
-
-        # No is pressed
-        return HttpResponseRedirect(reverse_day('day_view', current_date))
-        """
 
 
 class AbstractSlotView(AbstractDiningListView):

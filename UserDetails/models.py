@@ -5,6 +5,7 @@ from django.contrib.auth.models import AbstractUser, Group
 from django.utils.functional import cached_property
 from decimal import Decimal, Context, Inexact
 
+
 class User(AbstractUser):
 
     def __str__(self):
@@ -31,9 +32,6 @@ class User(AbstractUser):
         # Convert to two decimals in an exact manner
         balance = Decimal(total['balance'])
         return balance.quantize(Decimal('0.01'), context=Context(traps=[Inexact]))
-
-    def get_credit_containing_instance(self):
-        return self.usercredit
 
     def can_access_back(self):
         is_a_boardmember = (self.groups.count() > 0)
@@ -65,7 +63,7 @@ class UserDetail(models.Model):
         """
         Whether this user is verified as part of a Scala association
         """
-        links = UserMemberships.objects.filter(related_user=self.related_user)
+        links = UserMembership.objects.filter(related_user=self.related_user)
 
         for membership in links:
             if membership.is_verified:
@@ -76,7 +74,7 @@ class UserDetail(models.Model):
         return self.related_user.__str__()
 
 
-class UserMemberships(models.Model):
+class UserMembership(models.Model):
     """
     Stores membership information
     """

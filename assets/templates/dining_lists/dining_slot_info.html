@@ -117,8 +117,11 @@
                 {% if not user_is_on_list %}
                     <div class="col-12 col-md-6 offset-md-2 text-size-6">
                         {% if user_can_add_self %}
-                            {% url 'entry_join' day=date.day month=date.month year=date.year identifier=dining_list.association.associationdetails.shorthand as url%}
-                            <a class="btn-block btn btn-primary" href={{ url }}>Sign up</a>
+                            {% url 'entry_add' day=date.day month=date.month year=date.year identifier=dining_list.association.associationdetails.shorthand as url%}
+                            <form method="post" action="{{ url }}">
+                                {% csrf_token %}
+                                <button type="submit" class="btn-block btn btn-primary">Sign up</button>
+                            </form>
                         {% else %}
                             <div class="btn-block btn btn-disabled">Sign up</div>
                         {% endif %}

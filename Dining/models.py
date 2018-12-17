@@ -9,8 +9,7 @@ from datetime import datetime, time
 from decimal import Decimal
 from django.conf import settings
 
-
-# Interesting blog post: https://sunscrapers.com/blog/where-to-put-business-logic-django/
+from django.utils.translation import gettext_lazy as _
 
 
 class UserDiningSettings(models.Model):
@@ -179,10 +178,8 @@ class DiningList(models.Model):
         if self.auto_pay:
             if self.get_purchaser() is None:
                 raise ValidationError({
-                    'claimed_by': ValidationError(
-                        'When autopay is enabled, either a claimer or a purchaser must be defined.', code='invalid'),
                     'purchaser': ValidationError(
-                        'When autopay is enabled, either a claimer or a purchaser must be defined.', code='invalid'),
+                        'When autopay is enabled, a purchaser must be defined.', code='invalid'),
                 })
 
     def is_open(self):
@@ -216,7 +213,7 @@ class DiningList(models.Model):
             return False
 
         if self.limit_signups_to_association_only:
-            if user.usermemberships_set.filter(association=self.association).count() == 0:
+            if user.usermembership_set.filter(association=self.association).count() == 0:
                 return False
         return True
 
@@ -243,7 +240,7 @@ class DiningEntry(models.Model):
     added_by = models.ForeignKey(settings.AUTH_USER_MODEL, related_name="added_entry_on_dining",
                                  on_delete=models.SET_DEFAULT, blank=True, default=None, null=True)
     # When this is for someone external, put his name here (this also marks the entry as being external)
-    external_name = models.CharField(max_length=100)
+    external_name = models.CharField(max_length=100, default="", blank=True)
     # Stats
     has_shopped = models.BooleanField(default=False)
     has_cooked = models.BooleanField(default=False)
@@ -260,26 +257,44 @@ class DiningEntry(models.Model):
 
         super().save(*args, **kwargs)
 
-    def delete(self, *args, **kwargs):
-        if not self.dining_list.isAdjustable():
-            raise ValueError("Dining list is locked")
-        super().delete(*args, **kwargs)
-
     def clean(self):
         """
-        Additional validation check
-        :return: whether model is valid
+        This actually has a race condition problem which makes it possible to create more entries than max_diners, and
+        it is also possible to add yourself multiple times! This is however very hard to prevent, although we could use
+        a mutex lock for the time between validation and saving.
         """
+        # Validate dining list is not locked
         if not self.dining_list.isAdjustable():
-            if self.has_paid:
-                if not DiningEntry.objects.get(pk=self.pk).has_paid:
-                    super(DiningEntry, self).clean()
-                    return
+            # Todo: let has_paid changes go through
+            raise ValidationError({'dining_list': ValidationError('This dining list is locked', code='invalid')})
 
-            raise ValidationError({
-                'dining_list': ValidationError('This dining list is already locked', code='invalid'),
-            })
-        super(DiningEntry, self).clean()
+        # Creation
+        if not self.pk:
+            # Validate dining list open
+            if not self.dining_list.is_open():
+                raise ValidationError({'dining_list': _('The dining list is closed.')})
+
+            # Validate room available in dining list
+            if self.dining_list.dining_entries.count() >= self.dining_list.max_diners:
+                raise ValidationError({'dining_list': _('The dining list is full.')})
+
+            # Validate user is not already subscribed for the dining list
+            if not self.is_external() and self.dining_list.internal_dining_entries().filter(user=self.user).exists():
+                raise ValidationError(_('This user is already subscribed to the dining list.'))
+
+            # Validate dining list limited to association
+            if self.dining_list.limit_signups_to_association_only:
+                association = self.dining_list.association
+                if not self.user.usermembership_set.filter(association=association).exists():
+                    raise ValidationError(
+                        {'dining_list': _('Joining this dining list is limited to association members.')})
+
+            # Validate if adder is allowed to create the entry
+            if self.user != self.added_by and self.added_by != self.dining_list.claimed_by:
+                raise ValidationError(_('Only the dining list owner can add other users.'))
+
+            # (Optionally) validate if user is not already on another dining list
+
 
     def __str__(self):
         return str(self.user) + " " + str(self.dining_list.date)
