@@ -9,7 +9,7 @@ from datetime import datetime, time
 from decimal import Decimal
 from django.conf import settings
 
-from django.utils.translation import gettext_lazy as _
+from django.utils.translation import gettext as _
 
 
 class UserDiningSettings(models.Model):
@@ -39,11 +39,9 @@ class DiningList(models.Model):
     The following fields may not be changed after creation: kitchen_cost, min_diners/max_diners!
     """
     date = models.DateField(default=timezone.now)
-    sign_up_deadline = models.DateTimeField(blank=True, null=True, help_text="Date/time before users need to sign up")
+    sign_up_deadline = models.DateTimeField(help_text="The time before users need to sign up.")
     serve_time = models.TimeField(default=time(18, 00))
 
-    # Todo: implement name as url
-    name = models.SlugField(blank=True, default="", null=True, db_index=False, max_length=30)
     dish = models.CharField(default="", max_length=30, blank=True, help_text="The dish made")
     # The days adjustable is implemented to prevent adjustment in credits or aid due to a deletion of a user account.
     days_adjustable = models.IntegerField(
@@ -83,71 +81,63 @@ class DiningList(models.Model):
     objects = DiningListManager()
 
     def save(self, *args, **kwargs):
+        # Set the sign-up deadline to it's default value if none was provided.
+        if not self.pk and not self.sign_up_deadline:
+            from Dining.constants import DINING_LIST_CLOSURE_TIME
+            loc_time = timezone.datetime.combine(self.date, DINING_LIST_CLOSURE_TIME)
+            loc_time = timezone.get_default_timezone().localize(loc_time)
+            self.sign_up_deadline = loc_time
+
+        # Safety check for kitchen cost
+        if self.pk and self.kitchen_cost != DiningList.objects.get(pk=self.pk).kitchen_cost:
+            raise ValueError("Kitchen cost can't be changed after creation.")
+
         """
-        Overwrite the save function to lock changes after closure
+        # Compute the individual dinner costs per person
+        if not self.dinner_cost_keep_single_constant:
+            if self.dining_entries.count() == 0:
+                self.dinner_cost_single = 0.0
+            else:
+                self.dinner_cost_single = self.dinner_cost_total / self.dining_entries.count()
+
+        # Change all the user states
+        with transaction.atomic():
+            super(DiningList, self).save(*args, **kwargs)
+            self.refresh_from_db()
+            if previous_list is not None:
+                costs = previous_list.get_credit_cost() - self.get_credit_cost()
+            else:
+                costs = -self.get_credit_cost()
+
+            # Todo: update user credits
+            if costs != 0:
+                # Costs have changed, alter all credits.
+                # Done in for-loop instead of update to trigger custom save implementation (to track negatives)
+                for diningEntry in self.diningentry_set.all():
+                    diningEntry.user.usercredit.credit = F('credit') + costs
+                    diningEntry.user.usercredit.save()
+                # Adjust the credit scores for each external entry added.
+                # For loop is required to ensure that entries added by the same user are processed correctly
+                for ExternalDinerEntry in self.diningentryexternal_set.all():
+                    ExternalDinerEntry.user.usercredit.credit = F('credit') + costs
+                    ExternalDinerEntry.user.usercredit.save()
+
+            if previous_list is None or \
+                    previous_list.diners * self.diner_count() == 0 or \
+                    previous_list.auto_pay != self.auto_pay or \
+                    previous_list.get_purchaser() != self.get_purchaser() or \
+                    previous_list.dinner_cost_total != self.dinner_cost_total:
+
+                if previous_list is not None and previous_list.auto_pay and previous_list.diners > 0:
+                    credit_instance = previous_list.get_purchaser().get_credit_containing_instance()
+                    credit_instance.credit = F('credit') - previous_list.dinner_cost_total
+                    credit_instance.save()
+
+                if self.auto_pay and self.diner_count() > 0:
+                    credit_instance = self.get_purchaser().get_credit_containing_instance()
+                    credit_instance.credit = F('credit') + self.dinner_cost_total
+                    credit_instance.save()
         """
-
-        if self.isAdjustable() is True:
-            # Set the sign-up deadline to it's default value if none was provided.
-            if self.sign_up_deadline is None:
-                from Dining.constants import DINING_LIST_CLOSURE_TIME
-                loc_time = timezone.datetime.combine(self.date, DINING_LIST_CLOSURE_TIME)
-                loc_time = timezone.get_default_timezone().localize(loc_time)
-                self.sign_up_deadline = loc_time
-
-            # Compute the individual dinner costs per person
-            if not self.dinner_cost_keep_single_constant:
-                if self.dining_entries.count() == 0:
-                    self.dinner_cost_single = 0.0
-                else:
-                    self.dinner_cost_single = self.dinner_cost_total / self.dining_entries.count()
-
-            # Change all the user states
-            with transaction.atomic():
-                super(DiningList, self).save(*args, **kwargs)
-                self.refresh_from_db()
-                """
-                if previous_list is not None:
-                    costs = previous_list.get_credit_cost() - self.get_credit_cost()
-                else:
-                    costs = -self.get_credit_cost()
-
-                # Todo: update user credits
-                if costs != 0:
-                    # Costs have changed, alter all credits.
-                    # Done in for-loop instead of update to trigger custom save implementation (to track negatives)
-                    for diningEntry in self.diningentry_set.all():
-                        diningEntry.user.usercredit.credit = F('credit') + costs
-                        diningEntry.user.usercredit.save()
-                    # Adjust the credit scores for each external entry added.
-                    # For loop is required to ensure that entries added by the same user are processed correctly
-                    for ExternalDinerEntry in self.diningentryexternal_set.all():
-                        ExternalDinerEntry.user.usercredit.credit = F('credit') + costs
-                        ExternalDinerEntry.user.usercredit.save()
-
-                if previous_list is None or \
-                        previous_list.diners * self.diner_count() == 0 or \
-                        previous_list.auto_pay != self.auto_pay or \
-                        previous_list.get_purchaser() != self.get_purchaser() or \
-                        previous_list.dinner_cost_total != self.dinner_cost_total:
-
-                    if previous_list is not None and previous_list.auto_pay and previous_list.diners > 0:
-                        credit_instance = previous_list.get_purchaser().get_credit_containing_instance()
-                        credit_instance.credit = F('credit') - previous_list.dinner_cost_total
-                        credit_instance.save()
-
-                    if self.auto_pay and self.diner_count() > 0:
-                        credit_instance = self.get_purchaser().get_credit_containing_instance()
-                        credit_instance.credit = F('credit') + self.dinner_cost_total
-                        credit_instance.save()
-                """
-            return
-        else:
-            if self.sign_up_deadline is None:
-                from Dining.constants import DINING_LIST_CLOSURE_TIME
-                self.sign_up_deadline = datetime.combine(self.date, DINING_LIST_CLOSURE_TIME)
-            super(DiningList, self).save(update_fields=['days_adjustable', 'name'], **kwargs)
-            return
 
     def get_purchaser(self):
         """
@@ -162,31 +152,29 @@ class DiningList(models.Model):
         else:
             return self.purchaser
 
-    def isAdjustable(self):
+    def is_adjustable(self):
         """
-        Whether the dining list has not expired it's adjustable date
-        :return: Whether the list properties can be adjusted.
+        Whether the dining list has not expired it's adjustable date and can therefore not be modified anymore
         """
         days_since_date = (timezone.now().date() - self.date).days
         return days_since_date <= self.days_adjustable
 
     def clean(self):
-        """
-        Confirms model validation
-        :return: Whether it is a valid model
-        """
-        if self.auto_pay:
-            if self.get_purchaser() is None:
-                raise ValidationError({
-                    'purchaser': ValidationError(
-                        'When autopay is enabled, a purchaser must be defined.', code='invalid'),
-                })
+        # Validate dining list can be changed
+        # This also blocks changes for dining entries!
+        if self.pk and not self.is_adjustable():
+            raise ValidationError(_('The dining list is not adjustable.'), code='not_adjustable')
+
+        # Check if purchaser is present when using auto pay
+        if self.auto_pay and not self.get_purchaser():
+            raise ValidationError(
+                {'purchaser': ValidationError('When autopay is enabled, a purchaser must be defined.', code='invalid')})
 
     def is_open(self):
         """
         Whether normal users can sign in/out for the dining list (i.e. the deadline has not expired)
         """
-        return datetime.now().timestamp() < self.sign_up_deadline.timestamp()
+        return timezone.now() < self.sign_up_deadline
 
     def can_join(self, user, check_for_self=True):
         """
@@ -249,7 +237,7 @@ class DiningEntry(models.Model):
 
     def save(self, *args, **kwargs):
         # If dining list can not be adjusted, limit saving only to the update of the has_paid field.
-        if not self.dining_list.isAdjustable():
+        if not self.dining_list.is_adjustable():
             if self.id:
                 # Only has_payed changes can go through
                 super(DiningEntry, self).save(update_fields=['has_paid'])
@@ -263,20 +251,15 @@ class DiningEntry(models.Model):
         it is also possible to add yourself multiple times! This is however very hard to prevent, although we could use
         a mutex lock for the time between validation and saving.
         """
-        # Validate dining list is not locked
-        if not self.dining_list.isAdjustable():
-            # Todo: let has_paid changes go through
-            raise ValidationError({'dining_list': ValidationError('This dining list is locked', code='invalid')})
-
         # Creation
         if not self.pk:
             # Validate dining list open
             if not self.dining_list.is_open():
-                raise ValidationError({'dining_list': _('The dining list is closed.')})
+                raise ValidationError(_('The dining list is closed.'))
 
             # Validate room available in dining list
             if self.dining_list.dining_entries.count() >= self.dining_list.max_diners:
-                raise ValidationError({'dining_list': _('The dining list is full.')})
+                raise ValidationError(_('The dining list is full.'))
 
             # Validate user is not already subscribed for the dining list
             if not self.is_external() and self.dining_list.internal_dining_entries().filter(user=self.user).exists():
@@ -286,8 +269,7 @@ class DiningEntry(models.Model):
             if self.dining_list.limit_signups_to_association_only:
                 association = self.dining_list.association
                 if not self.user.usermembership_set.filter(association=association).exists():
-                    raise ValidationError(
-                        {'dining_list': _('Joining this dining list is limited to association members.')})
+                    raise ValidationError(_('Joining this dining list is limited to association members.'))
 
             # Validate if adder is allowed to create the entry
             if self.user != self.added_by and self.added_by != self.dining_list.claimed_by:
@@ -295,7 +277,6 @@ class DiningEntry(models.Model):
 
             # (Optionally) validate if user is not already on another dining list
             #if DiningList.objects.filter(date=self.dining_list.date, dining_entries__user=self.user)
-
 
     def __str__(self):
         return str(self.user) + " " + str(self.dining_list.date)

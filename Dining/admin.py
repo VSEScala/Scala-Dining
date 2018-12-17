@@ -32,7 +32,7 @@ class DiningListAdmin(admin.ModelAdmin):
     Set up limited view of the user page
     """
 
-    list_display = ('__str__', 'association', 'isAdjustable')
+    list_display = ('__str__', 'association', 'is_adjustable')
     list_filter = ['association', 'date']
 
     #readonly_fields = ('date', 'diners', 'dinner_cost_single')

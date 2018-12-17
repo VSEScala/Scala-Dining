@@ -97,17 +97,25 @@
                         {% endif %}
                     </div>
                 </div>
-                {% if can_delete_all %}
-                    <a class="col-2 col-sm-1 btn btn-block btn-dining-delete"
-                       href="{% url 'entry_remove' day=date.day month=date.month year=date.year identifier=dining_list.association.associationdetails.shorthand id=entry.id %}"></a>
-                {% elif is_open and can_delete_some %}
-                    {% if request.user == entry.user %}
-                        <a class="col-2 col-sm-1 btn btn-block btn-dining-delete"
-                           href="{% url 'entry_remove' day=date.day month=date.month year=date.year identifier=dining_list.association.associationdetails.shorthand id=entry.id %}"></a>
-                    {% endif %}
+                {# See for if statement ordering: https://docs.djangoproject.com/en/2.1/ref/templates/builtins/#if #}
+                {% if can_delete_all or is_open and can_delete_some and request.user == entry.user %}
+                    {% url 'entry_remove' day=date.day month=date.month year=date.year identifier=dining_list.association.associationdetails.shorthand entry_id=entry.id as remove_url %}
+                    <!-- HACK ALERT HACK ALERT -->
+                    <button type="button" class="col-2 col-sm-1 btn btn-block" id="delete{{ entry.id }}">
+                        <i class="fas fa-trash-alt fa-fw"></i>
+                    </button>
+                    <script>
+                        document.addEventListener("DOMContentLoaded", function (event) {
+                            $("#delete{{ entry.id }}").click(function (e) {
+                                var form = $('<form method="post" action="{{ remove_url }}"></form>');
+                                form.append('{% csrf_token %}');
+                                $("body").append(form);
+                                form.submit();
+                            });
+                        });
+                    </script>
                 {% endif %}
             </div>
-
 
         {% endfor %}
         <hr class="col-12 mt-0">

@@ -21,7 +21,7 @@ def clear_list_funding(sender, instance=None, **kwargs):
     :param kwargs: not used in current implementation
     :return:
     """
-    if instance.isAdjustable():
+    if instance.is_adjustable():
         instance.auto_pay = False
         instance.kitchen_cost = 0
         instance.save()

@@ -2,6 +2,7 @@ from django import forms
 from django.db.models import OuterRef, Exists
 from django.db import transaction
 from django.utils.translation import gettext as _
+from django.core.exceptions import ValidationError, PermissionDenied
 
 from UserDetails.models import Association, User
 from .models import DiningList, DiningEntry
@@ -98,11 +99,12 @@ class DiningEntryForm(forms.ModelForm):
         fields = ['has_shopped', 'has_cooked', 'has_cleaned', 'has_paid']
 
 
-class DiningEntryCreateForm(DiningEntryForm):
-    user=forms.ModelChoiceField(queryset=None)
+class DiningEntryCreateForm(forms.ModelForm):
+    user = forms.ModelChoiceField(queryset=None)
 
     class Meta(DiningEntryForm.Meta):
-        fields = ['user', 'external_name'] + DiningEntryForm.Meta.fields
+        model = DiningEntry
+        fields = ['user', 'external_name']
 
     def __init__(self, adder, dining_list, data=None, **kwargs):
         if data is not None:
@@ -139,4 +141,46 @@ class DiningEntryCreateForm(DiningEntryForm):
 class DiningEntryDeleteForm(forms.ModelForm):
     class Meta:
         model = DiningEntry
-        fields = ['user']
+        fields = []
+
+    def __init__(self, deleted_by, instance, **kwargs):
+        """
+        Automatically binds on creation.
+        """
+        super().__init__(instance=instance, data={}, **kwargs)
+        self.deleted_by = deleted_by
+
+    def clean(self):
+        cleaned_data = super().clean()
+
+        list = self.instance.dining_list
+
+        # Dining list adjustable should've been checked in DiningList.clean()
+
+        # Check permission
+        if self.deleted_by != self.instance.user and self.deleted_by != list.claimed_by:
+            raise PermissionDenied('Can only delete own entries.')
+
+        # Validate dining list is still open (except for claimant)
+        if not list.is_open():
+            if self.deleted_by != list.claimed_by:
+                raise ValidationError(_('The dining list is closed, ask the chef to remove this entry instead.'),
+                                      code='closed')
+
+        # (Optionally) block removal when the entry is the owner of the list
+        # if self.instance.user == list.claimed_by:
+        #     raise ValidationError(_("The claimant can't be removed from the dining list."), code='invalid')
+
+        return cleaned_data
+
+    def execute(self):
+        # Try saving to check if form is validated (raises ValueError if not)
+        self.save(commit=False)
+
+        with transaction.atomic():
+            Transaction.objects.create(amount=self.instance.dining_list.kitchen_cost,
+                                       source_association=self.instance.dining_list.association,
+                                       target_user=self.instance.user,
+                                       notes=_('Kitchen cost refund'),
+                                       dining_list=self.instance.dining_list)
+            self.instance.delete()

@@ -132,7 +132,10 @@
                     </div>
                     <div class="col-12 col-md-4 offset-md-2 text-size-6">
                         {% url 'entry_remove' day=date.day month=date.month year=date.year identifier=dining_list.association.associationdetails.shorthand as url%}
-                        <a class="btn-block btn btn-warning" href={{ url }}>Remove yourself</a>
+                        <form method="post" action="{{ url }}?next={{ request.path_info }}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-block btn-warning">Remove yourself</button>
+                        </form>
                     </div>
                 {% endif %}
                 {% url 'entry_add' day=date.day month=date.month year=date.year identifier=dining_list.association.associationdetails.shorthand as url%}

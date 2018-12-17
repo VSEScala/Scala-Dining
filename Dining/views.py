@@ -16,8 +16,10 @@ from django.utils.decorators import method_decorator
 from django.views.generic import View, TemplateView
 from django.views.generic.edit import CreateView
 
+from django.utils.translation import gettext as _
+
 from UserDetails.models import User
-from .forms import CreateSlotForm, DiningInfoForm, DiningPaymentForm, DiningEntryCreateForm
+from .forms import CreateSlotForm, DiningInfoForm, DiningPaymentForm, DiningEntryCreateForm, DiningEntryDeleteForm
 from .models import DiningList, DiningEntry, DiningDayAnnouncements, DiningComment, DiningCommentView
 
 
@@ -224,75 +226,38 @@ class EntryRemoveView(LoginRequiredMixin, AbstractDiningListView):
 
     http_method_names = ['post']
 
-    def post(self, request, *args, user_id=None, **kwargs):
-        context = self.get_context_data()
+    def post(self, request, *args, entry_id=None, **kwargs):
+        self.get_context_data()
 
-        # Todo: as EntryAddView
-
-        if user_id is None:  # The active user wants to sign out
-            raise NotImplementedError("Should only use remove by id!")
-            """
-            if request.user == dining_list.claimed_by and dining_list.diners > 1:
-                # todo: handing over the dining ownership, or cancel the dining slot
-                HttpResponseRedirect(reverse_day('slot_details', current_date, identifier=identifier))
-
-            if dining_list.claimed_by is not None and \
-                    timezone.now().timestamp() > dining_list.sign_up_deadline.timestamp():
-                if dining_list.claimed_by != request.user:
-                    messages.add_message(request, messages.WARNING,
-                                         'You can not remove yourself, ask the chef to remove you instead')
-                    HttpResponseRedirect(reverse_day('slot_details', current_date, identifier=identifier))
-
-            entry = dining_list.get_entry_user(request.user)
-            entry.delete()
-            messages.add_message(request, messages.SUCCESS, 'You have been removed succesfully')
-            return HttpResponseRedirect(reverse_day('day_view', current_date))
-            """
+        # Get entry
+        if entry_id:
+            entry = get_object_or_404(DiningEntry, id=entry_id)
         else:
-            if not self.dining_list.is_open() and self.dining_list.claimed_by != request.user:
-                return HttpResponseForbidden("You are not the owner of the dining list and the slot is closed")
+            entry = get_object_or_404(DiningEntry, dining_list=self.dining_list, user=request.user, external_name="")
 
-            """
-            # I think this code is partially wrong (at least it's complex)
-            if user_id.startswith('E'):  # External entry
-                entry = dining_list.get_entry_external(user_id[1:])
-                if entry is None:
-                    raise Http404("Entry not found")
+        # Process deletion
+        form = DiningEntryDeleteForm(request.user, entry)
+        if form.is_valid():
+            print("Executing")
+            form.execute()
+            if entry_id:
+                message = _('The user is removed from the dining list.')
+            else:
+                message = _('You are removed from the dining list.')
+            messages.add_message(request, messages.SUCCESS, message)
+        else:
+            print(form.errors)
+            print("Invalid")
+            for field, errors in form.errors.items():
+                for error in errors:
+                    messages.add_message(request, messages.ERROR, error)
 
-                if request.user != dining_list.claimed_by and request.user != entry.user:
-                    messages.add_message(request, messages.WARNING,
-                                         'Access denied: You did not add this entry, nor own the slot')
-                    return HttpResponseRedirect(reverse_day('slot_list', current_date, identifier=identifier))
-                else:
-                    entry.delete()
-                    if request.user != entry.user:
-                        # todo: notify user who added the external one user of removal
-                        pass
-                    return HttpResponseRedirect(reverse_day('slot_list', current_date, identifier=identifier))
+        # Go to next
+        next = request.GET.get('next')
+        if not is_safe_url(next, request.get_host()):
+            next = self.reverse('slot_list')
 
-            else:  # Object is internal
-                # if request was NOT added by the dininglist claimer, block access
-                if request.user != dining_list.claimed_by:
-                    messages.add_message(
-                        request,
-                        messages.ERROR,
-                        'Access denied: You are not the owner of the dining list and the slot is closed')
-                    return HttpResponseRedirect(reverse_day('slot_details', current_date, identifier=identifier))
-
-                entry = dining_list.get_entry(user_id)
-                if entry is None:
-                    messages.add_message(request, messages.ERROR, 'That entry can not be removed: it does not exist')
-                    return HttpResponseRedirect(reverse_day('slot_details', current_date, identifier=identifier))
-
-                if entry.user == dining_list.claimed_by:
-                    messages.add_message(request, messages.ERROR,
-                                         'You can not remove yourself because you are the owner')
-                    return HttpResponseRedirect(reverse_day('slot_details', current_date, identifier=identifier))
-
-                entry.delete()
-                messages.add_message(request, messages.SUCCESS, '{0} removed succesfully'.format(entry.user))
-            """
-        return HttpResponseRedirect(self.reverse('slot_list'))
+        return HttpResponseRedirect(next)
 
 
 class AbstractSlotView(AbstractDiningListView):

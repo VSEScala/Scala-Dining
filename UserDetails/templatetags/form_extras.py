@@ -19,7 +19,10 @@ def get_class(value):
 
 @register.filter(name='can_join_slot')
 def can_join_slot(slot, user):
-    return slot.can_join(user)
+    # Try creating an entry
+    from Dining.forms import DiningEntryCreateForm
+    form = DiningEntryCreateForm(user, slot, data={})
+    return form.is_valid()
 
 
 @register.filter(name='is_on_slot')
