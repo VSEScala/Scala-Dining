@@ -294,6 +294,7 @@ class DiningEntry(models.Model):
                 raise ValidationError(_('Only the dining list owner can add other users.'))
 
             # (Optionally) validate if user is not already on another dining list
+            #if DiningList.objects.filter(date=self.dining_list.date, dining_entries__user=self.user)
 
 
     def __str__(self):

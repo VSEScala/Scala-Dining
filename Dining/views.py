@@ -127,18 +127,25 @@ class NewSlotView(LoginRequiredMixin, AbstractDayView):
     def post(self, request, *args, **kwargs):
         context = self.get_context_data()
 
-        context['slot_form'] = CreateSlotForm(request.user, self.date, request.POST)
+        form = CreateSlotForm(request.user, self.date, request.POST)
 
-        # Check form validity
-        if not context['slot_form'].is_valid():
-            return self.render_to_response(context)
+        if form.is_valid():
+            dining_list = form.save()
 
-        dining_list = context['slot_form'].save()
-        # Create dining entry for current user
-        DiningEntry.objects.create(dining_list=dining_list, user=request.user)
+            # Create dining entry for current user
+            entry = DiningEntryCreateForm(request.user, dining_list, data={})
+            if entry.is_valid():
+                entry.save()
+            else:
+                for field, errors in entry.errors.items():
+                    for error in errors:
+                        messages.add_message(request, messages.WARNING, error)
 
-        # Redirect to details page
-        return redirect(dining_list)
+            return redirect(dining_list)
+
+        context['slot_form'] = form
+        return self.render_to_response(context)
+
 
     def dispatch(self, request, *args, year=None, month=None, day=None, **kwargs):
         """
@@ -191,12 +198,8 @@ class EntryAddView(LoginRequiredMixin, AbstractDiningListView):
     def post(self, request, *args, **kwargs):
         context = self.get_context_data()
 
-        # Entry user defaults to current user if omitted
-        post_data = request.POST.copy()
-        post_data.setdefault('user', request.user.pk)
-
         # Do form shenanigans
-        form = DiningEntryCreateForm(request.user, self.dining_list, post_data)
+        form = DiningEntryCreateForm(request.user, self.dining_list, data=request.POST)
         if form.is_valid():
             form.save()
 

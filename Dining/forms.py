@@ -104,9 +104,13 @@ class DiningEntryCreateForm(DiningEntryForm):
     class Meta(DiningEntryForm.Meta):
         fields = ['user', 'external_name'] + DiningEntryForm.Meta.fields
 
-    def __init__(self, adder, dining_list, *args, **kwargs):
-        instance = DiningEntry(dining_list=dining_list, added_by=adder)
-        super().__init__(*args, **kwargs, instance=instance)
+    def __init__(self, adder, dining_list, data=None, **kwargs):
+        if data is not None:
+            # User defaults to adder if not set
+            data = data.copy()
+            data.setdefault('user', adder.pk)
+
+        super().__init__(**kwargs, data=data, instance=DiningEntry(dining_list=dining_list, added_by=adder))
 
         # The dining list owner can add all users, other people can only add themselves
         if adder == dining_list.claimed_by:

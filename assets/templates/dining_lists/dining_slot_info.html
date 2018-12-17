@@ -118,7 +118,7 @@
                     <div class="col-12 col-md-6 offset-md-2 text-size-6">
                         {% if user_can_add_self %}
                             {% url 'entry_add' day=date.day month=date.month year=date.year identifier=dining_list.association.associationdetails.shorthand as url%}
-                            <form method="post" action="{{ url }}">
+                            <form method="post" action="{{ url }}?next={{ request.path_info }}">
                                 {% csrf_token %}
                                 <button type="submit" class="btn-block btn btn-primary">Sign up</button>
                             </form>
