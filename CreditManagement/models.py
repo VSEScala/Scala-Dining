@@ -43,7 +43,8 @@ class Transaction(models.Model):
     notes = models.CharField(max_length=200, blank=True)
 
     # Optional reference to the dining list that caused this transaction, for informational purposes.
-    dining_list = models.ForeignKey(DiningList, related_name='transactions', on_delete=models.PROTECT, null=True,
+    # Todo: SET_NULL is needed to make it possible to delete dining lists, however this alters a transaction.
+    dining_list = models.ForeignKey(DiningList, related_name='transactions', on_delete=models.SET_NULL, null=True,
                                     blank=True)
 
     objects = TransactionManager()

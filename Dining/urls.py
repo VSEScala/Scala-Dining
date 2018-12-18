@@ -16,6 +16,7 @@ urlpatterns = [
             path('entry/remove/<int:entry_id>/', views.EntryRemoveView.as_view(), name='entry_remove'),
             path('entry/add/', views.EntryAddView.as_view(), name='entry_add'),
             path('change/', views.SlotInfoChangeView.as_view(), name='slot_change'),
+            path('remove/', views.SlotDeleteView.as_view(), name='slot_delete'),
         ])),
     ])),
 ]

@@ -15,6 +15,11 @@
     {% endif %}
         <div class="col-12 text-size-5 pr-0">
             {{ dining_list.dish }}
+            {# Show delete button when user is owner #}
+            {% if user == dining_list.claimed_by %}
+                {% url "slot_delete" year=date.year month=date.month day=date.day identifier=association_slug as url %}
+                <a href="{{ url }}" class="btn btn-danger"><i class="fas fa-trash-alt"></i></a>
+            {% endif %}
         </div>
         <div class="col-12 text-size-3 pr-0 mb-3 mb-md-5">
             by {{ dining_list.claimed_by }}

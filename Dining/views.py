@@ -1,25 +1,21 @@
 from datetime import date, timedelta
-import itertools
 
 from django.contrib import messages
-from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Q
-from django.http import Http404, HttpResponseRedirect, HttpResponseForbidden, HttpResponseBadRequest
-
-from django.shortcuts import render, redirect, get_object_or_404
+from django.http import Http404, HttpResponseRedirect, HttpResponseForbidden
+from django.shortcuts import redirect, get_object_or_404
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.http import is_safe_url
-from django.utils.decorators import method_decorator
-from django.views.generic import View, TemplateView
-from django.views.generic.edit import CreateView
-
 from django.utils.translation import gettext as _
+from django.views.generic import TemplateView, View
+from django.views.generic.base import ContextMixin
+from django.views.generic.edit import DeleteView
 
 from UserDetails.models import User
-from .forms import CreateSlotForm, DiningInfoForm, DiningPaymentForm, DiningEntryCreateForm, DiningEntryDeleteForm
+from .forms import CreateSlotForm, DiningInfoForm, DiningPaymentForm, DiningEntryCreateForm, DiningEntryDeleteForm, \
+    DiningListDeleteForm
 from .models import DiningList, DiningEntry, DiningDayAnnouncements, DiningComment, DiningCommentView
 
 
@@ -31,19 +27,15 @@ def index(request):
     return redirect('day_view', year=upcoming.year, month=upcoming.month, day=upcoming.day)
 
 
-class AbstractDayView(TemplateView):
-    """Adds useful thingies to context and self that have to do with the request date."""
+class DayMixin(ContextMixin):
+    """
+    Adds useful thingies to context and self that have to do with the request date.
+    """
 
     date = None
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-
-        self.date = date(self.kwargs['year'], self.kwargs['month'], self.kwargs['day'])
-
-        if self.date.weekday() >= 5:
-            raise Http404('Weekends are not available')
-
         context['date'] = self.date
         context['next_date'] = self.date + timedelta(days=3 if self.date.weekday() == 4 else 1)
         context['previous_date'] = self.date - timedelta(days=3 if self.date.weekday() == 0 else 1)
@@ -53,6 +45,24 @@ class AbstractDayView(TemplateView):
             context['previous_date'] = None
         context['is_today'] = (self.date - timezone.now().date()).days == 0
         return context
+
+    def init_date(self):
+        """
+        Fetches the date from the request arguments.
+        """
+        if self.date:
+            # Already initialized
+            return
+        self.date = date(self.kwargs['year'], self.kwargs['month'], self.kwargs['day'])
+        if self.date.weekday() >= 5:
+            raise Http404('Weekends are not available')
+
+    def dispatch(self, request, *args, **kwargs):
+        """
+        Construct date before get/post is called.
+        """
+        self.init_date()
+        return super().dispatch(request, *args, **kwargs)
 
     def reverse(self, *args, kwargs=None, **other_kwargs):
         """
@@ -66,20 +76,35 @@ class AbstractDayView(TemplateView):
         return reverse(*args, kwargs=kwargs, **other_kwargs)
 
 
-class AbstractDiningListView(AbstractDayView):
-    """Extends the day view with dining list thingies."""
-
+class DiningListMixin(DayMixin):
+    """
+    Extends the day mixin with dining list thingies.
+    """
     dining_list = None
     association_slug = None
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        self.association_slug = self.kwargs['identifier']
-        self.dining_list = get_object_or_404(DiningList, date=self.date,
-                                             association__associationdetails__shorthand=self.association_slug)
         context['dining_list'] = self.dining_list
         context['association_slug'] = self.association_slug
         return context
+
+    def init_dining_list(self):
+        """
+        Fetches the dining list using the request arguments.
+        """
+        if self.dining_list:
+            # Already initialized
+            return
+        # Needs initialized date
+        self.init_date()
+        self.association_slug = self.kwargs['identifier']
+        self.dining_list = get_object_or_404(DiningList, date=self.date,
+                                             association__associationdetails__shorthand=self.association_slug)
+
+    def dispatch(self, request, *args, **kwargs):
+        self.init_dining_list()
+        return super().dispatch(request, *args, **kwargs)
 
     def reverse(self, *args, kwargs=None, **other_kwargs):
         kwargs = kwargs or {}
@@ -87,7 +112,7 @@ class AbstractDiningListView(AbstractDayView):
         return super().reverse(*args, kwargs=kwargs, **other_kwargs)
 
 
-class DayView(LoginRequiredMixin, AbstractDayView):
+class DayView(LoginRequiredMixin, DayMixin, TemplateView):
     """"
     This is the view responsible for the day index
     Task:
@@ -115,7 +140,7 @@ class DayView(LoginRequiredMixin, AbstractDayView):
         return context
 
 
-class NewSlotView(LoginRequiredMixin, AbstractDayView):
+class NewSlotView(LoginRequiredMixin, DayMixin, TemplateView):
     """
     Creation page for a new dining list.
     """
@@ -148,22 +173,20 @@ class NewSlotView(LoginRequiredMixin, AbstractDayView):
         context['slot_form'] = form
         return self.render_to_response(context)
 
-
-    def dispatch(self, request, *args, year=None, month=None, day=None, **kwargs):
+    def dispatch(self, request, *args, **kwargs):
         """
         Disable page when no slots are available.
         """
         # Check available slots
-        # Todo: DRY violation with AbstractDayView!
         # Todo: possibly also disable page when date is in the past or later than closure time!
-        dining_date = date(year, month, day)
-        available_slots = DiningList.objects.available_slots(dining_date)
+        self.init_date()
+        available_slots = DiningList.objects.available_slots(self.date)
         if available_slots <= 0:
             return HttpResponseForbidden('No available slots')
-        return super().dispatch(request, *args)
+        return super().dispatch(request, *args, **kwargs)
 
 
-class EntryAddView(LoginRequiredMixin, AbstractDiningListView):
+class EntryAddView(LoginRequiredMixin, DiningListMixin, TemplateView):
     template_name = "dining_lists/dining_entry_add.html"
 
     def get(self, request, *args, **kwargs):
@@ -222,13 +245,11 @@ class EntryAddView(LoginRequiredMixin, AbstractDiningListView):
         return self.render_to_response(context)
 
 
-class EntryRemoveView(LoginRequiredMixin, AbstractDiningListView):
+class EntryRemoveView(LoginRequiredMixin, DiningListMixin, View):
 
     http_method_names = ['post']
 
     def post(self, request, *args, entry_id=None, **kwargs):
-        self.get_context_data()
-
         # Get entry
         if entry_id:
             entry = get_object_or_404(DiningEntry, id=entry_id)
@@ -238,7 +259,6 @@ class EntryRemoveView(LoginRequiredMixin, AbstractDiningListView):
         # Process deletion
         form = DiningEntryDeleteForm(request.user, entry)
         if form.is_valid():
-            print("Executing")
             form.execute()
             if entry_id:
                 message = _('The user is removed from the dining list.')
@@ -246,8 +266,6 @@ class EntryRemoveView(LoginRequiredMixin, AbstractDiningListView):
                 message = _('You are removed from the dining list.')
             messages.add_message(request, messages.SUCCESS, message)
         else:
-            print(form.errors)
-            print("Invalid")
             for field, errors in form.errors.items():
                 for error in errors:
                     messages.add_message(request, messages.ERROR, error)
@@ -260,7 +278,7 @@ class EntryRemoveView(LoginRequiredMixin, AbstractDiningListView):
         return HttpResponseRedirect(next)
 
 
-class AbstractSlotView(AbstractDiningListView):
+class SlotMixin(DiningListMixin):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
 
@@ -282,36 +300,25 @@ class AbstractSlotView(AbstractDiningListView):
         return context
 
 
-class SlotListView(LoginRequiredMixin, AbstractSlotView):
+class SlotListView(LoginRequiredMixin, SlotMixin, TemplateView):
     template_name = "dining_lists/dining_slot_diners.html"
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['tab'] = "list"
-        return context
 
-    def get(self, request, *args, **kwargs):
-        context = self.get_context_data()
         context['can_delete_some'] = False
-        entries = []
-        for entry in self.dining_list.dining_entries.all():
-            entries.append(entry)
-        from operator import methodcaller
-        entries.sort(key=methodcaller('__str__'))
-        context['entries'] = entries
+        context['entries'] = self.dining_list.dining_entries.all()
 
         context['can_delete_some'] = context['can_delete_some'] * context['is_open']
-        context['can_edit_stats'] = (request.user == self.dining_list.claimed_by)
-        context['can_delete_all'] = (request.user == self.dining_list.claimed_by)
+        context['can_edit_stats'] = (self.request.user == self.dining_list.claimed_by)
+        context['can_delete_all'] = (self.request.user == self.dining_list.claimed_by)
         purchaser = self.dining_list.purchaser
-        context['can_edit_pay'] = (request.user == purchaser or
-                                        (purchaser is None and request.user == self.dining_list.claimed_by))
-
-        return self.render_to_response(context)
+        context['can_edit_pay'] = (self.request.user == purchaser or
+                                        (purchaser is None and self.request.user == self.dining_list.claimed_by))
+        return context
 
     def post(self, request, *args, **kwargs):
-        self.get_context_data()
-
         can_adjust_stats = request.user == self.dining_list.claimed_by
         can_adjust_paid = request.user == self.dining_list.get_purchaser()
 
@@ -348,38 +355,34 @@ class SlotListView(LoginRequiredMixin, AbstractSlotView):
         return HttpResponseRedirect(self.reverse('slot_list'))
 
 
-class SlotInfoView(LoginRequiredMixin, AbstractSlotView):
+class SlotInfoView(LoginRequiredMixin, SlotMixin, TemplateView):
     template_name = "dining_lists/dining_slot_info.html"
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['tab'] = "info"
-        return context
-
-    def get(self, request, *args, **kwargs):
-        context = self.get_context_data()
 
         context['comments'] = self.dining_list.diningcomment_set.order_by('-pinned_to_top', 'timestamp').all()
-        last_visit = DiningCommentView.objects.get_or_create(user=request.user, dining_list=self.dining_list)[0]
+
+        # Last visit
+        last_visit = DiningCommentView.objects.get_or_create(user=self.request.user, dining_list=self.dining_list)[0]
         context['last_visited'] = last_visit.timestamp
         last_visit.timestamp = timezone.now()
         last_visit.save()
 
-        if self.dining_list.claimed_by == request.user or self.dining_list.purchaser == request.user:
+        if self.dining_list.claimed_by == self.request.user or self.dining_list.purchaser == self.request.user:
             context['can_change_settings'] = True
-
-        return self.render_to_response(context)
+        return context
 
     def post(self, request, *args, **kwargs):
-        self.get_context_data()
-
         # Add the comment
         DiningComment(dining_list=self.dining_list, poster=request.user, message=request.POST['comment']).save()
 
         return HttpResponseRedirect(self.reverse('slot_details'))
 
 
-class SlotInfoChangeView(LoginRequiredMixin, AbstractSlotView):
+# Could possibly use the Django built-in FormView or ModelFormView in combination with FormSet
+class SlotInfoChangeView(LoginRequiredMixin, SlotMixin, TemplateView):
     template_name = "dining_lists/dining_slot_info_alter.html"
 
     def get(self, request, *args, **kwargs):
@@ -436,7 +439,7 @@ class SlotInfoChangeView(LoginRequiredMixin, AbstractSlotView):
         return self.render_to_response(context)
 
 
-class SlotAllergyView(LoginRequiredMixin, AbstractSlotView):
+class SlotAllergyView(LoginRequiredMixin, SlotMixin, TemplateView):
     template_name = "dining_lists/dining_slot_allergy.html"
 
     def get_context_data(self, **kwargs):
@@ -450,3 +453,32 @@ class SlotAllergyView(LoginRequiredMixin, AbstractSlotView):
             user__userdiningsettings__allergies__length__gt=1)
 
         return context
+
+
+class SlotDeleteView(LoginRequiredMixin, SlotMixin, DeleteView):
+    """
+    Page for slot deletion. Page is only available for slot owners.
+    """
+    template_name = "dining_lists/dining_slot_delete.html"
+    context_object_name = "dining_list"
+
+    def get_object(self, queryset=None):
+        if self.request.user != self.dining_list.claimed_by:
+            # Block page for non slot owners
+            raise Http404("Deletion not available.")
+        return self.dining_list
+
+    def delete(self, request, *args, **kwargs):
+        instance = self.get_object()
+        form = DiningListDeleteForm(request.user, instance)
+        if form.is_valid():
+            form.execute()
+            messages.add_message(request, messages.SUCCESS, _("Dining list is deleted."))
+            # Need to use reverse from the DiningListMixin superclass
+            return HttpResponseRedirect(super(DiningListMixin, self).reverse("day_view"))
+
+        # Could not delete
+        for error in form.non_field_errors():
+            messages.add_message(request, messages.ERROR, error)
+
+        return HttpResponseRedirect(self.reverse("slot_delete"))

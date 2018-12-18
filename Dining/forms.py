@@ -184,3 +184,48 @@ class DiningEntryDeleteForm(forms.ModelForm):
                                        notes=_('Kitchen cost refund'),
                                        dining_list=self.instance.dining_list)
             self.instance.delete()
+
+
+class DiningListDeleteForm(forms.ModelForm):
+    """
+    Allows deletion of a dining list with it's entries. This will refund all kitchen costs.
+    """
+    class Meta:
+        model = DiningList
+        fields = []
+
+    def __init__(self, deleted_by, instance, **kwargs):
+        # Bind automatically on creation
+        super().__init__(instance=instance, data={}, **kwargs)
+        self.deleted_by = deleted_by
+        # Create entry delete forms
+        self.entry_delete_forms = [DiningEntryDeleteForm(deleted_by, entry) for entry in instance.dining_entries.all()]
+
+    def clean(self):
+        cleaned_data = super().clean()
+
+        # Optionally check min/max diners here
+
+        # Also validate all entry deletions
+        for entry_deletion in self.entry_delete_forms:
+            if not entry_deletion.is_valid():
+                raise ValidationError(entry_deletion.non_field_errors())
+
+        return cleaned_data
+
+    def execute(self):
+        """
+        Deletes the dining list by first deleting the entries and after that deleting the dining list.
+        """
+        # Check if validated
+        self.save(commit=False)
+
+        with transaction.atomic():
+            # Delete all entries (this will refund kitchen cost)
+            for entry_deletion in self.entry_delete_forms:
+                entry_deletion.execute()
+            # Delete dining list
+            self.instance.delete()
+
+        # After database succeeded, send out a mail to all entries
+        # mail()
