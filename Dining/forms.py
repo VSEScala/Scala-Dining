@@ -1,13 +1,26 @@
 from django import forms
+from django.contrib.auth import get_user_model
 from django.db.models import OuterRef, Exists
 from django.db import transaction
 from django.utils.translation import gettext as _
 from django.core.exceptions import ValidationError, PermissionDenied
 
-from UserDetails.models import Association, User
+from CreditManagement.forms import NewTransactionForm
+from UserDetails.models import Association
 from .models import DiningList, DiningEntry
 from General.util import SelectWithDisabled
 from CreditManagement.models import Transaction
+
+
+def _clean_form(form):
+    """
+    Cleans the given form by validating it and throwing ValidationError if it is not valid.
+    """
+    if not form.is_valid():
+        validation_errors = []
+        for field, errors in form.errors.items():
+            validation_errors.extend(["{}: {}".format(field, error) for error in errors])
+        raise ValidationError(validation_errors)
 
 
 class CreateSlotForm(forms.ModelForm):
@@ -58,7 +71,7 @@ class DiningInfoForm(forms.ModelForm):
         dining_list = kwargs.get("instance")
         super(DiningInfoForm, self).__init__(*args, **kwargs)
 
-        query = User.objects.filter(dining_entries__in=dining_list.dining_entries.all())
+        query = get_user_model().objects.filter(dining_entries__in=dining_list.dining_entries.all())
         self.fields['purchaser'].queryset = query
 
     class Meta:
@@ -93,16 +106,10 @@ class DiningPaymentForm(forms.ModelForm):
         self.instance.save(update_fields=self.Meta.fields)
 
 
-class DiningEntryForm(forms.ModelForm):
-    class Meta:
-        model = DiningEntry
-        fields = ['has_shopped', 'has_cooked', 'has_cleaned', 'has_paid']
-
-
 class DiningEntryCreateForm(forms.ModelForm):
     user = forms.ModelChoiceField(queryset=None)
 
-    class Meta(DiningEntryForm.Meta):
+    class Meta():
         model = DiningEntry
         fields = ['user', 'external_name']
 
@@ -116,25 +123,30 @@ class DiningEntryCreateForm(forms.ModelForm):
 
         # The dining list owner can add all users, other people can only add themselves
         if adder == dining_list.claimed_by:
-            self.fields['user'].queryset = User.objects.all()
+            self.fields['user'].queryset = get_user_model().objects.all()
         else:
-            self.fields['user'].queryset = User.objects.filter(pk=adder.pk)
+            self.fields['user'].queryset = get_user_model().objects.filter(pk=adder.pk)
+
+        # Prepare transaction
+        self.transaction = NewTransactionForm({'source_user': adder.pk,
+                                               'target_association': dining_list.association.pk,
+                                               'amount': dining_list.kitchen_cost,
+                                               'notes': _("Kitchen cost")})
+
+    def clean(self):
+        cleaned_data = super().clean()
+        # Also clean transaction
+        _clean_form(self.transaction)
+        return cleaned_data
 
     def save(self, commit=True):
         """
         Also creates a transaction when commit==True.
         """
-        if commit:
-            with transaction.atomic():
-                # Possible race condition regarding instance validation
-                instance = super().save(commit)
-                Transaction.objects.create(amount=instance.dining_list.kitchen_cost,
-                                           source_user=instance.user,
-                                           target_association=instance.dining_list.association,
-                                           notes=_('Kitchen cost'),
-                                           dining_list=instance.dining_list)
-        else:
+        with transaction.atomic():
+            # Possible race condition regarding instance validation
             instance = super().save(commit)
+            self.transaction.save(commit)
         return instance
 
 
@@ -149,13 +161,17 @@ class DiningEntryDeleteForm(forms.ModelForm):
         """
         super().__init__(instance=instance, data={}, **kwargs)
         self.deleted_by = deleted_by
+        self.transaction = NewTransactionForm({'source_association': instance.dining_list.association.pk,
+                                               'target_user': instance.user.pk,
+                                               'amount': instance.dining_list.kitchen_cost,
+                                               'notes': _("Kitchen cost refund")})
 
     def clean(self):
         cleaned_data = super().clean()
 
         list = self.instance.dining_list
 
-        # Dining list adjustable should've been checked in DiningList.clean()
+        # Dining list adjustable will have been checked in DiningList.clean()
 
         # Check permission
         if self.deleted_by != self.instance.user and self.deleted_by != list.claimed_by:
@@ -171,6 +187,9 @@ class DiningEntryDeleteForm(forms.ModelForm):
         # if self.instance.user == list.claimed_by:
         #     raise ValidationError(_("The claimant can't be removed from the dining list."), code='invalid')
 
+        # Validate transaction
+        _clean_form(self.transaction)
+
         return cleaned_data
 
     def execute(self):
@@ -178,11 +197,7 @@ class DiningEntryDeleteForm(forms.ModelForm):
         self.save(commit=False)
 
         with transaction.atomic():
-            Transaction.objects.create(amount=self.instance.dining_list.kitchen_cost,
-                                       source_association=self.instance.dining_list.association,
-                                       target_user=self.instance.user,
-                                       notes=_('Kitchen cost refund'),
-                                       dining_list=self.instance.dining_list)
+            self.transaction.save()
             self.instance.delete()
 
 

@@ -1,22 +1,23 @@
-from django.db import models, transaction
-from django.db.models import F, Sum
-from django.utils import timezone
-from UserDetails.models import User, Association
-from django.contrib.contenttypes.models import ContentType
-from django.core.validators import MinValueValidator
-from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from datetime import datetime, time
 from decimal import Decimal
-from django.conf import settings
 
+from django.conf import settings
+from django.contrib.contenttypes.models import ContentType
+from django.core.exceptions import ValidationError
+from django.core.validators import MinValueValidator
+from django.db import models
+from django.db.models import Sum
+from django.utils import timezone
 from django.utils.translation import gettext as _
+
+from UserDetails.models import Association
 
 
 class UserDiningSettings(models.Model):
     """
     Contains setting related to the dining lists and use of the dining lists.
     """
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     allergies = models.CharField(max_length=100, blank=True, help_text="Leave empty if not applicable",
                                  verbose_name="Allergies or dietary restrictions")
 
@@ -47,16 +48,17 @@ class DiningList(models.Model):
     days_adjustable = models.IntegerField(
         default=2,
         help_text="The amount of days after occurance that one can add/remove users etc")
-    claimed_by = models.ForeignKey(User, blank=True, related_name="dininglist_claimer", null=True,
+    claimed_by = models.ForeignKey(settings.AUTH_USER_MODEL, blank=True, related_name="dininglist_claimer", null=True,
                                    on_delete=models.SET_NULL)
-    association = models.ForeignKey(Association, blank=True, null=True, on_delete=models.CASCADE,
-                                    unique_for_date="date")
+    # Association is needed for kitchen cost transactions and url calculation and is therefore required and may not be
+    # changed.
+    association = models.ForeignKey(Association, on_delete=models.CASCADE, unique_for_date="date")
     # Todo: implement limit in the views.
     limit_signups_to_association_only = models.BooleanField(
         default=False, help_text="Whether only members of the given association can sign up")
     # The person who paid can be someone else
     #  this is displayed in the dining list and this user can update payment status.
-    purchaser = models.ForeignKey(User, related_name="dininglist_purchaser", blank=True, null=True,
+    purchaser = models.ForeignKey(settings.AUTH_USER_MODEL, related_name="dininglist_purchaser", blank=True, null=True,
                                   on_delete=models.SET_NULL)
 
     # Kitchen cost may not be changed after creation
@@ -91,6 +93,8 @@ class DiningList(models.Model):
         # Safety check for kitchen cost
         if self.pk and self.kitchen_cost != DiningList.objects.get(pk=self.pk).kitchen_cost:
             raise ValueError("Kitchen cost can't be changed after creation.")
+
+        super().save(*args, **kwargs)
 
         """
         # Compute the individual dinner costs per person
@@ -291,7 +295,7 @@ class DiningComment(models.Model):
     """
     dining_list = models.ForeignKey(DiningList, on_delete=models.CASCADE)
     timestamp = models.DateTimeField(auto_now_add=True)
-    poster = models.ForeignKey(User, on_delete=models.CASCADE)
+    poster = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     message = models.TextField()
     pinned_to_top = models.BooleanField(default=False)
 
@@ -301,7 +305,7 @@ class DiningCommentView(models.Model):
     Tracks whether certain comments have been read, i.e. the last time the comments page was visited.
     """
     dining_list = models.ForeignKey(DiningList, on_delete=models.CASCADE)
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     timestamp = models.DateTimeField(auto_now_add=True)
 
 

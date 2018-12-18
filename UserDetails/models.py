@@ -21,6 +21,7 @@ class User(AbstractUser):
         """
         return self.details.is_verified()
 
+    # Todo: move balance to CreditManagement app
     @cached_property
     def balance(self):
         # Calculate sum of target minus sum of source

@@ -5,7 +5,7 @@ from django.test import TestCase
 from django.utils import timezone
 
 from Dining.models import DiningList, DiningEntry
-from UserDetails.models import User
+from UserDetails.models import User, Association
 
 from django.db.models import QuerySet
 
@@ -15,7 +15,8 @@ class DiningListTestCase(TestCase):
         pass
 
     def test_is_open(self):
-        list = DiningList.objects.create(date=date(2015, 1, 1),
+        association = Association.objects.create()
+        list = DiningList.objects.create(date=date(2015, 1, 1), association=association,
                                          sign_up_deadline=datetime(2015, 1, 1, 17, 00, tzinfo=timezone.utc))
 
         with patch.object(timezone, 'now', return_value=datetime(2015, 1, 1, 16, 59, tzinfo=timezone.utc)) as mock_now:
@@ -27,7 +28,8 @@ class DiningListTestCase(TestCase):
 
     def test_internal_dining_entries(self):
         user = User.objects.create_user('piet')
-        list = DiningList.objects.create(date=date(2016, 2, 2))
+        association = Association.objects.create()
+        list = DiningList.objects.create(date=date(2016, 2, 2), association=association)
         internal = DiningEntry.objects.create(dining_list=list, user=user)
         external = DiningEntry.objects.create(dining_list=list, user=user, external_name="Klaas")
         queryset = list.internal_dining_entries().all()

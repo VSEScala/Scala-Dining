@@ -1,6 +1,7 @@
 from datetime import date, timedelta
 
 from django.contrib import messages
+from django.contrib.auth import get_user_model
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Q
 from django.http import Http404, HttpResponseRedirect, HttpResponseForbidden
@@ -13,7 +14,6 @@ from django.views.generic import TemplateView, View
 from django.views.generic.base import ContextMixin
 from django.views.generic.edit import DeleteView
 
-from UserDetails.models import User
 from .forms import CreateSlotForm, DiningInfoForm, DiningPaymentForm, DiningEntryCreateForm, DiningEntryDeleteForm, \
     DiningListDeleteForm
 from .models import DiningList, DiningEntry, DiningDayAnnouncements, DiningComment, DiningCommentView
@@ -196,7 +196,7 @@ class EntryAddView(LoginRequiredMixin, DiningListMixin, TemplateView):
         search = self.request.GET.get('search')
         if search:
             # Search all users corresponding with the typed in name
-            context['users'] = User.objects.filter(
+            context['users'] = get_user_model().objects.filter(
                 Q(first_name__contains=search) |
                 Q(last_name__contains=search) |
                 Q(username__contains=search)

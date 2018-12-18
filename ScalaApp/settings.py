@@ -46,7 +46,7 @@ INSTALLED_APPS = [
 
     'UserDetails.apps.UserDetailsConfig',
     'Dining.apps.DiningConfig',
-    'CreditManagement.apps.CreditmanagementConfig'
+    'CreditManagement.apps.CreditManagementConfig'
 ]
 
 MIDDLEWARE = [

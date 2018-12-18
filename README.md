@@ -22,3 +22,16 @@ This will install the project
 - `./manage.py runserver`
 
 Now navigate to [localhost:8000](http://localhost:8000)
+
+## App dependency graph (not strictly enforced)
+
+```
+         Dining --------
+            |          |
+            V          V
+CreditManagement --> UserDetails
+```
+
+## Todo
+
+* Make app names lowercase to conform to Python style guide ([PEP8](https://www.python.org/dev/peps/pep-0008/)).
