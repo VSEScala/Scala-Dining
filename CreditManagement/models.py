@@ -70,19 +70,15 @@ class Transaction(models.Model):
         """
         Double-checks database constraints.
         """
-        if self.pk:
-            raise ValueError("Transaction change is not allowed")
-        if self.source_user and self.source_association:
-            raise ValueError("There must be at most one source")
-        if self.target_user and self.target_association:
-            raise ValueError("There must be at most one target")
-        if not self.source() and not self.target():
-            raise ValueError("There must be at least a source or a target")
-
+        assert not self.pk, "Transaction change is not allowed."
+        assert self.amount > 0, "Transaction value must be positive."
+        assert not (self.source_user and self.source_association), "There must be at most one source."
+        assert not (self.target_user and self.target_association), "There must be at most one target."
+        assert self.source() or self.target(), "There must be at least a source or a target."
         super().save(*args, **kwargs)
 
     def delete(self, *args, **kwargs):
-        raise ValueError("Transaction deletion is not allowed")
+        assert False, "Transaction deletion is not allowed"
 
     def clean(self):
         """

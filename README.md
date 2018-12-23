@@ -23,7 +23,10 @@ This will install the project
 
 Now navigate to [localhost:8000](http://localhost:8000)
 
-## App dependency graph (not strictly enforced)
+## App dependency graph
+The code is currently not adhering to this dependency graph, but it would be
+nice to work towards it. The code is easier to understand and thus maintain
+when it adheres to a graph like this one.
 
 ```
          Dining --------
@@ -31,6 +34,12 @@ Now navigate to [localhost:8000](http://localhost:8000)
             V          V
 CreditManagement --> UserDetails
 ```
+
+## Code coverage
+To get a test coverage report:
+* `pip install coverage`
+* `coverage run --source='.' --omit='venv/*','*/migrations/*','tests/*' manage.py test`
+* `coverage report`
 
 ## Todo
 
