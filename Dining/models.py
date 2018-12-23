@@ -255,29 +255,22 @@ class DiningEntry(models.Model):
         it is also possible to add yourself multiple times! This is however very hard to prevent, although we could use
         a mutex lock for the time between validation and saving.
         """
-        # Creation
         if not self.pk:
             # Validate dining list open
             if not self.dining_list.is_open():
-                raise ValidationError(_('The dining list is closed.'))
+                raise ValidationError({
+                    'dining_list': ValidationError(_("Dining list is closed."), code='closed'),
+                })
 
             # Validate room available in dining list
             if self.dining_list.dining_entries.count() >= self.dining_list.max_diners:
-                raise ValidationError(_('The dining list is full.'))
+                raise ValidationError({
+                    'dining_list': ValidationError(_("Dining list is full."), code='full'),
+                })
 
             # Validate user is not already subscribed for the dining list
             if not self.is_external() and self.dining_list.internal_dining_entries().filter(user=self.user).exists():
                 raise ValidationError(_('This user is already subscribed to the dining list.'))
-
-            # Validate dining list limited to association
-            if self.dining_list.limit_signups_to_association_only:
-                association = self.dining_list.association
-                if not self.user.usermembership_set.filter(association=association).exists():
-                    raise ValidationError(_('Joining this dining list is limited to association members.'))
-
-            # Validate if adder is allowed to create the entry
-            if self.user != self.added_by and self.added_by != self.dining_list.claimed_by:
-                raise ValidationError(_('Only the dining list owner can add other users.'))
 
             # (Optionally) validate if user is not already on another dining list
             #if DiningList.objects.filter(date=self.dining_list.date, dining_entries__user=self.user)

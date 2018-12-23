@@ -34,6 +34,7 @@ class Transaction(models.Model):
     These probably need to be inserted using custom migration files, however these are not yet in git.
     """
     moment = models.DateTimeField(auto_now_add=True)
+    # We should probably add a database index to source and target (but first do profiling)
     source_user = models.ForeignKey(User, related_name="transaction_source",
                                     on_delete=models.PROTECT, null=True, blank=True)
     source_association = models.ForeignKey(Association, related_name="transaction_source", on_delete=models.PROTECT,
@@ -104,20 +105,72 @@ class Transaction(models.Model):
 
 
 # Todo: this is not yet in use
-class UserWithCreditQuerySet(models.QuerySet):
+class AbstractCreditQuerySet(models.QuerySet):
+    source_column = None
+    target_column = None
+
     def annotate_balance(self):
+        """
+        Annotates the rows with the balance value (named 'balance').
+        """
         # Calculate sum of target minus sum of source
-        source_sum = Coalesce(Sum('amount', filter=Q(source_user=OuterRef('pk'))), Value(0))
-        target_sum = Coalesce(Sum('amount', filter=Q(target_user=OuterRef('pk'))), Value(0))
-        balance = Transaction.objects.aggregate(balance=target_sum - source_sum).values('balance')
-        return self.annotate(balance=Subquery(balance))
+
+        # Filter transactions on source
+        source_sum_qs = Transaction.objects.filter(**{self.source_column: OuterRef('pk')})
+        # Aggregate the rows
+        source_sum_qs = source_sum_qs.values(self.source_column)
+        # Annotate the sum
+        source_sum_qs = source_sum_qs.annotate(source_sum=Sum('amount')).values('source_sum')
+        # Encapsulate in subquery
+        source_sum_qs = Coalesce(Subquery(source_sum_qs), Value(0))
+
+        # Same as above
+        target_sum_qs = Transaction.objects.filter(**{self.target_column: OuterRef('pk')})
+        target_sum_qs = target_sum_qs.values(self.target_column)
+        target_sum_qs = target_sum_qs.annotate(target_sum=Sum('amount')).values('target_sum')
+        target_sum_qs = Coalesce(Subquery(target_sum_qs), Value(0))
+
+        # Combine
+        return self.annotate(balance=target_sum_qs - source_sum_qs)
+
 
     def annotate_negative_since(self):
         raise NotImplementedError("Todo")
 
 
+class UserCreditQuerySet(AbstractCreditQuerySet):
+    source_column = 'source_user'
+    target_column = 'target_user'
+
+
+class AssociationCreditQuerySet(AbstractCreditQuerySet):
+    source_column = 'source_association'
+    target_column = 'target_association'
+
+
 class UserWithCredit(User):
+    """
+    User model enhanced with credit queries.
+    """
     class Meta:
         proxy = True
 
-    objects = UserWithCreditQuerySet.as_manager()
+    objects = UserCreditQuerySet.as_manager()
+
+    def get_balance(self):
+        query = UserWithCredit.objects.filter(pk=self.pk).annotate_balance()
+        return query[0].balance
+
+
+class AssociationWithCredit(Association):
+    """
+    Association model enhanced with credit queries.
+    """
+    class Meta:
+        proxy = True
+
+    objects = AssociationCreditQuerySet.as_manager()
+
+    def get_balance(self):
+        query = AssociationWithCredit.objects.filter(pk=self.pk).annotate_balance()
+        return query[0].balance

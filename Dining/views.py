@@ -160,6 +160,7 @@ class NewSlotView(LoginRequiredMixin, DayMixin, TemplateView):
             dining_list = form.save()
 
             # Create dining entry for current user
+            # Todo: should maybe move this to CreateSlotForm
             entry = DiningEntryCreateForm(request.user, dining_list, data={})
             if entry.is_valid():
                 entry.save()

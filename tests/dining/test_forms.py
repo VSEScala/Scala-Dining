@@ -54,9 +54,9 @@ class CreateSlotFormTestCase(TestCase):
         """
         Creating a dining list on a date which is already occupied for your association.
         """
-        # Todo: this test fails
         DiningList.objects.create(date=self.dining_date, association=self.association1)
         form_data = {'dish': '', 'association': self.association1.pk, 'max_diners': 20, 'serve_time': time(18, 00)}
         form = CreateSlotForm(self.user1, self.dining_date, form_data)
-        # self.assertFalse(form.is_valid())
-        # self.assertTrue(form.has_error('association', 'invalid_choice'))
+        self.assertFalse(form.is_valid())
+        self.assertTrue(form.has_error('association', 'invalid_choice'))
+

@@ -6,7 +6,7 @@ from django.utils.translation import gettext as _
 from django.core.exceptions import ValidationError, PermissionDenied
 
 from CreditManagement.forms import NewTransactionForm
-from UserDetails.models import Association
+from UserDetails.models import Association, User
 from .models import DiningList, DiningEntry
 from General.util import SelectWithDisabled
 from CreditManagement.models import Transaction
@@ -111,21 +111,30 @@ class DiningEntryCreateForm(forms.ModelForm):
 
     class Meta():
         model = DiningEntry
-        fields = ['user', 'external_name']
+        fields = ['dining_list', 'user', 'added_by', 'external_name']
 
     def __init__(self, adder, dining_list, data=None, **kwargs):
+        """
+        The adder and dining_list parameters are used to find the users that can be used for this entry.
+        """
         if data is not None:
             # User defaults to adder if not set
             data = data.copy()
             data.setdefault('user', adder.pk)
+            data.setdefault('added_by', adder.pk)
+            data.setdefault('dining_list', dining_list.pk)
 
-        super().__init__(**kwargs, data=data, instance=DiningEntry(dining_list=dining_list, added_by=adder))
+        super().__init__(**kwargs, data=data)
 
-        # The dining list owner can add all users, other people can only add themselves
-        if adder == dining_list.claimed_by:
-            self.fields['user'].queryset = get_user_model().objects.all()
-        else:
-            self.fields['user'].queryset = get_user_model().objects.filter(pk=adder.pk)
+        # Find available users for this dining entry
+        users = User.objects.all()
+        # First filter by association if the dining list is limited
+        if dining_list.limit_signups_to_association_only:
+            users.filter(usermembership__association=dining_list.association)
+        # Filter by the adder if he is not the owner, since then he only may add himself, not others
+        if adder != dining_list.claimed_by:
+            users.filter(pk=adder.pk)
+        self.fields['user'].queryset = users
 
         # Prepare transaction
         self.transaction = NewTransactionForm({'source_user': adder.pk,
