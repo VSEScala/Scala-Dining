@@ -38,8 +38,9 @@ CreditManagement --> UserDetails
 ## Code coverage
 To get a test coverage report:
 * `pip install coverage`
-* `coverage run --source='.' --omit='venv/*','*/migrations/*','tests/*' manage.py test`
-* `coverage report`
+* `coverage run manage.py test`
+* Console report: `coverage report`
+* HTML report: `coverage html`
 
 ## Todo
 
