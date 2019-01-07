@@ -11,7 +11,7 @@
             <a href="{% url 'day_view' day=previous_date.day month=previous_date.month year=previous_date.year %}"
                class="col-2 btn btn-outline-primary">Back</a>
         {% else %}
-            <a class="col-2 btn btn-outline-primary btn-disabled">Back;</a>
+            <a class="col-2"></a>
         {% endif %}
 
         <div class="text-center col-8 py-1 h5
@@ -23,7 +23,7 @@
             <a href="{% url 'day_view' year=next_date.year month=next_date.month day=next_date.day %}"
                class="col-2 btn btn-outline-primary">Next</a>
         {% else %}
-            <a class="col-2 btn btn-disabled">Next</a>
+            <a class="col-2"></a>
         {% endif %}
     </div>
 

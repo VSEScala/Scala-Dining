@@ -70,6 +70,24 @@
 
     </nav>
 
+    {% if messages %}
+        <div class="col-12 header-msg py-1">
+            {% for message in messages %}
+                <div {% if message.tags %} class="{{ message.tags }}"{% endif %}
+                        {% if message.level == DEFAULT_MESSAGE_LEVELS.ERROR %} msg-warning {% endif %}>
+                    <div class="width-max-lg">
+                        {% if message.level < DEFAULT_MESSAGE_LEVELS.WARNING %}
+                            &bull;
+                        {% else %}
+                            <span class="bold text-size-4">!</span>
+                        {% endif %}
+                        {{ message }}
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
 <div class="container pt-2">
     <div class="row width-max-lg text-size-md-5">
         <div class="col-12">
