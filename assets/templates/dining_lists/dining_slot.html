@@ -3,6 +3,10 @@
 
 {% block title %}Scala Dining {{ date }} {% endblock %}
 
+{% block head %}
+    <link rel="stylesheet" href="{% static 'css/dining.css' %}">
+{% endblock %}
+
 {% block content %}
     <div class="col-12 row p-0 m-0 pt-4 pb-5 mb-5">
         {% block details%}

@@ -39,8 +39,8 @@ class CreditsOverview(View):
         lower_bound = length * (page - 1)
         upper_bound = length * page
 
-        dining_lists = DiningList.objects.filter(diningentry__user=request.user)
-        dining_lists = DiningList.objects.filter(diningentryexternal__user=request.user).union(dining_lists)
+        dining_lists = DiningList.objects.filter(diningentry_set__user=request.user)
+        dining_lists = DiningList.objects.filter(diningentryexternal_set__user=request.user).union(dining_lists)
 
         transactions = Transaction.objects.filter(source_user=request.user, source_association=None)
         transactions = Transaction.objects.filter(target_user=request.user, target_association=None).union(transactions)

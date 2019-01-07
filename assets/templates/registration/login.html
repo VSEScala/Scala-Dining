@@ -1,43 +1,47 @@
 {% extends 'base_no_navbar.html' %}
+{% load static %}
+
+{% block head %}
+    <link rel="stylesheet" href="{% static 'css/Log-in.css' %}">
+{% endblock %}
+
 
 {% block body %}
-<div class="col-12  min-height-33vh min-height-sm-200px">
+<div class="col-12 login-heightcontrol">
     <div class="DiningLogo"></div>
     <p class="text-center DiningTitle">Scala Dining</p>
-
-    <div class="show-sm">
-    </div>
 </div>
 
 
 <div class="container">
-    <div class="row width-max-lg text-center text-size-md-5">
-        <div class="col-sm-6 order-sm-1 min-height-25vh min-height-sm-50vh ">
-            <div class="login-veralign">
-                <div class="min-height-sm-200px">
-                    Are you hungry?
-                    <br>
-                    Sign up now and join dinner with the other culture associations.
+    <div class="row text-center">
+        <div class="col-sm-6 order-sm-1 login-heightcontrol">
+            <div class="position-relative h-100">
+                <div class="login-reg_height_offset">
+                Are you hungry?
+                <br>
+                Sign up now and join dinner with the other culture associations.
                 </div>
-                <a class="btn btn-block btn-primary" href="{% url 'register' %}">Create account</a>
+                <br class="d-sm-none">
+                <br class="d-sm-none">
+                <a class="btn btn-block btn-primary login-hooklow" href="{% url 'register' %}">Create account</a>
+                <div class="login-horline d-sm-none d-block"></div>
             </div>
-            <div class="login-horline hide-sm"></div>
         </div>
-        <div class="col-sm-6 order-sm-0 min-height-33vh ">
-            <div class="login-verline show-sm"></div>
+        <div class="col-sm-6 order-sm-0 login-heightcontrol">
+            <div class="login-verline d-none d-sm-block"></div>
 
-            <div class="login-veralign">
-                <form method="post">
-                    <div class="min-height-sm-200px">
-                        <div class="hide-sm">
-                            Already have an account? Log in!
-                        </div>
-                        {% csrf_token %}
-                        {% include "snippets/bootstrap_form.html" %}
+            <form method="post" class="position-relative h-100">
+                <div class="login-log_height_offset">
+                    <div class="hide-sm">
+                        Already have an account? Log in!
                     </div>
-                    <button type="submit" class="btn btn-block btn-primary" style="margin-top: -1rem;">Log in</button>
-                </form>
-            </div>
+                    {% csrf_token %}
+                    {% include "snippets/bootstrap_form.html" %}
+                </div>
+                <button type="submit" class="btn btn-block btn-primary login-hooklow">Log in</button>
+            </form>
+
         </div>
         <!--<div class="verticalLine"></div>-->
     </div>
