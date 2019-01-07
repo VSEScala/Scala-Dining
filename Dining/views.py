@@ -78,7 +78,13 @@ def reverse_day(viewname, day_date, kwargs=None, **other_kwargs):
     kwargs['year'] = day_date.year
     kwargs['month'] = day_date.month
     kwargs['day'] = day_date.day
-    return reverse(viewname, kwargs=kwargs, **other_kwargs)
+
+    # Get any other keyword argument
+    if other_kwargs:
+        for key, value in other_kwargs.items():
+            kwargs[key] = value
+
+    return reverse(viewname, kwargs=kwargs)
 
 
 # Todo: deprecate
@@ -402,7 +408,11 @@ class SlotJoinView(View):
             pass
         else:
             # can not change to dining list
-            messages.add_message(request, messages.ERROR,
+            if entry.dining_list.claimed_by == request.user:
+                messages.add_message(request, messages.ERROR,
+                                     'Addition failed: You are the owner of another list today')
+            else:
+                messages.add_message(request, messages.ERROR,
                                  'Addition failed: You are already part of a closed dining list')
             return HttpResponseRedirect(reverse_day('day_view', current_date))
 
