@@ -401,7 +401,7 @@ class SlotJoinView(View):
         if locked_entry is None:
             # No entries are locked, user can switch dining lists, display the affirmation page
             # display switch template
-            self.context['old_dining_list'] = locked_entry.dining_list
+            self.context['old_dining_list'] = entries[0].dining_list
             self.context['accept_button_name'] = self.accept_button_name
 
             return render(request, self.template, self.context)
