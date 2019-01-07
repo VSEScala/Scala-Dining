@@ -11,37 +11,52 @@
     </div>
 
     {% block slot_navigation %}
-        <div class="fixed-bottom slot-nav container">
-            <div class="width-max-md m-auto">
-                <div class="text-size-4 text-center slot-nav-title">
+        <div class="fixed-bottom bg-light">
+            <div class="container text-center ">
+                <div class="h5 ">
                     {{ dining_list.association }} - {{ dining_list.date }}
                 </div>
                 <div class="row">
-                    <a class="col-4 slot-nav-info
-                        {% if tab == "info" %}
-                            active"
-                        {% else %}"
-                            href="{% url 'slot_details' day=date.day month=date.month year=date.year identifier=dining_list.association.associationdetails.shorthand %}"
-                        {% endif %}>
-                        <div class="offset-6 col-6">
-                            {% if comments_unread > 0 %}<span class="text-warning font-bold">{{ comments_unread }}</span>  {% endif %}
-                        </div>
-                    </a>
-                    <a class="col-4 slot-nav-list
-                        {% if tab == "list" %}
-                            active"
-                        {% else %}"
-                            href="{% url 'slot_list' day=date.day month=date.month year=date.year identifier=dining_list.association.associationdetails.shorthand %}"
-                        {% endif %}>
-                    </a>
-                    <a class="col-4 slot-nav-allergy
-                        {% if tab == "allergy" %}
-                            active"
-                        {% else %}"
-                            href="{% url 'slot_allergy' day=date.day month=date.month year=date.year identifier=dining_list.association.associationdetails.shorthand %}"
-                        {% endif %}>
+                    <div class="col-4 d-flex px-1">
+                        <a class="col-12 dining-nav h4 py-2 mb-0
+                            {% if tab == "info" %}
+                                btn-info"
+                            {% else %}
+                                text-white bg-primary btn btn-lg"
+                                href="{% url 'slot_details' day=date.day month=date.month year=date.year identifier=dining_list.association.associationdetails.shorthand %}"
+                            {% endif %}>
+                            <i class="fas fa-info"></i>
+                            <span class="d-none d-md-inline">Info</span>
 
-                    </a>
+                            <div class="offset-6 col-6">
+                                {% if comments_unread > 0 %}<span class="text-warning font-bold">{{ comments_unread }}</span>  {% endif %}
+                            </div>
+                        </a>
+                    </div>
+                    <div class="col-4 d-flex px-1">
+                        <a class="col-12 dining-nav h4 py-2 mb-0
+                            {% if tab == "list" %}
+                                btn-info"
+                            {% else %}
+                                text-white bg-primary btn btn-lg"
+                                href="{% url 'slot_list' day=date.day month=date.month year=date.year identifier=dining_list.association.associationdetails.shorthand %}"
+                            {% endif %}>
+                            <i class="fas fa-list-ul"></i>
+                            <span class="d-none d-md-inline">Entries</span>
+                        </a>
+                    </div>
+                    <div class="col-4 d-flex px-1">
+                        <a class="col-12 dining-nav h4 py-2 mb-0
+                            {% if tab == "allergy" %}
+                                btn-info"
+                            {% else %}
+                                text-white bg-primary btn btn-lg "
+                                href="{% url 'slot_allergy' day=date.day month=date.month year=date.year identifier=dining_list.association.associationdetails.shorthand %}"
+                            {% endif %}>
+                            <i class="fas fa-skull-crossbones"></i>
+                            <span class="d-none d-md-inline">Allergies</span>
+                        </a>
+                    </div>
                 </div>
             </div>
         </div>

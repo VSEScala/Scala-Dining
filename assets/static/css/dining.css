@@ -1,5 +1,4 @@
 .slot_image{
-    height: 100%;
     background-size: contain;
     background-repeat: no-repeat;
     background-position: center;
@@ -39,51 +38,10 @@
     background-color: #254a9999;
 }
 
-.slot-nav{
-    background-color: whitesmoke;
-}
-
-.slot-nav-title{
-    color: #12244c;
-}
-
-.slot-nav-info, .slot-nav-list, .slot-nav-allergy{
-    background: #3d7bff center/auto 75% no-repeat;
-    height: 50px;
-    border-style: solid;
-    border-color: whitesmoke;
-    border-width: 0 2px;
+.dining-nav{
     border-radius: 10px 10px 0 0 ;
     text-decoration: none;
 }
-
-.slot-nav-allergy{
-    background-image: url("/static/images/Skull.png");
-}
-
-.slot-nav-allergy.active{
-    background-image: url("/static/images/Skull_blue.png");
-    background-color: whitesmoke;
-}
-
-.slot-nav-info{
-    background-image: url("/static/images/Info.png");
-}
-
-.slot-nav-info.active{
-    background-image: url("/static/images/Info_blue.png");
-    background-color: whitesmoke;
-}
-
-.slot-nav-list{
-    background-image: url("/static/images/signed_in.png");
-}
-
-.slot-nav-list.active{
-    background-image: url("/static/images/signed_in_blue.png");
-    background-color: whitesmoke;
-}
-
 
 .collapser{
     height:0;
