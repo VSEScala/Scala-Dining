@@ -37,8 +37,8 @@
                             </span>
 
                             {% if comments_unread > 0 %}
-                                <span class="badge badge-warning align-top">{{ comments_unread }}</span>
-                            {% else %}
+                                <span class="badge badge-warning align-top">{{ comments_total }}</span>
+                            {% elif comments_total > 0 %}
                                 <span class="badge badge-dark align-top">{{ comments_total }}</span>
                             {% endif %}
                         </a>
