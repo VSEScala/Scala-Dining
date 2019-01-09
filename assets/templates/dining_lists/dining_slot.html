@@ -15,6 +15,8 @@
     </div>
 
     {% block slot_navigation %}
+        <div style="height: 150px; width: 100%;"></div>
+
         <div class="fixed-bottom bg-light">
             <div class="container text-center ">
                 <div class="h5 ">
@@ -22,43 +24,51 @@
                 </div>
                 <div class="row">
                     <div class="col-4 d-flex px-1">
-                        <a class="col-12 dining-nav h4 py-2 mb-0
+                        <a class="col-12 dining-nav py-2 mb-0
                             {% if tab == "info" %}
-                                btn-info"
+                                btn-info disabled"
                             {% else %}
-                                text-white bg-primary btn btn-lg"
+                                text-white bg-primary btn"
                                 href="{% url 'slot_details' day=date.day month=date.month year=date.year identifier=dining_list.association.associationdetails.shorthand %}"
                             {% endif %}>
-                            <i class="fas fa-info"></i>
-                            <span class="d-none d-md-inline">Info</span>
+                            <span class="h4">
+                                <i class="fas fa-info"></i>
+                                <span class="d-none d-md-inline">Info</span>
+                            </span>
 
-                            <div class="offset-6 col-6">
-                                {% if comments_unread > 0 %}<span class="text-warning font-bold">{{ comments_unread }}</span>  {% endif %}
-                            </div>
+                            {% if comments_unread > 0 %}
+                                <span class="badge badge-warning align-top">{{ comments_unread }}</span>
+                            {% else %}
+                                <span class="badge badge-dark align-top">{{ comments_total }}</span>
+                            {% endif %}
                         </a>
                     </div>
                     <div class="col-4 d-flex px-1">
-                        <a class="col-12 dining-nav h4 py-2 mb-0
+                        <a class="col-12 dining-nav py-2 mb-0
                             {% if tab == "list" %}
-                                btn-info"
+                                btn-info disabled"
                             {% else %}
-                                text-white bg-primary btn btn-lg"
+                                text-white bg-primary btn"
                                 href="{% url 'slot_list' day=date.day month=date.month year=date.year identifier=dining_list.association.associationdetails.shorthand %}"
                             {% endif %}>
-                            <i class="fas fa-list-ul"></i>
-                            <span class="d-none d-md-inline">Entries</span>
+                            <span class="h4">
+                                <i class="fas fa-list-ul"></i>
+                                <span class="d-none d-md-inline">Entries</span>
+                            </span>
                         </a>
                     </div>
                     <div class="col-4 d-flex px-1">
-                        <a class="col-12 dining-nav h4 py-2 mb-0
+                        <a class="col-12 dining-nav py-2 mb-0
                             {% if tab == "allergy" %}
-                                btn-info"
+                                btn-info disabled"
                             {% else %}
-                                text-white bg-primary btn btn-lg "
+                                text-white bg-primary btn"
                                 href="{% url 'slot_allergy' day=date.day month=date.month year=date.year identifier=dining_list.association.associationdetails.shorthand %}"
                             {% endif %}>
-                            <i class="fas fa-skull-crossbones"></i>
-                            <span class="d-none d-md-inline">Allergies</span>
+                            <span class="h4">
+                                <i class="fas fa-skull-crossbones"></i>
+                                <span class="d-none d-md-inline">Allergies</span>
+                            </span>
                         </a>
                     </div>
                 </div>

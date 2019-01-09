@@ -469,7 +469,7 @@ class SlotView(View):
         self.context['user_can_add_others'] = self.context['dining_list'].can_join(request.user, check_for_self=False)
 
         # Get the amount of messages
-        self.context['comments'] = self.context['dining_list'].diningcomment_set.count()
+        self.context['comments_total'] = self.context['dining_list'].diningcomment_set.count()
         # Get the amount of unread messages
         self.context['comments_unread'] = self.getUnreadMessages(request.user)
 
