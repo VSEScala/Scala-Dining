@@ -5,7 +5,7 @@
 
 
 {% block details %}
-<div class="row col-12 m-0 p-0">
+
     {% if dining_list.association %}
     <div class="col-2 slot_image" style="background-image: url({{ dining_list.association.associationdetails.image.url }})">
     </div>
@@ -88,7 +88,7 @@
             <a class="btn-block btn btn-primary offset-2 col-6" href={{ url }}>Change information</a>
         {% endif %}
     </div>
-    <hr class="col-12">
+    <hr class="">
     <div class="col-12 pt-4">
         <div class="row">
             <div class="col-10 offset-md-2 text-size-5">
@@ -147,19 +147,17 @@
             </div>
         {% endif %}
     </div>
-    <hr class="col-12">
+    <hr class="">
     <div class="col-12 p-0">
-        <h3 class="offset-2 p-3 my-1">Comments</h3>
+        <h3 class="offset-md-2 col-md-10 col-12 p-3 my-1">Comments</h3>
+        <div class="offset-md-2 col-md-10 col-12">
         {% for comment in comments %}
             {% include 'snippets/snippet_comments.html' %}
         {% endfor %}
-        <form class="col-12 row my-3" method="post">
-
-            <div class="col-12 col-md-3 p-0 row"><!-- empty for style purposes --></div>
-            <div class="col-12 col-md-9 p-3">
-                <textarea name="comment" class="col-12"></textarea>
-                <input type="submit" value="Post" class="btn btn-block btn-primary"/>
-            </div>
+        </div>
+        <form class="offset-md-2 col-md-10 col-12" method="post">
+            <textarea name="comment" class="col-12"></textarea>
+            <input type="submit" value="Post" class="btn btn-block btn-primary"/>
             {% csrf_token %}
         </form>
 

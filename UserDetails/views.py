@@ -1,7 +1,6 @@
 from django.shortcuts import render
 from django.http import *
-from django.template import loader
-from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth import login, logout
 from django.views import View
 from .models import User
 from .forms import RegisterUserForm, RegisterUserDetails, RegisterAssociationLinks

@@ -13,11 +13,6 @@
     margin: 0 0 10px 0;
 }
 
-.login-vertextalign{
-    vertical-align:bottom;
-}
-
-
 .login-verline{
     position: absolute;
     right: -2px;
@@ -36,9 +31,22 @@
     margin: 2em 0;
 }
 
+.login-heightcontrol{
+    height: 30vh;
+    min-height: 200px;
+}
+
+.login-reg_height_offset, .login-log_height_offset{
+    padding-top: 0;
+}
+
 @media (min-width: 576px) {
-    .login-veralign {
-        padding-top: calc(20vh - 100px);
+    .login-reg_height_offset{
+        padding-top: 10vh;
+    }
+
+    .login-log_height_offset{
+        padding-top: 5vh;
     }
 
     .DiningLogo{
@@ -48,13 +56,10 @@
     .DiningTitle{
         margin-bottom: 1em;
     }
-}
 
-
-.tooltipInfo{
-    display: none;
-}
-
-.tooltip:checked ~ .tooltipInfo{
-    display: block;
+    .login-hooklow{
+        position: absolute;
+        bottom: 0;
+        left: 0;
+    }
 }

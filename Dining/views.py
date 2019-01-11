@@ -78,7 +78,13 @@ def reverse_day(viewname, day_date, kwargs=None, **other_kwargs):
     kwargs['year'] = day_date.year
     kwargs['month'] = day_date.month
     kwargs['day'] = day_date.day
-    return reverse(viewname, kwargs=kwargs, **other_kwargs)
+
+    # Get any other keyword argument
+    if other_kwargs:
+        for key, value in other_kwargs.items():
+            kwargs[key] = value
+
+    return reverse(viewname, kwargs=kwargs)
 
 
 # Todo: deprecate
@@ -348,6 +354,7 @@ class EntryAddView(View):
 class SlotJoinView(View):
     context = {}
     template = "dining_lists/dining_switch_to.html"
+    accept_button_name = "button_yes"
 
     @method_decorator(login_required)
     def get(self, request, day=None, month=None, year=None, identifier=None):
@@ -382,6 +389,8 @@ class SlotJoinView(View):
             entry.save()
             return HttpResponseRedirect(reverse_day('slot_details', current_date, identifier=identifier))
 
+        # Check if the dining list the user is already on is not locked. Uses a for-loop in case user is subscribed to
+        #  multiple dining lists, this should not be possible, but is implemented for safety reasons
         locked_entry = None
         for entry in entries:
             if not entry.dining_list.is_open() or entry.dining_list.claimed_by == request.user:
@@ -390,14 +399,20 @@ class SlotJoinView(View):
                 locked_entry = entry
 
         if locked_entry is None:
+            # No entries are locked, user can switch dining lists, display the affirmation page
             # display switch template
-            self.context['old_dining_list'] = locked_entry.dining_list
+            self.context['old_dining_list'] = entries[0].dining_list
+            self.context['accept_button_name'] = self.accept_button_name
 
             return render(request, self.template, self.context)
             pass
         else:
             # can not change to dining list
-            messages.add_message(request, messages.ERROR,
+            if entry.dining_list.claimed_by == request.user:
+                messages.add_message(request, messages.ERROR,
+                                     'Addition failed: You are the owner of another list today')
+            else:
+                messages.add_message(request, messages.ERROR,
                                  'Addition failed: You are already part of a closed dining list')
             return HttpResponseRedirect(reverse_day('day_view', current_date))
 
@@ -407,8 +422,10 @@ class SlotJoinView(View):
         new_list = get_list(current_date, identifier)
 
         try:
-            if request.POST['button_yes']:
+            # If yes has been pressed, switch the dining list the user is on
+            if request.POST[self.accept_button_name]:
                 old_entry = DiningEntry.objects.filter(dining_list__date=current_date, user=request.user)[0]
+                # Check if both dining lists are still open, if not, cancell the request
                 if new_list.is_open() and old_entry.dining_list.is_open():
                     if old_entry.dining_list.claimed_by != request.user:
                         old_entry.delete()
@@ -452,7 +469,7 @@ class SlotView(View):
         self.context['user_can_add_others'] = self.context['dining_list'].can_join(request.user, check_for_self=False)
 
         # Get the amount of messages
-        self.context['comments'] = self.context['dining_list'].diningcomment_set.count()
+        self.context['comments_total'] = self.context['dining_list'].diningcomment_set.count()
         # Get the amount of unread messages
         self.context['comments_unread'] = self.getUnreadMessages(request.user)
 

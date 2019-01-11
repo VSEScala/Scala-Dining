@@ -1,15 +1,17 @@
-<div class="col-12 row
-{% if comment.pinned_to_top %}
-my-4 {% else %} my-3{% endif %}">
+{% load humanize %}
 
-    <div class="col-12 col-md-3 p-0 row">
-        <div class="col-md-12 col-auto font-bold">{{ comment.poster }}</div>
-        <div class="col-md-12 col-auto text-size-3">{{ comment.timestamp }}</div>
-        {% if comment.timestamp > last_visited %}
-            <div class="col-md-12 col-2 text-warning">NEW!</div>
-        {% endif %}
+<div class="card mb-2">
+    <div class="card-header">
+        <span class="h5 mr-1">
+            {% if comment.timestamp > last_visited %}
+                <span class="badge badge-warning">New</span>
+            {% endif %}
+            {{ comment.poster }}
+        </span>
+        <i class="small">{{ comment.timestamp|naturaltime }}</i>
+
     </div>
-    <div class="col-12 col-md-9 msg p-3 {% if comment.pinned_to_top %}comment-pinned {% endif %}">
-        {{ comment.message }}
+    <div class="card-body">
+        <p class="card-text">{{ comment.message }}</p>
     </div>
 </div>

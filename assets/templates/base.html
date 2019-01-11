@@ -2,61 +2,74 @@
 {% load credit_tags %}
 
 {% block body %}
-<!-- Navbar -->
-<div class="row m-0 header-main mb-3">
-    <div class="col-12 row width-max-lg">
-        <div class="header-title row">
-            <div class="header-image"></div>
-            <div class="show-sm">
-                Scala Dining
+<!-- Navbar navbar-right -->
+
+    <nav class="navbar navbar-dark bg-primary">
+
+            <div class="navbar-header">
+                <a href="{% url 'index' %}" class="navbar-brand">
+                    <img src="/static/images/Scala_dining.png" height="40"></img>
+                    <span class="h3 d-none d-lg-inline" style="line-height: 40px; vertical-align: middle; margin: 0 0 0 10px"> Scala Dining</span>
+                    <span class="h5 d-none d-md-inline d-lg-none" style="line-height: 40px; vertical-align: middle; margin: 0 0 0 10px"> Scala Dining</span>
+                </a>
             </div>
-            <a href="{% url 'index' %}" class="header-title-link"></a>
-        </div>
-        <div class="header-personal row m-0">
-            <div class="header-personal-text">
-                {{ user }}<br>
-                {{ user.usercredit.get_current_credits|euro }}
-            </div>
-            <div class="header-personal-image"></div>
-            <label for="header-dropdown" class="header-title-link"></label>
-            <input type="checkbox" id="header-dropdown">
-            <div class="header-dropdown">
-                <hr>
-                <a class="header-dropdown-line" href="{% url 'history_lists' %}">
-                    <span href="#" class="header-dropdown-line-content">History</span><i class="fas fa-history fa-fw"></i>
-                </a>
-                <a class="header-dropdown-line" href="{% url 'history_credits' %}">
-                    <span href="#" class="header-dropdown-line-content">Credits</span><i class="fas fa-euro-sign fa-fw"></i>
-                </a>
-                <a class="header-dropdown-line" href="{% url 'settings' %}">
-                    <span href="#" class="header-dropdown-line-content">Settings</span><i class="fas fa-cog fa-fw"></i>
-                </a>
-                {% if request.user.can_access_back %}
-                    <a class="header-dropdown-line" href="{% url 'admin:index' %}" target="_blank">
-                        <span href="#" class="header-dropdown-line-content">Control Panel</span><i class="fas fa-toolbox fa-fw"></i>
+            <ul class="nav-user navbar-nav navbar-right" style="flex-direction: row">
+                <li class="navbar-text small text-right px-2 align-middle">
+                    {{ user }}<br>
+                    {{ user.usercredit.get_current_credits|euro }}
+                </li>
+                <li class="dropdown p-1">
+                    <a class="nav-link dropdown-toggle px-2 h4" href="#" id="navbardrop" data-toggle="dropdown">
+                        <i class="fas fa-user"></i>
                     </a>
-                {% endif %}
-                {% if user.groups.all.count > 0 %}
-                    <hr>
-                    {% for group in user.groups.all %}
-                        <a class="header-dropdown-line" href="{% url 'association_credits' association_name=group.associationdetails.shorthand %}">
+                    <div class="dropdown-menu dropdown-menu-right" style="position: absolute;">
+                        <a class="dropdown-item justify-content-between d-flex" href="{% url 'history_lists' %}">
+                            <span>History</span><i class="fas fa-history fa-fw"></i>
+                        </a>
+                        <a class="dropdown-item justify-content-between d-flex" href="{% url 'history_credits' %}">
+                            <span>Credits</span><i class="fas fa-euro-sign fa-fw"></i>
+                        </a>
+                        <a class="dropdown-item justify-content-between d-flex" href="{% url 'settings' %}">
+                            <span>Settings</span><i class="fas fa-cog fa-fw"></i>
+                        </a>
+                        {% if request.user.can_access_back %}
+                            <a class="dropdown-item justify-content-between d-flex" href="{% url 'admin:index' %}" target="_blank">
+                                <span class="mr-2">Control Panel</span><i class="fas fa-toolbox fa-fw"></i>
+                            </a>
+                        {% endif %}
+                        {% if user.groups.all.count > 0 %}
+                            <hr>
+                            {% for group in user.groups.all %}
+                                <a class="dropdown-item justify-content-between d-flex" href="{% url 'association_credits' association_name=group.associationdetails.shorthand %}">
                             <span href="#" class="header-dropdown-line-content">
                                 {{ group.associationdetails.shorthand }}
                             </span>
-                            <i class="fas fa-fw">
-                                <img src="{{ group.associationdetails.image.url }}" style="width: 100%;">
-                            </i>
+                                    <i class="fas fa-fw">
+                                        <img src="{{ group.associationdetails.image.url }}" style="width: 100%;">
+                                    </i>
+                                </a>
+                            {% endfor %}
+                        {% endif %}
+                        <hr>
+                        <a class="dropdown-item justify-content-between d-flex mb-4" href="{% url 'logout' %}">
+                            <span class="header-dropdown-line-content">Log out</span><i class="fas fa-power-off fa-fw"></i>
                         </a>
-                    {% endfor %}
-                {% endif %}
-                <hr>
-                <a class="header-dropdown-line mb-4" href="{% url 'logout' %}">
-                    <span class="header-dropdown-line-content">Log out</span><i class="fas fa-power-off fa-fw"></i>
-                </a>
+                    </div>
+                </li>
+                <li class="dropdown p-1">
+                    <a class="nav-link dropdown-toggle py-2 h4" href="#" id="navbardrop" data-toggle="dropdown">
+                        <i class="fas fa-info"></i>
+                    </a>
+                    <div class="dropdown-menu dropdown-menu-right" style="position: absolute;">
+                        <a class="dropdown-item" href="#">Rules & Regulation</a>
+                        <a class="dropdown-item" href="{% url 'site_updates' %}">Version history</a>
+                        <a class="dropdown-item" href="{% url 'site_bugreport' %}?source={{ request.get_full_path }}">Report Bug</a>
+                    </div>
+                </li>
+            </ul>
 
-            </div>
-        </div>
-    </div>
+    </nav>
+
     {% if messages %}
         <div class="col-12 header-msg py-1">
             {% for message in messages %}
@@ -74,9 +87,8 @@
             {% endfor %}
         </div>
     {% endif %}
-</div>
 
-<div class="container">
+<div class="container pt-2">
     <div class="row width-max-lg text-size-md-5">
         <div class="col-12">
             <!-- Content -->

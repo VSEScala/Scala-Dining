@@ -1,6 +1,17 @@
 {% load form_extras %}
 
-<div class="col-12 row mx-0 my-2 {% if interactive %}py-4 slot{% endif %}">
+<div class="col-12 mx-0 my-2 btn d-inline-flex text-left
+        {% if interactive %}py-4
+            {% if slot|is_on_slot:request.user %}
+                btn-success
+            {% else %}
+                {% if slot|can_join_slot:request.user %}
+                    btn-outline-info
+                {% else %}
+                    btn-outline-disabled
+                {% endif %}
+            {% endif %}
+        {% endif %}">
     <div class="col-2 slot_image"
             {% if slot.association %}
                 style="background-image: url({{ slot.association.associationdetails.image.url }})"
@@ -25,9 +36,11 @@
                 <div class="col-2 slot-signed"></div>
             {% endif %}
 
+            {# Create the clickable frame overlay #}
             {% url 'slot_details' day=date.day month=date.month year=date.year identifier=slot.association.associationdetails.shorthand as url%}
-            <a class="slot-back btn {% if slot|is_on_slot:request.user %} slot-back-active {% endif %}
-                " href={{ url }}></a>
+            <a class="slot-back" href={{ url }}></a>
+
+
             {% if can_join %}
                 {% url 'entry_join' day=date.day month=date.month year=date.year identifier=slot.association.associationdetails.shorthand as url%}
                 <a class="btn-block col-2 btn btn-primary slot-signup" href={{ url }}></a>

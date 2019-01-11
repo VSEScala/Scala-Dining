@@ -10,7 +10,7 @@ import datetime
 
 from .models import Association, UserMemberships, User
 from CreditManagement.models import Transaction
-from General.view_classes import PageListView
+from General.views import PageListView
 
 
 class AssociationBaseView(View):

@@ -2,25 +2,24 @@
 
 {% block content %}
     {% block slot_navigation %}
-        <div class="width-max-lg m-auto">
-            <div class="row tab-list">
-                <a class="
-                    {% if tab == "credits" %}
-                        active"
-                {% else %}"
-                    href="{% url 'association_credits' association_name=association_name %}"
-                {% endif %}>
-                Credits
+        <ul class="nav nav-tabs">
+            <li class="nav-item">
+                <a class="nav-link
+                    {% if tab == "credits" %}active"{% else %}"
+                        href="{% url 'association_credits' association_name=association_name %}"
+                    {% endif %}>
+                    Credits
                 </a>
-                <a class="
-                    {% if tab == "members" %}
-                        active"
-                {% else %}"
-                    href="{% url 'association_members' association_name=association_name %}"
-                {% endif %}>Members
+            </li>
+            <li class="nav-item">
+                <a class="nav-link
+                    {% if tab == "members" %}active"{% else %}"
+                        href="{% url 'association_members' association_name=association_name %}"
+                    {% endif %}>
+                    Members
                 </a>
-            </div>
-        </div>
+            </li>
+        </ul>
     {% endblock slot_navigation %}
 
 
