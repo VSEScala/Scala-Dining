@@ -239,7 +239,9 @@ class EntryAddView(LoginRequiredMixin, DiningListMixin, TemplateView):
 
         # If next not provided, but the form was valid, redirect to the slot list
         if form.is_valid():
+            # Todo: Check if user is on multiple dining lists today, then show warning
             return HttpResponseRedirect(self.reverse('slot_list'))
+
 
         # Render form otherwise
         context['form'] = form
