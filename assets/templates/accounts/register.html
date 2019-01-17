@@ -1,5 +1,11 @@
 {% extends 'base_no_navbar.html' %}
 {% load form_extras %}
+{% load static %}
+
+{% block head %}
+    <link rel="stylesheet" href="{% static 'css/Log-in.css' %}">
+{% endblock %}
+
 {% block body %}
     <div class="col-12  min-height-33vh min-height-sm-200px">
         <div class="DiningLogo"></div>

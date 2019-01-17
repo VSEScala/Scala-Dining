@@ -9,19 +9,17 @@
     <div class="row col-12 m-0 p-0 p-md-2 py-2 text-size-3">
         <div class="{% if can_delete_all or can_delete_some %} col-10 col-sm-11 {% else %} col-12 {% endif %}">
             <div class="row pr-2">
-                <div class="col-12 col-md-6 p-0 show-md">Name</div>
-                <div class=" text-center col-12 col-md-6 pr-3">
-                    <div class="row dining-help-row">
-                        <div class="col-3 p-0">Shopped</div>
-                        <div class="col-3 p-0">Cooked</div>
-                        <div class="col-3 p-0">Cleaned</div>
-                        <div class="col-3 p-0">Paid</div>
-                    </div>
+                <div class="col-12 col-md-6 p-0 show-md"><b>Name</b></div>
+                <div class=" text-center col-12 col-md-6 d-none d-md-flex">
+                        <div class="col-3 p-0"><b>Shopped</b></div>
+                        <div class="col-3 p-0"><b>Cooked</b></div>
+                        <div class="col-3 p-0"><b>Cleaned</b></div>
+                        <div class="col-3 p-0"><b>Paid</b></div>
                 </div>
             </div>
         </div>
         {% if can_delete_all or can_delete_some %}
-            <div class="col-2 col-sm-1 p-0 text-center">Remove</div>
+            <div class="col-2 col-sm-1 p-0 text-center"><b>Remove</b></div>
         {% endif %}
     </div>
 
@@ -29,6 +27,7 @@
         {% csrf_token %}
         {% for entry in entries %}
             <hr class="col-12 m-0">
+            <!--{% include 'dining_lists/snippet_dining_entry.html' %}-->
 
             <div class="row col-12 m-0 p-0 p-md-2 py-2 diningentry
     {% if entry.user == request.user and entry|get_class == "DiningEntry" %}diningentry-user{% endif %}">

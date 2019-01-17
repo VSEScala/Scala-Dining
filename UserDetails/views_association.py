@@ -10,7 +10,7 @@ import datetime
 
 from .models import Association, UserMembership, User
 from CreditManagement.models import Transaction
-from General.view_classes import PageListView
+from General.views import PageListView
 
 
 class AssociationBaseView(View):
@@ -46,7 +46,7 @@ class CreditsOverview(AssociationBaseView, PageListView):
         # Set up the list display
         entries = Transaction.objects\
             .filter(Q(source_association=self.association) | Q(target_association=self.association))\
-            .order_by('-date')
+            .order_by('-moment')
         super(CreditsOverview, self).set_up_list(entries, page)
 
         # Retrieve the current balance

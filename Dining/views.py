@@ -291,14 +291,14 @@ class SlotMixin(DiningListMixin):
         context['user_can_add_others'] = self.dining_list.can_join(self.request.user, check_for_self=False)
 
         # Get the amount of messages
-        context['comments'] = self.dining_list.diningcomment_set.count()
+        context['comments_total'] = self.dining_list.diningcomment_set.count()
         # Get the amount of unread messages
         try:
             view_time = DiningCommentView.objects.get(user=self.request.user,
                                                       dining_list=self.dining_list).timestamp
             context['comments_unread'] = self.dining_list.diningcomment_set.filter(timestamp__gte=view_time).count()
         except DiningCommentView.DoesNotExist:
-            context['comments_unread'] = context['comments']
+            context['comments_unread'] = context['comments_total']
 
         return context
 

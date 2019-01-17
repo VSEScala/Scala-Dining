@@ -209,6 +209,11 @@ class DiningList(models.Model):
                 return False
         return True
 
+    def __str__(self):
+        return "{date} - {assoc} by {claimer}".format(date=self.date,
+                                                      assoc= self.association.associationdetails.shorthand,
+                                                      claimer=self.claimed_by)
+
     def get_absolute_url(self):
         from django.shortcuts import reverse
         slug = self.association.associationdetails.shorthand

@@ -1,0 +1,53 @@
+{% load form_extras %}
+
+<div class="col-12 mx-0 my-2 btn d-inline-flex text-left
+        {% if interactive %}py-4
+            {% if slot|is_on_slot:request.user %}
+                btn-success
+            {% else %}
+                {% if slot|can_join_slot:request.user %}
+                    btn-outline-info
+                {% else %}
+                    btn-outline-disabled
+                {% endif %}
+            {% endif %}
+        {% endif %}">
+    <div class="col-2 slot_image"
+            {% if slot.association %}
+                style="background-image: url({{ slot.association.associationdetails.image.url }})"
+            {% endif %}>
+
+    </div>
+    <div class="col-8">
+        <div class="text-size-5">
+        {% if slot.claimed_by %}
+            {{ slot.claimed_by }}
+        {% else %}
+            Slot is unclaimed!
+        {% endif %}</div>
+        <div class="text-size-4">{{ slot.dish }}</div>
+        <br>
+        <div class="text-size-3">{{ slot.diners }}/{{ slot.max_diners }} diners - Serve time: {{ slot.serve_time }}</div>
+    </div>
+
+    {% if interactive %}
+        {% with slot|can_join_slot:request.user as can_join %}
+            {% if not slot.is_open and slot|is_on_slot:request.user %}
+                <div class="col-2 slot-signed"></div>
+            {% endif %}
+
+            {# Create the clickable frame overlay #}
+            {% url 'slot_details' day=date.day month=date.month year=date.year identifier=slot.association.associationdetails.shorthand as url%}
+            <a class="slot-back" href={{ url }}></a>
+
+
+            {% if can_join %}
+                {% url 'entry_join' day=date.day month=date.month year=date.year identifier=slot.association.associationdetails.shorthand as url%}
+                <a class="btn-block col-2 btn btn-primary slot-signup" href={{ url }}></a>
+            {% elif slot|is_on_slot:request.user and slot.is_open %}
+                {% url 'entry_remove' day=date.day month=date.month year=date.year identifier=slot.association.associationdetails.shorthand as url%}
+                <a class="btn-block col-2 btn btn-primary slot-unlist" href={{ url }}></a>
+            {% endif %}
+        {% endwith %}
+    {% endif %}
+</div>
