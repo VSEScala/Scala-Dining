@@ -1,21 +1,22 @@
 from datetime import date, timedelta
 
 from django.contrib import messages
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth import get_user_model
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Q
 from django.http import Http404, HttpResponseRedirect, HttpResponseForbidden
-from django.shortcuts import render, redirect
+from django.shortcuts import redirect, get_object_or_404
 from django.urls import reverse
 from django.utils import timezone
-from django.utils.decorators import method_decorator
-from django.views.generic import View, TemplateView
+from django.utils.http import is_safe_url
+from django.utils.translation import gettext as _
+from django.views.generic import TemplateView, View
+from django.views.generic.base import ContextMixin
+from django.views.generic.edit import DeleteView
 
-from UserDetails.models import User
-from .forms import CreateSlotForm, DiningInfoForm, DiningPaymentForm
-from .models import DiningList, DiningEntry, DiningEntryExternal, DiningDayAnnouncements, DiningComment, \
-    DiningCommentView
+from .forms import CreateSlotForm, DiningInfoForm, DiningPaymentForm, DiningEntryCreateForm, DiningEntryDeleteForm, \
+    DiningListDeleteForm
+from .models import DiningList, DiningEntry, DiningDayAnnouncements, DiningComment, DiningCommentView
 
 
 def index(request):
@@ -26,108 +27,97 @@ def index(request):
     return redirect('day_view', year=upcoming.year, month=upcoming.month, day=upcoming.day)
 
 
-class AbstractDayView(LoginRequiredMixin, TemplateView):
-    """Abstract view for a day."""
+class DayMixin(ContextMixin):
+    """
+    Adds useful thingies to context and self that have to do with the request date.
+    """
 
-    # Stores the date for this day
     date = None
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        # Store date
-        self.date = date(self.kwargs['year'], self.kwargs['month'], self.kwargs['day'])
-
-        # Return 404 when weekend (!)
-        if self.date.weekday() >= 5:
-            raise Http404('Weekends are not available')
-        # Add useful things to context
         context['date'] = self.date
+        context['next_date'] = self.date + timedelta(days=3 if self.date.weekday() == 4 else 1)
+        context['previous_date'] = self.date - timedelta(days=3 if self.date.weekday() == 0 else 1)
+        if context['next_date'] - timezone.now().date() > timedelta(days=7):
+            context['next_date'] = None
+        if (context['previous_date'] - timezone.now().date()).days < -2:
+            context['previous_date'] = None
+        context['is_today'] = (self.date - timezone.now().date()).days == 0
         return context
 
-    @staticmethod
-    def get_next_availlable_date(current_date):
-        max_future = 7  # Define the meaximum time one can go into the future
+    def init_date(self):
+        """
+        Fetches the date from the request arguments.
+        """
+        if self.date:
+            # Already initialized
+            return
+        self.date = date(self.kwargs['year'], self.kwargs['month'], self.kwargs['day'])
+        if self.date.weekday() >= 5:
+            raise Http404('Weekends are not available')
 
-        next_date = current_date + timedelta(days=1)
-        while next_date.weekday() > 4:  # i.e. 5 or 6 which is saturday or sunday
-            next_date = next_date + timedelta(days=1)
+    def dispatch(self, request, *args, **kwargs):
+        """
+        Construct date before get/post is called.
+        """
+        self.init_date()
+        return super().dispatch(request, *args, **kwargs)
 
-        if (next_date - timezone.now().date()).days > max_future:
-            return None
-        return next_date
-
-    @staticmethod
-    def get_previous_availlable_date(current_date):
-        max_history = 2  # Define the maximum time one can go in the past
-
-        prev_date = current_date - timedelta(days=1)
-        while prev_date.weekday() > 4:  # i.e. 5 or 6 which is saturday or sunday
-            prev_date = prev_date - timedelta(days=1)
-        if (prev_date - timezone.now().date()).days < -max_history:
-            return None
-        return prev_date
+    def reverse(self, *args, kwargs=None, **other_kwargs):
+        """
+        URL reverse which expands the date. See
+        https://docs.djangoproject.com/en/2.1/ref/urlresolvers/#django.urls.reverse
+        """
+        kwargs = kwargs or {}
+        kwargs['year'] = self.date.year
+        kwargs['month'] = self.date.month
+        kwargs['day'] = self.date.day
+        return reverse(*args, kwargs=kwargs, **other_kwargs)
 
 
-def reverse_day(viewname, day_date, kwargs=None, **other_kwargs):
+class DiningListMixin(DayMixin):
     """
-    URL reverse which expands the date. See https://docs.djangoproject.com/en/2.1/ref/urlresolvers/#django.urls.reverse
-
-    This function should maybe be moved to a better place.
+    Extends the day mixin with dining list thingies.
     """
-    kwargs = kwargs or {}
-    kwargs['year'] = day_date.year
-    kwargs['month'] = day_date.month
-    kwargs['day'] = day_date.day
+    dining_list = None
+    association_slug = None
 
-    # Get any other keyword argument
-    if other_kwargs:
-        for key, value in other_kwargs.items():
-            kwargs[key] = value
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['dining_list'] = self.dining_list
+        context['association_slug'] = self.association_slug
+        return context
 
-    return reverse(viewname, kwargs=kwargs)
+    def init_dining_list(self):
+        """
+        Fetches the dining list using the request arguments.
+        """
+        if self.dining_list:
+            # Already initialized
+            return
+        # Needs initialized date
+        self.init_date()
+        self.association_slug = self.kwargs['identifier']
+        self.dining_list = get_object_or_404(DiningList, date=self.date,
+                                             association__associationdetails__shorthand=self.association_slug)
 
+    def dispatch(self, request, *args, **kwargs):
+        self.init_dining_list()
+        return super().dispatch(request, *args, **kwargs)
 
-# Todo: deprecate
-def process_date(context, day, month, year):
-    """
-    Process the broken down date and store it in the context, returns the day as a date object
-    :param context: The context object in which the data is tored
-    :param day: The day of the year
-    :param month: The month of the year
-    :param year: The year
-    :return: the date as a date object
-    """
-    if day is not None:
-        current_date = timezone.datetime(int(year), int(month), int(day)).date()
-
-        if (current_date - timezone.now().date()).days == 0:
-            context['is_today'] = True
-        else:
-            context['is_today'] = False
-
-    else:
-        current_date = timezone.now().date()
-        context['is_today'] = True
-
-    context['date'] = current_date
-    context['datename'] = context['date'].strftime("%A %e %B")
-    return current_date
+    def reverse(self, *args, kwargs=None, **other_kwargs):
+        kwargs = kwargs or {}
+        kwargs['identifier'] = self.association_slug
+        return super().reverse(*args, kwargs=kwargs, **other_kwargs)
 
 
-# Todo: deprecate (possibly replace with a method on DiningListManager)
-def get_list(current_date, identifier):
-    """
-    Returns the dining list for the given date and identifier.
-    """
-    return DiningList.objects.get(date=current_date, association__associationdetails__shorthand=identifier)
-
-
-class DayView(AbstractDayView):
+class DayView(LoginRequiredMixin, DayMixin, TemplateView):
     """"
     This is the view responsible for the day index
     Task:
     -   display all occupied dining slots
-    -   allow for additional dining slots to be made if place is availlable
+    -   allow for additional dining slots to be made if place is available
     """
 
     template_name = "dining_lists/dining_day.html"
@@ -135,15 +125,7 @@ class DayView(AbstractDayView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
 
-        context['next_date'] = self.get_next_availlable_date(self.date)
-        context['previous_date'] = self.get_previous_availlable_date(self.date)
-
-        if (self.date - timezone.now().date()).days == 0:
-            context['is_today'] = True
-        else:
-            context['is_today'] = False
-
-        context['dining_lists'] = DiningList.get_lists_on_date(self.date)
+        context['dining_lists'] = DiningList.objects.filter(date=self.date)
         context['Announcements'] = DiningDayAnnouncements.objects.filter(date=self.date)
 
         # Check if create slot button must be shown
@@ -158,7 +140,7 @@ class DayView(AbstractDayView):
         return context
 
 
-class NewSlotView(AbstractDayView):
+class NewSlotView(LoginRequiredMixin, DayMixin, TemplateView):
     """
     Creation page for a new dining list.
     """
@@ -166,374 +148,186 @@ class NewSlotView(AbstractDayView):
 
     def get(self, request, *args, **kwargs):
         context = self.get_context_data()
-        context['slot_form'] = CreateSlotForm(self.request.user, self.date)
+        context['slot_form'] = CreateSlotForm(self.request.user, context['date'])
         return self.render_to_response(context)
 
     def post(self, request, *args, **kwargs):
         context = self.get_context_data()
 
-        context['slot_form'] = CreateSlotForm(request.user, self.date, request.POST)
+        form = CreateSlotForm(request.user, self.date, request.POST)
 
-        # Check form validity
-        if not context['slot_form'].is_valid():
-            return self.render_to_response(context)
+        if form.is_valid():
+            dining_list = form.save()
 
-        dining_list = context['slot_form'].save()
-        # Create dining entry for current user
-        DiningEntry.objects.create(dining_list=dining_list, user=request.user)
+            # Create dining entry for current user
+            # Todo: should maybe move this to CreateSlotForm
+            entry = DiningEntryCreateForm(request.user, dining_list, data={})
+            if entry.is_valid():
+                entry.save()
+            else:
+                for field, errors in entry.errors.items():
+                    for error in errors:
+                        messages.add_message(request, messages.WARNING, error)
 
-        # Redirect to details page
-        return redirect(dining_list)
+            return redirect(dining_list)
 
-    def dispatch(self, request, *args, year=None, month=None, day=None, **kwargs):
+        context['slot_form'] = form
+        return self.render_to_response(context)
+
+    def dispatch(self, request, *args, **kwargs):
         """
         Disable page when no slots are available.
         """
         # Check available slots
-        # Todo: DRY violation with AbstractDayView!
         # Todo: possibly also disable page when date is in the past or later than closure time!
-        dining_date = date(year, month, day)
-        available_slots = DiningList.objects.available_slots(dining_date)
+        self.init_date()
+        available_slots = DiningList.objects.available_slots(self.date)
         if available_slots <= 0:
             return HttpResponseForbidden('No available slots')
-        return super().dispatch(request, *args)
+        return super().dispatch(request, *args, **kwargs)
 
 
-class EntryRemoveView(View):
-    context = {}
+class EntryAddView(LoginRequiredMixin, DiningListMixin, TemplateView):
+    template_name = "dining_lists/dining_entry_add.html"
 
-    def __init__(self, *args, **kwargs):
-        super(EntryRemoveView, self).__init__(*args, **kwargs)
-        self.context['list'] = True
+    def get(self, request, *args, **kwargs):
+        context = self.get_context_data()
 
-    @method_decorator(login_required)
-    def get(self, request, day=None, month=None, year=None, identifier=None, user_id=None):
-        current_date = process_date(self.context, day, month, year)
-        dining_list = get_list(current_date, identifier)
-
-        if user_id is None:  # The active user wants to sign out
-            if request.user == dining_list.claimed_by and dining_list.diners > 1:
-                # todo: handing over the dining ownership, or cancel the dining slot
-                HttpResponseRedirect(reverse_day('slot_details', current_date, identifier=identifier))
-
-            if dining_list.claimed_by is not None and \
-                    timezone.now().timestamp() > dining_list.sign_up_deadline.timestamp():
-                if dining_list.claimed_by != request.user:
-                    messages.add_message(request, messages.WARNING,
-                                         'You can not remove yourself, ask the chef to remove you instead')
-                    HttpResponseRedirect(reverse_day('slot_details', current_date, identifier=identifier))
-
-            entry = dining_list.get_entry_user(request.user)
-            entry.delete()
-            messages.add_message(request, messages.SUCCESS, 'You have been removed succesfully')
-            return HttpResponseRedirect(reverse_day('day_view', current_date))
-
-        else:
-            if not dining_list.is_open() and dining_list.claimed_by != request.user:
-                messages.add_message(request, messages.WARNING,
-                                     'Access denied: You are not the owner of the dining list and the slot is closed')
-                return HttpResponseRedirect(reverse_day('slot_list', current_date, identifier=identifier))
-
-            if user_id.startswith('E'):  # External entry
-                entry = dining_list.get_entry_external(user_id[1:])
-                if entry is None:
-                    messages.add_message(request, messages.ERROR, 'That entry can not be removed: it does not exist')
-                    return HttpResponseRedirect(reverse_day('slot_list', current_date, identifier=identifier))
-
-                if request.user != dining_list.claimed_by and request.user != entry.user:
-                    messages.add_message(request, messages.WARNING,
-                                         'Access denied: You did not add this entry, nor own the slot')
-                    return HttpResponseRedirect(reverse_day('slot_list', current_date, identifier=identifier))
-                else:
-                    entry.delete()
-                    if request.user != entry.user:
-                        # todo: notify user who added the external one user of removal
-                        pass
-                    return HttpResponseRedirect(reverse_day('slot_list', current_date, identifier=identifier))
-
-            else:  # Object is external
-                # if request was NOT added by the dininglist claimer, block access
-                if request.user != dining_list.claimed_by:
-                    messages.add_message(
-                        request,
-                        messages.ERROR,
-                        'Access denied: You are not the owner of the dining list and the slot is closed')
-                    return HttpResponseRedirect(reverse_day('slot_details', current_date, identifier=identifier))
-
-                entry = dining_list.get_entry(user_id)
-                if entry is None:
-                    messages.add_message(request, messages.ERROR, 'That entry can not be removed: it does not exist')
-                    return HttpResponseRedirect(reverse_day('slot_details', current_date, identifier=identifier))
-
-                if entry.user == dining_list.claimed_by:
-                    messages.add_message(request, messages.ERROR,
-                                         'You can not remove yourself because you are the owner')
-                    return HttpResponseRedirect(reverse_day('slot_details', current_date, identifier=identifier))
-
-                entry.delete()
-                messages.add_message(request, messages.SUCCESS, '{0} removed succesfully'.format(entry.user))
-
-        return HttpResponseRedirect(reverse_day('slot_list', current_date, identifier=identifier))
-
-
-# todo: remove user from other lists when assigning or something
-class EntryAddView(View):
-    context = {}
-    template = "dining_lists/dining_entry_add.html"
-
-    @method_decorator(login_required)
-    def get(self, request, day=None, month=None, year=None, identifier=None, search=None):
-        current_date = process_date(self.context, day, month, year)
-
-        # Get the dining list by the id of the association, shorthand form of the association or the person claimed
-        self.context['dining_list'] = get_list(current_date, identifier)
-
-        if search == "" or search == "User":
-            search = None
-
-        if search is not None:
+        # Search processing
+        search = self.request.GET.get('search')
+        if search:
             # Search all users corresponding with the typed in name
-            self.context['users'] = User.objects.filter(
+            context['users'] = get_user_model().objects.filter(
                 Q(first_name__contains=search) |
                 Q(last_name__contains=search) |
                 Q(username__contains=search)
             )
-            self.context['search'] = search
+            context['search'] = search
 
-            if len(self.context['users']) == 0:
-                self.context['error_input'] = "Error: no people with that name found"
-            elif len(self.context['users']) > 10:
-                self.context['error_input'] = "Error: search produced to many results"
-                self.context['users'] = None
+            if len(context['users']) == 0:
+                context['error_input'] = "Error: no people with that name found"
+            elif len(context['users']) > 10:
+                context['error_input'] = "Error: search produced too many results"
+                context['users'] = None
             else:
-                self.context['error_input'] = None
-
+                context['error_input'] = None
         else:
-            self.context['users'] = None
-            self.context['search'] = ""
-            self.context['error_input'] = None
+            context['users'] = None
+            context['search'] = ""
+            context['error_input'] = None
 
-        return render(request, self.template, self.context)
+        # Form rendering
+        context['form'] = DiningEntryCreateForm(request.user, self.dining_list)
 
-    @method_decorator(login_required)
-    def post(self, request, day=None, month=None, year=None, identifier=None):
-        current_date = process_date(self.context, day, month, year)
-        dining_list = get_list(current_date, identifier)
+        return self.render_to_response(context)
 
-        try:
-            if request.POST['button_external']:
-                entry = DiningEntryExternal(dining_list=dining_list, user=request.user, name=request.POST['name'])
-                entry.save()
-                return HttpResponseRedirect(reverse_day('slot_list', current_date, identifier=identifier))
-        except:
-            messages.add_message(request, messages.ERROR, 'An error occured. User has not been added')
-            pass
+    def post(self, request, *args, **kwargs):
+        context = self.get_context_data()
 
-        try:
-            if request.POST['button_user']:
-                return self.get(request, day=day, month=month, year=year,
-                                identifier=identifier, search=request.POST['name'])
-        except:
-            messages.add_message(request, messages.WARNING, 'An error occured.')
-            pass
+        # Do form shenanigans
+        form = DiningEntryCreateForm(request.user, self.dining_list, data=request.POST)
+        if form.is_valid():
+            form.save()
 
-        try:
-            if request.POST['button_select']:
-                user = User.objects.get(id=request.POST['user'])
-                if dining_list.get_entry_user(user) is None:
-                    entry = DiningEntry(dining_list=dining_list, added_by=request.user, user=user)
-                    entry.save()
-                return HttpResponseRedirect(reverse_day('slot_list', current_date, identifier=identifier))
-        except:
-            messages.add_message(request, messages.WARNING, 'An error occured. Uer has not been added succcesfully')
-            pass
+        # If next is provided, put possible error messages on the messages system and redirect
+        next = request.GET.get('next', None)
+        if next and is_safe_url(next, request.get_host()):
+            for field, errors in form.errors.items():
+                for error in errors:
+                    messages.add_message(request, messages.ERROR, error)
+            return HttpResponseRedirect(next)
 
-        return self.get(request, day=day, month=month, year=year, identifier=identifier, search=request.POST['name'])
+        # If next not provided, but the form was valid, redirect to the slot list
+        if form.is_valid():
+            # Todo: Check if user is on multiple dining lists today, then show warning
+            return HttpResponseRedirect(self.reverse('slot_list'))
 
 
-class SlotJoinView(View):
-    context = {}
-    template = "dining_lists/dining_switch_to.html"
-    accept_button_name = "button_yes"
+        # Render form otherwise
+        context['form'] = form
+        return self.render_to_response(context)
 
-    @method_decorator(login_required)
-    def get(self, request, day=None, month=None, year=None, identifier=None):
-        current_date = process_date(self.context, day, month, year)
 
-        # Get the dining list by the id of the association, shorthand form of the association or the person claimed
-        self.context['dining_list'] = get_list(current_date, identifier)
+class EntryRemoveView(LoginRequiredMixin, DiningListMixin, View):
 
-        # If user is already on list, inform user is already on list
-        if self.context['dining_list'].get_entry_user(request.user.id) is not None:
-            messages.add_message(request, messages.INFO, 'You were already on this slot')
-            return HttpResponseRedirect(reverse_day('slot_details', current_date, identifier=identifier))
+    http_method_names = ['post']
 
-        # if dining list is not open, do not add him
-        if not self.context['dining_list'].is_open():
-            messages.add_message(request, messages.ERROR, 'Subscription failed: the dining list is already closed')
-            return HttpResponseRedirect(reverse_day('day_view', current_date))
-
-        if self.context['dining_list'].limit_signups_to_association_only:
-            if request.user.usermemberships_set.filter(
-                    association=self.context['dining_list'].association).count() == 0:
-                messages.add_message(request, messages.ERROR,
-                                     'Subscription failed: dining list is only for members of {0}'.format(
-                                         self.context['dining_list'].assocation.details.shorthand))
-                return HttpResponseRedirect(reverse_day('day_view', current_date))
-
-        # check if user is not on other dining lists
-        entries = DiningEntry.objects.filter(dining_list__date=current_date, user=request.user)
-        if len(entries) == 0:
-            # User is not present on another date, add user
-            entry = DiningEntry(dining_list=self.context['dining_list'], user=request.user)
-            entry.save()
-            return HttpResponseRedirect(reverse_day('slot_details', current_date, identifier=identifier))
-
-        # Check if the dining list the user is already on is not locked. Uses a for-loop in case user is subscribed to
-        #  multiple dining lists, this should not be possible, but is implemented for safety reasons
-        locked_entry = None
-        for entry in entries:
-            if not entry.dining_list.is_open() or entry.dining_list.claimed_by == request.user:
-                # todo: if claimed by show error
-                # todo, ability to cancel list on small numbers
-                locked_entry = entry
-
-        if locked_entry is None:
-            # No entries are locked, user can switch dining lists, display the affirmation page
-            # display switch template
-            self.context['old_dining_list'] = entries[0].dining_list
-            self.context['accept_button_name'] = self.accept_button_name
-
-            return render(request, self.template, self.context)
-            pass
+    def post(self, request, *args, entry_id=None, **kwargs):
+        # Get entry
+        if entry_id:
+            entry = get_object_or_404(DiningEntry, id=entry_id)
         else:
-            # can not change to dining list
-            if entry.dining_list.claimed_by == request.user:
-                messages.add_message(request, messages.ERROR,
-                                     'Addition failed: You are the owner of another list today')
+            entry = get_object_or_404(DiningEntry, dining_list=self.dining_list, user=request.user, external_name="")
+
+        # Process deletion
+        form = DiningEntryDeleteForm(request.user, entry)
+        if form.is_valid():
+            form.execute()
+            if entry_id:
+                message = _('The user is removed from the dining list.')
             else:
-                messages.add_message(request, messages.ERROR,
-                                 'Addition failed: You are already part of a closed dining list')
-            return HttpResponseRedirect(reverse_day('day_view', current_date))
+                message = _('You are removed from the dining list.')
+            messages.add_message(request, messages.SUCCESS, message)
+        else:
+            for field, errors in form.errors.items():
+                for error in errors:
+                    messages.add_message(request, messages.ERROR, error)
 
-    @method_decorator(login_required)
-    def post(self, request, day=None, month=None, year=None, identifier=None):
-        current_date = process_date(self.context, day, month, year)
-        new_list = get_list(current_date, identifier)
+        # Go to next
+        next = request.GET.get('next')
+        if not is_safe_url(next, request.get_host()):
+            next = self.reverse('slot_list')
 
-        try:
-            # If yes has been pressed, switch the dining list the user is on
-            if request.POST[self.accept_button_name]:
-                old_entry = DiningEntry.objects.filter(dining_list__date=current_date, user=request.user)[0]
-                # Check if both dining lists are still open, if not, cancell the request
-                if new_list.is_open() and old_entry.dining_list.is_open():
-                    if old_entry.dining_list.claimed_by != request.user:
-                        old_entry.delete()
-                        new_entry = DiningEntry(dining_list=new_list, user=request.user)
-                        new_entry.save()
-
-                        return HttpResponseRedirect(reverse_day('slot_details', current_date, identifier=identifier))
-                    else:
-                        messages.add_message(request, messages.ERROR, 'Action failed: you own another slot on this day')
-                        pass
-                else:
-                    messages.add_message(request, messages.ERROR, 'Action failed: Dining list is locked')
-                    pass
-        except:
-            pass
-
-        # No is pressed
-        return HttpResponseRedirect(reverse_day('day_view', current_date))
+        return HttpResponseRedirect(next)
 
 
-class SlotView(View):
-    context = {}
-    current_date = None
+class SlotMixin(DiningListMixin):
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
 
-    @method_decorator(login_required)
-    def get(self, request, day=None, month=None, year=None, identifier=None, *args, **kwargs):
-        if day is not None:
-            # If it is none, assume that date and dining list are already known
-            self.current_date = process_date(self.context, day, month, year)
-
-            # Get the dining list by the id of the association, shorthand form of the association or the person claimed
-            self.context['dining_list'] = get_list(self.current_date, identifier)
-
-        if self.context['dining_list'] is None:
-            messages.add_message(request, messages.ERROR, 'Action failed: Dining list does not exist')
-            return HttpResponseRedirect(reverse_day('day_view', self.current_date))
-
-        self.context['is_open'] = self.context['dining_list'].is_open()
-        self.context['user_is_on_list'] = self.context['dining_list'].get_entry_user(request.user) is not None
-        self.context['user_can_add_self'] = self.context['dining_list'].can_join(request.user)
-        self.context['user_can_add_others'] = self.context['dining_list'].can_join(request.user, check_for_self=False)
+        context['is_open'] = self.dining_list.is_open()
+        context['user_is_on_list'] = self.dining_list.internal_dining_entries().filter(user=self.request.user).exists()
+        context['user_can_add_self'] = self.dining_list.can_join(self.request.user)
+        context['user_can_add_others'] = self.dining_list.can_join(self.request.user, check_for_self=False)
 
         # Get the amount of messages
-        self.context['comments_total'] = self.context['dining_list'].diningcomment_set.count()
+        context['comments_total'] = self.dining_list.diningcomment_set.count()
         # Get the amount of unread messages
-        self.context['comments_unread'] = self.getUnreadMessages(request.user)
-
-        return None
-
-    @method_decorator(login_required)
-    def post(self, request, day=None, month=None, year=None, identifier=None, *args, **kwargs):
-        self.current_date = process_date(self.context, day, month, year)
-        self.context['dining_list'] = get_list(self.current_date, identifier)
-
-    def getUnreadMessages(self, user):
         try:
-            view_time = DiningCommentView.objects.get(user=user,
-                                                      dining_list=self.context['dining_list']).timestamp
-            return self.context['dining_list'].diningcomment_set.filter(timestamp__gte=view_time).count()
-        except:
-            return self.context['comments']
+            view_time = DiningCommentView.objects.get(user=self.request.user,
+                                                      dining_list=self.dining_list).timestamp
+            context['comments_unread'] = self.dining_list.diningcomment_set.filter(timestamp__gte=view_time).count()
+        except DiningCommentView.DoesNotExist:
+            context['comments_unread'] = context['comments_total']
+
+        return context
 
 
-class SlotListView(SlotView):
-    template = "dining_lists/dining_slot_diners.html"
+class SlotListView(LoginRequiredMixin, SlotMixin, TemplateView):
+    template_name = "dining_lists/dining_slot_diners.html"
 
-    def __init__(self, *args, **kwargs):
-        super(SlotListView, self).__init__(*args, **kwargs)
-        self.context['tab'] = "list"
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['tab'] = "list"
 
-    @method_decorator(login_required)
-    def get(self, request, day=None, month=None, year=None, identifier=None):
-        result = super(SlotListView, self).get(request, day, month, year, identifier)
-        if result is not None:
-            return result
+        context['can_delete_some'] = False
+        context['entries'] = self.dining_list.dining_entries.all()
 
-        self.context['can_delete_some'] = False
-        entries = []
-        for entry in self.context['dining_list'].diningentry_set.all():
-            entries.append(entry)
-        for entry in self.context['dining_list'].diningentryexternal_set.all():
-            if entry.user == request.user:
-                self.context['can_delete_some'] = True
-            entries.append(entry)
-        from operator import methodcaller
-        entries.sort(key=methodcaller('__str__'))
-        self.context['entries'] = entries
+        context['can_delete_some'] = context['can_delete_some'] * context['is_open']
+        context['can_edit_stats'] = (self.request.user == self.dining_list.claimed_by)
+        context['can_delete_all'] = (self.request.user == self.dining_list.claimed_by)
+        purchaser = self.dining_list.purchaser
+        context['can_edit_pay'] = (self.request.user == purchaser or
+                                        (purchaser is None and self.request.user == self.dining_list.claimed_by))
+        return context
 
-        self.context['can_delete_some'] = self.context['can_delete_some'] * self.context['is_open']
-        self.context['can_edit_stats'] = (request.user == self.context['dining_list'].claimed_by)
-        self.context['can_delete_all'] = (request.user == self.context['dining_list'].claimed_by)
-        purchaser = self.context['dining_list'].purchaser
-        self.context['can_edit_pay'] = (request.user == purchaser or
-                                        (purchaser is None and request.user == self.context['dining_list'].claimed_by))
-
-        return render(request, self.template, self.context)
-
-    @method_decorator(login_required)
-    def post(self, request, day=None, month=None, year=None, identifier=None, *args, **kwargs):
-        current_date = process_date(self.context, day, month, year)
-        dining_list = get_list(current_date, identifier)
-
-        can_adjust_stats = request.user == dining_list.claimed_by
-        can_adjust_paid = request.user == dining_list.get_purchaser()
+    def post(self, request, *args, **kwargs):
+        can_adjust_stats = request.user == self.dining_list.claimed_by
+        can_adjust_paid = request.user == self.dining_list.get_purchaser()
 
         entries = {}
         # Loop over all user entries, and store them
-        for entry in dining_list.diningentry_set.all():
+        for entry in self.dining_list.dining_entries.all():
             if can_adjust_stats:
                 entry.has_shopped = False
                 entry.has_cooked = False
@@ -542,165 +336,152 @@ class SlotListView(SlotView):
                 entry.has_paid = False
             entries[str(entry.id)] = entry
 
-        # Loop over all external entries, and store them
-        if can_adjust_paid:
-            for entry in dining_list.diningentryexternal_set.all():
-                entry.has_paid = False
-                entries["E" + str(entry.id)] = entry
-
         # Loop over all keys,
         for key in request.POST:
             keysplit = key.split(":")
             if len(keysplit) != 2:
                 continue
 
-            if keysplit[0].startswith("E"):
-                if keysplit[1] == "has_paid" and can_adjust_paid:
-                    entries[keysplit[0]].has_paid = True
-            else:
-                # its a normal entry
-                if can_adjust_stats:
-                    if keysplit[1] == "has_shopped":
-                        entries[keysplit[0]].has_shopped = True
-                    elif keysplit[1] == "has_cooked":
-                        entries[keysplit[0]].has_cooked = True
-                    elif keysplit[1] == "has_cleaned":
-                        entries[keysplit[0]].has_cleaned = True
-                if can_adjust_paid and keysplit[1] == "has_paid":
-                    entries[keysplit[0]].has_paid = True
+            if can_adjust_stats:
+                if keysplit[1] == "has_shopped":
+                    entries[keysplit[0]].has_shopped = True
+                elif keysplit[1] == "has_cooked":
+                    entries[keysplit[0]].has_cooked = True
+                elif keysplit[1] == "has_cleaned":
+                    entries[keysplit[0]].has_cleaned = True
+            if can_adjust_paid and keysplit[1] == "has_paid":
+                entries[keysplit[0]].has_paid = True
 
         for entry in entries.values():
             entry.save()
 
-        return self.get(request, day=day, month=month, year=year, identifier=identifier)
+        return HttpResponseRedirect(self.reverse('slot_list'))
 
 
-class SlotInfoView(SlotView):
-    template = "dining_lists/dining_slot_info.html"
+class SlotInfoView(LoginRequiredMixin, SlotMixin, TemplateView):
+    template_name = "dining_lists/dining_slot_info.html"
 
-    def __init__(self, *args, **kwargs):
-        super(SlotInfoView, self).__init__(*args, **kwargs)
-        self.context['tab'] = "info"
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['tab'] = "info"
 
-    @method_decorator(login_required)
-    def get(self, request, day=None, month=None, year=None, identifier=None, *args, **kwargs):
-        result = super(SlotInfoView, self).get(request, day=day, month=month, year=year, identifier=identifier)
-        if result is not None:
-            return result
+        context['comments'] = self.dining_list.diningcomment_set.order_by('-pinned_to_top', 'timestamp').all()
 
-        self.context['comments'] = self.context['dining_list'].diningcomment_set.order_by('-pinned_to_top',
-                                                                                          'timestamp').all()
-        last_visit = DiningCommentView.objects.get_or_create(user=request.user,
-                                                             dining_list=self.context['dining_list']
-                                                             )[0]
-        self.context['last_visited'] = last_visit.timestamp
+        # Last visit
+        last_visit = DiningCommentView.objects.get_or_create(user=self.request.user, dining_list=self.dining_list)[0]
+        context['last_visited'] = last_visit.timestamp
         last_visit.timestamp = timezone.now()
         last_visit.save()
 
-        if self.context['dining_list'].claimed_by == request.user or \
-            self.context['dining_list'].purchaser == request.user:
-            self.context['can_change_settings'] = True
+        if self.dining_list.claimed_by == self.request.user or self.dining_list.purchaser == self.request.user:
+            context['can_change_settings'] = True
+        return context
 
-        return render(request, self.template, self.context)
-
-    def post(self, request, day=None, month=None, year=None, identifier=None, *args, **kwargs):
-        result = super(SlotInfoView, self).post(request, day, month, year, identifier, *args, **kwargs)
-        if result is not None:
-            return result
-
+    def post(self, request, *args, **kwargs):
         # Add the comment
-        DiningComment(dining_list=self.context['dining_list'], poster=request.user,
-                      message=request.POST['comment']).save()
+        DiningComment(dining_list=self.dining_list, poster=request.user, message=request.POST['comment']).save()
 
-        return self.get(request)
+        return HttpResponseRedirect(self.reverse('slot_details'))
 
 
-class SlotInfoChangeView(SlotView):
-    template = "dining_lists/dining_slot_info_alter.html"
+# Could possibly use the Django built-in FormView or ModelFormView in combination with FormSet
+class SlotInfoChangeView(LoginRequiredMixin, SlotMixin, TemplateView):
+    template_name = "dining_lists/dining_slot_info_alter.html"
 
-    @method_decorator(login_required)
-    def get(self, request, day=None, month=None, year=None, identifier=None, *args, **kwargs):
-        result = super(SlotInfoChangeView, self).get(request, day=day, month=month, year=year, identifier=identifier)
-        if result is not None:
-            return result
+    def get(self, request, *args, **kwargs):
+        context = self.get_context_data()
 
-        if self.context['dining_list'].claimed_by == request.user:
-            self.context['info_form'] = DiningInfoForm(instance=self.context['dining_list'])
+        if self.dining_list.claimed_by == request.user:
+            context['info_form'] = DiningInfoForm(instance=self.dining_list)
 
-        if self.context['dining_list'].get_purchaser() == request.user:
-            self.context['payment_form'] = DiningPaymentForm(instance=self.context['dining_list'])
+        if self.dining_list.get_purchaser() == request.user:
+            context['payment_form'] = DiningPaymentForm(instance=self.dining_list)
 
-        if self.context.get('info_form') is None and self.context.get('payment_form') is None:
+        if context.get('info_form') is None and context.get('payment_form') is None:
             # User is not allowed on this page
-            messages.add_message(request, messages.WARNING,
-                                 'You have no permission to change the dining list info')
-            return HttpResponseRedirect(reverse_day('slot_details', self.current_date, identifier=identifier))
+            return HttpResponseForbidden()
 
-        return render(request, self.template, self.context)
+        return self.render_to_response(context)
 
-    def post(self, request, day=None, month=None, year=None, identifier=None, *args, **kwargs):
-        result = super(SlotInfoChangeView, self).post(request, day, month, year, identifier, *args, **kwargs)
-        if result is not None:
-            return result
+    def post(self, request, *args, **kwargs):
+        context = self.get_context_data()
 
         is_valid = True
         can_change = False
 
-        self.context['payment_form'] = None
+        context['payment_form'] = None
 
         # Check if the active user is the current user, if checked after the general info, the local object could have
         # it's information changed causing usage errors
-        is_purchaser = self.context['dining_list'].get_purchaser() == request.user
+        is_purchaser = self.dining_list.get_purchaser() == request.user
 
         # Check general info
-        if self.context['dining_list'].claimed_by == request.user:
+        if self.dining_list.claimed_by == request.user:
             can_change = True
-            print(request.POST)
-            self.context['info_form'] = DiningInfoForm(request.POST, instance=self.context['dining_list'])
-            if self.context['info_form'].is_valid():
-                self.context['info_form'].save()
+            context['info_form'] = DiningInfoForm(request.POST, instance=self.dining_list)
+            if context['info_form'].is_valid():
+                context['info_form'].save()
             else:
                 is_valid = False
 
         if is_purchaser:
             can_change = True
-            print(request.POST)
-            self.context['payment_form'] = DiningPaymentForm(request.POST, instance=self.context['dining_list'])
-            if self.context['payment_form'].is_valid():
-                self.context['payment_form'].save()
+            context['payment_form'] = DiningPaymentForm(request.POST, instance=self.dining_list)
+            if context['payment_form'].is_valid():
+                context['payment_form'].save()
             else:
                 is_valid = False
 
-        # Rederict if forms were all valid, stay otherwise
-        if is_valid:
-            if can_change:
-                messages.add_message(request, messages.SUCCESS, "Changes succesfully placed")
-            else:
-                messages.add_message(request, messages.ERROR, "You were not allowed to change anything")
+        # Redirect if forms were all valid, stay otherwise
+        if not can_change:
+            return HttpResponseForbidden()
+        elif is_valid:
+            messages.add_message(request, messages.SUCCESS, "Changes successfully saved")
+            return HttpResponseRedirect(self.reverse('slot_details'))
 
-            return HttpResponseRedirect(reverse_day('slot_details', self.current_date, identifier=identifier))
-        else:
-            return render(request, self.template, self.context)
+        return self.render_to_response(context)
 
 
+class SlotAllergyView(LoginRequiredMixin, SlotMixin, TemplateView):
+    template_name = "dining_lists/dining_slot_allergy.html"
 
-class SlotAllergyView(SlotView):
-    template = "dining_lists/dining_slot_allergy.html"
-
-    def __init__(self, *args, **kwargs):
-        super(SlotAllergyView, self).__init__(*args, **kwargs)
-        self.context['tab'] = "allergy"
-
-    @method_decorator(login_required)
-    def get(self, request, day=None, month=None, year=None, identifier=None):
-        result = super(SlotAllergyView, self).get(request, day=day, month=month, year=year, identifier=identifier)
-        if result is not None:
-            return result
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['tab'] = "allergy"
 
         from django.db.models import CharField
         from django.db.models.functions import Length
         CharField.register_lookup(Length)
-        self.context['allergy_entries'] = self.context['dining_list'].diningentry_set.filter(
+        context['allergy_entries'] = self.dining_list.dining_entries.filter(
             user__userdiningsettings__allergies__length__gt=1)
 
-        return render(request, self.template, self.context)
+        return context
+
+
+class SlotDeleteView(LoginRequiredMixin, SlotMixin, DeleteView):
+    """
+    Page for slot deletion. Page is only available for slot owners.
+    """
+    template_name = "dining_lists/dining_slot_delete.html"
+    context_object_name = "dining_list"
+
+    def get_object(self, queryset=None):
+        if self.request.user != self.dining_list.claimed_by:
+            # Block page for non slot owners
+            raise Http404("Deletion not available.")
+        return self.dining_list
+
+    def delete(self, request, *args, **kwargs):
+        instance = self.get_object()
+        form = DiningListDeleteForm(request.user, instance)
+        if form.is_valid():
+            form.execute()
+            messages.add_message(request, messages.SUCCESS, _("Dining list is deleted."))
+            # Need to use reverse from the DiningListMixin superclass
+            return HttpResponseRedirect(super(DiningListMixin, self).reverse("day_view"))
+
+        # Could not delete
+        for error in form.non_field_errors():
+            messages.add_message(request, messages.ERROR, error)
+
+        return HttpResponseRedirect(self.reverse("slot_delete"))

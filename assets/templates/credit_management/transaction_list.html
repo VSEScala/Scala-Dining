@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% load credit_tags %}
+{% load humanize %}
+{% block content %}
+    <h1>Your transactions</h1>
+
+    {# Todo: improve transaction layout #}
+    {% for transaction in transactions %}
+        <div class="card bg-dark mb-3">
+            <div class="card-body">
+                <p class="card-text">
+                    <small class="text-muted">{{ transaction.moment|naturaltime }}</small>
+                </p>
+                <p class="card-text">
+                    {% if transaction.source_user == user %}
+                        <span class="text-danger">{{ transaction.amount|negate|euro }}</span>
+                        {% if transaction.target %}
+                            | To {{ transaction.target }}
+                        {% endif %}
+                    {% else %}
+                        <span class="text-success">+{{ transaction.amount|euro }}</span>
+                        {% if transaction.source %}
+                            | From {{ transaction.source }}
+                        {% endif %}
+                    {% endif %}
+                    {% if transaction.notes %}
+                        | {{ transaction.notes }}
+                    {% endif %}
+                    {% if transaction.dining_list %}
+                        | <a href="{{ transaction.dining_list.get_absolute_url }}" class="btn btn-primary">
+                            View dining list
+                        </a>
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+    {% empty %}
+        <p>No transactions yet.</p>
+    {% endfor %}
+
+    {# Todo: improve pagination layout #}
+    <div class="pagination">
+    <span class="step-links">
+        {% if page_obj.has_previous %}
+            <a href="?page=1">&laquo; first</a>
+            <a href="?page={{ page_obj.previous_page_number }}">previous</a>
+        {% endif %}
+
+        <span class="current">
+            Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}.
+        </span>
+
+        {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}">next</a>
+            <a href="?page={{ page_obj.paginator.num_pages }}">last &raquo;</a>
+        {% endif %}
+    </span>
+    </div>
+{% endblock %}

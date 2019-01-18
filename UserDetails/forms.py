@@ -2,7 +2,7 @@ from django import forms
 from django.forms import ModelForm
 from django.contrib.auth import authenticate
 from django.contrib.auth.forms import UserCreationForm
-from .models import User, Association, UserMemberships
+from .models import User, Association, UserMembership
 from Dining.models import UserDiningSettings
 
 
@@ -51,7 +51,7 @@ class RegisterAssociationLinks(forms.Form):
 
     def create_links_for(self, user):
         for association in self.cleaned_data['associations']:
-            UserMemberships.objects.create(related_user=user, association=association)
+            UserMembership.objects.create(related_user=user, association=association)
 
 
 class Settings_Essentials_Form(ModelForm):

@@ -1,7 +1,10 @@
-from django.contrib import admin
 from django.urls import path
+
 from . import views
+from .views import TransactionListView
+
+app_name = 'credits'
 
 urlpatterns = [
-    path('add', views.TransactionView.as_view(), name='Transaction'),
+    path('transactions/', TransactionListView.as_view(), name='transaction_list'),
 ]

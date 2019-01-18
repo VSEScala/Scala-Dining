@@ -27,7 +27,7 @@ urlpatterns = [
     path('register/', UDviews.RegisterView.as_view(), name='register'),
     path('user/', include('UserDetails.urls_user')),
     path('association/<association_name>/', include('UserDetails.urls_association')),
-    path('transactions/', include('CreditManagement.urls')),
+    path('credit/', include('CreditManagement.urls')),
     path('site/', include('General.urls')),
     path('', include('Dining.urls')),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
