@@ -1,5 +1,5 @@
 from django.contrib import admin
-from CreditManagement.models import Transaction, AssociationCredit, UserCredit
+from CreditManagement.models import *
 from UserDetails.models import Association, UserMemberships
 from datetime import datetime, timedelta
 
@@ -115,6 +115,10 @@ class UserCreditAdmin(admin.ModelAdmin):
     is_verified.short_description = 'User verified?'
 
 
-admin.site.register(UserCredit, UserCreditAdmin)
-admin.site.register(Transaction, TransactionsAdmin)
-admin.site.register(AssociationCredit, AssociationCreditAdmin)
+#admin.site.register(UserCredit, UserCreditAdmin)
+#admin.site.register(Transaction, TransactionsAdmin)
+#admin.site.register(AssociationCredit, AssociationCreditAdmin)
+admin.site.register(FixedTransaction)
+admin.site.register(PendingTransaction)
+admin.site.register(PendingDiningTransaction)
+admin.site.register(PendingDiningListTracker)

@@ -3,7 +3,9 @@ from django.utils.decorators import method_decorator
 from django.contrib.auth.decorators import login_required
 from django.views.generic import View
 from UserDetails.models import User
+from .models import *
 from .forms import create_transaction_form
+from django.http import HttpResponse
 
 
 from .models import Transaction
@@ -47,3 +49,23 @@ class TransactionView(View):
 
 
         return render(request, self.template, self.context)
+
+
+class TransactionTestView(View):
+
+    def get(self, request, user=None):
+        #content = AbstractTransaction.get_all_credits(user=user)
+        #result = "These are all objects: <BR>"
+
+        result = AbstractTransaction.get_user_credit(user=user)
+
+        return render(request, "test.html", {'text': result})
+
+
+        if content is not None:
+            for i in content:
+                result += "{5}: {0} or {1} to {3} or {4} for {2}  ".format(i.source_user, i.source_association, i.amount, i.target_user, i.target_association, i.description)
+                #result += "{0}".format(i.amount)
+                result+= "<BR>"
+
+        return render(request, "test.html", {'text': result})

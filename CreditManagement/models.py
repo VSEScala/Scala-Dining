@@ -1,6 +1,8 @@
-from django.db import models, transaction
-from django.db.models import F
+from django.db import models
+from django.db.models import F, Q, Avg, Count, Min, Sum, OuterRef, Subquery, Value
+from django.db.models.functions import Coalesce
 from UserDetails.models import User, Association
+from Dining.models import *
 from django.contrib.contenttypes.models import ContentType
 from django.core.validators import MinValueValidator
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
@@ -194,3 +196,210 @@ class UserCredit(models.Model):
     def get_current_credits(self):
         return self.credit
         # Todo: implement retrieval of pending transactions
+
+
+class AbstractTransaction(models.Model):
+    # DO NOT CHANGE THIS ORDER, IT CAN CAUSE PROBLEMS IN THE UNION METHODS AT DATABASE LEVEL!
+    source_user = models.ForeignKey(User, related_name="%(class)s_transaction_source", on_delete=models.SET_NULL, null=True, blank=True, verbose_name="The user giving the money")
+    source_association = models.ForeignKey(Association, related_name="%(class)s_transaction_source", on_delete=models.SET_NULL, null=True, blank=True, verbose_name="The association giving the money")
+    amount = models.DecimalField(verbose_name="Money transferred", decimal_places=2, max_digits=4, validators=[MinValueValidator(Decimal('0.01'))])
+    target_user = models.ForeignKey(User, related_name="%(class)s_transaction_target", on_delete=models.SET_NULL, null=True, blank=True, verbose_name="The user receiving the money")
+    target_association = models.ForeignKey(Association, related_name="%(class)s_transaction_target", on_delete=models.SET_NULL, null=True, blank=True, verbose_name="The association recieving the money")
+
+    order_moment = models.DateTimeField(auto_now_add=True)
+    confirm_moment = models.DateTimeField()
+    description = models.CharField(default="", blank=True, max_length=50)
+
+
+    class Meta:
+        abstract = True
+
+    @classmethod
+    def get_children(cls):
+        return [FixedTransaction, AbstractPendingTransaction]
+
+    @classmethod
+    def get_all_credits(cls, user=None, association=None):
+        """
+        Get all credit instances defined in its immediate children and present them as a queryset
+        Accepts user as argument
+        Accepts association as argument
+        :return: A queryset of all credit instances
+        """
+
+        result = None
+        children = cls.get_children()
+
+        for child in children:
+            if result is None:
+                result = child.get_all_credits(user, association)
+            else:
+                result = result.union(child.get_all_credits(user, association))
+
+        return result
+
+    @classmethod
+    def get_user_credit(cls, user):
+        """
+        Returns the usercredit
+        :return: The current credits
+        """
+
+        result = Decimal(0.00)
+        children = cls.get_children()
+
+        # Loop over all children and get the credits
+        # It is not possible to summarize get_all_credits due to the union method (it blocks it)
+        for child in children:
+            child_value = child.get_user_credit(user)
+
+            if child_value:
+                result += child_value
+
+        return result
+
+class FixedTransaction(AbstractTransaction):
+    # Todo: implement CreditQuerySet as manager from Maartens branch
+
+    @classmethod
+    def get_all_credits(cls, user=None, association=None):
+        # Get all objects
+        queryset = cls.objects.all()
+        # Filter the objects
+        if user is not None:
+            # Filter on user, make sure that if source_user, source_association is none
+            queryset = queryset.filter(Q(source_user=user) | Q(target_user=user))
+            queryset.exclude(Q(source_user=user) & ~Q(source_association=None))
+        elif association is not None:
+            # Filter on association
+            queryset = queryset.filter(Q(source_user=user) | Q(target_user=user))
+
+    @classmethod
+    def get_user_credit(cls, user):
+        # Filter transactions on source
+        source_sum_qs = FixedTransaction.objects.filter(source_user=user)
+        # Aggregate the rows
+        source_sum_qs = source_sum_qs.aggregate(amount_sum=Coalesce(Sum('amount'), Value(0)))
+        source_sum_qs = source_sum_qs['amount_sum']
+
+        # Filter transactions on source
+        target_sum_qs = FixedTransaction.objects.filter(target_user=user)
+        # Aggregate the rows
+        target_sum_qs = target_sum_qs.aggregate(amount_sum=Coalesce(Sum('amount'), Value(0)))
+        target_sum_qs = target_sum_qs['amount_sum']
+
+        return target_sum_qs - source_sum_qs
+
+
+class AbstractPendingTransaction(AbstractTransaction):
+
+    @classmethod
+    def get_children(cls):
+        return [PendingTransaction, PendingDiningTransaction]
+
+    class Meta:
+        abstract = True
+
+
+class PendingTransaction(AbstractPendingTransaction):
+
+    # Todo: implement CreditQuerySet as manager from Maartens branch
+
+    @classmethod
+    def get_all_credits(cls, user=None, association=None):
+        # Get all objects
+        queryset = cls.objects.all()
+        # Filter the objects
+        if user is not None:
+            # Filter on user, make sure that if source_user, source_association is none
+            queryset = queryset.filter(Q(source_user=user) | Q(target_user=user))
+            queryset.exclude(Q(source_user=user) & ~Q(source_association=None))
+        elif association is not None:
+            # Filter on association
+            queryset = queryset.filter(Q(source_association=association) | Q(target_association=association))
+        return queryset
+
+    @classmethod
+    def get_user_credit(cls, user):
+        # Filter transactions on source
+        source_sum_qs = PendingTransaction.objects.filter(source_user=user)
+        # Aggregate the rows
+        source_sum_qs = source_sum_qs.aggregate(amount_sum=Coalesce(Sum('amount'), Value(0)))
+        source_sum_qs = source_sum_qs['amount_sum']
+
+        # Filter transactions on source
+        target_sum_qs = PendingTransaction.objects.filter(target_user=user)
+        # Aggregate the rows
+        target_sum_qs = target_sum_qs.aggregate(amount_sum=Coalesce(Sum('amount'), Value(0)))
+        target_sum_qs = target_sum_qs['amount_sum']
+
+        return target_sum_qs - source_sum_qs
+
+class PendingDiningTransaction(AbstractPendingTransaction):
+    dining_identifier = "DINING"
+    #todo Implement autopay
+
+    @classmethod
+    def get_all_credits(cls, user=None, association=None):
+        # If queried on association, return nothing, associations can not pay dining lists
+        if association:
+            return PendingDiningTransaction.objects.none()
+
+        # IMPORTANT, DO NOT MESS UP THE ORDER!
+        # Changing it creates problems in the union query at database level
+
+        PDT = PendingDiningTransaction.objects.all()
+        # If there are no instances in the database, the union will result in arbitrary dicts,
+        # 1 entry needs to be present in the database with no contents
+        if len(PDT) == 0:
+            PendingDiningTransaction(amount=42, description=cls.dining_identifier).save()
+            PDT = PendingDiningTransaction.objects.all()
+        none_obj = Subquery(PDT.values('target_user')[:1])
+        desc_obj = Subquery(PDT.values('description')[:1])
+
+        # Select all entries in the pending dininglists
+        entries = DiningEntry.objects.filter(dining_list__pendingdininglisttracker__isnull=False)
+        # Filter for the given user
+        if user:
+            entries = entries.filter(user=user)
+
+        # Rename the user parameter and merge contents (user entries on each dining list)
+        entries = entries.annotate(source_user=F('user'))
+        entries = entries.values('dining_list', 'source_user')
+
+        # annotate empty association object
+        entries = entries.annotate(source_association=none_obj)
+        # compute the total costs
+        entries = entries.annotate(amount=Sum('dining_list__kitchen_cost'))
+
+        # add the residual data
+        entries = entries.annotate(target_user=none_obj)
+        entries = entries.annotate(target_association=none_obj)
+        entries = entries.annotate(order_moment=F('dining_list__sign_up_deadline'))
+        entries = entries.annotate(confirm_moment=F('dining_list__sign_up_deadline'))
+        entries = entries.annotate(description=desc_obj)
+
+        # NOTE: The dining list is stored in the id position
+        #       it is used to connect the transaction with the dining list
+
+        # Merge the created entries with the entries in the pending dining transactions
+        # Remove the unused entries from the database table
+        PDT = PDT.union(entries).difference(PDT)
+        # Django now treats this as a PendingDiningTransaction queryset
+
+        return PDT
+
+    @classmethod
+    def get_user_credit(cls, user):
+        # Select all entries in the pending dininglists, filter on the intended user in that dining list
+        entries = DiningEntry.objects.filter(dining_list__pendingdininglisttracker__isnull=False)
+        entries = entries.filter(user=user)
+
+        # compute the total costs of the dining list
+        entries = entries.aggregate(amount_sum=Coalesce(Sum('dining_list__kitchen_cost'), Value(0)))
+
+        return -entries['amount_sum']
+
+
+class PendingDiningListTracker(models.Model):
+    dining_list = models.OneToOneField(DiningList, on_delete=models.CASCADE)

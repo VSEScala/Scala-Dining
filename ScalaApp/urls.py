@@ -19,6 +19,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 from UserDetails import views as UDviews
 from django.contrib.auth.views import LoginView
+from CreditManagement import views as CMviews
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -30,5 +31,7 @@ urlpatterns = [
     path('transactions/', include('CreditManagement.urls')),
     path('site/', include('General.urls')),
     path('', include('Dining.urls')),
+    path('test', CMviews.TransactionTestView.as_view()),
+    path('test/<user>', CMviews.TransactionTestView.as_view())
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 

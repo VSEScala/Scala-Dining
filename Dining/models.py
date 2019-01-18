@@ -2,7 +2,6 @@ from django.db import models, transaction
 from django.db.models import F, Sum
 from django.utils import timezone
 from UserDetails.models import User, Association
-from CreditManagement.models import UserCredit
 from django.contrib.contenttypes.models import ContentType
 from django.core.validators import MinValueValidator
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
@@ -112,33 +111,6 @@ class DiningList(models.Model):
                 else:
                     costs = -self.get_credit_cost()
 
-                if costs != 0:
-                    # Costs have changed, alter all credits.
-                    # Done in for-loop instead of update to trigger custom save implementation (to track negatives)
-                    for diningEntry in self.diningentry_set.all():
-                        diningEntry.user.usercredit.credit = F('credit') + costs
-                        diningEntry.user.usercredit.save()
-                    # Adjust the credit scores for each external entry added.
-                    # For loop is required to ensure that entries added by the same user are processed correctly
-                    for ExternalDinerEntry in self.diningentryexternal_set.all():
-                        ExternalDinerEntry.user.usercredit.credit = F('credit') + costs
-                        ExternalDinerEntry.user.usercredit.save()
-
-                if previous_list is None or \
-                        previous_list.diners * self.diner_count() == 0 or \
-                        previous_list.auto_pay != self.auto_pay or \
-                        previous_list.get_purchaser() != self.get_purchaser() or \
-                        previous_list.dinner_cost_total != self.dinner_cost_total:
-
-                    if previous_list is not None and previous_list.auto_pay and previous_list.diners > 0:
-                        credit_instance = previous_list.get_purchaser().get_credit_containing_instance()
-                        credit_instance.credit = F('credit') - previous_list.dinner_cost_total
-                        credit_instance.save()
-
-                    if self.auto_pay and self.diner_count() > 0:
-                        credit_instance = self.get_purchaser().get_credit_containing_instance()
-                        credit_instance.credit = F('credit') + self.dinner_cost_total
-                        credit_instance.save()
             return
         else:
             if self.sign_up_deadline is None:
@@ -287,18 +259,11 @@ class DiningEntry(models.Model):
 
     # Dining list value should never be changed
     dining_list = models.ForeignKey(DiningList, on_delete=models.CASCADE, related_name='diningentry_set')
-    # User value should never be changed
+    # User value should never be changed, is responsible for the money required
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    added_by = models.ForeignKey(User, related_name="added_entry_on_dining", on_delete=models.SET_DEFAULT, blank=True,
-                                 default=None, null=True)
-    has_shopped = models.BooleanField(default=False)
-    has_cooked = models.BooleanField(default=False)
-    has_cleaned = models.BooleanField(default=False)
-    has_paid = models.BooleanField(default=False)
 
-    class Meta:
-        # User should be unique for each dining list
-        unique_together = ("dining_list", "user")
+
+    has_paid = models.BooleanField(default=False)
 
     def save(self, *args, **kwargs):
         """
@@ -360,6 +325,24 @@ class DiningEntry(models.Model):
         """
         return str(self.id)
 
+
+class DiningWork(models.Model):
+    # Define the unique id name to prevent conflicts with DiningEntry
+    w_id = models.AutoField(primary_key=True)
+
+    # Add the stats
+    has_shopped = models.BooleanField(default=False)
+    has_cooked = models.BooleanField(default=False)
+    has_cleaned = models.BooleanField(default=False)
+
+
+class DiningEntryUser(DiningEntry, DiningWork):
+    added_by = models.ForeignKey(User, related_name="added_entry_on_dining", on_delete=models.SET_DEFAULT, blank=True,
+                                 default=None, null=True)
+    # Todo: Check that dining_list and user are unique together, can't be implemented here due to inheritance
+
+class DiningEntryExternal2(DiningEntry):
+    name = models.CharField(max_length=40)
 
 class DiningEntryExternal(models.Model):
     """
@@ -441,3 +424,5 @@ class DiningDayAnnouncements(models.Model):
 
     def __str__(self):
         return self.title
+
+
