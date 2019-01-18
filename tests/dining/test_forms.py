@@ -3,7 +3,7 @@ from datetime import time, date
 from django.test import TestCase
 
 from Dining.forms import CreateSlotForm
-from UserDetails.models import Association, User, UserMemberships
+from UserDetails.models import Association, User, UserMembership
 from Dining.models import DiningList
 
 
@@ -19,10 +19,10 @@ class CreateSlotFormTestCase(TestCase):
         cls.association3 = Association.objects.create(name="Scala")
         cls.user1 = User.objects.create_user('jan')
         # cls.user2 = User.objects.create_user('klaas')
-        cls.user1_assoc1 = UserMemberships.objects.create(related_user=cls.user1, association=cls.association1,
-                                                              is_verified=True)
-        cls.user1_assoc2 = UserMemberships.objects.create(related_user=cls.user1, association=cls.association2,
-                                                              is_verified=True)
+        cls.user1_assoc1 = UserMembership.objects.create(related_user=cls.user1, association=cls.association1,
+                                                         is_verified=True)
+        cls.user1_assoc2 = UserMembership.objects.create(related_user=cls.user1, association=cls.association2,
+                                                         is_verified=True)
         cls.dining_date = date(2018, 12, 26)
 
     def test_creation(self):
@@ -54,9 +54,9 @@ class CreateSlotFormTestCase(TestCase):
         """
         Creating a dining list on a date which is already occupied for your association.
         """
-        # Todo: this test fails
         DiningList.objects.create(date=self.dining_date, association=self.association1)
         form_data = {'dish': '', 'association': self.association1.pk, 'max_diners': 20, 'serve_time': time(18, 00)}
         form = CreateSlotForm(self.user1, self.dining_date, form_data)
-        # self.assertFalse(form.is_valid())
-        # self.assertTrue(form.has_error('association', 'invalid_choice'))
+        self.assertFalse(form.is_valid())
+        self.assertTrue(form.has_error('association', 'invalid_choice'))
+

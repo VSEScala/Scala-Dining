@@ -10,3 +10,8 @@ def euro(value):
     """Format for euro values."""
     v = "{}€{}".format('-' if value < 0 else '', intcomma(abs(value)))
     return mark_safe(v)
+
+@register.filter
+def negate(value):
+    """Negates given numeric value."""
+    return -value

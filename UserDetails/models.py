@@ -1,5 +1,9 @@
 from django.db import models
+from django.db.models import Sum, Q, Value
+from django.db.models.functions import Coalesce
 from django.contrib.auth.models import AbstractUser, Group
+from django.utils.functional import cached_property
+from decimal import Decimal, Context, Inexact
 
 
 class User(AbstractUser):
@@ -7,7 +11,7 @@ class User(AbstractUser):
     def __str__(self):
         name = self.first_name + " " + self.last_name
         if name == " ":
-            return "@-"+self.username
+            return "@"+self.username
         else:
             return name
 
@@ -17,8 +21,18 @@ class User(AbstractUser):
         """
         return self.details.is_verified()
 
-    def get_credit_containing_instance(self):
-        return self.usercredit
+    # Todo: move balance to CreditManagement app
+    @cached_property
+    def balance(self):
+        # Calculate sum of target minus sum of source
+        from CreditManagement.models import Transaction
+        source_sum = Coalesce(Sum('amount', filter=Q(source_user=self)), Value(0))
+        target_sum = Coalesce(Sum('amount', filter=Q(target_user=self)), Value(0))
+        total = Transaction.objects.aggregate(balance=target_sum - source_sum)
+
+        # Convert to two decimals in an exact manner
+        balance = Decimal(total['balance'])
+        return balance.quantize(Decimal('0.01'), context=Context(traps=[Inexact]))
 
     def can_access_back(self):
         is_a_boardmember = (self.groups.count() > 0)
@@ -50,7 +64,7 @@ class UserDetail(models.Model):
         """
         Whether this user is verified as part of a Scala association
         """
-        links = UserMemberships.objects.filter(related_user=self.related_user)
+        links = UserMembership.objects.filter(related_user=self.related_user)
 
         for membership in links:
             if membership.is_verified:
@@ -61,7 +75,7 @@ class UserDetail(models.Model):
         return self.related_user.__str__()
 
 
-class UserMemberships(models.Model):
+class UserMembership(models.Model):
     """
     Stores membership information
     """

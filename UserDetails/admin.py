@@ -1,6 +1,5 @@
 from django.contrib import admin
-from .models import User, UserDetail, UserMemberships, Association, AssociationDetails
-from CreditManagement.models import UserCredit
+from .models import User, UserDetail, UserMembership, Association, AssociationDetails
 from django import forms
 
 
@@ -16,21 +15,12 @@ class UserDetailsLink(admin.StackedInline):
     verbose_name = ""
     verbose_name_plural = "More account info"
 
-class UserCreditsLink(admin.StackedInline):
-    """
-    Show the credits of the user
-    """
-    model = UserCredit
-    readonly_fields = ('credit',)
-    can_delete = False
-    verbose_name = ""
-    verbose_name_plural = "money status"
 
 class AssociationLinks(admin.TabularInline):
     """
     Create the membership information on the User page
     """
-    model = UserMemberships
+    model = UserMembership
     min_num = 1
     extra = 0
 
@@ -64,7 +54,7 @@ class MemberOfFilter(admin.SimpleListFilter):
             return queryset
 
         # Find all members in the UserMemberships model containing the selected association
-        a = UserMemberships.objects.filter(association=self.value()).values_list('related_user_id')
+        a = UserMembership.objects.filter(association=self.value()).values_list('related_user_id')
 
         # Crosslink the given user identities with the given query
         return queryset.filter(pk__in=a)
@@ -85,7 +75,7 @@ class UserAdmin(admin.ModelAdmin):
     list_filter = [MemberOfFilter, ('groups', BoardFilter)]
 
     readonly_fields = ('date_joined', 'last_login',)
-    inlines = [UserDetailsLink, UserCreditsLink, AssociationLinks]
+    inlines = [UserDetailsLink, AssociationLinks]
     fields = ('username', ('first_name', 'last_name'), 'date_joined', 'email')
 
 

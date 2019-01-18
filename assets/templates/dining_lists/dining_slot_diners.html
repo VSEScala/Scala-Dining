@@ -1,9 +1,10 @@
 {% extends 'dining_lists/dining_slot.html' %}
 {% load staticfiles %}
 
+{% load form_extras %}
 
 
-{% block details%}
+{% block details %}
 
     <div class="row col-12 m-0 p-0 p-md-2 py-2 text-size-3">
         <div class="{% if can_delete_all or can_delete_some %} col-10 col-sm-11 {% else %} col-12 {% endif %}">
@@ -18,7 +19,7 @@
             </div>
         </div>
         {% if can_delete_all or can_delete_some %}
-        <div class="col-2 col-sm-1 p-0 text-center"><b>Remove</b></div>
+            <div class="col-2 col-sm-1 p-0 text-center"><b>Remove</b></div>
         {% endif %}
     </div>
 
@@ -26,22 +27,111 @@
         {% csrf_token %}
         {% for entry in entries %}
             <hr class="col-12 m-0">
-            {% include 'dining_lists/snippet_dining_entry.html' %}
+            <!--{% include 'dining_lists/snippet_dining_entry.html' %}-->
+
+            <div class="row col-12 m-0 p-0 p-md-2 py-2 diningentry
+    {% if entry.user == request.user and entry|get_class == "DiningEntry" %}diningentry-user{% endif %}">
+                <div class="{% if can_delete_all or can_delete_some %} col-10 col-sm-11 {% else %} col-12 {% endif %}">
+                    <div class="row pr-2">
+                        {% if not entry.is_external %}
+                            <div class="col-12 col-md-6 p-0">
+                                {{ entry.user }}
+                            </div>
+
+                            <div class="text-size-2 text-center col-12 col-md-6 pr-3">
+                                <div class="row dining-help-row">
+                                    <div class="col-3 p-0">
+                                        <input type="checkbox" id="{{ entry.id }}:shop"
+                                               name="{{ entry.id }}:has_shopped"
+                                                {% if entry.has_shopped %} checked {% endif %}
+                                                {% if not can_edit_stats %} disabled {% endif %}>
+                                        <label for="{{ entry.id }}:shop"
+                                               class="btn btn-checkbox dining_stat dining-shop"></label>
+                                    </div>
+                                    <div class="col-3 p-0">
+                                        <input type="checkbox" id="{{ entry.id }}:cook" name="{{ entry.id }}:has_cooked"
+                                                {% if entry.has_cooked %} checked {% endif %}
+                                                {% if not can_edit_stats %} disabled {% endif %}>
+                                        <label for="{{ entry.id }}:cook"
+                                               class="btn btn-checkbox dining_stat dining-cook"></label>
+                                    </div>
+                                    <div class="col-3 p-0">
+                                        <input type="checkbox" id="{{ entry.id }}:clean"
+                                               name="{{ entry.id }}:has_cleaned"
+                                                {% if entry.has_cleaned %} checked {% endif %}
+                                                {% if not can_edit_stats %} disabled {% endif %}>
+                                        <label for="{{ entry.id }}:clean"
+                                               class="btn btn-checkbox dining_stat dining-cleaned"></label>
+                                    </div>
+                                    <div class="col-3 p-0">
+                                        <input type="checkbox" id="{{ entry.id }}:paid" name="{{ entry.id }}:has_paid"
+                                                {% if entry.has_paid %} checked {% endif %}
+                                                {% if not can_edit_pay %} disabled {% endif %}>
+                                        <label for="{{ entry.id }}:paid"
+                                               class="btn btn-checkbox dining_stat dining-paid"></label>
+                                    </div>
+                                </div>
+                            </div>
+
+                        {% else %}
+                            <div class="col-12 col-md-6 p-0">
+                                {{ entry.external_name }}
+                                <span class="text-size-2 show-md">Added by {{ entry.user }}</span>
+                            </div>
+
+                            <div class="col-12 col-md-6 pr-3">
+                                <div class="row dining-help-row">
+                                    <div class="col-9">
+                                        <span class="hide-md text-size-3">Added by {{ entry.user }}</span>
+                                    </div>
+                                    <div class="offset-md-9 col-3 p-0">
+                                        <input type="checkbox" id="{{ entry.id }}:paid" name="{{ entry.id }}:has_paid"
+                                                {% if entry.has_paid %} checked {% endif %}
+                                                {% if not can_edit_pay %} disabled {% endif %}>
+                                        <label for="{{ entry.id }}:paid"
+                                               class="btn btn-checkbox dining_stat dining-paid"></label>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {# See for if statement ordering: https://docs.djangoproject.com/en/2.1/ref/templates/builtins/#if #}
+                {% if can_delete_all or is_open and can_delete_some and request.user == entry.user %}
+                    {% url 'entry_remove' day=date.day month=date.month year=date.year identifier=dining_list.association.associationdetails.shorthand entry_id=entry.id as remove_url %}
+                    <!-- HACK ALERT HACK ALERT -->
+                    <button type="button" class="col-2 col-sm-1 btn btn-block" id="delete{{ entry.id }}">
+                        <i class="fas fa-trash-alt fa-fw"></i>
+                    </button>
+                    <script>
+                        document.addEventListener("DOMContentLoaded", function (event) {
+                            $("#delete{{ entry.id }}").click(function (e) {
+                                var form = $('<form method="post" action="{{ remove_url }}"></form>');
+                                form.append('{% csrf_token %}');
+                                $("body").append(form);
+                                form.submit();
+                            });
+                        });
+                    </script>
+                {% endif %}
+            </div>
+
         {% endfor %}
         <hr class="col-12 mt-0">
         <div class="row col-12 m-0 p-0 p-md-2 py-2 text-size-3">
             <div class="{% if can_delete_all or can_delete_some %} col-12 col-sm-11 {% else %} col-12 {% endif %} pl-sm-0">
                 <div class="row pr-2">
                     {% if user_can_add_others %}
-                    <div class="col-12 col-sm-6 order-1 order-sm-0 p-0 px-sm-2">
-                        <a class="btn btn-primary btn-block" href="
+                        <div class="col-12 col-sm-6 order-1 order-sm-0 p-0 px-sm-2">
+                            <a class="btn btn-primary btn-block" href="
                             {% url 'entry_add' day=date.day month=date.month year=date.year identifier=dining_list.association.associationdetails.shorthand %}">
-                            + Add Diner</a>
-                    </div>
+                                + Add diner</a>
+                        </div>
                     {% endif %}
                     {% if can_edit_stats or can_edit_pay %}
                         <input type="submit" class="btn btn-block btn-primary col-12 col-sm-6 mt-0 mb-2
-                            {% if not is_open and not user_can_add_others %} offset-sm-6 {% endif %}" value="Update user stats"/>
+                            {% if not is_open and not user_can_add_others %} offset-sm-6 {% endif %}"
+                               value="Update user stats"/>
                     {% endif %}
                 </div>
             </div>

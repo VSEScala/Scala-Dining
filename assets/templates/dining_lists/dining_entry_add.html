@@ -4,30 +4,44 @@
 
 
 {% block details%}
-    <form class="col-12 m-0 mt-2" method="post">
-        {% csrf_token %}
 
-        {% if users %}
-            <div class="mb-5">
-                <h3>Select the user you want to add</h3>
+    {# Display any validation errors that may have occurred #}
+    {{ form.non_field_errors }}
+    {% for field in form.visible_fields %}
+        {% if field.errors %}
+            <div>
+                <p>Field: {{ field.label|lower }}</p>
+                {{ field.errors }}
+            </div>
+        {% endif %}
+    {% endfor %}
 
+
+    {% if users %}
+        <div class="mb-5 col-12">
+            <h3>Select the user you want to add</h3>
+
+            <form method="post">
+                {% csrf_token %}
                 {% for user in users %}
                     <div class="selectors">
                         <input type="radio" id="radio{{ user }}" name="user" value="{{ user.id }}">
-                        <label for="radio{{ user }}" class="col-sm-9 offset-sm-3 btn btn-checkbox">{{ user }}</label>
+                        <label for="radio{{ user }}"
+                               class="col-sm-9 offset-sm-3 btn btn-checkbox">{{ user }}</label>
                     </div>
                 {% endfor %}
                 <div class="col-12 col-sm-9 offset-sm-3 px-0 mt-4">
-                    <input type="submit" name="button_select" value="Add user" class="col-12 btn btn-block btn-primary"/>
+                    <button type="submit" class="col-12 btn btn-block btn-primary">Add user</button>
                 </div>
-            </div>
-            <h3>Find the user</h3>
-        {% else %}
-            <h3>Find or add user</h3>
-        {% endif %}
+            </form>
+        </div>
+        <h3>Find the user</h3>
+    {% else %}
+        <h3>Find or add user</h3>
+    {% endif %}
 
 
-
+    <form id="entrySearchForm" method="get" class="col-12">
         <div class="row m-0">
             {% if error_input %}
                 <div class="col-12 col-sm-9 offset-sm-3">
@@ -37,19 +51,32 @@
             <div class="col-sm-3 col-10 p-0">
                 User
             </div>
-            <input type="search" id="searchbox" name="name" class="col-12 col-sm-9" placeholder="Name" value="{{ search }}">
+            <input type="search" id="searchbox" name="search" class="col-12 col-sm-9" placeholder="Name"
+                   value="{{ search }}">
         </div>
 
         <div class="row m-0 mt-4">
-            <input type="submit" name="button_user" value="Search user"
-                   class="col-12 col-sm-6 mb-2 mb-sm-0 btn btn-block btn-primary"/>
+            <button type="submit" class="col-12 col-sm-6 mb-2 mb-sm-0 btn btn-block btn-primary">Search user</button>
             <div class="col-12 col-sm-6 m-0 p-0 pr-sm-2 order-sm-first">
-                <input type="submit" name="button_external" value="Add as external*"
-                       class="col-12 btn btn-block"/>
+                <button type="button" id="addExternalButton" class="col-12 btn btn-block">Add as external</button>
             </div>
             <i class="col-12 text-size-3">* Required credits are subtracted from your account</i>
         </div>
     </form>
+    <!-- jQuery to implement the add as external button -->
+    <script>
+        document.addEventListener("DOMContentLoaded", function (event) {
+            $("#addExternalButton").click(function (e) {
+                // Update input name
+                $("#searchbox").attr("name", "external_name");
+                // Update form method
+                $("#entrySearchForm").attr("method", "post");
+                // Add CSRF token
+                $("#entrySearchForm").append('{% csrf_token %}');
+                $("#entrySearchForm").submit()
+            });
+        });
+    </script>
     {{ output }}
 
 {% endblock details %}

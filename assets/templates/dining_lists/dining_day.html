@@ -1,8 +1,9 @@
 {% extends 'base.html' %}
 {% load staticfiles %}
 {% load humanize %}
+{% load form_extras %}
 
-{% block title %}Scala Dining {{ date }} {% endblock %}
+{% block title %}Scala Dining {{ date }}{% endblock %}
 
 {% block head %}
     <link rel="stylesheet" href="{% static 'css/dining.css' %}">
@@ -40,7 +41,56 @@
 
     <div class="col-12 row m-0 px-0 py-3">
         {% for slot in dining_lists %}
-            {% include 'dining_lists/snippet_diningslot.html' %}
+            
+            <!--{% include 'dining_lists/snippet_diningslot.html' %}-->
+            
+            <div class="col-12 row mx-0 my-2 {% if interactive %}py-4 slot{% endif %}">
+                <div class="col-2 slot_image"
+                        {% if slot.association %}
+                     style="background-image: url({{ slot.association.associationdetails.image.url }})"
+                        {% endif %}>
+
+                </div>
+                <div class="col-8">
+                    <div class="text-size-5">
+                        {% if slot.claimed_by %}
+                            {{ slot.claimed_by }}
+                        {% else %}
+                            Slot is unclaimed!
+                        {% endif %}</div>
+                    <div class="text-size-4">{{ slot.dish }}</div>
+                    <br>
+                    <div class="text-size-3">{{ slot.dining_entries.count }}/{{ slot.max_diners }} diners - Serve
+                        time: {{ slot.serve_time }}</div>
+                </div>
+
+                {% if interactive %}
+                    {% with slot|can_join_slot:request.user as can_join %}
+                        {% if not slot.is_open and slot|is_on_slot:request.user %}
+                            <div class="col-2 slot-signed"></div>
+                        {% endif %}
+
+                        {% url 'slot_details' day=date.day month=date.month year=date.year identifier=slot.association.associationdetails.shorthand as url %}
+                        <a class="slot-back btn {% if slot|is_on_slot:request.user %} slot-back-active {% endif %}
+                " href={{ url }}></a>
+                        {% if can_join %}
+                            {% url 'entry_add' day=date.day month=date.month year=date.year identifier=slot.association.associationdetails.shorthand as url %}
+                            <form method="post" action="{{ url }}?next={{ request.path_info }}" class="col-2">
+                                {% csrf_token %}
+                                <button type="submit" class="btn-block btn btn-primary slot-signup"
+                                        style="height: 100%;"></button>
+                            </form>
+
+                        {% elif slot|is_on_slot:request.user and slot.is_open %}
+                            {% url 'entry_remove' day=date.day month=date.month year=date.year identifier=slot.association.associationdetails.shorthand as url %}
+                            <form method="post" action="{{ url }}?next={{ request.path_info }}" class="col-2">
+                                {% csrf_token %}
+                                <button type="submit" class="btn-block btn btn-primary slot-unlist" style="height: 100%;"></button>
+                            </form>
+                        {% endif %}
+                    {% endwith %}
+                {% endif %}
+            </div>
         {% endfor %}
     </div>
     {% if can_create_slot %}

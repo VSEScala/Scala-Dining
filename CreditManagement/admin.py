@@ -3,26 +3,26 @@ from CreditManagement.models import *
 from UserDetails.models import Association, UserMemberships
 from datetime import datetime, timedelta
 
+from django.contrib import admin
 
-class TransactionsAdmin(admin.ModelAdmin):
-    """
-    Set up limited view of the user page
-    """
-
-    list_display = ('pk', 'source', 'target', 'amount')
-    list_filter = ['source_association', 'target_association', 'amount', 'date']
+from CreditManagement.models import Transaction
+from UserDetails.models import Association, UserMembership
 
 
-class AssociationCreditAdmin(admin.ModelAdmin):
-    """
-    Set up limited view of the user page
-    """
+class TransactionAdmin(admin.ModelAdmin):
+    list_display = ('moment', 'source_user', 'source_association', 'target_user', 'target_association', 'amount')
+    list_filter = ('moment', 'source_association', 'target_association')
+    fields = (('source_user', 'source_association'), ('target_user', 'target_association'),
+              'amount', 'notes', 'dining_list')
 
-    list_display = ('association', 'credit', 'start_date', 'end_date')
-    fields = ('association', 'credit', 'start_date', 'end_date', 'isPayed')
-    readonly_fields = ('start_date',)
-    list_filter = ['association', 'start_date', 'isPayed',]
-    #'credit', 'association'
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
+admin.site.register(Transaction, TransactionAdmin)
 
 
 class MemberOfFilter(admin.SimpleListFilter):
@@ -93,9 +93,11 @@ class NegativeCreditDateFilter(admin.SimpleListFilter):
         if self.value() is None:
             return queryset
 
+        # Todo: disabled due to switch to transactions
+        return queryset
         # Find all usercredits object that adhere the given date criteria
-        start_date = (datetime.now()-timedelta(days=int(self.value()))).date()
-        results = UserCredit.objects.filter(negative_since__lte=start_date).values_list('pk')
+        # start_date = (datetime.now() - timedelta(days=int(self.value()))).date()
+        # results = UserCredit.objects.filter(negative_since__lte=start_date).values_list('pk')
 
         # Crosslink the given user identities with the given query
         return queryset.filter(pk__in=results)

@@ -41,15 +41,15 @@ class DiningListAdmin(admin.ModelAdmin):
     Set up limited view of the user page
     """
 
-    list_display = ('__str__', 'association', 'diners', 'isAdjustable')
+    list_display = ('__str__', 'association', 'is_adjustable')
     list_filter = ['association', 'date']
 
     #readonly_fields = ('date', 'diners', 'dinner_cost_single')
-    inlines = [DiningListEntryLink, DiningListExternalEntryLink]
+    inlines = [DiningListEntryLink]
     fields = (('date', 'sign_up_deadline', 'days_adjustable'),
               ('dish', 'name'),
               ('claimed_by', 'association', 'purchaser', 'limit_signups_to_association_only'),
-              ('min_diners', 'max_diners', 'diners'),
+              ('min_diners', 'max_diners'),
               ('kitchen_cost', 'dinner_cost_single'),
               ('dinner_cost_total', 'auto_pay', 'dinner_cost_keep_single_constant'),)
 
@@ -79,12 +79,12 @@ class DiningListCommentsAdmin(admin.ModelAdmin):
     Set up limited view of the user page
     """
 
-    list_display = ('__str__', 'association', 'diners')
+    list_display = ('__str__', 'association')
     list_filter = ['association', 'date']
 
-    readonly_fields = ('date', 'claimed_by', 'association', 'diners')
+    readonly_fields = ('date', 'claimed_by', 'association')
     inlines = [DininglistCommentsLink]
-    fields = ('date', ('claimed_by', 'association', 'diners'),)
+    fields = ('date', ('claimed_by', 'association'),)
 
 
 #admin.site.register(UserDiningSettings, DiningSettingsAdmin)
