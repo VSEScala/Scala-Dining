@@ -1,11 +1,7 @@
 from django.shortcuts import render
-from django.utils.decorators import method_decorator
-from django.contrib.auth.decorators import login_required
+from django.views.generic.list import ListView
+from CreditManagement.models import *
 from django.views.generic import View
-from UserDetails.models import User
-from .forms import create_transaction_form
-
-
 from .models import Transaction
 
 
@@ -18,16 +14,8 @@ class TransactionListView(ListView):
         return Transaction.objects.with_user(self.request.user).order_by('-pk')
 
 
-class AssociationTransactionListView():
+class AssociationTransactionListView:
     pass
-
-        user = User.objects.get(username=request.user.username)
-
-        self.context['slot_form'] = create_transaction_form(user)
-
-
-
-        return render(request, self.template, self.context)
 
 
 class TransactionTestView(View):

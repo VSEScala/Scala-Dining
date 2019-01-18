@@ -194,7 +194,8 @@ class DiningList(models.Model):
         """
         if check_for_self:
             # if user is already on list
-            if self.get_entry_user(user.id) is not None:
+
+            if self.internal_dining_entries().filter(user=user).count() > 0:
                 return False
             # if user is signed up to other closed dinging lists
             if len(DiningEntry.objects.filter(dining_list__date=self.date,
@@ -228,7 +229,11 @@ class DiningList(models.Model):
 
     def internal_dining_entries(self):
         """All dining entries that are not for external people."""
-        return self.dining_entries.filter(external_name="")
+        return self.dining_entries.filter(diningentryuser__isnull=False)
+
+    def external_dining_entries(self):
+        """All dining entries that are not for external people."""
+        return self.dining_entries.filter(diningentryexternal__isnull=False)
 
 
 class DiningEntry(models.Model):
@@ -239,10 +244,9 @@ class DiningEntry(models.Model):
     """
 
     # Dining list value should never be changed
-    dining_list = models.ForeignKey(DiningList, on_delete=models.CASCADE, related_name='diningentry_set')
+    dining_list = models.ForeignKey(DiningList, on_delete=models.CASCADE, related_name='dining_entries')
     # User value should never be changed, is responsible for the money required
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="added_entry_on_dining")
-
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
 
     has_paid = models.BooleanField(default=False)
 
@@ -276,18 +280,29 @@ class DiningEntry(models.Model):
                 })
 
             # Validate user is not already subscribed for the dining list
-            if not self.is_external() and self.dining_list.internal_dining_entries().filter(user=self.user).exists():
+            if self.get_internal() and self.dining_list.internal_dining_entries().filter(user=self.user).exists():
                 raise ValidationError(_('This user is already subscribed to the dining list.'))
 
             # (Optionally) validate if user is not already on another dining list
             #if DiningList.objects.filter(date=self.dining_list.date, dining_entries__user=self.user)
-    def EID(self):
-        """
-        External id as used in urls
-        :return:
-        """
-        return str(self.id)
 
+    def get_internal(self):
+        try:
+            return self.diningentryuser
+        except ObjectDoesNotExist:
+            return None
+
+    def get_external(self):
+        try:
+            return self.diningentryexternal
+        except ObjectDoesNotExist:
+            return None
+
+    def name(self):
+        if self.get_external():
+            return self.get_external().name
+        else:
+            return self.user
 
 class DiningWork(models.Model):
     # Define the unique id name to prevent conflicts with DiningEntry
@@ -304,59 +319,9 @@ class DiningEntryUser(DiningEntry, DiningWork):
                                  default=None, null=True)
     # Todo: Check that dining_list and user are unique together, can't be implemented here due to inheritance
 
-class DiningEntryExternal2(DiningEntry):
+
+class DiningEntryExternal(DiningEntry):
     name = models.CharField(max_length=40)
-
-class DiningEntryExternal(models.Model):
-    """
-    Represents an external dining list entry
-
-    Todo: has a lot of code duplication with DiningEntry, needs to be merged somehow
-    """
-    # Dining list value should never be changed
-    dining_list = models.ForeignKey(DiningList, on_delete=models.CASCADE, related_name='diningentryexternal_set')
-    name = models.CharField(max_length=40)
-    # User value should never be changed
-    user = models.ForeignKey(User, verbose_name="added by (has cost responsibility)", on_delete=models.CASCADE)
-    has_paid = models.BooleanField(default=False)
-
-    def save(self, *args, **kwargs):
-        """
-        An enhanced save implementation to ensure effects trickle down to the user stats and dining list.
-        """
-        # If dining list is no longer adjustable, block the save for anything but the has_paid update
-        if not self.dining_list.isAdjustable():
-            if self.id:
-                # Only has_payed changes can go through
-                super().save(update_fields=['has_paid'])
-                return
-            else:
-                raise ValueError("Dining list is locked")
-
-        super().save(*args, **kwargs)
-
-    def delete(self, *args, **kwargs):
-        # Block when dining list is locked
-        if not self.dining_list.isAdjustable():
-            raise ValueError("Dining list is locked")
-        super().delete(*args, **kwargs)
-
-    def clean(self):
-        if not self.dining_list.isAdjustable():
-            if self.has_paid:
-                if not DiningEntry.objects.get(pk=self.pk).has_paid:
-                    return super(DiningEntryExternal, self).clean()
-
-            raise ValidationError({
-                'dining_list': ValidationError('This dining list is already locked', code='invalid'),
-            })
-        return super(DiningEntryExternal, self).clean()
-
-    def __str__(self):
-        return str(self.user) + " " + str(self.dining_list.date)
-
-    def is_external(self):
-        return bool(self.external_name)
 
 
 class DiningComment(models.Model):

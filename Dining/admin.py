@@ -30,7 +30,7 @@ class DiningListExternalEntryLink(admin.StackedInline):
     """
     Create the external entries in the dininglist (taken from a new table)
     """
-    model = DiningEntryExternal2
+    model = DiningEntryExternal
     verbose_name_plural = "External entries"
     fields = (('name', 'user', 'has_paid'),)
     extra = 0
@@ -45,9 +45,9 @@ class DiningListAdmin(admin.ModelAdmin):
     list_filter = ['association', 'date']
 
     #readonly_fields = ('date', 'diners', 'dinner_cost_single')
-    inlines = [DiningListEntryLink]
+    inlines = [DiningListEntryLink, DiningListExternalEntryLink]
     fields = (('date', 'sign_up_deadline', 'days_adjustable'),
-              ('dish', 'name'),
+              ('dish'),
               ('claimed_by', 'association', 'purchaser', 'limit_signups_to_association_only'),
               ('min_diners', 'max_diners'),
               ('kitchen_cost', 'dinner_cost_single'),
@@ -94,5 +94,5 @@ admin.site.register(DiningList, DiningListAdmin)
 #admin.site.register(DiningCommentView)
 admin.site.register(DiningEntry)
 admin.site.register(DiningEntryUser)
-admin.site.register(DiningEntryExternal2)
+admin.site.register(DiningEntryExternal)
 admin.site.register(DiningWork)

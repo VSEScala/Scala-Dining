@@ -7,7 +7,7 @@ from django.core.exceptions import ValidationError, PermissionDenied
 
 from CreditManagement.forms import NewTransactionForm
 from UserDetails.models import Association, User
-from .models import DiningList, DiningEntry
+from .models import DiningList, DiningEntry, DiningEntryUser
 from General.util import SelectWithDisabled
 from CreditManagement.models import Transaction
 
@@ -110,8 +110,8 @@ class DiningEntryCreateForm(forms.ModelForm):
     user = forms.ModelChoiceField(queryset=None)
 
     class Meta():
-        model = DiningEntry
-        fields = ['dining_list', 'user', 'added_by', 'external_name']
+        model = DiningEntryUser
+        fields = ['dining_list', 'user']
 
     def __init__(self, adder, dining_list, data=None, **kwargs):
         """
@@ -121,7 +121,6 @@ class DiningEntryCreateForm(forms.ModelForm):
             # User defaults to adder if not set
             data = data.copy()
             data.setdefault('user', adder.pk)
-            data.setdefault('added_by', adder.pk)
             data.setdefault('dining_list', dining_list.pk)
 
         super().__init__(**kwargs, data=data)

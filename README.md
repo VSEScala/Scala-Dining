@@ -45,3 +45,4 @@ To get a test coverage report:
 ## Todo
 
 * Make app names lowercase to conform to Python style guide ([PEP8](https://www.python.org/dev/peps/pep-0008/)).
+* Fix add external user
