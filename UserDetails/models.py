@@ -25,13 +25,10 @@ class User(AbstractUser):
     @cached_property
     def balance(self):
         # Calculate sum of target minus sum of source
-        from CreditManagement.models import Transaction
-        source_sum = Coalesce(Sum('amount', filter=Q(source_user=self)), Value(0))
-        target_sum = Coalesce(Sum('amount', filter=Q(target_user=self)), Value(0))
-        total = Transaction.objects.aggregate(balance=target_sum - source_sum)
+        from CreditManagement.models import AbstractTransaction
+        balance = AbstractTransaction.get_user_credit(self)
 
         # Convert to two decimals in an exact manner
-        balance = Decimal(total['balance'])
         return balance.quantize(Decimal('0.01'), context=Context(traps=[Inexact]))
 
     def can_access_back(self):

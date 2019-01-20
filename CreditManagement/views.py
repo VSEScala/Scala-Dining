@@ -21,13 +21,8 @@ class AssociationTransactionListView:
 class TransactionTestView(View):
 
     def get(self, request, user=None):
-        #content = AbstractTransaction.get_all_credits(user=user)
-        #result = "These are all objects: <BR>"
-
-        result = AbstractTransaction.get_user_credit(user=user)
-
-        return render(request, "test.html", {'text': result})
-
+        content = AbstractTransaction.get_all_transactions(user=user)
+        result = "These are all objects: <BR>"
 
         if content is not None:
             for i in content:

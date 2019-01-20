@@ -116,10 +116,22 @@ class UserCreditAdmin(admin.ModelAdmin):
     is_verified.short_description = 'User verified?'
 
 
+class PendingDiningTransactionAdmin(admin.ModelAdmin):
+    list_display = ('order_moment', 'source_user', 'amount')
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
 #admin.site.register(UserCredit, UserCreditAdmin)
 #admin.site.register(Transaction, TransactionsAdmin)
 #admin.site.register(AssociationCredit, AssociationCreditAdmin)
 admin.site.register(FixedTransaction)
 admin.site.register(PendingTransaction)
-admin.site.register(PendingDiningTransaction)
+admin.site.register(PendingDiningTransaction, PendingDiningTransactionAdmin)
 admin.site.register(PendingDiningListTracker)
