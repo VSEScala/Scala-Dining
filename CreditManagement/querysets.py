@@ -1,10 +1,9 @@
 from django.db import models
-from django.db.models import Q, F, Value, Sum, OuterRef, Subquery, IntegerField, CharField, DecimalField, ExpressionWrapper, DurationField
+from django.db.models import Q, F, Value, Sum, OuterRef, Subquery, ExpressionWrapper
 from django.db.models.functions import Coalesce
 
 from Dining.models import DiningEntry
 from UserDetails.models import User, Association
-import datetime
 
 
 class AbstractTransactionQuerySet(models.QuerySet):
@@ -155,7 +154,7 @@ class DiningTransactionQuerySet(AbstractTransactionQuerySet):
         return self.annotate_association_balance(Association.objects.all())
 
     def annotate_association_balance(self, associations):
-        return associations.annotate(balance=Value(0.00, output_field=DecimalField()))
+        return associations.annotate(balance=Value(0.00, output_field=models.DecimalField()))
 
     @staticmethod
     def __filter_entries__(entries, user=None, dining_list=None):
@@ -202,17 +201,17 @@ class DiningTransactionQuerySet(AbstractTransactionQuerySet):
         entries = entries.values('dining_list', 'source_user')
 
         # annotate empty association object
-        entries = entries.annotate(source_association=Value(None, output_field=IntegerField()))
+        entries = entries.annotate(source_association=Value(None, output_field=models.IntegerField()))
 
         # compute the total costs
         entries = entries.annotate(amount=Sum('dining_list__kitchen_cost'))
 
         # add the residual data
-        entries = entries.annotate(target_user=Value(None, output_field=IntegerField()))
-        entries = entries.annotate(target_association=Value(None, output_field=IntegerField()))
+        entries = entries.annotate(target_user=Value(None, output_field=models.IntegerField()))
+        entries = entries.annotate(target_association=Value(None, output_field=models.IntegerField()))
         entries = entries.annotate(order_moment=F('dining_list__sign_up_deadline'))
         entries = entries.annotate(confirm_moment=F('dining_list__sign_up_deadline'))
-        entries = entries.annotate(description=Value(cls.dining_identifier, output_field=CharField()))
+        entries = entries.annotate(description=Value(cls.dining_identifier, output_field=models.CharField()))
 
         # Treat the queryset as a queryset  from the given class
         from CreditManagement.models import PendingDiningTransaction

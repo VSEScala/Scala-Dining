@@ -9,7 +9,6 @@ from CreditManagement.forms import NewTransactionForm
 from UserDetails.models import Association, User
 from .models import DiningList, DiningEntry, DiningEntryUser
 from General.util import SelectWithDisabled
-from CreditManagement.models import Transaction
 
 
 def _clean_form(form):

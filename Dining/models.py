@@ -1,19 +1,15 @@
-from datetime import datetime, time, timedelta
-from django.db import models, transaction
-from django.db.models import F, Sum
-from UserDetails.models import User, Association
-from django.contrib.contenttypes.models import ContentType
-from django.core.exceptions import ValidationError, ObjectDoesNotExist
-from decimal import Decimal
+from django.db import models
+from django.db.models import Sum
 
 from django.conf import settings
-from django.contrib.contenttypes.models import ContentType
-from django.core.exceptions import ValidationError
+from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.core.validators import MinValueValidator
 from django.utils import timezone
 from django.utils.translation import gettext as _
 
-from UserDetails.models import Association
+from datetime import datetime, timedelta
+from decimal import Decimal
+from UserDetails.models import User, Association
 
 
 class UserDiningSettings(models.Model):
