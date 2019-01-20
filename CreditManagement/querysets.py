@@ -1,9 +1,10 @@
 from django.db import models
-from django.db.models import Q, F, Value, Sum, OuterRef, Subquery, IntegerField, CharField, DecimalField
+from django.db.models import Q, F, Value, Sum, OuterRef, Subquery, IntegerField, CharField, DecimalField, ExpressionWrapper, DurationField
 from django.db.models.functions import Coalesce
 
 from Dining.models import DiningEntry
 from UserDetails.models import User, Association
+import datetime
 
 
 class AbstractTransactionQuerySet(models.QuerySet):
@@ -156,28 +157,45 @@ class DiningTransactionQuerySet(AbstractTransactionQuerySet):
     def annotate_association_balance(self, associations):
         return associations.annotate(balance=Value(0.00, output_field=DecimalField()))
 
+    @staticmethod
+    def __filter_entries__(entries, user=None, dining_list=None):
+        """
+        Filters the Dining Entries on the given users and/or dining lists
+        :param entries: The dining entries model
+        :param user: The user(s) that needs to be kept in (can be single instance or query)
+        :param dining_list: The dining_list to be kept in (can be single instance or query)
+        :return: the filtered entries Query
+        """
+        if user:
+            if type(user) is models.QuerySet:
+                # Filter for the given set of users
+                entries = entries.filter(user__id__in=user)
+            else:
+                # Filter for the given user
+                entries = entries.filter(user=user)
+
+        if dining_list:
+            if type(dining_list) is models.QuerySet:
+                # Filter for the given set of users
+                entries = entries.filter(dining_list__id__in=dining_list)
+            else:
+                # Filter for the given user
+                entries = entries.filter(dining_list=dining_list)
+
+        return entries
 
     @classmethod
-    def generate_queryset(cls, user=None, users=None):
+    def generate_queryset(cls, user=None, dining_list=None):
         """
         Generates a query for all the Pending Dining Transactions, these can not be taken directly from the Database
         as storing it has been done elsewhere (indirectly through DiningEntry)
-        :param user: A single user to filter on (more efficient if done here), can not be used if users is set
-        :param users: A list of users to filter on (more efficient if done here), can not be used if user is set
+        :param user: The user(s) that needs to be part of the set. Can be single instance or Query of instances
+        :param dining_list: The dining list(s) that needs to be part of the set. Can be single instance or Query of instances
         :return: The queryset of PendingDiningTransactions
         """
-        if user and users:
-            raise ValueError("Received both user and users with a value, expected only one of them")
-
         # Select all entries in the pending dininglists
         entries = DiningEntry.objects.filter(dining_list__pendingdininglisttracker__isnull=False)
-
-        if user:
-            # Filter for the given user
-            entries = entries.filter(user__id=user)
-        elif users:
-            # Filter for the given set of users
-            entries = entries.filter(user__id__in=users)
+        entries = DiningTransactionQuerySet.__filter_entries__(entries, user=user, dining_list=dining_list)
 
         # Rename the user parameter and merge contents (user entries on each dining list)
         entries = entries.annotate(source_user=F('user'))
@@ -220,3 +238,31 @@ class DiningTransactionQuerySet(AbstractTransactionQuerySet):
         new_qs.query.combined_queries = tuple([qs.query])
         new_qs.query.combinator = 'union'
         return new_qs
+
+
+class PendingDiningTrackerQuerySet(models.QuerySet):
+
+    def filter_lists_expired(self):
+        """
+        Filt the trackenQuery for lists that have expired (i.e. are no longer adjustable)
+        :return:
+        """
+        from django.utils import timezone
+        return self.filter_lists_for_date(timezone.now().date())
+
+    def filter_lists_for_date(self, date):
+        """
+        Returns all lists which have an editable state older than the given date
+        :param date: The date that needs to be checked
+        :return: A QuerySet consisting of Trackers linking to lists that are no longer editable on the given date
+        """
+        return self.annotate(
+            # Wrap in an Expression to allow additons between variables
+            lockdate=ExpressionWrapper(
+                # Add the dining list date and the adjustable parameter
+                F('dining_list__date') + F('dining_list__adjustable_duration'),
+                output_field=models.DateField()
+            )).filter(lockdate__lt=date)
+
+
+

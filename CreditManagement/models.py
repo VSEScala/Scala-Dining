@@ -2,14 +2,13 @@ from Dining.models import *
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
-from django.db import models
-from django.db.models import Q, Value, Sum, Subquery, IntegerField, CharField
-from django.db.models.functions import Coalesce
+from django.db import models, transaction
+from django.db.models import Q
 from django.utils.translation import gettext as _
 
 from Dining.models import DiningList
 from UserDetails.models import Association, User
-from .querysets import TransactionQuerySet, DiningTransactionQuerySet
+from .querysets import TransactionQuerySet, DiningTransactionQuerySet, PendingDiningTrackerQuerySet
 
 
 class TransactionManager(models.Manager):
@@ -123,6 +122,11 @@ class AssociationWithCredit(Association):
         return -121
 
 
+"""""""""""""""""""""""""""""""""""""""""""""
+New implementation of the transaction models
+"""""""""""""""""""""""""""""""""""""""""""""
+
+
 class AbstractTransaction(models.Model):
     """
     Abstract model defining the Transaction models, can retrieve information from all its children
@@ -134,8 +138,8 @@ class AbstractTransaction(models.Model):
     target_user = models.ForeignKey(User, related_name="%(class)s_transaction_target", on_delete=models.SET_NULL, null=True, blank=True, verbose_name="The user receiving the money")
     target_association = models.ForeignKey(Association, related_name="%(class)s_transaction_target", on_delete=models.SET_NULL, null=True, blank=True, verbose_name="The association recieving the money")
 
-    order_moment = models.DateTimeField(auto_now_add=True)
-    confirm_moment = models.DateTimeField()
+    order_moment = models.DateTimeField(default=datetime.now)
+    confirm_moment = models.DateTimeField(default=datetime.now)
     description = models.CharField(default="", blank=True, max_length=50)
 
     class Meta:
@@ -221,6 +225,7 @@ class FixedTransaction(AbstractTransaction):
     """
     objects = TransactionQuerySet.as_manager()
 
+
     @classmethod
     def get_all_transactions(cls, user=None, association=None):
         """
@@ -247,13 +252,18 @@ class FixedTransaction(AbstractTransaction):
         """
         return cls.objects.compute_association_balance(association)
 
+
 class AbstractPendingTransaction(AbstractTransaction):
     """
     Abstract model for the Pending Transactions
     """
+
     @classmethod
     def get_children(cls):
         return [PendingTransaction, PendingDiningTransaction]
+
+    def finalise(self):
+        raise NotImplementedError()
 
     class Meta:
         abstract = True
@@ -263,7 +273,23 @@ class PendingTransaction(AbstractPendingTransaction):
     """
     Model for the general Pending Transactions
     """
+
     objects = TransactionQuerySet.as_manager()
+
+    def finalise(self):
+        """
+        Moves the pending transaction over as a fixed transaction
+        """
+        # Create the fixed database entry
+        fixed_transaction = FixedTransaction(source_user=self.source_user, source_association=self.source_association,
+                                             target_user=self.target_user, target_association=self.target_association,
+                                             amount=self.amount,
+                                             order_moment=self.order_moment, description=self.description)
+        # 'Move' the transaction to the other database
+        with transaction.atomic():
+            self.delete()
+            fixed_transaction.save()
+
 
     @classmethod
     def get_all_transactions(cls, user=None, association=None):
@@ -297,8 +323,8 @@ class PendingDiningTransactionManager(models.Manager):
     Manager for the PendingDiningTransaction Model
     Created specially due to the different behaviour of the model (different database and model use)
     """
-    def get_queryset(self, user=None, users=None):
-        return DiningTransactionQuerySet.generate_queryset(user=user, users=users)
+    def get_queryset(self, user=None, dining_list=None):
+        return DiningTransactionQuerySet.generate_queryset(user=user, dining_list=dining_list)
 
 
 class PendingDiningTransaction(AbstractPendingTransaction):
@@ -306,6 +332,7 @@ class PendingDiningTransaction(AbstractPendingTransaction):
     Model for the Pending Dining Transactions
     Does NOT create a database, information is obtained elsewhere as specified in the manager/queryset
     """
+
     objects = PendingDiningTransactionManager()
 
     class Meta:
@@ -313,13 +340,10 @@ class PendingDiningTransaction(AbstractPendingTransaction):
 
     @classmethod
     def get_all_transactions(cls, user=None, association=None):
-        if user:
-            if type(user) is models.QuerySet:
-                return DiningTransactionQuerySet.generate_queryset(users=user)
-            else:
-                return DiningTransactionQuerySet.generate_queryset(user=user)
-
-        return DiningTransactionQuerySet.generate_queryset()
+        if association:
+            # Return none, no associations can be involved in dining lists
+            return cls.objects.none()
+        return cls.objects.get_queryset(user=user)
 
     @classmethod
     def get_user_credit(cls, user):
@@ -334,7 +358,14 @@ class PendingDiningTransaction(AbstractPendingTransaction):
         """
         return Decimal(0.00)
 
+    def finalise(self):
+        raise NotImplementedError("PendingDiningTransactions are read-only")
 
+    def __get_fixedform__(self):
+        return FixedTransaction(source_user=self.source_user, source_association=self.source_association,
+                                target_user=self.target_user, target_association=self.target_association,
+                                amount=self.amount,
+                                order_moment=self.order_moment, description=self.description)
 
 
 class PendingDiningListTracker(models.Model):
@@ -344,3 +375,33 @@ class PendingDiningListTracker(models.Model):
     """
     dining_list = models.OneToOneField(DiningList, on_delete=models.CASCADE)
 
+    objects = PendingDiningTrackerQuerySet.as_manager()
+
+    def finalise(self):
+        # Generate the initial list
+        transactions = []
+
+        # Get all corresponding dining transactions
+        # loop over all items and make the transactions
+        for dining_transaction in PendingDiningTransaction.objects.get_queryset(dining_list=self.dining_list):
+            transactions.append(dining_transaction.__get_fixedform__())
+
+        # Save the changes
+        with transaction.atomic():
+            for fixed_transaction in transactions:
+                print("A5")
+                print(fixed_transaction)
+                fixed_transaction.save()
+            self.delete()
+
+    @classmethod
+    def finalise_to_date(cls, date):
+        """
+        Finalises all pending dining list transactions till the given date
+        :param date: The date all tracked dining lists need to be finalised
+        """
+        query = cls.objects.get_stuff()
+
+
+        # finalise the results
+        return query

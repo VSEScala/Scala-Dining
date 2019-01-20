@@ -1,4 +1,4 @@
-from datetime import datetime, time
+from datetime import datetime, time, timedelta
 from django.db import models, transaction
 from django.db.models import F, Sum
 from UserDetails.models import User, Association
@@ -48,8 +48,8 @@ class DiningList(models.Model):
 
     dish = models.CharField(default="", max_length=30, blank=True, help_text="The dish made")
     # The days adjustable is implemented to prevent adjustment in credits or aid due to a deletion of a user account.
-    days_adjustable = models.IntegerField(
-        default=2,
+    adjustable_duration = models.DurationField(
+        default=timedelta(days=2),
         help_text="The amount of days after occurance that one can add/remove users etc")
     claimed_by = models.ForeignKey(settings.AUTH_USER_MODEL, blank=True, related_name="dininglist_claimer", null=True,
                                    on_delete=models.SET_NULL)
@@ -163,8 +163,8 @@ class DiningList(models.Model):
         """
         Whether the dining list has not expired it's adjustable date and can therefore not be modified anymore
         """
-        days_since_date = (timezone.now().date() - self.date).days
-        return days_since_date <= self.days_adjustable
+        days_since_date = (timezone.now().date() - self.date)
+        return days_since_date <= self.adjustable_duration
 
     def clean(self):
         # Validate dining list can be changed

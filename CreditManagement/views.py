@@ -21,6 +21,19 @@ class AssociationTransactionListView:
 class TransactionTestView(View):
 
     def get(self, request, user=None):
+        result = "These are all objects: <BR>"
+
+
+        content = PendingDiningListTracker.finalise_to_date(None)
+        if content is not None:
+            for i in content:
+                result += "{0}: {1} {2}".format(i.dining_list.date, i.lockdate, i.dining_list.days_adjustable)
+                #result += "{0}".format(i.amount)
+                result+= "<BR>"
+
+        return render(request, "test.html", {'text': result})
+
+
         content = AbstractTransaction.get_all_transactions(user=user)
         result = "These are all objects: <BR>"
 

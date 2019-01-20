@@ -58,6 +58,7 @@ class MemberOfFilter(admin.SimpleListFilter):
         # Crosslink the given user identities with the given query
         return queryset.filter(user__pk__in=a)
 
+
 class NegativeCreditDateFilter(admin.SimpleListFilter):
     """
     A filter that filters users on the time they've had a negative balance.
@@ -116,6 +117,32 @@ class UserCreditAdmin(admin.ModelAdmin):
     is_verified.short_description = 'User verified?'
 
 
+class FixedTransactionAdmin(admin.ModelAdmin):
+    list_display = ('order_moment', 'source_user', 'source_association',
+                    'amount', 'target_user', 'target_association')
+
+
+class PendingTransactionAdmin(admin.ModelAdmin):
+    list_display = ('order_moment', 'source_user', 'source_association',
+                    'amount', 'target_user', 'target_association')
+
+    actions = ['finalise']
+
+    def finalise(self, request, queryset):
+        for obj in queryset:
+            obj.finalise()
+
+
+class PendingDiningListTrackerAdmin(admin.ModelAdmin):
+    list_display = ('dining_list',)
+
+    actions = ['finalise']
+
+    def finalise(self, request, queryset):
+        for obj in queryset:
+            obj.finalise()
+
+
 class PendingDiningTransactionAdmin(admin.ModelAdmin):
     list_display = ('order_moment', 'source_user', 'amount')
 
@@ -128,10 +155,12 @@ class PendingDiningTransactionAdmin(admin.ModelAdmin):
     def has_delete_permission(self, request, obj=None):
         return False
 
-#admin.site.register(UserCredit, UserCreditAdmin)
-#admin.site.register(Transaction, TransactionsAdmin)
-#admin.site.register(AssociationCredit, AssociationCreditAdmin)
-admin.site.register(FixedTransaction)
-admin.site.register(PendingTransaction)
+# admin.site.register(UserCredit, UserCreditAdmin)
+# admin.site.register(Transaction, TransactionsAdmin)
+# admin.site.register(AssociationCredit, AssociationCreditAdmin)
+
+
+admin.site.register(FixedTransaction, FixedTransactionAdmin)
+admin.site.register(PendingTransaction, PendingTransactionAdmin)
 admin.site.register(PendingDiningTransaction, PendingDiningTransactionAdmin)
-admin.site.register(PendingDiningListTracker)
+admin.site.register(PendingDiningListTracker, PendingDiningListTrackerAdmin)
