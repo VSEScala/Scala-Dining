@@ -46,7 +46,7 @@ class DiningListAdmin(admin.ModelAdmin):
 
     #readonly_fields = ('date', 'diners', 'dinner_cost_single')
     inlines = [DiningListEntryLink, DiningListExternalEntryLink]
-    fields = (('date', 'sign_up_deadline', 'days_adjustable'),
+    fields = (('date', 'sign_up_deadline', 'adjustable_duration'),
               ('dish'),
               ('claimed_by', 'association', 'purchaser', 'limit_signups_to_association_only'),
               ('min_diners', 'max_diners'),

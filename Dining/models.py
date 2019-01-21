@@ -7,7 +7,7 @@ from django.core.validators import MinValueValidator
 from django.utils import timezone
 from django.utils.translation import gettext as _
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, time
 from decimal import Decimal
 from UserDetails.models import User, Association
 
@@ -46,7 +46,7 @@ class DiningList(models.Model):
     # The days adjustable is implemented to prevent adjustment in credits or aid due to a deletion of a user account.
     adjustable_duration = models.DurationField(
         default=timedelta(days=2),
-        help_text="The amount of days after occurance that one can add/remove users etc")
+        help_text="The amount of time the dining list can be adjusted after its date")
     claimed_by = models.ForeignKey(settings.AUTH_USER_MODEL, blank=True, related_name="dininglist_claimer", null=True,
                                    on_delete=models.SET_NULL)
     # Association is needed for kitchen cost transactions and url calculation and is therefore required and may not be
@@ -159,8 +159,8 @@ class DiningList(models.Model):
         """
         Whether the dining list has not expired it's adjustable date and can therefore not be modified anymore
         """
-        days_since_date = (timezone.now().date() - self.date)
-        return days_since_date <= self.adjustable_duration
+        days_since_date = (self.date + self.adjustable_duration)
+        return True# days_since_date >= timezone.now().date()
 
     def clean(self):
         # Validate dining list can be changed
@@ -264,10 +264,11 @@ class DiningEntry(models.Model):
         """
         if not self.pk:
             # Validate dining list open
-            if not self.dining_list.is_open():
-                raise ValidationError({
-                    'dining_list': ValidationError(_("Dining list is closed."), code='closed'),
-                })
+            # REDACTED: blocks owners from adding entries
+            # if not self.dining_list.is_open():
+            #     raise ValidationError({
+            #         'dining_list': ValidationError(_("Dining list is closed."), code='closed'),
+            #     })
 
             # Validate room available in dining list
             if self.dining_list.dining_entries.count() >= self.dining_list.max_diners:
