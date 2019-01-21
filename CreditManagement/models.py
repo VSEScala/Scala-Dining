@@ -165,8 +165,10 @@ class AbstractTransaction(models.Model):
         """
 
         result = None
+        # Get all child classes
         children = cls.get_children()
 
+        # Loop over all children, get their respective transaction queries, union the transaction queries
         for child in children:
             if result is None:
                 result = child.get_all_transactions(user, association)
@@ -201,21 +203,8 @@ class AbstractTransaction(models.Model):
         Returns a list of all users with their respective credits
         :return: The current credits of all givn users
         """
-
+        # Todo, compute this
         raise NotImplementedError
-
-        result = Decimal(0.00)
-        children = cls.get_children()
-
-        # Loop over all children and get the credits
-        # It is not possible to summarize get_all_credits due to the union method (it blocks it)
-        for child in children:
-            child_value = child.compute_user_balance(user)
-
-            if child_value:
-                result += child_value
-
-        return result
 
 
 class FixedTransaction(AbstractTransaction):
@@ -400,8 +389,6 @@ class PendingDiningListTracker(models.Model):
         Finalises all pending dining list transactions till the given date
         :param date: The date all tracked dining lists need to be finalised
         """
-        query = cls.objects.get_stuff()
-
-
-        # finalise the results
-        return query
+        query = cls.objects.filter_lists_for_date(date)
+        for pendingdininglist_tracker in query:
+            pendingdininglist_tracker.finalise()
