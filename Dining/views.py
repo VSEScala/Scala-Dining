@@ -453,7 +453,7 @@ class SlotAllergyView(LoginRequiredMixin, SlotMixin, TemplateView):
         from django.db.models import CharField
         from django.db.models.functions import Length
         CharField.register_lookup(Length)
-        context['allergy_entries'] = self.dining_list.dining_entries.filter(
+        context['allergy_entries'] = self.dining_list.internal_dining_entries().filter(
             user__userdiningsettings__allergies__length__gt=1)
 
         return context
