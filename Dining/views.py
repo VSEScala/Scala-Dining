@@ -242,14 +242,12 @@ class EntryAddView(LoginRequiredMixin, DiningListMixin, TemplateView):
             # Todo: Check if user is on multiple dining lists today, then show warning
             return HttpResponseRedirect(self.reverse('slot_list'))
 
-
         # Render form otherwise
         context['form'] = form
         return self.render_to_response(context)
 
 
 class EntryRemoveView(LoginRequiredMixin, DiningListMixin, View):
-
     http_method_names = ['post']
 
     def post(self, request, *args, entry_id=None, **kwargs):
@@ -310,15 +308,18 @@ class SlotListView(LoginRequiredMixin, SlotMixin, TemplateView):
         context = super().get_context_data(**kwargs)
         context['tab'] = "list"
 
-        context['can_delete_some'] = False
         context['entries'] = self.dining_list.dining_entries.all()
 
+        # determine whether the user has external entries added that he/she can remove until closing time
+        context['can_delete_some'] = \
+            self.dining_list.external_dining_entries().filter(user=self.request.user).count() > 0
         context['can_delete_some'] = context['can_delete_some'] * context['is_open']
+
         context['can_edit_stats'] = (self.request.user == self.dining_list.claimed_by)
         context['can_delete_all'] = (self.request.user == self.dining_list.claimed_by)
         purchaser = self.dining_list.purchaser
         context['can_edit_pay'] = (self.request.user == purchaser or
-                                        (purchaser is None and self.request.user == self.dining_list.claimed_by))
+                                   (purchaser is None and self.request.user == self.dining_list.claimed_by))
         return context
 
     def post(self, request, *args, **kwargs):
