@@ -6,6 +6,9 @@
         <div class="row pr-2">
             <div class="col-12 col-md-6 p-0">
                 {{ entry.name }}
+                {% if entry.get_external %}
+                    <span class="small font-italic">added by {{ entry.user }}</span>
+                {% endif %}
             </div>
 
             <div class="text-center col-12 col-md-6 pr-3 btn-group btn-group-toggle" data-toggle="buttons">

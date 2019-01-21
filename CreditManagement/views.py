@@ -6,17 +6,20 @@ from .models import Transaction
 
 
 class TransactionListView(ListView):
-    template_name = "credit_management/transaction_list.html"
+    template_name = "credit_management/history_credits.html"
     paginate_by = 10
     context_object_name = 'transactions'
 
     def get_queryset(self):
-        return Transaction.objects.with_user(self.request.user).order_by('-pk')
+        return AbstractTransaction.get_all_transactions(user=self.request.user).order_by('-pk')
 
 
 class AssociationTransactionListView:
     pass
 
+
+class UserTransactionListView(ListView):
+    pass
 
 class TransactionTestView(View):
 

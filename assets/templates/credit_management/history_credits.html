@@ -1,34 +1,34 @@
 {% extends 'base.html' %}
 {% load staticfiles %}
 
-{% block title %}{{ request.user }} - Dining history {% endblock %}
+{% block title %}{{ request.user }} - Transaction history {% endblock %}
 
 {% block content %}
     <div class="row col-12 p-0 m-0 text-size-3">
         <div class="row col-12 m-0 p-0 p-md-2 py-2 font-bold">
-            <div class="col-4 col-sm-2 p-0">
+            <div class="col-2 col-sm-2 p-0">
                 Date
             </div>
-            <div class="col-8 col-sm-3 p-0">
-                Dish
+            <div class="col-1 col-sm-3 p-0">
+
             </div>
             <div class="col-4 order-1 order-sm-0 col-sm-2 p-0">
-                Claimed by
+                Name
             </div>
-            <div class="col-4 col-sm-2 p-0">
-                Association
+            <div class="col-2 col-sm-2 p-0">
+                Amount
             </div>
-            <div class="d-none d-sm-flex col-sm-1 p-0">
-                Diners
+            <div class="col-3 p-0">
+                Description
             </div>
         </div>
-        {% for entry in dining_entries_select %}
+        {% for transaction in transactions %}
             <hr class="col-12 m-0">
-            {% include 'accounts/snippet_history_dininglist.html' %}
+            {% include 'credit_management/snippet_credit_history.html' %}
         {% endfor %}
         <br><br>
 
-        {% url 'history_lists' as url %}
+        {% url 'transaction_list' as url %}
         {% include 'snippets/snippet_pagination.html' %}
     </div>
 

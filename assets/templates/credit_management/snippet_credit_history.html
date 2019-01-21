@@ -1,0 +1,32 @@
+{% load credit_tags %}
+{% load humanize %}
+
+<div class="row col-12 m-0 p-0 p-md-2 py-2">
+    <div class="col-2 p-0">
+        {{ transaction.order_moment|naturaltime }}
+    </div>
+    <div class="col-1 p-0">
+        {% if transaction.source_user == user %}
+            From
+        {% else %}
+            To
+        {% endif %}
+    </div>
+    <div class="col-4 p-0">
+        {% if transaction.source == user %}
+            {{ transaction.target }}
+        {% else %}
+            {{ transaction.source }}
+        {% endif %}
+    </div>
+    <div class="col-2 p-0">
+        {% if transaction.source_user == user %}
+            <span class="text-danger">{{ transaction.amount|negate|euro }}</span>
+        {% else %}
+            <span class="text-success">+{{ transaction.amount|euro }}</span>
+        {% endif %}
+    </div>
+    <div class="col-3 p-0">
+        {{ transaction.description }}
+    </div>
+</div>

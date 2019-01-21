@@ -206,6 +206,12 @@ class AbstractTransaction(models.Model):
         # Todo, compute this
         raise NotImplementedError
 
+    def source(self):
+        return self.source_association if self.source_association else self.source_user
+
+    def target(self):
+            return self.target_association if self.target_association else self.target_user
+
 
 class FixedTransaction(AbstractTransaction):
     """
