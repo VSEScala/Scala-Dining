@@ -171,3 +171,4 @@ Socrates/config.py
 *.iml
 */migrations/*
 !*/migrations/__init__.py
+!*/migrations/*_view.py

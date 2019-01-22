@@ -8,6 +8,7 @@ from django.utils.translation import gettext as _
 
 from Dining.models import DiningList
 from UserDetails.models import Association, User
+
 from .querysets import TransactionQuerySet, DiningTransactionQuerySet, PendingDiningTrackerQuerySet
 
 
@@ -398,3 +399,28 @@ class PendingDiningListTracker(models.Model):
         query = cls.objects.filter_lists_for_date(date)
         for pendingdininglist_tracker in query:
             pendingdininglist_tracker.finalise()
+
+
+"""""""""""""""""""""""""""""""""""""""""""""
+New implemented User and Association Views
+"""""""""""""""""""""""""""""""""""""""""""""
+
+
+class UserCredit(models.Model):
+    """
+    User credit model, implemented as Database VIEW (see migrations/usercredit_view.py)
+    """
+    user = models.OneToOneField(User, primary_key=True,
+                                  db_column='id',
+                                on_delete=models.DO_NOTHING)
+    balance = models.DecimalField(blank=True, null=True, db_column='balance', decimal_places=2, max_digits=6)
+
+    @classmethod
+    def view(cls):
+        '''
+        This method returns the SQL string that creates the view
+        '''
+
+        qs = FixedTransaction.objects.annotate_user_balance(). \
+            values('id', 'balance')
+        return str(qs.query)

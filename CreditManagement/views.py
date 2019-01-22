@@ -24,26 +24,27 @@ class UserTransactionListView(ListView):
 class TransactionTestView(View):
 
     def get(self, request, user=None):
-        result = "These are all objects: <BR>"
 
+        result = self.do_stuff(id=user)
 
-        content = PendingDiningListTracker.finalise_to_date(None)
-        if content is not None:
-            for i in content:
-                result += "{0}: {1} {2}".format(i.dining_list.date, i.lockdate, i.dining_list.days_adjustable)
-                #result += "{0}".format(i.amount)
-                result+= "<BR>"
-
+        #result = self.annotate_users()
         return render(request, "test.html", {'text': result})
 
+    def do_stuff(self, id=0):
+        content = User.objects.get(id=7)
+        content = content.usercredit
+        result = str(content.balance)
 
-        content = AbstractTransaction.get_all_transactions(user=user)
+        return result
+
+    def annotate_users(self):
+        content = FixedTransaction.objects.annotate_user_balance()
         result = "These are all objects: <BR>"
 
         if content is not None:
             for i in content:
-                result += "{5}: {0} or {1} to {3} or {4} for {2}  ".format(i.source_user, i.source_association, i.amount, i.target_user, i.target_association, i.description)
+                result += "{0}: {1} ".format(i, i.balance)
+                # result += "{5}: {0} or {1} to {3} or {4} for {2}  ".format(i.source_user, i.source_association, i.amount, i.target_user, i.target_association, i.description)
                 #result += "{0}".format(i.amount)
                 result+= "<BR>"
-
-        return render(request, "test.html", {'text': result})
+        return result

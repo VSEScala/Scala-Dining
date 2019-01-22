@@ -99,16 +99,10 @@ class TransactionQuerySet(AbstractTransactionQuerySet):
     def filter_association(self, association):
         return self.__filter_for__(association, self.source_association_column, self.target_association_column)
 
-    def annotate_user_balance(self):
-        return self.annotate_user_balance(User.objects.all())
-
-    def annotate_user_balance(self, users):
+    def annotate_user_balance(self, users=User.objects.all()):
         return self.__annotate_balance__(users, self.source_user_column, self.target_user_column)
 
-    def annotate_association_balance(self):
-        return self.annotate_association_balance(Association.objects.all())
-
-    def annotate_association_balance(self, association):
+    def annotate_association_balance(self, association=Association.objects.all()):
         return self.__annotate_balance__(association, self.source_association_column, self.target_association_column)
 
     def compute_user_balance(self, user):
