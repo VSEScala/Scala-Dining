@@ -3,7 +3,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 from django.db import models, transaction
-from django.db.models import Q
+from django.db.models import Q, F
 from django.utils.translation import gettext as _
 
 from Dining.models import DiningList
@@ -143,6 +143,8 @@ class AbstractTransaction(models.Model):
     confirm_moment = models.DateTimeField(default=datetime.now)
     description = models.CharField(default="", blank=True, max_length=50)
 
+    balance_annotation_name = "balance"
+
     class Meta:
         abstract = True
 
@@ -179,7 +181,7 @@ class AbstractTransaction(models.Model):
         return result
 
     @classmethod
-    def get_user_credit(cls, user):
+    def get_user_balance(cls, user):
         """
         Returns the usercredit
         :return: The current credits
@@ -191,7 +193,7 @@ class AbstractTransaction(models.Model):
         # Loop over all children and get the credits
         # It is not possible to summarize get_all_credits due to the union method (it blocks it)
         for child in children:
-            child_value = child.get_user_credit(user)
+            child_value = child.get_user_balance(user)
 
             if child_value:
                 result += child_value
@@ -199,13 +201,36 @@ class AbstractTransaction(models.Model):
         return result
 
     @classmethod
-    def get_users_credits(cls, users):
+    def annotate_user_balance(cls, users):
         """
         Returns a list of all users with their respective credits
         :return: The current credits of all givn users
         """
-        # Todo, compute this
-        raise NotImplementedError
+        result = users
+
+        # Get all child classes
+        children = cls.get_children()
+
+        # Loop over all children, get their respective transaction queries, union the transaction queries
+        for child in children:
+            result = child.annotate_user_balance(result)
+
+        # Get the annotated name values of its immediate children
+        sum_query = None
+        for child in children:
+            # If sumquery is not yet defined, define it, otherwise add add it to the query
+            if sum_query:
+                sum_query += F(child.balance_annotation_name)
+            else:
+                sum_query = F(child.balance_annotation_name)
+
+        from django.db.models.functions import Cast
+        sum_query = Cast(sum_query, models.FloatField())
+
+        # annotate the results of the children in a single variable name
+        result = result.annotate(**{cls.balance_annotation_name: sum_query})
+
+        return result
 
     def source(self):
         return self.source_association if self.source_association else self.source_user
@@ -220,7 +245,7 @@ class FixedTransaction(AbstractTransaction):
     Contains all final processed transactions
     """
     objects = TransactionQuerySet.as_manager()
-
+    balance_annotation_name = "balance_fixed"
 
     @classmethod
     def get_all_transactions(cls, user=None, association=None):
@@ -236,7 +261,7 @@ class FixedTransaction(AbstractTransaction):
         return cls.objects.filter_user(user).filter_association(association)
 
     @classmethod
-    def get_user_credit(cls, user):
+    def get_user_balance(cls, user):
         return cls.objects.compute_user_balance(user)
 
     @classmethod
@@ -248,11 +273,16 @@ class FixedTransaction(AbstractTransaction):
         """
         return cls.objects.compute_association_balance(association)
 
+    @classmethod
+    def annotate_user_balance(cls, users, output_name=balance_annotation_name):
+        return cls.objects.annotate_user_balance(users=users, output_name=output_name)
+
 
 class AbstractPendingTransaction(AbstractTransaction):
     """
     Abstract model for the Pending Transactions
     """
+    balance_annotation_name = "balance_pending"
 
     @classmethod
     def get_children(cls):
@@ -271,6 +301,7 @@ class PendingTransaction(AbstractPendingTransaction):
     """
 
     objects = TransactionQuerySet.as_manager()
+    balance_annotation_name = "balance_pending_normal"
 
     def finalise(self):
         """
@@ -286,7 +317,6 @@ class PendingTransaction(AbstractPendingTransaction):
             self.delete()
             fixed_transaction.save()
 
-
     @classmethod
     def get_all_transactions(cls, user=None, association=None):
         """
@@ -301,7 +331,7 @@ class PendingTransaction(AbstractPendingTransaction):
         return cls.objects.filter_user(user).filter_association(association)
 
     @classmethod
-    def get_user_credit(cls, user):
+    def get_user_balance(cls, user):
         return cls.objects.compute_user_balance(user)
 
     @classmethod
@@ -313,6 +343,10 @@ class PendingTransaction(AbstractPendingTransaction):
         """
         return cls.objects.compute_association_balance(association)
 
+    @classmethod
+    def annotate_user_balance(cls, users, output_name=balance_annotation_name):
+        return cls.objects.annotate_user_balance(users=users, output_name=output_name)
+
 
 class PendingDiningTransactionManager(models.Manager):
     """
@@ -322,13 +356,16 @@ class PendingDiningTransactionManager(models.Manager):
     def get_queryset(self, user=None, dining_list=None):
         return DiningTransactionQuerySet.generate_queryset(user=user, dining_list=dining_list)
 
+    def annotate_users_balance(self, users, output_name=None):
+        return DiningTransactionQuerySet.annotate_user_balance(users=users, output_name=output_name)
+
 
 class PendingDiningTransaction(AbstractPendingTransaction):
     """
     Model for the Pending Dining Transactions
     Does NOT create a database, information is obtained elsewhere as specified in the manager/queryset
     """
-
+    balance_annotation_name = "balance_pending_dining"
     objects = PendingDiningTransactionManager()
 
     class Meta:
@@ -342,8 +379,12 @@ class PendingDiningTransaction(AbstractPendingTransaction):
         return cls.objects.get_queryset(user=user)
 
     @classmethod
-    def get_user_credit(cls, user):
+    def get_user_balance(cls, user):
         return cls.objects.all().compute_user_balance(user)
+
+    @classmethod
+    def annotate_user_balance(cls, users):
+        return cls.objects.annotate_users_balance(users, output_name=cls.balance_annotation_name)
 
     @classmethod
     def get_association_credit(cls, association):
@@ -417,9 +458,9 @@ class UserCredit(models.Model):
 
     @classmethod
     def view(cls):
-        '''
+        """
         This method returns the SQL string that creates the view
-        '''
+        """
 
         qs = FixedTransaction.objects.annotate_user_balance(). \
             values('id', 'balance')

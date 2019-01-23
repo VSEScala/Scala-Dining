@@ -25,7 +25,7 @@ class TransactionTestView(View):
 
     def get(self, request, user=None):
 
-        result = self.do_stuff(id=user)
+        result = self.annotate_users()
 
         #result = self.annotate_users()
         return render(request, "test.html", {'text': result})
@@ -38,12 +38,13 @@ class TransactionTestView(View):
         return result
 
     def annotate_users(self):
-        content = FixedTransaction.objects.annotate_user_balance()
+        content = AbstractTransaction.annotate_user_balance(User.objects.all())
         result = "These are all objects: <BR>"
 
         if content is not None:
             for i in content:
-                result += "{0}: {1} ".format(i, i.balance)
+                #result += "{0}: {1}".format(i, i.balance_pending_normal)
+                result += "{0}: {1} = {2} + {3} ({4})".format(i, i.balance, i.balance_fixed, i.balance_pending, i.balance_pending_dining)
                 # result += "{5}: {0} or {1} to {3} or {4} for {2}  ".format(i.source_user, i.source_association, i.amount, i.target_user, i.target_association, i.description)
                 #result += "{0}".format(i.amount)
                 result+= "<BR>"

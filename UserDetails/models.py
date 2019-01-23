@@ -26,7 +26,7 @@ class User(AbstractUser):
     def balance(self):
         # Calculate sum of target minus sum of source
         from CreditManagement.models import AbstractTransaction
-        balance = AbstractTransaction.get_user_credit(self)
+        balance = AbstractTransaction.get_user_balance(self)
 
         # Convert to two decimals in an exact manner
         return balance.quantize(Decimal('0.01'), context=Context(traps=[Inexact]))

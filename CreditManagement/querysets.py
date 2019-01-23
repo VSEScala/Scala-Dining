@@ -1,8 +1,8 @@
 from django.db import models
-from django.db.models import Q, F, Value, Sum, OuterRef, Subquery, ExpressionWrapper
-from django.db.models.functions import Coalesce
+from django.db.models import Q, F, Value, Sum, OuterRef, Subquery, ExpressionWrapper, Count
+from django.db.models.functions import Coalesce, Cast
 
-from Dining.models import DiningEntry
+from Dining.models import DiningEntry, DiningList
 from UserDetails.models import User, Association
 
 
@@ -29,7 +29,7 @@ class AbstractTransactionQuerySet(models.QuerySet):
                                    Q(**{target_column: item}))
         return self
 
-    def __annotate_balance__(self, items, source_column, target_column):
+    def __annotate_balance__(self, items, source_column, target_column, output_name="balance"):
         """
         Annotates the current balance to the current items in the items queryset
         :param items: a queryset of the items that needs their credits computed
@@ -41,6 +41,7 @@ class AbstractTransactionQuerySet(models.QuerySet):
         # Theoretically this could increase speed for small usersets, but could take slightly longer
         # for querysets nearly identical to the complete dataset
         # don't know if I should keep this.
+        # check if the balance column exists
         transaction_queries = self.__filter_for__(items, source_column=source_column, target_column=target_column)
 
         # Filter transactions on source
@@ -59,7 +60,7 @@ class AbstractTransactionQuerySet(models.QuerySet):
         target_sum_qs = Coalesce(Subquery(target_sum_qs), Value(0))
 
         # Combine
-        return items.annotate(balance=target_sum_qs - source_sum_qs)
+        return items.annotate(**{output_name: target_sum_qs - source_sum_qs})
 
     def __compute_balance__(self, item, source_column, target_column):
         """
@@ -99,8 +100,11 @@ class TransactionQuerySet(AbstractTransactionQuerySet):
     def filter_association(self, association):
         return self.__filter_for__(association, self.source_association_column, self.target_association_column)
 
-    def annotate_user_balance(self, users=User.objects.all()):
-        return self.__annotate_balance__(users, self.source_user_column, self.target_user_column)
+    def annotate_user_balance(self, users=User.objects.all(), output_name=None):
+        return self.__annotate_balance__(users,
+                                         self.source_user_column,
+                                         self.target_user_column,
+                                         output_name=output_name)
 
     def annotate_association_balance(self, association=Association.objects.all()):
         return self.__annotate_balance__(association, self.source_association_column, self.target_association_column)
@@ -132,17 +136,31 @@ class DiningTransactionQuerySet(AbstractTransactionQuerySet):
         # associations can not pay for dining lists
         return 0
 
-    def annotate_user_balance(self):
-        return self.annotate_user_balance(User.objects.all())
-
-    def annotate_user_balance(self, users):
+    @classmethod
+    def annotate_user_balance(cls, users=User.objects.all(), output_name="balance"):
         """
         Annotates the user balance behind all the users
         :param users: The users which need their balance calculated
         :return: The users with 'balance' annotated
         """
-        queries = self.generate_queryset(users=users)
-        return queries.__annotate_balance__(users, 'source_user', 'target_user')
+        # Select all entries in the pending dininglists, filter on the intended user in that dining list
+        entries = DiningEntry.objects.filter(dining_list__pendingdininglisttracker__isnull=False)
+
+        target_sum_qs = entries.filter(user=OuterRef('pk'))
+        target_sum_qs = target_sum_qs.values('user')
+        target_sum_qs = target_sum_qs.annotate(kitchen_cost=F('dining_list__kitchen_cost'))
+        target_sum_qs = target_sum_qs.annotate(total_cost=Coalesce(Sum('kitchen_cost'), Value(0))).values('total_cost')
+        target_sum_qs = Coalesce(Subquery(target_sum_qs), Value(0))
+
+        users = users.annotate(**{output_name: - Cast(target_sum_qs, models.FloatField())})
+        print(users.values('id', output_name))
+
+        # DIT HEEFT ME ZO VEEL MEER GEDOE GEGEVEN AAARGH NIET NORMAAL
+        # Uiteindelijk gefixed met de Cast, daar zat het probleem, maar GVD dit was een zeer frustrerend stukje code
+        # Dus ik claim hier even mijn credit
+        # Wouter
+
+        return users
 
     def annotate_association_balance(self):
         return self.annotate_association_balance(Association.objects.all())
