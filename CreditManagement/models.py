@@ -201,6 +201,26 @@ class AbstractTransaction(models.Model):
         return result
 
     @classmethod
+    def get_association_balance(cls, association):
+        """
+        Returns the usercredit
+        :return: The current credits
+        """
+
+        result = Decimal(0.00)
+        children = cls.get_children()
+
+        # Loop over all children and get the credits
+        # It is not possible to summarize get_all_credits due to the union method (it blocks it)
+        for child in children:
+            child_value = child.get_association_balance(association)
+
+            if child_value:
+                result += child_value
+
+        return result
+
+    @classmethod
     def annotate_balance(cls, users=None, associations=None):
         """
         Returns a list of all users or associations with their respective credits
@@ -278,7 +298,7 @@ class FixedTransaction(AbstractTransaction):
         return cls.objects.compute_user_balance(user)
 
     @classmethod
-    def get_association_credit(cls, association):
+    def get_association_balance(cls, association):
         """
         Compute the balance according to this model based on the given association
         :param association: The association
@@ -352,7 +372,7 @@ class PendingTransaction(AbstractPendingTransaction):
         return cls.objects.compute_user_balance(user)
 
     @classmethod
-    def get_association_credit(cls, association):
+    def get_association_balance(cls, association):
         """
         Compute the balance according to this model based on the given association
         :param association: The association
@@ -404,6 +424,10 @@ class PendingDiningTransaction(AbstractPendingTransaction):
     @classmethod
     def get_user_balance(cls, user):
         return cls.objects.all().compute_user_balance(user)
+
+    @classmethod
+    def get_association_balance(cls, association):
+        return cls.objects.all().compute_association_balance(association)
 
     @classmethod
     def annotate_balance(cls, users=None, associations=None, output_name=balance_annotation_name):

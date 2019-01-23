@@ -9,7 +9,7 @@ from django.db.models import prefetch_related_objects
 import datetime
 
 from .models import Association, UserMembership, User
-from CreditManagement.models import Transaction
+from CreditManagement.models import *
 from General.views import PageListView
 
 
@@ -44,13 +44,11 @@ class CreditsOverview(AssociationBaseView, PageListView):
         super(CreditsOverview, self).get(request, association_name)
 
         # Set up the list display
-        entries = Transaction.objects\
-            .filter(Q(source_association=self.association) | Q(target_association=self.association))\
-            .order_by('-moment')
+        entries = AbstractTransaction.get_all_transactions(association=self.association)
         super(CreditsOverview, self).set_up_list(entries, page)
 
         # Retrieve the current balance
-        self.context['balance'] = self.association.get_credit_containing_instance()
+        self.context['balance'] = AbstractTransaction.get_association_balance(self.association)
         self.context['target'] = self.association
         self.context['tab'] = "credits"
 
