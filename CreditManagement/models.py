@@ -201,19 +201,31 @@ class AbstractTransaction(models.Model):
         return result
 
     @classmethod
-    def annotate_user_balance(cls, users):
+    def annotate_balance(cls, users=None, associations=None):
         """
-        Returns a list of all users with their respective credits
-        :return: The current credits of all givn users
+        Returns a list of all users or associations with their respective credits
+        :param users: A list of users to annotate, defaults to users if none is given
+        :param associations: a list of associations to annnotate
+        :return: The list annotated with 'balance'
         """
-        result = users
+        if users and associations:
+            raise ValueError("Either users or associations need to have a value, not both")
+
+        # Set the query result
+        if associations:
+            result = associations
+            q_type = "associations"
+        else:
+            # If users is none, the result becomes a list of all users automatically (set in query retrieval)
+            result = users
+            q_type = "users"
 
         # Get all child classes
         children = cls.get_children()
 
         # Loop over all children, get their respective transaction queries, union the transaction queries
         for child in children:
-            result = child.annotate_user_balance(result)
+            result = child.annotate_balance(**{q_type: result})
 
         # Get the annotated name values of its immediate children
         sum_query = None
@@ -231,6 +243,7 @@ class AbstractTransaction(models.Model):
         result = result.annotate(**{cls.balance_annotation_name: sum_query})
 
         return result
+
 
     def source(self):
         return self.source_association if self.source_association else self.source_user
@@ -274,8 +287,12 @@ class FixedTransaction(AbstractTransaction):
         return cls.objects.compute_association_balance(association)
 
     @classmethod
-    def annotate_user_balance(cls, users, output_name=balance_annotation_name):
-        return cls.objects.annotate_user_balance(users=users, output_name=output_name)
+    def annotate_balance(cls, users=None, associations=None, output_name=balance_annotation_name):
+        if associations:
+            return cls.objects.annotate_association_balance(associations=associations, output_name=output_name)
+        else:
+            return cls.objects.annotate_user_balance(users=users, output_name=output_name)
+
 
 
 class AbstractPendingTransaction(AbstractTransaction):
@@ -344,8 +361,11 @@ class PendingTransaction(AbstractPendingTransaction):
         return cls.objects.compute_association_balance(association)
 
     @classmethod
-    def annotate_user_balance(cls, users, output_name=balance_annotation_name):
-        return cls.objects.annotate_user_balance(users=users, output_name=output_name)
+    def annotate_balance(cls, users=None, associations=None, output_name=balance_annotation_name):
+        if associations:
+            return cls.objects.annotate_association_balance(associations=associations, output_name=output_name)
+        else:
+            return cls.objects.annotate_user_balance(users=users, output_name=output_name)
 
 
 class PendingDiningTransactionManager(models.Manager):
@@ -358,6 +378,9 @@ class PendingDiningTransactionManager(models.Manager):
 
     def annotate_users_balance(self, users, output_name=None):
         return DiningTransactionQuerySet.annotate_user_balance(users=users, output_name=output_name)
+
+    def annotate_association_balance(self, associations, output_name=None):
+        return DiningTransactionQuerySet.annotate_association_balance(associations=associations, output_name=output_name)
 
 
 class PendingDiningTransaction(AbstractPendingTransaction):
@@ -383,8 +406,11 @@ class PendingDiningTransaction(AbstractPendingTransaction):
         return cls.objects.all().compute_user_balance(user)
 
     @classmethod
-    def annotate_user_balance(cls, users):
-        return cls.objects.annotate_users_balance(users, output_name=cls.balance_annotation_name)
+    def annotate_balance(cls, users=None, associations=None, output_name=balance_annotation_name):
+        if associations:
+            return cls.objects.annotate_association_balance(associations, output_name=cls.balance_annotation_name)
+        else:
+            return cls.objects.annotate_users_balance(users, output_name=cls.balance_annotation_name)
 
     @classmethod
     def get_association_credit(cls, association):

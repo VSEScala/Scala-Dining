@@ -106,8 +106,11 @@ class TransactionQuerySet(AbstractTransactionQuerySet):
                                          self.target_user_column,
                                          output_name=output_name)
 
-    def annotate_association_balance(self, association=Association.objects.all()):
-        return self.__annotate_balance__(association, self.source_association_column, self.target_association_column)
+    def annotate_association_balance(self, associations=Association.objects.all(), output_name=None):
+        return self.__annotate_balance__(associations,
+                                         self.source_association_column,
+                                         self.target_association_column,
+                                         output_name=output_name)
 
     def compute_user_balance(self, user):
         return self.__compute_balance__(user, self.source_user_column, self.target_user_column)
@@ -162,11 +165,9 @@ class DiningTransactionQuerySet(AbstractTransactionQuerySet):
 
         return users
 
-    def annotate_association_balance(self):
-        return self.annotate_association_balance(Association.objects.all())
-
-    def annotate_association_balance(self, associations):
-        return associations.annotate(balance=Value(0.00, output_field=models.DecimalField()))
+    @classmethod
+    def annotate_association_balance(cls, associations=Association.objects.all(), output_name="balance"):
+        return associations.annotate(**{output_name: -Value(0.00, output_field=models.FloatField())})
 
     @staticmethod
     def __filter_entries__(entries, user=None, dining_list=None):
