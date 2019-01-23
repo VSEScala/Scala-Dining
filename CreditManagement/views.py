@@ -38,8 +38,8 @@ class TransactionTestView(View):
         return result
 
     def annotate_users(self):
-        #content = AbstractTransaction.annotate_balance(users=User.objects.all())
-        content = AbstractTransaction.get_all_transactions(association=Association.objects.all())
+        content = AbstractTransaction.get_all_transactions()
+        #content = AbstractTransaction.get_all_transactions(association=Association.objects.all())
         result = "These are all objects: <BR>"
 
         if content is not None:

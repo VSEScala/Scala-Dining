@@ -5,9 +5,8 @@
 {% block details %}
     <div class="col-12 my-4">
         {{ association }}<br>
-        Balance since {{ balance.start_date }}:
-        {# Todo: balance.credit #}
-        {{ 0|euro }}
+        Current balance:
+        {{ balance|euro }}
 
     </div>
     <div class="col-12 row">

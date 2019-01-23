@@ -476,8 +476,6 @@ class PendingDiningListTracker(models.Model):
         # Save the changes
         with transaction.atomic():
             for fixed_transaction in transactions:
-                print("A5")
-                print(fixed_transaction)
                 fixed_transaction.save()
             self.delete()
 

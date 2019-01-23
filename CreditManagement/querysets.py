@@ -156,7 +156,6 @@ class DiningTransactionQuerySet(AbstractTransactionQuerySet):
         target_sum_qs = Coalesce(Subquery(target_sum_qs), Value(0))
 
         users = users.annotate(**{output_name: - Cast(target_sum_qs, models.FloatField())})
-        print(users.values('id', output_name))
 
         # DIT HEEFT ME ZO VEEL MEER GEDOE GEGEVEN AAARGH NIET NORMAAL
         # Uiteindelijk gefixed met de Cast, daar zat het probleem, maar GVD dit was een zeer frustrerend stukje code

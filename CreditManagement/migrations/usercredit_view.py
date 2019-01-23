@@ -9,8 +9,9 @@ from General.DBView_migration import CreateView
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('UserDetails', '0011_auto_20190118_1306'),
-        ('CreditManagement', '0026_auto_20190120_1710'),
+        migrations.swappable_dependency(settings.AUTH_USER_MODEL),
+        ('UserDetails', '0001_initial'),
+        ('CreditManagement', '0001_initial'),
     ]
 
     operations = [

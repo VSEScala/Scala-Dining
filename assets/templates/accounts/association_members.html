@@ -3,7 +3,7 @@
 
 {% block details %}
     <div class="col-12 row mb-3">
-        <a class="offset-9 col-3 btn btn-block" href="{% url 'association_members_edit' association_name=association_name %}">
+        <a class="offset-9 col-3 btn btn-block btn-outline-primary" href="{% url 'association_members_edit' association_name=association_name %}">
             Edit list
         </a>
     </div>
@@ -30,7 +30,7 @@
 
     <form class="col-12 row" method="post">
         {% for entry in entries %}
-            {% include 'snippets/snippet_memberdetails.html' %}
+            {% include 'accounts/snippet_memberdetails.html' %}
             <hr class="col-12">
         {% endfor %}
     </form>

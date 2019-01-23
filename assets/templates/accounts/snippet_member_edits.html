@@ -19,9 +19,9 @@
     </div>
     {% if not entry.is_verified %}
         {% if not entry.verified_on %}
-            <input type="submit" value="Confirm" name="validate-yes-{{ entry.id }}" class="col-1 text-size-3 btn"/>
+            <input type="submit" value="Confirm" name="validate-yes-{{ entry.id }}" class="col-1 text-size-3 btn btn-outline-success"/>
         {% else %}
-            <input type="submit" value="Re-enter" name="validate-yes-{{ entry.id }}" class="col-1 text-size-3 btn"/>
+            <input type="submit" value="Re-enter" name="validate-yes-{{ entry.id }}" class="col-1 text-size-3 btn btn-outline-success"/>
         {% endif %}
     {% else %}
         <div class="col-1"> </div>
@@ -29,9 +29,9 @@
 
     {% if entry.is_verified or not entry.verified_on %}
         {% if not entry.verified_on %}
-            <input type="submit" value="Deny" name="validate-no-{{ entry.id }}" class="col-1 text-size-3 btn"/>
+            <input type="submit" value="Deny" name="validate-no-{{ entry.id }}" class="col-1 text-size-3 btn btn-outline-warning"/>
         {% else %}
-            <input type="submit" value="Remove" name="validate-no-{{ entry.id }}" class="col-1 text-size-3 btn"/>
+            <input type="submit" value="Remove" name="validate-no-{{ entry.id }}" class="col-1 text-size-3 btn  btn-outline-warning"/>
         {% endif %}
     {% else %}
         <div class="col-1"> </div>
