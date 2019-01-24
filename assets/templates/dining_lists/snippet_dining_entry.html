@@ -18,22 +18,22 @@
                             <label class="btn btn-outline-primary col-3
                                 {% if entry_data.has_shopped %} active {% endif %}">
                                 <input type="checkbox" autocomplete="off"
-                                       id="{{ entry.id }}:shop" name="{{ entry.id }}:has_shopped"
-                                        {% if entry.has_shopped %} checked {% endif %}>
+                                       id="{{ entry_data.id }}:shop" name="{{ entry_data.id }}:has_shopped"
+                                        {% if entry_data.has_shopped %} checked {% endif %}>
                                 Shop
                             </label>
                             <label class="btn btn-outline-primary col-3
                                     {% if entry_data.has_cooked %} active {% endif %}">
                                 <input type="checkbox" autocomplete="off"
-                                       id="{{ entry.id }}:cook" name="{{ entry.id }}:has_cooked"
-                                        {% if entry.has_cooked %} checked {% endif %}>
+                                       id="{{ entry_data.id }}:cook" name="{{ entry_data.id }}:has_cooked"
+                                        {% if entry_data.has_cooked %} checked {% endif %}>
                                 Cook
                             </label>
                             <label class="btn btn-outline-primary col-3
                                     {% if entry_data.has_cleaned %} active {% endif %}">
                                 <input type="checkbox" autocomplete="off"
-                                       id="{{ entry.id }}:clean" name="{{ entry.id }}:has_cleaned"
-                                        {% if entry.has_cleaned %} checked {% endif %}}>
+                                       id="{{ entry_data.id }}:clean" name="{{ entry_data.id }}:has_cleaned"
+                                        {% if entry_data.has_cleaned %} checked {% endif %}}>
                                 Clean
                             </label>
                         {% else %}

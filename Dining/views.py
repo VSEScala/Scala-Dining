@@ -326,35 +326,58 @@ class SlotListView(LoginRequiredMixin, SlotMixin, TemplateView):
         can_adjust_stats = request.user == self.dining_list.claimed_by
         can_adjust_paid = request.user == self.dining_list.get_purchaser()
 
-        entries = {}
-        # Loop over all user entries, and store them
-        for entry in self.dining_list.dining_entries.all():
-            if can_adjust_stats:
+        if not (can_adjust_stats or can_adjust_paid):
+            messages.add_message(request, messages.ERROR, "You did not have the rights to adjust anything")
+            return HttpResponseRedirect(self.reverse('slot_list'))
+
+        # Get all the keys in the post and put all relevant ones in a list
+        post_requests = []
+        for key in request.POST:
+            key = key.split(":")
+            if len(key) == 2:
+                post_requests.append(key)
+
+        if can_adjust_paid:
+            # Process payment for all entries
+            entries = {}
+
+            # For all entries in the dining list, set the paid value to false
+            for entry in self.dining_list.dining_entries.all():
+                entry.has_paid = False
+                entries[str(entry.id)] = entry
+
+            # Go over all keys in the request containing has_paid, adjust the state on that object
+            for key in post_requests:
+                if key[1] == "has_paid":
+                    entries[key[0]].has_paid = True
+
+            # save all has_paid values
+            for entry in entries.values():
+                entry.save()
+
+        if can_adjust_stats:
+            # Adjust the help stats
+            entries = {}
+
+            # For all entries in the dining list, set the values to false
+            for entry in self.dining_list.internal_dining_entries():
                 entry.has_shopped = False
                 entry.has_cooked = False
                 entry.has_cleaned = False
-            if can_adjust_paid:
-                entry.has_paid = False
-            entries[str(entry.id)] = entry
+                entries[str(entry.id)] = entry
 
-        # Loop over all keys,
-        for key in request.POST:
-            keysplit = key.split(":")
-            if len(keysplit) != 2:
-                continue
+            # Go over all keys in the request containing has_paid, adjust the state on that object
+            for key in post_requests:
+                if key[1] == "has_shopped":
+                    entries[key[0]].has_shopped = True
+                elif key[1] == "has_cooked":
+                    entries[key[0]].has_cooked = True
+                elif key[1] == "has_cleaned":
+                    entries[key[0]].has_cleaned = True
 
-            if can_adjust_stats:
-                if keysplit[1] == "has_shopped":
-                    entries[keysplit[0]].has_shopped = True
-                elif keysplit[1] == "has_cooked":
-                    entries[keysplit[0]].has_cooked = True
-                elif keysplit[1] == "has_cleaned":
-                    entries[keysplit[0]].has_cleaned = True
-            if can_adjust_paid and keysplit[1] == "has_paid":
-                entries[keysplit[0]].has_paid = True
-
-        for entry in entries.values():
-            entry.save()
+            # save all has_paid values
+            for entry in entries.values():
+                entry.save()
 
         return HttpResponseRedirect(self.reverse('slot_list'))
 
