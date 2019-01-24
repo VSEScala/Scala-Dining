@@ -222,6 +222,7 @@ class EntryAddView(LoginRequiredMixin, DiningListMixin, TemplateView):
         return self.render_to_response(context)
 
     def post(self, request, *args, **kwargs):
+        # Todo: re-enable External Dining Entries
         context = self.get_context_data()
 
         # Do form shenanigans

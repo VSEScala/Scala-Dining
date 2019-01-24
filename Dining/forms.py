@@ -134,16 +134,8 @@ class DiningEntryCreateForm(forms.ModelForm):
             users.filter(pk=adder.pk)
         self.fields['user'].queryset = users
 
-        # Prepare transaction
-        self.transaction = NewTransactionForm({'source_user': adder.pk,
-                                               'target_association': dining_list.association.pk,
-                                               'amount': dining_list.kitchen_cost,
-                                               'notes': _("Kitchen cost")})
-
     def clean(self):
         cleaned_data = super().clean()
-        # Also clean transaction
-        _clean_form(self.transaction)
         return cleaned_data
 
     def save(self, commit=True):
@@ -153,7 +145,6 @@ class DiningEntryCreateForm(forms.ModelForm):
         with transaction.atomic():
             # Possible race condition regarding instance validation
             instance = super().save(commit)
-            self.transaction.save(commit)
         return instance
 
 
