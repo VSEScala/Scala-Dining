@@ -2,7 +2,6 @@ from django.shortcuts import render
 from django.views.generic.list import ListView
 from CreditManagement.models import *
 from django.views.generic import View
-from .models import Transaction
 
 
 class TransactionListView(ListView):

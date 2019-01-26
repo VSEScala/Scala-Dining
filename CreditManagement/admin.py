@@ -4,24 +4,7 @@ from datetime import datetime, timedelta
 
 from django.contrib import admin
 
-from CreditManagement.models import Transaction
 from UserDetails.models import Association, UserMembership
-
-
-class TransactionAdmin(admin.ModelAdmin):
-    list_display = ('moment', 'source_user', 'source_association', 'target_user', 'target_association', 'amount')
-    list_filter = ('moment', 'source_association', 'target_association')
-    fields = (('source_user', 'source_association'), ('target_user', 'target_association'),
-              'amount', 'notes', 'dining_list')
-
-    def has_change_permission(self, request, obj=None):
-        return False
-
-    def has_delete_permission(self, request, obj=None):
-        return False
-
-
-admin.site.register(Transaction, TransactionAdmin)
 
 
 class MemberOfFilter(admin.SimpleListFilter):
