@@ -30,8 +30,8 @@ when it adheres to a graph like this one.
 
 ```
          Dining --------
-            |          |
-            V          V
+            ^          |
+            |          V
 CreditManagement --> UserDetails
 ```
 
