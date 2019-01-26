@@ -3,7 +3,7 @@
 from django.conf import settings
 from django.db import migrations, models
 import django.db.models.deletion
-from General.DBView_migration import CreateView
+from General.db_view_migration import CreateView
 
 
 class Migration(migrations.Migration):

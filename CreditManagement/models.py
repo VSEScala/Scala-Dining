@@ -11,118 +11,6 @@ from UserDetails.models import Association, User
 
 from .querysets import TransactionQuerySet, DiningTransactionQuerySet, PendingDiningTrackerQuerySet
 
-
-class TransactionManager(models.Manager):
-    def with_user(self, user):
-        return self.filter(Q(source_user=user) | Q(target_user=user))
-
-    def with_association(self, association):
-        return self.filter(Q(source_association=association) | Q(target_association=association))
-
-
-class Transaction(models.Model):
-    """
-    Todo: the following database constraints should be in place:
-
-    CHECK(amount > 0),
-    CHECK(source_user IS NULL OR source_association IS NULL), -- there must be at most one source
-    CHECK(target_user IS NULL OR target_association IS NULL), -- there must be at most one target
-    -- there must be at least a source or a target
-    CHECK(NOT(source_user IS NULL AND source_association IS NULL AND target_user IS NULL AND target_association IS NULL)),
-
-    These probably need to be inserted using custom migration files, however these are not yet in git.
-    """
-    moment = models.DateTimeField(auto_now_add=True)
-    # We should probably add a database index to source and target (but first do profiling)
-    source_user = models.ForeignKey(User, related_name="transaction_source",
-                                    on_delete=models.PROTECT, null=True, blank=True)
-    source_association = models.ForeignKey(Association, related_name="transaction_source", on_delete=models.PROTECT,
-                                           null=True, blank=True)
-    target_user = models.ForeignKey(User, related_name="transaction_target",
-                                    on_delete=models.PROTECT, null=True, blank=True)
-    target_association = models.ForeignKey(Association, related_name="transaction_target", on_delete=models.PROTECT,
-                                           null=True, blank=True)
-    amount = models.DecimalField(decimal_places=2, max_digits=16, validators=[MinValueValidator(Decimal('0.01'))])
-    notes = models.CharField(max_length=200, blank=True)
-
-    # Optional reference to the dining list that caused this transaction, for informational purposes.
-    # Todo: SET_NULL is needed to make it possible to delete dining lists, however this alters a transaction.
-    # To fix: remove this dependency to dining list and move it to a DiningList model which references transactions.
-    dining_list = models.ForeignKey(DiningList, related_name='transactions', on_delete=models.SET_NULL, null=True,
-                                    blank=True)
-
-    objects = TransactionManager()
-
-    def source(self):
-        """
-        Returns the transaction source which is a user or an association.
-        """
-        return self.source_user if self.source_user else self.source_association
-
-    def target(self):
-        """
-        Returns the transaction target which is a user or an association.
-        """
-        return self.target_user if self.target_user else self.target_association
-
-    def save(self, *args, **kwargs):
-        """
-        Double-checks database constraints.
-        """
-        assert not self.pk, "Transaction change is not allowed."
-        assert self.amount > 0, "Transaction value must be positive."
-        assert not (self.source_user and self.source_association), "There must be at most one source."
-        assert not (self.target_user and self.target_association), "There must be at most one target."
-        assert self.source() or self.target(), "There must be at least a source or a target."
-        super().save(*args, **kwargs)
-
-    def delete(self, *args, **kwargs):
-        assert False, "Transaction deletion is not allowed"
-
-    def clean(self):
-        """
-        Transaction business rules.
-        """
-
-        # Balance bottom limit
-        if self.source_user:
-            balance = self.source_user.balance
-            new_balance = balance - self.amount
-            if new_balance < settings.MINIMUM_BALANCE:
-                raise ValidationError(_("Balance becomes too low"))
-
-        # Associations cannot transfer money between each other
-        if self.source_association and self.target_association:
-            raise ValidationError(_("Associations cannot transfer money between each other"))
-
-    def __str__(self):
-        return "{} | {} | {} → {} | {}".format(self.moment, self.amount, self.source(), self.target(), self.notes)
-
-
-class UserWithCredit(User):
-    """
-    User model enhanced with credit queries.
-    """
-    class Meta:
-        proxy = True
-
-
-
-    def get_balance(self):
-        return -119
-
-
-class AssociationWithCredit(Association):
-    """
-    Association model enhanced with credit queries.
-    """
-    class Meta:
-        proxy = True
-
-    def get_balance(self):
-        return -121
-
-
 """""""""""""""""""""""""""""""""""""""""""""
 New implementation of the transaction models
 """""""""""""""""""""""""""""""""""""""""""""
@@ -133,11 +21,25 @@ class AbstractTransaction(models.Model):
     Abstract model defining the Transaction models, can retrieve information from all its children
     """
     # DO NOT CHANGE THIS ORDER, IT CAN CAUSE PROBLEMS IN THE UNION METHODS AT DATABASE LEVEL!
-    source_user = models.ForeignKey(User, related_name="%(class)s_transaction_source", on_delete=models.SET_NULL, null=True, blank=True, verbose_name="The user giving the money")
-    source_association = models.ForeignKey(Association, related_name="%(class)s_transaction_source", on_delete=models.SET_NULL, null=True, blank=True, verbose_name="The association giving the money")
-    amount = models.DecimalField(verbose_name="Money transferred", decimal_places=2, max_digits=4, validators=[MinValueValidator(Decimal('0.01'))])
-    target_user = models.ForeignKey(User, related_name="%(class)s_transaction_target", on_delete=models.SET_NULL, null=True, blank=True, verbose_name="The user receiving the money")
-    target_association = models.ForeignKey(Association, related_name="%(class)s_transaction_target", on_delete=models.SET_NULL, null=True, blank=True, verbose_name="The association recieving the money")
+    source_user = models.ForeignKey(User, related_name="%(class)s_transaction_source",
+                                    on_delete=models.SET_NULL,
+                                    null=True, blank=True,
+                                    verbose_name="The user giving the money")
+    source_association = models.ForeignKey(Association, related_name="%(class)s_transaction_source",
+                                           on_delete=models.SET_NULL,
+                                           null=True, blank=True,
+                                           verbose_name="The association giving the money")
+    amount = models.DecimalField(verbose_name="Money transferred",
+                                 decimal_places=2, max_digits=4,
+                                 validators=[MinValueValidator(Decimal('0.01'))])
+    target_user = models.ForeignKey(User, related_name="%(class)s_transaction_target",
+                                    on_delete=models.SET_NULL,
+                                    null=True, blank=True,
+                                    verbose_name="The user receiving the money")
+    target_association = models.ForeignKey(Association, related_name="%(class)s_transaction_target",
+                                           on_delete=models.SET_NULL,
+                                           null=True, blank=True,
+                                           verbose_name="The association recieving the money")
 
     order_moment = models.DateTimeField(default=datetime.now)
     confirm_moment = models.DateTimeField(default=datetime.now)
@@ -314,7 +216,6 @@ class FixedTransaction(AbstractTransaction):
             return cls.objects.annotate_user_balance(users=users, output_name=output_name)
 
 
-
 class AbstractPendingTransaction(AbstractTransaction):
     """
     Abstract model for the Pending Transactions
@@ -400,7 +301,8 @@ class PendingDiningTransactionManager(models.Manager):
         return DiningTransactionQuerySet.annotate_user_balance(users=users, output_name=output_name)
 
     def annotate_association_balance(self, associations, output_name=None):
-        return DiningTransactionQuerySet.annotate_association_balance(associations=associations, output_name=output_name)
+        return DiningTransactionQuerySet.annotate_association_balance(associations=associations,
+                                                                      output_name=output_name)
 
 
 class PendingDiningTransaction(AbstractPendingTransaction):

@@ -12,7 +12,7 @@ class AbstractTransactionQuerySet(models.QuerySet):
     For any model inheriting the AbstractTransaction class
     """
 
-    def __filter_for__(self, item, source_column, target_column):
+    def _filter_for_(self, item, source_column, target_column):
         """
         Filter the transactions for the given paramater, returns all if item is None
         :param item: The item that needs to be filtered on, can also be a queryset
@@ -29,7 +29,7 @@ class AbstractTransactionQuerySet(models.QuerySet):
                                    Q(**{target_column: item}))
         return self
 
-    def __annotate_balance__(self, items, source_column, target_column, output_name="balance"):
+    def _annotate_balance_(self, items, source_column, target_column, output_name="balance"):
         """
         Annotates the current balance to the current items in the items queryset
         :param items: a queryset of the items that needs their credits computed
@@ -42,7 +42,7 @@ class AbstractTransactionQuerySet(models.QuerySet):
         # for querysets nearly identical to the complete dataset
         # don't know if I should keep this.
         # check if the balance column exists
-        transaction_queries = self.__filter_for__(items, source_column=source_column, target_column=target_column)
+        transaction_queries = self._filter_for_(items, source_column=source_column, target_column=target_column)
 
         # Filter transactions on source
         source_sum_qs = transaction_queries.filter(**{source_column: OuterRef('pk')})
@@ -62,7 +62,7 @@ class AbstractTransactionQuerySet(models.QuerySet):
         # Combine
         return items.annotate(**{output_name: target_sum_qs - source_sum_qs})
 
-    def __compute_balance__(self, item, source_column, target_column):
+    def _compute_balance_(self, item, source_column, target_column):
         """
         Returns the total credits based on the computed value from the queryset
         :param item: either a user or an association
@@ -95,28 +95,28 @@ class TransactionQuerySet(AbstractTransactionQuerySet):
     target_association_column = 'target_association'
 
     def filter_user(self, user):
-        return self.__filter_for__(user, self.source_user_column, self.target_user_column)
+        return self._filter_for_(user, self.source_user_column, self.target_user_column)
 
     def filter_association(self, association):
-        return self.__filter_for__(association, self.source_association_column, self.target_association_column)
+        return self._filter_for_(association, self.source_association_column, self.target_association_column)
 
     def annotate_user_balance(self, users=User.objects.all(), output_name="balance"):
-        return self.__annotate_balance__(users,
-                                         self.source_user_column,
-                                         self.target_user_column,
-                                         output_name=output_name)
+        return self._annotate_balance_(users,
+                                       self.source_user_column,
+                                       self.target_user_column,
+                                       output_name=output_name)
 
     def annotate_association_balance(self, associations=Association.objects.all(), output_name="balance"):
-        return self.__annotate_balance__(associations,
-                                         self.source_association_column,
-                                         self.target_association_column,
-                                         output_name=output_name)
+        return self._annotate_balance_(associations,
+                                       self.source_association_column,
+                                       self.target_association_column,
+                                       output_name=output_name)
 
     def compute_user_balance(self, user):
-        return self.__compute_balance__(user, self.source_user_column, self.target_user_column)
+        return self._compute_balance_(user, self.source_user_column, self.target_user_column)
 
     def compute_association_balance(self, association):
-        return self.__compute_balance__(association, self.source_association_column, self.target_association_column)
+        return self._compute_balance_(association, self.source_association_column, self.target_association_column)
 
 
 class DiningTransactionQuerySet(AbstractTransactionQuerySet):
@@ -169,7 +169,7 @@ class DiningTransactionQuerySet(AbstractTransactionQuerySet):
         return associations.annotate(**{output_name: -Value(0.00, output_field=models.FloatField())})
 
     @staticmethod
-    def __filter_entries__(entries, user=None, dining_list=None):
+    def _filter_entries_(entries, user=None, dining_list=None):
         """
         Filters the Dining Entries on the given users and/or dining lists
         :param entries: The dining entries model
@@ -206,7 +206,7 @@ class DiningTransactionQuerySet(AbstractTransactionQuerySet):
         """
         # Select all entries in the pending dininglists
         entries = DiningEntry.objects.filter(dining_list__pendingdininglisttracker__isnull=False)
-        entries = DiningTransactionQuerySet.__filter_entries__(entries, user=user, dining_list=dining_list)
+        entries = DiningTransactionQuerySet._filter_entries_(entries, user=user, dining_list=dining_list)
 
         # Rename the user parameter and merge contents (user entries on each dining list)
         entries = entries.annotate(source_user=F('user'))

@@ -5,7 +5,6 @@ from django.db import transaction
 from django.utils.translation import gettext as _
 from django.core.exceptions import ValidationError, PermissionDenied
 
-from CreditManagement.forms import NewTransactionForm
 from UserDetails.models import Association, User
 from .models import DiningList, DiningEntry, DiningEntryUser
 from General.util import SelectWithDisabled
@@ -159,10 +158,6 @@ class DiningEntryDeleteForm(forms.ModelForm):
         """
         super().__init__(instance=instance, data={}, **kwargs)
         self.deleted_by = deleted_by
-        self.transaction = NewTransactionForm({'source_association': instance.dining_list.association.pk,
-                                               'target_user': instance.user.pk,
-                                               'amount': instance.dining_list.kitchen_cost,
-                                               'notes': _("Kitchen cost refund")})
 
     def clean(self):
         cleaned_data = super().clean()
