@@ -34,6 +34,7 @@ class AssociationBaseView(View):
             raise PermissionDenied("You are not on the board of this association")
 
         self.context['association_name'] = association_name
+        self.context['association'] = self.association
 
 
 class CreditsOverview(AssociationBaseView, PageListView):

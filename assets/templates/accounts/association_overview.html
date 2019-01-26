@@ -10,12 +10,8 @@
 
     </div>
     <div class="col-12 row">
-        {% for entry in entries %}
-            {% if entry|get_class == "Transaction" %}
-                {% include 'snippets/snippet_credits_transaction.html' %}
-            {% else %}
-                <div class="col-11"> {{ entry }}</div>
-            {% endif %}
+        {% for transaction in entries %}
+            {% include 'credit_management/snippet_credit_history_association.html' %}
             <hr class="col-12">
         {% endfor %}
     </div>
