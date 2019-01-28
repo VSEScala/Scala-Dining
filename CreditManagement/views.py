@@ -1,6 +1,7 @@
 from django.shortcuts import render
 from django.views.generic.list import ListView
 from CreditManagement.models import *
+from .forms import *
 from django.views.generic import View
 
 
@@ -13,12 +14,35 @@ class TransactionListView(ListView):
         return AbstractTransaction.get_all_transactions(user=self.request.user).order_by('-pk')
 
 
+class TransactionAddView(View):
+    template_name = "credit_management/transaction_add.html"
+    context = {}
+
+    def get(self, request, *args, **kwargs):
+        self.context['slot_form'] = TransactionForm(user=request.user)
+        return render(request, self.template_name, self.context)
+
+    def post(self, request, *args, **kwargs):
+        # Do form shenanigans
+        form = TransactionForm(request.POST, user=request.user)
+        if form.is_valid():
+            form.save()
+        else:
+            self.context['slot_form'] = form
+            return render(request, self.template_name, self.context)
+
+        # Render form otherwise
+        #self.context['slot_form'] = form
+        return self.get(request, *args, **kwargs)
+
+
 class AssociationTransactionListView:
     pass
 
 
 class UserTransactionListView(ListView):
     pass
+
 
 class TransactionTestView(View):
 

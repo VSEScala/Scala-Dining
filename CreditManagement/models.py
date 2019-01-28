@@ -3,7 +3,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 from django.db import models, transaction
-from django.db.models import Q, F
+from django.db.models import F
 from django.utils.translation import gettext as _
 
 from Dining.models import DiningList
@@ -49,6 +49,12 @@ class AbstractTransaction(models.Model):
 
     class Meta:
         abstract = True
+
+    def clean(self):
+        if self.source_user and self.source_association:
+            raise ValidationError(_("Transaction can not have both a source user and source association"))
+        if self.target_user and self.target_association:
+            raise ValidationError(_("Transaction can not have both a target user and target association"))
 
     @classmethod
     def get_children(cls):
@@ -240,6 +246,30 @@ class PendingTransaction(AbstractPendingTransaction):
 
     objects = TransactionQuerySet.as_manager()
     balance_annotation_name = "balance_pending_normal"
+
+    def clean(self):
+        """
+        Performs entry checks on model contents
+        """
+        super(PendingTransaction, self).clean()
+
+        # Check whether balance does not exceed set limit on balance
+        # Checked here as this is primary user interaction. Check in fixed introduces possible problems where old
+        # entries are not yet removed resulting in new fixed entries not allowed
+        if self.source_user:
+            balance = self.source_user.balance
+            # If the object is being altered instead of created, take difference into account
+            if self.pk:
+                change = self.amount - self.objects.get(id=self.id).amount
+            else:
+                change = self.amount
+            new_balance = balance - change
+            if new_balance < settings.MINIMUM_BALANCE:
+                raise ValidationError(_("Balance becomes too low"))
+
+        # Associations cannot transfer money between each other
+        if self.source_association and self.target_association:
+            raise ValidationError(_("Associations cannot transfer money between each other"))
 
     def finalise(self):
         """
