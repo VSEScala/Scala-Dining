@@ -51,6 +51,7 @@ class CreateSlotForm(forms.ModelForm):
 
         if len(available) == 1:
             self.fields['association'].initial = available[0].pk
+            self.fields['association'].disabled = True
 
     def save(self, commit=True):
         instance = super().save(commit=False)

@@ -39,7 +39,11 @@
                 {% endif %}
             {% else %}
                 {# Not submitted yet #}
-                {% render_field field class="form-control" placeholder=field.label %}
+                {% if field.field.disabled %}
+                    {% render_field field class="form-control-plaintext" placeholder=field.label %}
+                {% else %}
+                    {% render_field field class="form-control" placeholder=field.label %}
+                {% endif %}
             {% endif %}
             {# Help text #}
             {% if field.help_text %}
