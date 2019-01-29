@@ -12,10 +12,9 @@
     <div class="col-12 row">
         {% for transaction in entries %}
             {% include 'credit_management/snippet_credit_history_association.html' %}
-            <hr class="col-12">
         {% endfor %}
     </div>
-    <a class="col-12 btn btn-block">
+    <a class="col-12 btn btn-block btn-primary" href="{% url 'transaction_add' association_name=association_name %}">
         + Transfer credits
     </a>
 

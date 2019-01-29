@@ -12,7 +12,7 @@ class TransactionForm(forms.ModelForm):
             self.instance.source_user = user
             self.fields['origin'].initial = user
         elif association:
-            self.instance.source_associatin = association
+            self.instance.source_association = association
             self.fields['origin'].initial = association
         else:
             raise ValueError("source is neither user nor association")
@@ -23,3 +23,11 @@ class TransactionForm(forms.ModelForm):
 
     def save(self):
         self.instance.save()
+
+    def clean(self):
+        cleaned_data = super(TransactionForm, self).clean()
+
+        # Do not allow associations to make evaporating money transactons
+        # (not restircted on database level, but it doesn't make sense to order it)
+        if not cleaned_data.get('target_association') and not cleaned_data.get('target_association'):
+            raise ValidationError("Select a target to transfer the money to")

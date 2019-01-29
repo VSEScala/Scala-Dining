@@ -1,8 +1,13 @@
 from django.shortcuts import render
 from django.views.generic.list import ListView
 from CreditManagement.models import *
+from django.contrib.auth.decorators import login_required
+from django.utils.decorators import method_decorator
 from .forms import *
 from django.views.generic import View
+from django.http import HttpResponseForbidden
+
+
 
 
 class TransactionListView(ListView):
@@ -18,13 +23,33 @@ class TransactionAddView(View):
     template_name = "credit_management/transaction_add.html"
     context = {}
 
-    def get(self, request, *args, **kwargs):
-        self.context['slot_form'] = TransactionForm(user=request.user)
+    @method_decorator(login_required)
+    def get(self, request, association_name=None, *args, **kwargs):
+        if association_name:
+            association = Association.objects.get(associationdetails__shorthand=association_name)
+            # If an association is given as the source, check user credentials
+            if not self.check_association_permission(request.user, association):
+                return HttpResponseForbidden()
+            # Create the form
+            self.context['slot_form'] = TransactionForm(association=association)
+        else:
+            self.context['slot_form'] = TransactionForm(user=request.user)
         return render(request, self.template_name, self.context)
 
-    def post(self, request, *args, **kwargs):
+    @method_decorator(login_required)
+    def post(self, request, association_name=None, *args, **kwargs):
         # Do form shenanigans
-        form = TransactionForm(request.POST, user=request.user)
+        if association_name:
+            association = Association.objects.get(associationdetails__shorthand=association_name)
+            # If an association is given as the source, check user credentials
+            if not self.check_association_permission(request.user, association):
+                return HttpResponseForbidden()
+            # Create the form
+            form = TransactionForm(request.POST, association=association)
+        else:
+            form = TransactionForm(request.POST, user=request.user)
+
+
         if form.is_valid():
             form.save()
         else:
@@ -35,6 +60,11 @@ class TransactionAddView(View):
         #self.context['slot_form'] = form
         return self.get(request, *args, **kwargs)
 
+    def check_association_permission(self, user, association):
+        if user.groups.filter(id=association.id).count() > 0:
+            return True
+        else:
+            return False
 
 class AssociationTransactionListView:
     pass
