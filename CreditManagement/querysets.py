@@ -169,7 +169,7 @@ class DiningTransactionQuerySet(AbstractTransactionQuerySet):
         return associations.annotate(**{output_name: -Value(0.00, output_field=models.FloatField())})
 
     @staticmethod
-    def _filter_entries_(entries, user=None, dining_list=None):
+    def _filter_entries(entries, user=None, dining_list=None):
         """
         Filters the Dining Entries on the given users and/or dining lists
         :param entries: The dining entries model
@@ -206,7 +206,7 @@ class DiningTransactionQuerySet(AbstractTransactionQuerySet):
         """
         # Select all entries in the pending dininglists
         entries = DiningEntry.objects.filter(dining_list__pendingdininglisttracker__isnull=False)
-        entries = DiningTransactionQuerySet._filter_entries_(entries, user=user, dining_list=dining_list)
+        entries = DiningTransactionQuerySet._filter_entries(entries, user=user, dining_list=dining_list)
 
         # Rename the user parameter and merge contents (user entries on each dining list)
         entries = entries.annotate(source_user=F('user'))
