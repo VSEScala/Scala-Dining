@@ -13,6 +13,7 @@ from django.utils.translation import gettext as _
 from django.views.generic import TemplateView, View
 from django.views.generic.base import ContextMixin
 from django.views.generic.edit import DeleteView
+from django.conf import settings
 
 from .forms import CreateSlotForm, DiningInfoForm, DiningPaymentForm, DiningEntryCreateForm, DiningEntryDeleteForm, \
     DiningListDeleteForm
@@ -129,10 +130,16 @@ class DayView(LoginRequiredMixin, DayMixin, TemplateView):
         context['Announcements'] = DiningDayAnnouncements.objects.filter(date=self.date)
 
         # Check if create slot button must be shown
-        # Todo: optionally hide claim button when time is past closure time
         # (but I prefer to only check when claiming to reduce code)
         in_future = self.date >= timezone.now().date()
-        context['can_create_slot'] = DiningList.objects.available_slots(self.date) >= 0 and in_future
+        if in_future and self.date == timezone.now().date():
+            # If date is today, check if the dining slot claim time has not passed
+            if settings.DINING_SLOT_CLAIM_CLOSURE_TIME < timezone.now().time():
+                in_future = False
+
+        has_no_claimed_slots = len(context['dining_lists'].filter(claimed_by=self.request.user)) == 0
+        context['can_create_slot'] = DiningList.objects.available_slots(self.date) >= 0 and\
+                                     in_future and has_no_claimed_slots
 
         # Make the view clickable
         context['interactive'] = True
@@ -184,6 +191,8 @@ class NewSlotView(LoginRequiredMixin, DayMixin, TemplateView):
         available_slots = DiningList.objects.available_slots(self.date)
         if available_slots <= 0:
             return HttpResponseForbidden('No available slots')
+        if len(DiningList.objects.filter(date=self.date).filter(claimed_by=self.request.user)) > 0:
+            return HttpResponseForbidden('You already have dining slot claimed today')
         return super().dispatch(request, *args, **kwargs)
 
 

@@ -3,7 +3,7 @@ from django.db.models import Sum
 
 from django.conf import settings
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
-from django.core.validators import MinValueValidator
+from django.core.validators import MinValueValidator, MaxValueValidator
 from django.utils import timezone
 from django.utils.translation import gettext as _
 
@@ -66,15 +66,15 @@ class DiningList(models.Model):
     dinner_cost_total = models.DecimalField(decimal_places=2, verbose_name="total dinner costs", max_digits=10,
                                             default=0, validators=[MinValueValidator(Decimal('0.00'))])
     dinner_cost_single = models.DecimalField(decimal_places=2, verbose_name="dinner cost per person", max_digits=5,
-                                             blank=True, null=True, default=2,
+                                             blank=True, null=True, default=0,
                                              validators=[MinValueValidator(Decimal('0.00'))])
     dinner_cost_keep_single_constant = models.BooleanField(default=False, verbose_name="Define costs from single price")
     auto_pay = models.BooleanField(default=False)
 
     tikkie_link = models.CharField(blank=True, null=True, verbose_name="tikkie hyperlink", max_length=50)
 
-    min_diners = models.IntegerField(default=4)
-    max_diners = models.IntegerField(default=20)
+    min_diners = models.IntegerField(default=4, validators=[MaxValueValidator(settings.MAX_SLOT_DINER_MINIMUM)])
+    max_diners = models.IntegerField(default=20, validators=[MinValueValidator(settings.MIN_SLOT_DINER_MAXIMUM)])
 
     diners = models.ManyToManyField(settings.AUTH_USER_MODEL, through='DiningEntry',
                                     through_fields=('dining_list', 'user'))
