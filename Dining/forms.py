@@ -65,12 +65,11 @@ class CreateSlotForm(forms.ModelForm):
 
 
 class DiningInfoForm(forms.ModelForm):
-
     def __init__(self, *args, **kwargs):
         dining_list = kwargs.get("instance")
         super(DiningInfoForm, self).__init__(*args, **kwargs)
 
-        query = get_user_model().objects.filter(dining_entries__in=dining_list.dining_entries.all())
+        query = dining_list.diners
         self.fields['purchaser'].queryset = query
 
     class Meta:
@@ -85,14 +84,15 @@ class DiningPaymentForm(forms.ModelForm):
     class Meta:
         model = DiningList
         fields = ['dish', 'dinner_cost_total', 'dinner_cost_single', 'tikkie_link']
+        help_texts = {
+            'dinner_cost_total': 'Either adjust total dinner cost or single dinner cost',
+            'dinner_cost_single': 'Either adjust total dinner cost or single dinner cost',
+        }
 
     def __init__(self, *args, **kwargs):
         super(DiningPaymentForm, self).__init__(*args, **kwargs)
 
     def save(self):
-        print("Save function")
-        print(self.instance.dish)
-        print(self.instance.dinner_cost_total)
         # If the single value has been added, recompute the total amount
         # also check if it has changed from earlier status
         old_list = DiningList.objects.get(id=self.instance.id)
@@ -100,8 +100,6 @@ class DiningPaymentForm(forms.ModelForm):
         if 0 < self.instance.dinner_cost_single != old_list.dinner_cost_single:
             self.instance.dinner_cost_total = self.instance.dinner_cost_single * self.instance.diners
 
-        print(self.instance.dinner_cost_single)
-        print(self.instance.dinner_cost_total)
         self.instance.save(update_fields=self.Meta.fields)
 
 
