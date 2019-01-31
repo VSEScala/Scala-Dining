@@ -1,33 +1,22 @@
 {% extends 'base.html' %}
 
 {% block content %}
-    {% block slot_navigation %}
+    <div class="mt-3">
+        <h2>{{ association }}</h2>
+
         <ul class="nav nav-tabs">
             <li class="nav-item">
-                <a class="nav-link
-                    {% if tab == "credits" %}active"{% else %}"
-                        href="{% url 'association_credits' association_name=association_name %}"
-                    {% endif %}>
-                    Credits
-                </a>
+                <a class="nav-link{% block tab_credits %}{% endblock %}"
+                   href="{% url 'association_credits' association_name=association_slug %}">Credits</a>
             </li>
             <li class="nav-item">
-                <a class="nav-link
-                    {% if tab == "members" %}active"{% else %}"
-                        href="{% url 'association_members' association_name=association_name %}"
-                    {% endif %}>
-                    Members
-                </a>
+                <a class="nav-link{% block tab_members %}{% endblock %}"
+                   href="{% url 'association_members' association_name=association_slug %}">Members</a>
             </li>
         </ul>
-    {% endblock slot_navigation %}
 
-
-    <div class="col-12 row p-0 m-0 pt-4 pb-5 mb-5">
-        {% block details%}
-            Contents
-        {% endblock details %}
+        <div class="mt-3">
+            {% block details %}{% endblock details %}
+        </div>
     </div>
-
-
 {% endblock %}

@@ -2,23 +2,20 @@
 {% load form_extras %}
 {% load credit_tags %}
 
-{% block details %}
-    <div class="col-12 my-4">
-        {{ association }}<br>
-        Current balance:
-        {{ balance|euro }}
+{% block tab_credits %} active{% endblock %}
 
-    </div>
-    <div class="col-12 row">
-        {% for transaction in entries %}
-            {% include 'credit_management/snippet_credit_history_association.html' %}
-        {% endfor %}
-    </div>
-    <a class="col-12 btn btn-block btn-primary" href="{% url 'transaction_add' association_name=association_name %}">
-        + Transfer credits
+{% block details %}
+    <p>
+        Current balance: <strong>{{ balance|euro }}</strong>
+    </p>
+    {% for transaction in object_list %}
+        {% include 'credit_management/snippet_credit_history_association.html' %}
+    {% endfor %}
+    <a class="btn btn-block btn-primary" href="{% url 'transaction_add' association_name=association_slug %}">
+        Transfer credits
     </a>
 
-    {% url 'association_credits' association_name=association_name as url %}
+    {% url 'association_credits' association_name=association_slug as url %}
     {% include 'snippets/snippet_pagination.html' %}
 
 {% endblock %}
