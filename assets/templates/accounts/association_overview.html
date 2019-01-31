@@ -5,17 +5,15 @@
 {% block tab_credits %} active{% endblock %}
 
 {% block details %}
-    <p>
-        Current balance: <strong>{{ balance|euro }}</strong>
-    </p>
+    <p>Current balance: <strong>{{ balance|euro }}</strong></p>
+
     {% for transaction in object_list %}
         {% include 'credit_management/snippet_credit_history_association.html' %}
     {% endfor %}
+
+    {% include 'snippets/paginator.html' %}
+
     <a class="btn btn-block btn-primary" href="{% url 'transaction_add' association_name=association_slug %}">
         Transfer credits
     </a>
-
-    {% url 'association_credits' association_name=association_slug as url %}
-    {% include 'snippets/snippet_pagination.html' %}
-
 {% endblock %}

@@ -31,7 +31,7 @@ class AssociationBoardMixin:
 
 class CreditsOverview(LoginRequiredMixin, AssociationBoardMixin, ListView):
     template_name = "accounts/association_overview.html"
-    paginate_by = 4
+    paginate_by = 50
 
     def get_queryset(self):
         return AbstractTransaction.get_all_transactions(association=self.association)
@@ -44,6 +44,7 @@ class CreditsOverview(LoginRequiredMixin, AssociationBoardMixin, ListView):
 
 class MembersOverview(LoginRequiredMixin, AssociationBoardMixin, ListView):
     template_name = "accounts/association_members.html"
+    paginate_by = 50
 
     def get_queryset(self):
         return User.objects.filter(
@@ -73,7 +74,7 @@ def _alter_state(verified, id):
 
 class MembersEditView(LoginRequiredMixin, AssociationBoardMixin, ListView):
     template_name = "accounts/association_members_edit.html"
-    paginate_by = 5
+    paginate_by = 50
 
     def get_queryset(self):
         return UserMembership.objects.filter(Q(association=self.association)).order_by('is_verified', 'verified_on',
