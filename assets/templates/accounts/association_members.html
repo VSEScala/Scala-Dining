@@ -4,9 +4,11 @@
 {% block tab_members %} active{% endblock %}
 
 {% block details %}
-    <div class="row mb-3 col-3 offset-9">
-        <a class="btn btn-block btn-outline-primary"
-           href="{% url 'association_members_edit' association_name=association_slug %}">Edit list</a>
+    <div class="row mb-3">
+        <div class="col-3 offset-9">
+            <a class="btn btn-block btn-outline-primary"
+               href="{% url 'association_members_edit' association_name=association_slug %}">Edit list</a>
+        </div>
     </div>
     {# Bootstrap table looks nicer #}
     <div class="row mb-1">
@@ -17,7 +19,7 @@
         <div class="col-2"><strong>Negative since</strong></div>
     </div>
 
-        {% for entry in object_list %}{% include 'accounts/snippet_memberdetails.html' %}{% endfor %}
+    {% for entry in object_list %}{% include 'accounts/snippet_memberdetails.html' %}{% endfor %}
 
     {% include 'snippets/paginator.html' %}
 {% endblock %}
