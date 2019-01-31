@@ -52,11 +52,13 @@ class AbstractTransaction(models.Model):
 
     def clean(self):
         if self.source_user and self.source_association:
-            raise ValidationError(_("Transaction can not have both a source user and source association"))
+            raise ValidationError(_("Transaction can not have both a source user and source association."))
         if self.target_user and self.target_association:
-            raise ValidationError(_("Transaction can not have both a target user and target association"))
-        if self.source_user == self.target_user or self.source_association == self.target_association:
-            raise ValidationError("Source and target can not be the same")
+            raise ValidationError(_("Transaction can not have both a target user and target association."))
+        if self.source_user and self.source_user == self.target_user:
+            raise ValidationError("Source and target user can't be the same.")
+        if self.source_association and self.source_association == self.target_association:
+            raise ValidationError("Source and target association can't be the same.")
 
     @classmethod
     def get_children(cls):
