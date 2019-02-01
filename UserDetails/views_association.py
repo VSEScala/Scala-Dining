@@ -1,10 +1,12 @@
+import csv
 import datetime
 
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import PermissionDenied
 from django.db.models import Q
-from django.http import HttpResponseRedirect
+from django.http import HttpResponseRedirect, HttpResponse
 from django.shortcuts import get_object_or_404
+from django.views import View
 from django.views.generic import ListView
 
 from CreditManagement.models import AbstractTransaction
@@ -40,6 +42,39 @@ class CreditsOverview(LoginRequiredMixin, AssociationBoardMixin, ListView):
         context = super().get_context_data(**kwargs)
         context['balance'] = AbstractTransaction.get_association_balance(self.association)
         return context
+
+
+class TransactionsCsvView(LoginRequiredMixin, AssociationBoardMixin, View):
+    """Returns a CSV file with all transactions."""
+
+    def get(self, request, *args, **kwargs):
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = 'attachment; filename="association_transactions.csv"'
+        csv_writer = csv.writer(response)
+        # Write header
+        csv_writer.writerow(['Created on', 'Executed on', 'Source type', 'Source name', 'Source e-mail', 'Target type',
+                             'Target name', 'Target e-mail', 'Amount', 'Description'])
+        # Write transactions
+        for t in AbstractTransaction.get_all_transactions(association=self.association):
+            # Transaction moment
+            moment = [t.order_moment.isoformat(), t.confirm_moment.isoformat()]
+            # Transaction source
+            if t.source_user:
+                source = ['User', t.source_user.get_full_name(), t.source_user.email]
+            elif t.source_association:
+                source = ['Association', t.source_association.name, '']
+            else:
+                source = ['None', '', '']
+            # Transaction target
+            if t.target_user:
+                target = ['User', t.target_user.get_full_name(), t.target_user.email]
+            elif t.target_association:
+                target = ['Association', t.target_association.name, '']
+            else:
+                target = ['None', '', '']
+            # Write to CSV
+            csv_writer.writerow(moment + source + target + [t.amount, t.description])
+        return response
 
 
 class MembersOverview(LoginRequiredMixin, AssociationBoardMixin, ListView):
