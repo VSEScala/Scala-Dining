@@ -2,8 +2,6 @@
 {% load staticfiles %}
 {% load form_extras %}
 
-
-
 {% block details %}
     <form method="post" class="col-12">
         {% csrf_token %}
@@ -24,16 +22,13 @@
                 Control given to the purchaser: {{ dining_list.get_purchaser }}
             </div>
         {% endif %}
-        <br><br>
 
-        {# The save and cancell button #}
-        <div class="btn-group col-12 p-0" role="group" aria-label="Basic example">
-            <a href="{% url 'slot_details'
-                    day=date.day month=date.month year=date.year
-                    identifier=dining_list.association.associationdetails.shorthand %}"
-               type="button" class="btn btn-secondary col-5">Cancel</a>
-            <input type="submit" value="Save" class="col-7 btn btn-primary"/>
+        {# The save and cancel buttons #}
+        <div class="row">
+            <div class="col-6"><button type="submit" class="btn btn-block btn-primary">Save</button></div>
+            <div class="col-6">
+                <a href="{{ dining_list.get_absolute_url }}" class="btn btn-block btn-secondary">Cancel</a>
+            </div>
         </div>
-
-
+    </form>
 {% endblock %}
