@@ -69,7 +69,7 @@
     </div>
     {% if can_delete_all or is_open and can_delete_some and request.user == entry.user %}
         <a class="col-2 col-sm-1 btn btn-block btn-danger"
-        href="{% url 'entry_remove' day=date.day month=date.month year=date.year identifier=association_slug entry_id=entry.id %}">
+        href="{% url 'entry_remove' day=date.day month=date.month year=date.year identifier=dining_list.association.slug entry_id=entry.id %}">
             <i class="fas fa-trash"></i>
         </a>
     {% endif %}

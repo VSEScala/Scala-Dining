@@ -1,7 +1,8 @@
-from django.db import models
-from django.contrib.auth.models import AbstractUser, Group
-from django.utils.functional import cached_property
 from decimal import Decimal, Context, Inexact
+
+from django.contrib.auth.models import AbstractUser, Group
+from django.db import models
+from django.utils.functional import cached_property
 
 
 class User(AbstractUser):
@@ -9,15 +10,20 @@ class User(AbstractUser):
     def __str__(self):
         name = self.first_name + " " + self.last_name
         if name == " ":
-            return "@"+self.username
+            return "@" + self.username
         else:
             return name
 
     def is_verified(self):
         """
-        Check if the account is verified by assessing all linked associations
+        Whether this user is verified as part of a Scala association
         """
-        return self.details.is_verified()
+        links = UserMembership.objects.filter(related_user=self)
+
+        for membership in links:
+            if membership.is_verified:
+                return True
+        return False
 
     # Todo: move balance to CreditManagement app
     @cached_property
@@ -35,39 +41,8 @@ class User(AbstractUser):
 
 
 class Association(Group):
-    class Meta:
-        proxy = True
-
-    def get_credit_containing_instance(self):
-        return self.associationcredit_set.get(end_date=None)
-
-
-class AssociationDetails(models.Model):
-    association = models.OneToOneField(Association, on_delete=models.CASCADE, primary_key=True)
-    image = models.ImageField()
-    shorthand = models.SlugField(max_length=10)
-
-
-class UserDetail(models.Model):
-    """
-    Contains several small personal details of the user
-    """
-    related_user = models.OneToOneField(User, related_name="details", on_delete=models.CASCADE, primary_key=True)
-    phone_number = models.CharField(max_length=15, blank=True)
-
-    def is_verified(self):
-        """
-        Whether this user is verified as part of a Scala association
-        """
-        links = UserMembership.objects.filter(related_user=self.related_user)
-
-        for membership in links:
-            if membership.is_verified:
-                return True
-        return False
-
-    def __str__(self):
-        return self.related_user.__str__()
+    slug = models.SlugField(max_length=10)
+    image = models.ImageField(blank=True)
 
 
 class UserMembership(models.Model):

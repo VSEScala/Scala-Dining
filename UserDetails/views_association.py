@@ -18,12 +18,11 @@ class AssociationBoardMixin:
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['association'] = self.association
-        context['association_slug'] = self.association.associationdetails.shorthand
         return context
 
     def dispatch(self, request, *args, **kwargs):
         """Gets association and checks if user is board member."""
-        self.association = get_object_or_404(Association, associationdetails__shorthand=kwargs['association_name'])
+        self.association = get_object_or_404(Association, slug=kwargs['association_name'])
         if not request.user.groups.filter(id=self.association.id):
             raise PermissionDenied("You are not on the board of this association")
         return super().dispatch(request, *args, **kwargs)

@@ -36,7 +36,7 @@
                     {% if user_can_add_others %}
                         <div class="col-12 col-sm-6 order-1 order-sm-0 p-0 px-sm-2">
                             <a class="btn btn-primary btn-block" href="
-                            {% url 'entry_add' day=date.day month=date.month year=date.year identifier=dining_list.association.associationdetails.shorthand %}">
+                            {% url 'entry_add' day=date.day month=date.month year=date.year identifier=dining_list.association.slug %}">
                                 + Add Diner</a>
                         </div>
                     {% endif %}

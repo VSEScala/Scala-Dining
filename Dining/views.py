@@ -82,12 +82,10 @@ class DiningListMixin(DayMixin):
     Extends the day mixin with dining list thingies.
     """
     dining_list = None
-    association_slug = None
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['dining_list'] = self.dining_list
-        context['association_slug'] = self.association_slug
         return context
 
     def init_dining_list(self):
@@ -99,9 +97,7 @@ class DiningListMixin(DayMixin):
             return
         # Needs initialized date
         self.init_date()
-        self.association_slug = self.kwargs['identifier']
-        self.dining_list = get_object_or_404(DiningList, date=self.date,
-                                             association__associationdetails__shorthand=self.association_slug)
+        self.dining_list = get_object_or_404(DiningList, date=self.date, association__slug=self.kwargs['identifier'])
 
     def dispatch(self, request, *args, **kwargs):
         self.init_dining_list()
@@ -109,7 +105,7 @@ class DiningListMixin(DayMixin):
 
     def reverse(self, *args, kwargs=None, **other_kwargs):
         kwargs = kwargs or {}
-        kwargs['identifier'] = self.association_slug
+        kwargs['identifier'] = self.dining_list.association.slug
         return super().reverse(*args, kwargs=kwargs, **other_kwargs)
 
 
