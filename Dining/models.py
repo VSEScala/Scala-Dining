@@ -5,7 +5,7 @@ from django.conf import settings
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.utils import timezone
-from django.utils.translation import gettext as _
+from django.utils.translation import gettext, gettext_lazy as _
 
 from datetime import datetime, timedelta, time
 from decimal import Decimal
@@ -71,7 +71,7 @@ class DiningList(models.Model):
     dinner_cost_keep_single_constant = models.BooleanField(default=False, verbose_name="Define costs from single price")
     auto_pay = models.BooleanField(default=False)
 
-    tikkie_link = models.CharField(blank=True, null=True, verbose_name="tikkie hyperlink", max_length=50)
+    payment_link = models.CharField(blank=True, max_length=100, help_text=_('Link for payment, e.g. a Tikkie link.'))
 
     min_diners = models.IntegerField(default=4, validators=[MaxValueValidator(settings.MAX_SLOT_DINER_MINIMUM)])
     max_diners = models.IntegerField(default=20, validators=[MinValueValidator(settings.MIN_SLOT_DINER_MAXIMUM)])
@@ -119,7 +119,7 @@ class DiningList(models.Model):
         # Validate dining list can be changed
         # This also blocks changes for dining entries!
         if self.pk and not self.is_adjustable():
-            raise ValidationError(_('The dining list is not adjustable.'), code='not_adjustable')
+            raise ValidationError(gettext('The dining list is not adjustable.'), code='not_adjustable')
 
         # Check if purchaser is present when using auto pay
         if self.auto_pay and not self.get_purchaser():
@@ -227,12 +227,12 @@ class DiningEntry(models.Model):
             # Validate room available in dining list
             if self.dining_list.dining_entries.count() >= self.dining_list.max_diners:
                 raise ValidationError({
-                    'dining_list': ValidationError(_("Dining list is full."), code='full'),
+                    'dining_list': ValidationError(gettext("Dining list is full."), code='full'),
                 })
 
             # Validate user is not already subscribed for the dining list
             if self.get_internal() and self.dining_list.internal_dining_entries().filter(user=self.user).exists():
-                raise ValidationError(_('This user is already subscribed to the dining list.'))
+                raise ValidationError(gettext('This user is already subscribed to the dining list.'))
 
             # (Optionally) validate if user is not already on another dining list
             #if DiningList.objects.filter(date=self.dining_list.date, dining_entries__user=self.user)

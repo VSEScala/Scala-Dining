@@ -83,7 +83,7 @@ class DiningInfoForm(forms.ModelForm):
 class DiningPaymentForm(forms.ModelForm):
     class Meta:
         model = DiningList
-        fields = ['dish', 'dinner_cost_total', 'dinner_cost_single', 'tikkie_link']
+        fields = ['dish', 'dinner_cost_total', 'dinner_cost_single', 'payment_link']
         help_texts = {
             'dinner_cost_total': 'Either adjust total dinner cost or single dinner cost',
             'dinner_cost_single': 'Either adjust total dinner cost or single dinner cost',
