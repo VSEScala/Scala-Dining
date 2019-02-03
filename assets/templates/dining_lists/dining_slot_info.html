@@ -7,17 +7,17 @@
 {% block details %}
 
     {% if dining_list.association %}
-    <div class="col-2 slot_image" style="background-image: url({{ dining_list.association.associationdetails.image.url }})">
-    </div>
-    <div class="col-10 col-md-8 row pr-0">
+        <div class="col-2 slot_image"
+             style="{% if dining_list.association.image %}background-image: url({{ dining_list.association.image.url }});{% endif %}"></div>
+        <div class="col-10 col-md-8 row pr-0">
     {% else %}
-    <div class="col-12 row p-0">
+        <div class="col-12 row p-0">
     {% endif %}
         <div class="col-12 text-size-5 pr-0">
             {{ dining_list.dish }}
             {# Show delete button when user is owner #}
             {% if user == dining_list.claimed_by %}
-                {% url "slot_delete" year=date.year month=date.month day=date.day identifier=association_slug as url %}
+                {% url "slot_delete" year=date.year month=date.month day=date.day identifier=dining_list.association.slug as url %}
                 <a href="{{ url }}" class="btn btn-danger"><i class="fas fa-trash-alt"></i></a>
             {% endif %}
         </div>
@@ -89,7 +89,7 @@
             </div>
         </div>
         {% if can_change_settings %}
-            {% url 'slot_change' day=date.day month=date.month year=date.year identifier=dining_list.association.associationdetails.shorthand as url%}
+            {% url 'slot_change' day=date.day month=date.month year=date.year identifier=dining_list.association.slug as url %}
             <a class="btn-block btn btn-primary offset-2 col-6" href={{ url }}>Change information</a>
         {% endif %}
     </div>
@@ -122,7 +122,7 @@
                 {% if not user_is_on_list %}
                     <div class="col-12 col-md-6 offset-md-2 text-size-6">
                         {% if user_can_add_self %}
-                            {% url 'entry_add' day=date.day month=date.month year=date.year identifier=dining_list.association.associationdetails.shorthand as url%}
+                            {% url 'entry_add' day=date.day month=date.month year=date.year identifier=dining_list.association.slug as url%}
                             <form method="post" action="{{ url }}?next={{ request.path_info }}">
                                 {% csrf_token %}
                                 <button type="submit" class="btn-block btn btn-primary">Sign up</button>
@@ -136,14 +136,14 @@
                         You are on the dining list!
                     </div>
                     <div class="col-12 col-md-4 offset-md-2 text-size-6">
-                        {% url 'entry_remove' day=date.day month=date.month year=date.year identifier=dining_list.association.associationdetails.shorthand as url%}
+                        {% url 'entry_remove' day=date.day month=date.month year=date.year identifier=dining_list.association.slug as url %}
                         <form method="post" action="{{ url }}?next={{ request.path_info }}">
                             {% csrf_token %}
                             <button type="submit" class="btn btn-block btn-warning">Remove yourself</button>
                         </form>
                     </div>
                 {% endif %}
-                {% url 'entry_add' day=date.day month=date.month year=date.year identifier=dining_list.association.associationdetails.shorthand as url%}
+                {% url 'entry_add' day=date.day month=date.month year=date.year identifier=dining_list.association.slug as url %}
                 {% if user_is_on_list %}
                     <div class="col-12 col-md-6">
                 {% else %}

@@ -1,3 +1,4 @@
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import render
 from django.views.generic.list import ListView
 from CreditManagement.models import *
@@ -17,14 +18,13 @@ class TransactionListView(ListView):
         return AbstractTransaction.get_all_transactions(user=self.request.user).order_by('-pk')
 
 
-class TransactionAddView(View):
+class TransactionAddView(LoginRequiredMixin, View):
     template_name = "credit_management/transaction_add.html"
     context = {}
 
-    @method_decorator(login_required)
     def get(self, request, association_name=None, *args, **kwargs):
         if association_name:
-            association = Association.objects.get(associationdetails__shorthand=association_name)
+            association = Association.objects.get(slug=association_name)
             # If an association is given as the source, check user credentials
             if not self.check_association_permission(request.user, association):
                 return HttpResponseForbidden()
@@ -34,11 +34,10 @@ class TransactionAddView(View):
             self.context['slot_form'] = TransactionForm(user=request.user)
         return render(request, self.template_name, self.context)
 
-    @method_decorator(login_required)
     def post(self, request, association_name=None, *args, **kwargs):
         # Do form shenanigans
         if association_name:
-            association = Association.objects.get(associationdetails__shorthand=association_name)
+            association = Association.objects.get(slug=association_name)
             # If an association is given as the source, check user credentials
             if not self.check_association_permission(request.user, association):
                 return HttpResponseForbidden()

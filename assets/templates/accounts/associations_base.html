@@ -7,11 +7,11 @@
         <ul class="nav nav-tabs">
             <li class="nav-item">
                 <a class="nav-link{% block tab_credits %}{% endblock %}"
-                   href="{% url 'association_credits' association_name=association_slug %}">Credits</a>
+                   href="{% url 'association_credits' association_name=association.slug %}">Credits</a>
             </li>
             <li class="nav-item">
                 <a class="nav-link{% block tab_members %}{% endblock %}"
-                   href="{% url 'association_members' association_name=association_slug %}">Members</a>
+                   href="{% url 'association_members' association_name=association.slug %}">Members</a>
             </li>
         </ul>
 

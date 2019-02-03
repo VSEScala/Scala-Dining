@@ -14,7 +14,7 @@
                 <button type="submit" class="btn btn-danger">
                     <i class="fas fa-trash-alt"></i> Delete dining list
                 </button>
-                {% url "slot_details" year=date.year month=date.month day=date.day identifier=association_slug as back %}
+                {% url "slot_details" year=date.year month=date.month day=date.day identifier=dining_list.association.slug as back %}
                 <a href="{{ back }}" class="btn">Go back</a>
             </form>
         </div>

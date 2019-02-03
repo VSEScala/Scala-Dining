@@ -1,19 +1,7 @@
-from django.contrib import admin
-from .models import User, UserDetail, UserMembership, Association, AssociationDetails
 from django import forms
+from django.contrib import admin
 
-
-# Register your models here.
-
-class UserDetailsLink(admin.StackedInline):
-    """
-    Create the additional information on the user page (taken from a new table)
-    """
-    model = UserDetail
-    readonly_fields = ('is_verified',)
-    can_delete = False
-    verbose_name = ""
-    verbose_name_plural = "More account info"
+from .models import User, UserMembership, Association
 
 
 class AssociationLinks(admin.TabularInline):
@@ -66,6 +54,7 @@ class BoardFilter(admin.RelatedOnlyFieldListFilter):
         super(admin.RelatedOnlyFieldListFilter, self).__init__(*args, **kwargs)
         self.title = 'Boardmembers'
 
+
 class UserAdmin(admin.ModelAdmin):
     """
     Set up limited view of the user page
@@ -75,15 +64,9 @@ class UserAdmin(admin.ModelAdmin):
     list_filter = [MemberOfFilter, ('groups', BoardFilter)]
 
     readonly_fields = ('date_joined', 'last_login',)
-    inlines = [UserDetailsLink, AssociationLinks]
+    inlines = [AssociationLinks]
     fields = ('username', ('first_name', 'last_name'), 'date_joined', 'email')
 
-
-class AssociationDetailsLink(admin.StackedInline):
-    model = AssociationDetails
-    can_delete = False
-    verbose_name = ""
-    verbose_name_plural = "More account info"
 
 class GroupAdminForm(forms.ModelForm):
     """
@@ -96,7 +79,7 @@ class GroupAdminForm(forms.ModelForm):
     )
 
     def __init__(self, *args, **kwargs):
-        super(GroupAdminForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
         # find the users part of the group
         if self.instance.pk:
@@ -114,16 +97,12 @@ class GroupAdminForm(forms.ModelForm):
 
 class AssociationAdmin(admin.ModelAdmin):
     """
-    Create the model for the groups page
+    Create the model for the groups page.
     """
-    exclude = ['permissions', ]
+    exclude = ['permissions']
     form = GroupAdminForm
-    inlines = [AssociationDetailsLink]
 
 
-"""
-Unregister the basic User and Group page, re-register the new designs
-"""
 admin.site.register(User, UserAdmin)
 admin.site.register(Association, AssociationAdmin)
 
