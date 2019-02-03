@@ -46,3 +46,11 @@ class BugReportView(View):
         self.context["Sourcepage"] = request.GET.get('source', '')
 
         return render(request, self.template, self.context)
+
+
+class RulesPageView(View):
+    template = "general/rules_and_regulations.html"
+    context = {}
+
+    def get(self, request):
+        return render(request, self.template, self.context)
