@@ -4,87 +4,67 @@
     {% if entry.user == request.user and entry|get_class == "DiningEntry" %}diningentry-user{% endif %}">
     <div class="{% if can_delete_all or can_delete_some %} col-10 col-sm-11 {% else %} col-12 {% endif %}">
         <div class="row pr-2">
-            {% if entry|get_class == "DiningEntry" %}
-                <div class="col-12 col-md-6 p-0">
-                    {{ entry.user }}
-                </div>
+            <div class="col-12 col-md-6 p-0">
+                {{ entry.name }}
+                {% if entry.get_external %}
+                    <span class="small font-italic">added by {{ entry.user }}</span>
+                {% endif %}
+            </div>
 
-                <div class="text-center col-12 col-md-6 pr-3 btn-group btn-group-toggle" data-toggle="buttons">
-                    {% if can_edit_stats %}
-                        <label class="btn btn-outline-primary col-3
-                            {% if entry.has_shopped %} active {% endif %}">
-                            <input type="checkbox" autocomplete="off"
-                                   id="{{ entry.id }}:shop" name="{{ entry.id }}:has_shopped"
-                                    {% if entry.has_shopped %} checked {% endif %}>
-                            Shop
-                        </label>
-                        <label class="btn btn-outline-primary col-3
-                                {% if entry.has_cooked %} active {% endif %}">
-                            <input type="checkbox" autocomplete="off"
-                                   id="{{ entry.id }}:cook" name="{{ entry.id }}:has_cooked"
-                                    {% if entry.has_cooked %} checked {% endif %}>
-                            Cook
-                        </label>
-                        <label class="btn btn-outline-primary col-3
-                                {% if entry.has_cleaned %} active {% endif %}">
-                            <input type="checkbox" autocomplete="off"
-                                   id="{{ entry.id }}:clean" name="{{ entry.id }}:has_cleaned"
-                                    {% if entry.has_cleaned %} checked {% endif %}}>
-                            Clean
-                        </label>
-                    {% else %}
-                        <div class="col-3">
-                            {% if entry.has_shopped %} Shop {% endif %}
-                        </div>
-                        <div class="col-3">
-                            {% if entry.has_cooked %} Cook {% endif %}
-                        </div>
-                        <div class="col-3">
-                            {% if entry.has_cleaned %} Clean {% endif %}
-                        </div>
-                    {% endif %}
-                    {% if can_edit_pay %}
-                        <label class="btn btn-outline-primary col-3
-                                {% if entry.has_paid %} active {% endif %}">
-                            <input type="checkbox" autocomplete="off"
-                                   id="{{ entry.id }}:paid" name="{{ entry.id }}:has_paid"
-                                    {% if entry.has_paid %} checked {% endif %}>
-                            Paid
-                        </label>
-                    {% else %}
-                        <div class="col-3">
-                            {% if entry.has_paid %} Paid {% endif %}
-                        </div>
-                    {% endif %}
-                </div>
-
-            {% elif entry|get_class == "DiningEntryExternal" %}
-                <div class="col-12 col-md-6 p-0">
-                    {{ entry.name }}
-                    <span class="small d-none d-md-inline">
-                    (Added by {{ entry.user }})
-                    </span>
-                </div>
-
-                <div class="text-center col-12 col-md-6 pr-3 btn-group btn-group-toggle" data-toggle="buttons">
-                        <div class="col-9">
-                            <span class="d-md-none text-size-3">Added by {{ entry.user }}</span>
-                        </div>
-                        {% if can_edit_pay %}
+            <div class="text-center col-12 col-md-6 pr-3 btn-group btn-group-toggle" data-toggle="buttons">
+                {% with entry.get_internal as entry_data %}
+                    {% if entry_data %}
+                        {% if can_edit_stats %}
                             <label class="btn btn-outline-primary col-3
-                                    {% if entry.has_paid %} active {% endif %}">
-                                <input type="checkbox" id="E{{ entry.id }}:paid" name="E{{ entry.id }}:has_paid"
-                                        {% if entry.has_paid %} checked {% endif %}
-                                        {% if not can_edit_pay %} disabled {% endif %}>
-                                Paid
+                                {% if entry_data.has_shopped %} active {% endif %}">
+                                <input type="checkbox" autocomplete="off"
+                                       id="{{ entry_data.id }}:shop" name="{{ entry_data.id }}:has_shopped"
+                                        {% if entry_data.has_shopped %} checked {% endif %}>
+                                Shop
+                            </label>
+                            <label class="btn btn-outline-primary col-3
+                                    {% if entry_data.has_cooked %} active {% endif %}">
+                                <input type="checkbox" autocomplete="off"
+                                       id="{{ entry_data.id }}:cook" name="{{ entry_data.id }}:has_cooked"
+                                        {% if entry_data.has_cooked %} checked {% endif %}>
+                                Cook
+                            </label>
+                            <label class="btn btn-outline-primary col-3
+                                    {% if entry_data.has_cleaned %} active {% endif %}">
+                                <input type="checkbox" autocomplete="off"
+                                       id="{{ entry_data.id }}:clean" name="{{ entry_data.id }}:has_cleaned"
+                                        {% if entry_data.has_cleaned %} checked {% endif %}}>
+                                Clean
                             </label>
                         {% else %}
                             <div class="col-3">
-                                {% if entry.has_paid %} Paid {% endif %}
+                                {% if entry_data.has_shopped %} Shop {% endif %}
+                            </div>
+                            <div class="col-3">
+                                {% if entry_data.has_cooked %} Cook {% endif %}
+                            </div>
+                            <div class="col-3">
+                                {% if entry_data.has_cleaned %} Clean {% endif %}
                             </div>
                         {% endif %}
-                </div>
-            {% endif %}
+                    {% else %}
+                        <div class="col-9"></div>
+                    {% endif %}
+                {% endwith %}
+                {% if can_edit_pay %}
+                    <label class="btn btn-outline-primary col-3
+                            {% if entry.has_paid %} active {% endif %}">
+                        <input type="checkbox" autocomplete="off"
+                               id="{{ entry.id }}:paid" name="{{ entry.id }}:has_paid"
+                                {% if entry.has_paid %} checked {% endif %}>
+                        Paid
+                    </label>
+                {% else %}
+                    <div class="col-3">
+                        {% if entry.has_paid %} Paid {% endif %}
+                    </div>
+                {% endif %}
+            </div>
         </div>
     </div>
     {% if can_delete_all or is_open and can_delete_some and request.user == entry.user %}

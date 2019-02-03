@@ -18,13 +18,13 @@
             <div class="col-4 col-sm-2 p-0">
                 Association
             </div>
-            <div class="show-sm col-sm-1 p-0">
+            <div class="d-none d-sm-flex col-sm-1 p-0">
                 Diners
             </div>
         </div>
         {% for entry in dining_entries_select %}
             <hr class="col-12 m-0">
-            {% include 'snippets/snippet_history_dininglist.html' %}
+            {% include 'accounts/snippet_history_dininglist.html' %}
         {% endfor %}
         <br><br>
 

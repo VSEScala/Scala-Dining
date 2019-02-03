@@ -6,11 +6,9 @@
 
 {# Non field errors #}
 {% if form.non_field_errors %}
-    <div class="alert alert-danger" role="alert">
-        {% for error in form.non_field_errors %}
-            {{ error }}
-        {% endfor %}
-    </div>
+    {% for error in form.non_field_errors %}
+        <div class="alert alert-danger" role="alert">{{ error }}</div>
+    {% endfor %}
 {% endif %}
 
 {% for field in form.visible_fields %}
@@ -39,7 +37,11 @@
                 {% endif %}
             {% else %}
                 {# Not submitted yet #}
-                {% render_field field class="form-control" placeholder=field.label %}
+                {% if field.field.disabled %}
+                    {% render_field field class="form-control-plaintext" placeholder=field.label %}
+                {% else %}
+                    {% render_field field class="form-control" placeholder=field.label %}
+                {% endif %}
             {% endif %}
             {# Help text #}
             {% if field.help_text %}

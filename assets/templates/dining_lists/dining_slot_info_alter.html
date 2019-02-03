@@ -2,45 +2,33 @@
 {% load staticfiles %}
 {% load form_extras %}
 
-
-
 {% block details %}
     <form method="post" class="col-12">
         {% csrf_token %}
+        {# Display the info form #}
         {% if info_form %}
-            <h1>
-            General info
-            </h1>
-            {% for field in info_form %}
-                {% include 'snippets/field_snippet.html' %}
-                <br>
-            {% endfor %}
+            <h1>General info</h1>
+            {% include "snippets/bootstrap_form.html" with form=info_form %}
         {% endif %}
 
+        {# Display the payment form #}
         {% if payment_form %}
-            <h1>
-                Cost and payment
-            </h1>
-            <div class="col-12">
-                Either fill in total cost or single cost
-            </div>
-            {% for field in payment_form %}
-                {% include 'snippets/field_snippet.html' %}
-                <br>
-            {% endfor %}
+            <h1>Cost and payment</h1>
+            {% include "snippets/bootstrap_form.html" with form=payment_form %}
         {% else %}
-            <h3>
-                Cost and payment
-            </h3>
+            {# Display information that the payment form is absent because it is enabled for someone else #}
+            <h3>Cost and payment</h3>
             <div class="col-12">
                 Control given to the purchaser: {{ dining_list.get_purchaser }}
             </div>
         {% endif %}
-        <br><br>
 
-        <a href="{% url 'slot_details' day=date.day month=date.month year=date.year identifier=dining_list.association.associationdetails.shorthand %}"
-           class="col-5 btn">
-            Cancel
-        </a>
-        <input type="submit" value="Save" class="col-6 btn btn-primary"/>
+        {# The save and cancel buttons #}
+        <div class="row">
+            <div class="col-6"><button type="submit" class="btn btn-block btn-primary">Save</button></div>
+            <div class="col-6">
+                <a href="{{ dining_list.get_absolute_url }}" class="btn btn-block btn-secondary">Cancel</a>
+            </div>
+        </div>
+    </form>
 {% endblock %}

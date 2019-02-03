@@ -27,7 +27,7 @@
         {% endif %}</div>
         <div class="text-size-4">{{ slot.dish }}</div>
         <br>
-        <div class="text-size-3">{{ slot.diners }}/{{ slot.max_diners }} diners - Serve time: {{ slot.serve_time }}</div>
+        <div class="text-size-3">{{ slot.diners.count }}/{{ slot.max_diners }} diners - Serve time: {{ slot.serve_time }}</div>
     </div>
 
     {% if interactive %}

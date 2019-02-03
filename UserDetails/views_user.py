@@ -6,7 +6,7 @@ from django.shortcuts import render
 from django.utils.decorators import method_decorator
 from django.views.generic import View
 
-from Dining.models import DiningEntry
+from Dining.models import DiningEntryUser
 from .forms import Settings_Essentials_Form, Settings_Dining_Form
 
 
@@ -21,7 +21,7 @@ class DiningHistoryView(View):
         upper_bound = length * page
 
         # get all dining lists
-        self.context['dining_entries'] = DiningEntry.objects.filter(user=request.user).order_by('-dining_list__date')
+        self.context['dining_entries'] = DiningEntryUser.objects.filter(user=request.user).order_by('-dining_list__date')
         self.context['dining_entries_select'] = self.context['dining_entries'][lower_bound:upper_bound]
         self.context['page'] = page
         self.context['pages'] = math.ceil(len(self.context['dining_entries']) / length)

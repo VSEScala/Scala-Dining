@@ -2,29 +2,18 @@
 {% load form_extras %}
 {% load credit_tags %}
 
+{% block tab_credits %} active{% endblock %}
+
 {% block details %}
-    <div class="col-12 my-4">
-        {{ association }}<br>
-        Balance since {{ balance.start_date }}:
-        {# Todo: balance.credit #}
-        {{ 0|euro }}
+    <p>Current balance: <strong>{{ balance|euro }}</strong></p>
 
-    </div>
-    <div class="col-12 row">
-        {% for entry in entries %}
-            {% if entry|get_class == "Transaction" %}
-                {% include 'snippets/snippet_credits_transaction.html' %}
-            {% else %}
-                <div class="col-11"> {{ entry }}</div>
-            {% endif %}
-            <hr class="col-12">
-        {% endfor %}
-    </div>
-    <a class="col-12 btn btn-block">
-        + Transfer credits
+    {% for transaction in object_list %}
+        {% include 'credit_management/snippet_credit_history_association.html' %}
+    {% endfor %}
+
+    {% include 'snippets/paginator.html' %}
+
+    <a class="btn btn-block btn-primary" href="{% url 'transaction_add' association_name=association_slug %}">
+        Transfer credits
     </a>
-
-    {% url 'association_credits' association_name=association_name as url %}
-    {% include 'snippets/snippet_pagination.html' %}
-
 {% endblock %}

@@ -13,6 +13,7 @@ from django.utils.translation import gettext as _
 from django.views.generic import TemplateView, View
 from django.views.generic.base import ContextMixin
 from django.views.generic.edit import DeleteView
+from django.conf import settings
 
 from .forms import CreateSlotForm, DiningInfoForm, DiningPaymentForm, DiningEntryCreateForm, DiningEntryDeleteForm, \
     DiningListDeleteForm
@@ -129,10 +130,16 @@ class DayView(LoginRequiredMixin, DayMixin, TemplateView):
         context['Announcements'] = DiningDayAnnouncements.objects.filter(date=self.date)
 
         # Check if create slot button must be shown
-        # Todo: optionally hide claim button when time is past closure time
         # (but I prefer to only check when claiming to reduce code)
         in_future = self.date >= timezone.now().date()
-        context['can_create_slot'] = DiningList.objects.available_slots(self.date) >= 0 and in_future
+        if in_future and self.date == timezone.now().date():
+            # If date is today, check if the dining slot claim time has not passed
+            if settings.DINING_SLOT_CLAIM_CLOSURE_TIME < timezone.now().time():
+                in_future = False
+
+        has_no_claimed_slots = len(context['dining_lists'].filter(claimed_by=self.request.user)) == 0
+        context['can_create_slot'] = DiningList.objects.available_slots(self.date) >= 0 and\
+                                     in_future and has_no_claimed_slots
 
         # Make the view clickable
         context['interactive'] = True
@@ -184,6 +191,8 @@ class NewSlotView(LoginRequiredMixin, DayMixin, TemplateView):
         available_slots = DiningList.objects.available_slots(self.date)
         if available_slots <= 0:
             return HttpResponseForbidden('No available slots')
+        if len(DiningList.objects.filter(date=self.date).filter(claimed_by=self.request.user)) > 0:
+            return HttpResponseForbidden('You already have dining slot claimed today')
         return super().dispatch(request, *args, **kwargs)
 
 
@@ -222,6 +231,7 @@ class EntryAddView(LoginRequiredMixin, DiningListMixin, TemplateView):
         return self.render_to_response(context)
 
     def post(self, request, *args, **kwargs):
+        # Todo: re-enable External Dining Entries
         context = self.get_context_data()
 
         # Do form shenanigans
@@ -242,14 +252,12 @@ class EntryAddView(LoginRequiredMixin, DiningListMixin, TemplateView):
             # Todo: Check if user is on multiple dining lists today, then show warning
             return HttpResponseRedirect(self.reverse('slot_list'))
 
-
         # Render form otherwise
         context['form'] = form
         return self.render_to_response(context)
 
 
 class EntryRemoveView(LoginRequiredMixin, DiningListMixin, View):
-
     http_method_names = ['post']
 
     def post(self, request, *args, entry_id=None, **kwargs):
@@ -310,50 +318,76 @@ class SlotListView(LoginRequiredMixin, SlotMixin, TemplateView):
         context = super().get_context_data(**kwargs)
         context['tab'] = "list"
 
-        context['can_delete_some'] = False
         context['entries'] = self.dining_list.dining_entries.all()
 
+        # determine whether the user has external entries added that he/she can remove until closing time
+        context['can_delete_some'] = \
+            self.dining_list.external_dining_entries().filter(user=self.request.user).count() > 0
         context['can_delete_some'] = context['can_delete_some'] * context['is_open']
+
         context['can_edit_stats'] = (self.request.user == self.dining_list.claimed_by)
         context['can_delete_all'] = (self.request.user == self.dining_list.claimed_by)
         purchaser = self.dining_list.purchaser
         context['can_edit_pay'] = (self.request.user == purchaser or
-                                        (purchaser is None and self.request.user == self.dining_list.claimed_by))
+                                   (purchaser is None and self.request.user == self.dining_list.claimed_by))
         return context
 
     def post(self, request, *args, **kwargs):
         can_adjust_stats = request.user == self.dining_list.claimed_by
         can_adjust_paid = request.user == self.dining_list.get_purchaser()
 
-        entries = {}
-        # Loop over all user entries, and store them
-        for entry in self.dining_list.dining_entries.all():
-            if can_adjust_stats:
+        if not (can_adjust_stats or can_adjust_paid):
+            messages.add_message(request, messages.ERROR, "You did not have the rights to adjust anything")
+            return HttpResponseRedirect(self.reverse('slot_list'))
+
+        # Get all the keys in the post and put all relevant ones in a list
+        post_requests = []
+        for key in request.POST:
+            key = key.split(":")
+            if len(key) == 2:
+                post_requests.append(key)
+
+        if can_adjust_paid:
+            # Process payment for all entries
+            entries = {}
+
+            # For all entries in the dining list, set the paid value to false
+            for entry in self.dining_list.dining_entries.all():
+                entry.has_paid = False
+                entries[str(entry.id)] = entry
+
+            # Go over all keys in the request containing has_paid, adjust the state on that object
+            for key in post_requests:
+                if key[1] == "has_paid":
+                    entries[key[0]].has_paid = True
+
+            # save all has_paid values
+            for entry in entries.values():
+                entry.save()
+
+        if can_adjust_stats:
+            # Adjust the help stats
+            entries = {}
+
+            # For all entries in the dining list, set the values to false
+            for entry in self.dining_list.internal_dining_entries():
                 entry.has_shopped = False
                 entry.has_cooked = False
                 entry.has_cleaned = False
-            if can_adjust_paid:
-                entry.has_paid = False
-            entries[str(entry.id)] = entry
+                entries[str(entry.id)] = entry
 
-        # Loop over all keys,
-        for key in request.POST:
-            keysplit = key.split(":")
-            if len(keysplit) != 2:
-                continue
+            # Go over all keys in the request containing has_paid, adjust the state on that object
+            for key in post_requests:
+                if key[1] == "has_shopped":
+                    entries[key[0]].has_shopped = True
+                elif key[1] == "has_cooked":
+                    entries[key[0]].has_cooked = True
+                elif key[1] == "has_cleaned":
+                    entries[key[0]].has_cleaned = True
 
-            if can_adjust_stats:
-                if keysplit[1] == "has_shopped":
-                    entries[keysplit[0]].has_shopped = True
-                elif keysplit[1] == "has_cooked":
-                    entries[keysplit[0]].has_cooked = True
-                elif keysplit[1] == "has_cleaned":
-                    entries[keysplit[0]].has_cleaned = True
-            if can_adjust_paid and keysplit[1] == "has_paid":
-                entries[keysplit[0]].has_paid = True
-
-        for entry in entries.values():
-            entry.save()
+            # save all has_paid values
+            for entry in entries.values():
+                entry.save()
 
         return HttpResponseRedirect(self.reverse('slot_list'))
 
@@ -452,7 +486,7 @@ class SlotAllergyView(LoginRequiredMixin, SlotMixin, TemplateView):
         from django.db.models import CharField
         from django.db.models.functions import Length
         CharField.register_lookup(Length)
-        context['allergy_entries'] = self.dining_list.dining_entries.filter(
+        context['allergy_entries'] = self.dining_list.internal_dining_entries().filter(
             user__userdiningsettings__allergies__length__gt=1)
 
         return context

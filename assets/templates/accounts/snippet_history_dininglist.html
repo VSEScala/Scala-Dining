@@ -1,0 +1,34 @@
+<div class="row col-12 m-0 p-0 p-md-2 py-2">
+            <div class="col-4 col-sm-2 p-0">
+                {{ entry.dining_list.date }}
+            </div>
+            <div class="col-8 col-sm-3 p-0">
+                {{ entry.dining_list.dish }}
+            </div>
+            <div class="col-4 order-1 order-sm-0 col-sm-2 p-0">
+                {{ entry.dining_list.claimed_by }}
+            </div>
+            <div class="col-4 col-sm-2 p-0">
+                {{ entry.dining_list.association.associationdetails.shorthand }}
+            </div>
+            <div class="col-sm-1 p-0 d-none d-sm-flex">
+                {{ entry.dining_list.dining_entries.count }}
+            </div>
+
+            <div class="text-size-2 text-center order-1 order-sm-0 col-4 col-sm-2 pr-3">
+                <div class="row dining-help-row">
+                    <div class="col-3">
+                        {% if entry.has_shopped %} S {% endif %}
+                    </div>
+                    <div class="col-3">
+                        {% if entry.has_cooked %} C {% endif %}
+                    </div>
+                    <div class="col-3">
+                        {% if entry.has_cleaned %} D {% endif %}
+                    </div>
+                    <div class="col-3">
+                        {% if entry.has_paid %} P {% endif %}
+                    </div>
+                </div>
+            </div>
+</div>

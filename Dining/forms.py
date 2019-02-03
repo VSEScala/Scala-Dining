@@ -5,11 +5,9 @@ from django.db import transaction
 from django.utils.translation import gettext as _
 from django.core.exceptions import ValidationError, PermissionDenied
 
-from CreditManagement.forms import NewTransactionForm
 from UserDetails.models import Association, User
-from .models import DiningList, DiningEntry
+from .models import DiningList, DiningEntry, DiningEntryUser
 from General.util import SelectWithDisabled
-from CreditManagement.models import Transaction
 
 
 def _clean_form(form):
@@ -53,6 +51,7 @@ class CreateSlotForm(forms.ModelForm):
 
         if len(available) == 1:
             self.fields['association'].initial = available[0].pk
+            self.fields['association'].disabled = True
 
     def save(self, commit=True):
         instance = super().save(commit=False)
@@ -66,12 +65,11 @@ class CreateSlotForm(forms.ModelForm):
 
 
 class DiningInfoForm(forms.ModelForm):
-
     def __init__(self, *args, **kwargs):
         dining_list = kwargs.get("instance")
         super(DiningInfoForm, self).__init__(*args, **kwargs)
 
-        query = get_user_model().objects.filter(dining_entries__in=dining_list.dining_entries.all())
+        query = dining_list.diners
         self.fields['purchaser'].queryset = query
 
     class Meta:
@@ -85,15 +83,16 @@ class DiningInfoForm(forms.ModelForm):
 class DiningPaymentForm(forms.ModelForm):
     class Meta:
         model = DiningList
-        fields = ['dish', 'dinner_cost_total', 'dinner_cost_single', 'tikkie_link']
+        fields = ['dish', 'dinner_cost_total', 'dinner_cost_single', 'payment_link']
+        help_texts = {
+            'dinner_cost_total': 'Either adjust total dinner cost or single dinner cost',
+            'dinner_cost_single': 'Either adjust total dinner cost or single dinner cost',
+        }
 
     def __init__(self, *args, **kwargs):
         super(DiningPaymentForm, self).__init__(*args, **kwargs)
 
     def save(self):
-        print("Save function")
-        print(self.instance.dish)
-        print(self.instance.dinner_cost_total)
         # If the single value has been added, recompute the total amount
         # also check if it has changed from earlier status
         old_list = DiningList.objects.get(id=self.instance.id)
@@ -101,8 +100,6 @@ class DiningPaymentForm(forms.ModelForm):
         if 0 < self.instance.dinner_cost_single != old_list.dinner_cost_single:
             self.instance.dinner_cost_total = self.instance.dinner_cost_single * self.instance.diners
 
-        print(self.instance.dinner_cost_single)
-        print(self.instance.dinner_cost_total)
         self.instance.save(update_fields=self.Meta.fields)
 
 
@@ -110,8 +107,8 @@ class DiningEntryCreateForm(forms.ModelForm):
     user = forms.ModelChoiceField(queryset=None)
 
     class Meta():
-        model = DiningEntry
-        fields = ['dining_list', 'user', 'added_by', 'external_name']
+        model = DiningEntryUser
+        fields = ['dining_list', 'user']
 
     def __init__(self, adder, dining_list, data=None, **kwargs):
         """
@@ -121,7 +118,6 @@ class DiningEntryCreateForm(forms.ModelForm):
             # User defaults to adder if not set
             data = data.copy()
             data.setdefault('user', adder.pk)
-            data.setdefault('added_by', adder.pk)
             data.setdefault('dining_list', dining_list.pk)
 
         super().__init__(**kwargs, data=data)
@@ -136,16 +132,8 @@ class DiningEntryCreateForm(forms.ModelForm):
             users.filter(pk=adder.pk)
         self.fields['user'].queryset = users
 
-        # Prepare transaction
-        self.transaction = NewTransactionForm({'source_user': adder.pk,
-                                               'target_association': dining_list.association.pk,
-                                               'amount': dining_list.kitchen_cost,
-                                               'notes': _("Kitchen cost")})
-
     def clean(self):
         cleaned_data = super().clean()
-        # Also clean transaction
-        _clean_form(self.transaction)
         return cleaned_data
 
     def save(self, commit=True):
@@ -155,7 +143,6 @@ class DiningEntryCreateForm(forms.ModelForm):
         with transaction.atomic():
             # Possible race condition regarding instance validation
             instance = super().save(commit)
-            self.transaction.save(commit)
         return instance
 
 
@@ -170,10 +157,6 @@ class DiningEntryDeleteForm(forms.ModelForm):
         """
         super().__init__(instance=instance, data={}, **kwargs)
         self.deleted_by = deleted_by
-        self.transaction = NewTransactionForm({'source_association': instance.dining_list.association.pk,
-                                               'target_user': instance.user.pk,
-                                               'amount': instance.dining_list.kitchen_cost,
-                                               'notes': _("Kitchen cost refund")})
 
     def clean(self):
         cleaned_data = super().clean()

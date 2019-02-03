@@ -1,25 +1,10 @@
+from django.contrib import admin
+from CreditManagement.models import *
 from datetime import datetime, timedelta
 
 from django.contrib import admin
 
-from CreditManagement.models import Transaction
 from UserDetails.models import Association, UserMembership
-
-
-class TransactionAdmin(admin.ModelAdmin):
-    list_display = ('moment', 'source_user', 'source_association', 'target_user', 'target_association', 'amount')
-    list_filter = ('moment', 'source_association', 'target_association')
-    fields = (('source_user', 'source_association'), ('target_user', 'target_association'),
-              'amount', 'notes', 'dining_list')
-
-    def has_change_permission(self, request, obj=None):
-        return False
-
-    def has_delete_permission(self, request, obj=None):
-        return False
-
-
-admin.site.register(Transaction, TransactionAdmin)
 
 
 class MemberOfFilter(admin.SimpleListFilter):
@@ -98,4 +83,68 @@ class NegativeCreditDateFilter(admin.SimpleListFilter):
         # results = UserCredit.objects.filter(negative_since__lte=start_date).values_list('pk')
 
         # Crosslink the given user identities with the given query
-        # return queryset.filter(pk__in=results)
+        return queryset.filter(pk__in=results)
+
+
+class UserCreditAdmin(admin.ModelAdmin):
+    """
+    Set up limited view of the user page
+    """
+
+    list_display = ('user', 'credit', 'is_verified')
+    list_filter = [MemberOfFilter, NegativeCreditDateFilter]
+    readonly_fields = ('credit','negative_since')
+
+    def is_verified(self, obj):
+        return obj.user.is_verified()
+    is_verified.short_description = 'User verified?'
+
+
+class FixedTransactionAdmin(admin.ModelAdmin):
+    list_display = ('order_moment', 'source_user', 'source_association',
+                    'amount', 'target_user', 'target_association')
+
+
+class PendingTransactionAdmin(admin.ModelAdmin):
+    list_display = ('order_moment', 'source_user', 'source_association',
+                    'amount', 'target_user', 'target_association')
+
+    actions = ['finalise']
+
+    def finalise(self, request, queryset):
+        for obj in queryset:
+            obj.finalise()
+
+
+class PendingDiningListTrackerAdmin(admin.ModelAdmin):
+    list_display = ('dining_list',)
+
+    actions = ['finalise']
+
+    def finalise(self, request, queryset):
+        for obj in queryset:
+            obj.finalise()
+
+
+class PendingDiningTransactionAdmin(admin.ModelAdmin):
+    list_display = ('order_moment', 'source_user', 'amount')
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+# admin.site.register(UserCredit, UserCreditAdmin)
+# admin.site.register(Transaction, TransactionsAdmin)
+# admin.site.register(AssociationCredit, AssociationCreditAdmin)
+
+
+admin.site.register(FixedTransaction, FixedTransactionAdmin)
+admin.site.register(PendingTransaction, PendingTransactionAdmin)
+admin.site.register(PendingDiningTransaction, PendingDiningTransactionAdmin)
+admin.site.register(PendingDiningListTracker, PendingDiningListTrackerAdmin)
+admin.site.register(UserCredit)
