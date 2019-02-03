@@ -5,13 +5,11 @@
     <div class="col-12 row">
         {% for entry in entries %}
             <div>
-                <h3><b>{{ entry.version }}</b>{{ entry.title }}</h3>
+                <h3><b>{{ entry.date }}</b>{{ entry.title }}</h3>
                 {{ entry.message }}
             </div>
         {% endfor %}
     </div>
-
-    {{ request.get_full_path }}
 
     {% if pages > 1 %}
         <div class="col-12 mt-4 row">
@@ -24,7 +22,7 @@
             {% endfor %}
         </div>
     {% elif pages == 0 %}
-        No changes in your credits have been made yet.
+        No news entries are made yet
     {% endif %}
 
 {% endblock %}

@@ -62,8 +62,8 @@
                         <i class="fas fa-info"></i>
                     </a>
                     <div class="dropdown-menu dropdown-menu-right" style="position: absolute;">
-                        <a class="dropdown-item" href="#">Rules & Regulation</a>
-                        <a class="dropdown-item" href="{% url 'site_updates' %}">Version history</a>
+                        <a class="dropdown-item" href="{% url 'rules_and_regulations' %}">Rules & Regulation</a>
+                        <a class="dropdown-item" href="{% url 'site_updates' %}">News and Updates</a>
                         <a class="dropdown-item" href="{% url 'site_bugreport' %}?source={{ request.get_full_path }}">Report Bug</a>
                     </div>
                 </li>
