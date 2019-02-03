@@ -25,9 +25,11 @@ class TransactionForm(forms.ModelForm):
         self.instance.save()
 
     def clean(self):
-        cleaned_data = super(TransactionForm, self).clean()
+        cleaned_data = super().clean()
 
         # Do not allow associations to make evaporating money transactons
         # (not restircted on database level, but it doesn't make sense to order it)
-        if not cleaned_data.get('target_association') and not cleaned_data.get('target_association'):
-            raise ValidationError("Select a target to transfer the money to")
+        if not cleaned_data.get('target_user') and not cleaned_data.get('target_association'):
+            raise ValidationError("Select a target to transfer the money to.")
+
+        return cleaned_data
