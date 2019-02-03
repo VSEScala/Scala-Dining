@@ -9,7 +9,7 @@ from django.shortcuts import get_object_or_404
 from django.views import View
 from django.views.generic import ListView
 
-from CreditManagement.models import AbstractTransaction
+from CreditManagement.models import AbstractTransaction, FixedTransaction
 from .models import UserMembership, Association, User
 
 
@@ -55,7 +55,7 @@ class TransactionsCsvView(LoginRequiredMixin, AssociationBoardMixin, View):
         csv_writer.writerow(['Created on', 'Executed on', 'Source type', 'Source name', 'Source e-mail', 'Target type',
                              'Target name', 'Target e-mail', 'Amount', 'Description'])
         # Write transactions
-        for t in AbstractTransaction.get_all_transactions(association=self.association):
+        for t in FixedTransaction.get_all_transactions(association=self.association):
             # Transaction moment
             moment = [t.order_moment.isoformat(), t.confirm_moment.isoformat()]
             # Transaction source

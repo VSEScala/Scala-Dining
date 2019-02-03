@@ -9,7 +9,7 @@
         <div class="col-sm-6 col-md-8">Current balance: <strong>{{ balance|euro }}</strong></div>
         <div class="col-sm-6 col-md-4">
             <a href="{% url 'association_transactions_csv' association_name=association_slug %}"
-               class="btn btn-secondary btn-block">Download CSV export</a>
+               class="btn btn-secondary btn-block"><i class="fa fa-file-export"></i> Transactions CSV</a>
         </div>
     </div>
 
