@@ -46,8 +46,13 @@ class RegisterUserDetails(forms.ModelForm):
 
 class RegisterAssociationLinks(forms.Form):
     # Could change the widget to e.g. checkboxes
-    associations = forms.MultipleChoiceField(choices=[(a.pk, a.name) for a in Association.objects.all()],
+    # Try except is needed in case Associations is not yet a created table
+    # (this line is reached in a migrate command, which fails)
+    try:
+        associations = forms.MultipleChoiceField(choices=[(a.pk, a.name) for a in Association.objects.all()],
                                              help_text='At which associations are you active?')
+    except:
+        pass
 
     def create_links_for(self, user):
         for association in self.cleaned_data['associations']:

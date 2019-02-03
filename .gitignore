@@ -169,6 +169,4 @@ uploads/
 Socrates/config.py
 .idea/
 *.iml
-*/migrations/*
-!*/migrations/__init__.py
-!*/migrations/*_view.py
+*/ignore/*

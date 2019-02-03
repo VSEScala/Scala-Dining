@@ -1,6 +1,4 @@
 from django.db import models
-from django.db.models import Sum, Q, Value
-from django.db.models.functions import Coalesce
 from django.contrib.auth.models import AbstractUser, Group
 from django.utils.functional import cached_property
 from decimal import Decimal, Context, Inexact
