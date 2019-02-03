@@ -5,9 +5,7 @@ from django.contrib.auth.decorators import login_required
 from django.utils.decorators import method_decorator
 from .forms import *
 from django.views.generic import View
-from django.http import HttpResponseForbidden
-
-
+from django.http import HttpResponseForbidden, HttpResponseRedirect
 
 
 class TransactionListView(ListView):
@@ -49,16 +47,12 @@ class TransactionAddView(View):
         else:
             form = TransactionForm(request.POST, user=request.user)
 
-
         if form.is_valid():
             form.save()
-        else:
-            self.context['slot_form'] = form
-            return render(request, self.template_name, self.context)
+            return HttpResponseRedirect(request.path_info)
 
-        # Render form otherwise
-        #self.context['slot_form'] = form
-        return self.get(request, *args, **kwargs)
+        self.context['slot_form'] = form
+        return render(request, self.template_name, self.context)
 
     def check_association_permission(self, user, association):
         if user.groups.filter(id=association.id).count() > 0:
