@@ -46,7 +46,7 @@
                 <a class="btn-block col-2 btn btn-primary slot-signup" href={{ url }}></a>
             {% elif slot|is_on_slot:request.user and slot.is_open %}
                 {% url 'entry_remove' day=date.day month=date.month year=date.year identifier=slot.association.associationdetails.shorthand as url%}
-                <a class="btn-block col-2 btn btn-primary slot-unlist" href={{ url }}></a>
+                <a class="btn-block col-2 btn btn-primary slot-unlist" href={{ url }}?next={{ request.path_info }}></a>
             {% endif %}
         {% endwith %}
     {% endif %}
