@@ -14,13 +14,13 @@
 
 
 <div class="container">
-    <div class="row text-center">
+    <div class="row">
         <div class="col-sm-6 order-sm-1 login-heightcontrol">
             <div class="position-relative h-100">
-                <div class="login-reg_height_offset">
-                Are you hungry?
-                <br>
-                Sign up now and join dinner with the other culture associations.
+                <div class="login-reg_height_offset text-center">
+                    Are you hungry?
+                    <br>
+                    Sign up now and join dinner with the other culture associations.
                 </div>
                 <br class="d-sm-none">
                 <br class="d-sm-none">
@@ -33,12 +33,14 @@
 
             <form method="post" class="position-relative h-100">
                 <div class="login-log_height_offset">
-                    <div class="hide-sm">
-                        Already have an account? Log in!
-                    </div>
+                    <p class="hide-sm text-center">Already have an account? Log in!</p>
                     {% csrf_token %}
                     {% include "snippets/bootstrap_form.html" %}
                 </div>
+                <p>
+                    Are you a Quadrivium member?
+                    <a href="{% url 'oidc_authentication_init' %}">Click here to log in with your Q account.</a>
+                </p>
                 <button type="submit" class="btn btn-block btn-primary login-hooklow">Log in</button>
             </form>
 
