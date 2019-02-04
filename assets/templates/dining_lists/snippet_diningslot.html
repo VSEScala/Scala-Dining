@@ -42,8 +42,12 @@
 
 
             {% if can_join %}
-                {% url 'entry_join' day=date.day month=date.month year=date.year identifier=slot.association.associationdetails.shorthand as url%}
-                <a class="btn-block col-2 btn btn-primary slot-signup" href={{ url }}></a>
+                {% url 'entry_add' day=date.day month=date.month year=date.year identifier=slot.association.associationdetails.shorthand as url%}
+                {% url 'slot_details' day=date.day month=date.month year=date.year identifier=slot.association.associationdetails.shorthand as next%}
+                <form method="post" action="{{ url }}?next={{ next }}" class="btn-block col-2 slot-signup d-inline-flex">
+                    {% csrf_token %}
+                    <button type="submit" class="btn-block btn btn-primary slot-signup"></button>
+                </form>
             {% elif slot|is_on_slot:request.user and slot.is_open %}
                 {% url 'entry_remove' day=date.day month=date.month year=date.year identifier=slot.association.associationdetails.shorthand as url%}
                 <a class="btn-block col-2 btn btn-primary slot-unlist" href={{ url }}?next={{ request.path_info }}></a>
