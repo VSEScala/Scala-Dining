@@ -17,7 +17,7 @@ from django.conf import settings
 
 from .forms import CreateSlotForm, DiningInfoForm, DiningPaymentForm, DiningEntryCreateForm, DiningEntryDeleteForm, \
     DiningListDeleteForm
-from .models import DiningList, DiningEntry, DiningDayAnnouncements, DiningComment, DiningCommentView
+from .models import DiningList, DiningEntry, DiningDayAnnouncements, DiningComment, DiningCommentView, DiningEntryUser
 
 
 def index(request):
@@ -258,14 +258,19 @@ class EntryAddView(LoginRequiredMixin, DiningListMixin, TemplateView):
 
 
 class EntryRemoveView(LoginRequiredMixin, DiningListMixin, View):
-    http_method_names = ['post']
+    #http_method_names = ['post']
+
+    def get(self, request, *args, entry_id=None, **kwargs):
+        # TODO: This is a quick fix, some places still refer to a get page, but are already in a form
+        # (e.g. diners display) and thus this is needed.
+        return self.post(request, *args, entry_id=entry_id, **kwargs)
 
     def post(self, request, *args, entry_id=None, **kwargs):
         # Get entry
         if entry_id:
             entry = get_object_or_404(DiningEntry, id=entry_id)
         else:
-            entry = get_object_or_404(DiningEntry, dining_list=self.dining_list, user=request.user, external_name="")
+            entry = get_object_or_404(DiningEntryUser, dining_list=self.dining_list, user=request.user)
 
         # Process deletion
         form = DiningEntryDeleteForm(request.user, entry)
