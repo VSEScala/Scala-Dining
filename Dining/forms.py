@@ -179,18 +179,13 @@ class DiningEntryDeleteForm(forms.ModelForm):
         # if self.instance.user == list.claimed_by:
         #     raise ValidationError(_("The claimant can't be removed from the dining list."), code='invalid')
 
-        # Validate transaction
-        _clean_form(self.transaction)
-
         return cleaned_data
 
     def execute(self):
         # Try saving to check if form is validated (raises ValueError if not)
         self.save(commit=False)
 
-        with transaction.atomic():
-            self.transaction.save()
-            self.instance.delete()
+        self.instance.delete()
 
 
 class DiningListDeleteForm(forms.ModelForm):
