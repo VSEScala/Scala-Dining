@@ -7,7 +7,6 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ('CreditManagement', '0002_auto_20190203_1923'),
-        ('CreditManagement', 'usercredit_view'),
     ]
 
     operations = [
