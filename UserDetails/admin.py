@@ -63,9 +63,9 @@ class UserAdmin(admin.ModelAdmin):
     list_display = ('username', 'first_name', 'last_name', 'is_verified', 'last_login')
     list_filter = [MemberOfFilter, ('groups', BoardFilter)]
 
-    readonly_fields = ('date_joined', 'last_login',)
+    readonly_fields = ('date_joined', 'last_login', 'external_link')
     inlines = [AssociationLinks]
-    fields = ('username', ('first_name', 'last_name'), 'date_joined', 'email')
+    fields = ('username', ('first_name', 'last_name'), 'date_joined', 'email', 'external_link')
 
 
 class GroupAdminForm(forms.ModelForm):

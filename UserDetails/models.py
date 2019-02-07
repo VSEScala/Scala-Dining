@@ -2,10 +2,15 @@ from decimal import Decimal, Context, Inexact
 
 from django.contrib.auth.models import AbstractUser, Group
 from django.db import models
+from django.utils import timezone
 from django.utils.functional import cached_property
 
 
 class User(AbstractUser):
+    # Field that can be used to link a user account to a user account in an external system such as OpenID Connect.
+    # Should contain something like a UUID.
+    external_link = models.CharField(max_length=150, editable=False, default="",
+                                     help_text="When this is set, the account is linked to an external system.")
 
     def __str__(self):
         name = self.first_name + " " + self.last_name
@@ -52,5 +57,5 @@ class UserMembership(models.Model):
     related_user = models.ForeignKey(User, on_delete=models.CASCADE)
     association = models.ForeignKey(Association, on_delete=models.CASCADE)
     is_verified = models.BooleanField(default=False)
-    verified_on = models.DateField(blank=True, null=True, default=None)
-    created_on = models.DateField(auto_created=True, blank=True, null=True)
+    verified_on = models.DateTimeField(blank=True, null=True, default=None)
+    created_on = models.DateTimeField(default=timezone.now)
