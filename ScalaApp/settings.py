@@ -41,8 +41,13 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django.contrib.humanize',
+    'django.contrib.sites',
 
     'widget_tweaks',
+
+    'allauth',
+    'allauth.account',
+    'allauth.socialaccount',
 
     # Quadrivium OpenID Connect
     'mozilla_django_oidc',
@@ -170,5 +175,8 @@ from .scala_settings import *
 from .settings_q_oidc import *
 AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
+    'allauth.account.auth_backends.AuthenticationBackend',
     'UserDetails.oidc.QuadriviumOIDCAB',
 ]
+
+SITE_ID = 1
