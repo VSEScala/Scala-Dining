@@ -33,7 +33,7 @@
 
 .login-heightcontrol{
     height: 30vh;
-    min-height: 200px;
+    min-height: 250px;
 }
 
 .login-reg_height_offset, .login-log_height_offset{

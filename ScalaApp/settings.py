@@ -44,6 +44,9 @@ INSTALLED_APPS = [
 
     'widget_tweaks',
 
+    # Quadrivium OpenID Connect
+    'mozilla_django_oidc',
+
     'UserDetails.apps.UserDetailsConfig',
     'Dining.apps.DiningConfig',
     'CreditManagement.apps.CreditManagementConfig',
@@ -81,10 +84,9 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'ScalaApp.wsgi.application'
 
-LOGIN_REDIRECT_URL = 'index'
+LOGIN_REDIRECT_URL = '/'
+LOGOUT_REDIRECT_URL = '/'
 
-# (dubbelop)
-# STATIC_URL = '/static/'
 
 STATIC_ROOT = os.path.join(BASE_DIR, "static_total")
 
@@ -149,7 +151,7 @@ USE_TZ = True
 USE_THOUSAND_SEPARATOR = True
 LANGUAGES = [
     ('en', _('English')),
-    ('nl', _('Dutch')),
+    # ('nl', _('Dutch')),
 ]
 
 # Static files (CSS, JavaScript, Images)
@@ -162,4 +164,11 @@ STATIC_URL = '/static/'
 INTERNAL_IPS = ['127.0.0.1']
 
 # Include Scala settings
-from ScalaApp.scala_settings import *
+from .scala_settings import *
+
+# Quadrivium OpenID Connect
+from .settings_q_oidc import *
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',
+    'UserDetails.oidc.QuadriviumOIDCAB',
+]
