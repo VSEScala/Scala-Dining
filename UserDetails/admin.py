@@ -9,8 +9,7 @@ class AssociationLinks(admin.TabularInline):
     Create the membership information on the User page
     """
     model = UserMembership
-    min_num = 1
-    extra = 0
+    extra = 1
 
 
 class MemberOfFilter(admin.SimpleListFilter):
