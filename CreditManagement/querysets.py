@@ -20,7 +20,7 @@ class AbstractTransactionQuerySet(models.QuerySet):
         :param target_column: The target column of the transaction
         :return: a queryset containing all contents using item, returns the entire queryset if item is None
         """
-        if item:
+        if item is not None:
             if type(item) is models.QuerySet:
                 return self.filter(Q(**{source_column+"__in": item}) |
                                    Q(**{target_column+"__in": item}))

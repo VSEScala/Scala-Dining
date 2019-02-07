@@ -10,7 +10,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
-        ('UserDetails', '0004_user_external_link'),
+        ('UserDetails', '0001_initial'),
         ('CreditManagement', '0004_auto_20190203_2324'),
     ]
 
