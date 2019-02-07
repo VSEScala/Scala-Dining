@@ -6,7 +6,10 @@ from .models import User, UserMembership, Association
 
 
 class QuadriviumOIDCAB(OIDCAuthenticationBackend):
-    """Using the LDAP unique ID attribute and external_link field to link accounts between systems."""
+    """Using the LDAP unique ID attribute and external_link field to link accounts between systems.
+
+    # Todo: show allergies page after creation.
+    """
 
     def create_user(self, claims):
         """For creating a new user, set full name, username and email and create membership."""
