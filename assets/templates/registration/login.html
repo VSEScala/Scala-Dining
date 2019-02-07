@@ -37,10 +37,7 @@
                     {% csrf_token %}
                     {% include "snippets/bootstrap_form.html" %}
                 </div>
-                <p>
-                    Are you a Quadrivium member?
-                    <a href="{% url 'oidc_authentication_init' %}">Click here to log in with your Q account.</a>
-                </p>
+                <p><a href="{% url 'oidc_authentication_init' %}">Quadrivium member? Click here.</a></p>
                 <button type="submit" class="btn btn-block btn-primary login-hooklow">Log in</button>
             </form>
 
