@@ -9,4 +9,4 @@ OIDC_RP_SIGN_ALGO = "RS256"
 OIDC_OP_JWKS_ENDPOINT = "https://keycloak.esmgquadrivium.nl/auth/realms/esmgquadrivium/protocol/openid-connect/certs"
 
 # Association that will be used for automatic membership creation. If empty, no membership will be created.
-OIDC_ASSOCIATION_SLUG = "esmgq"
+OIDC_ASSOCIATION_SLUG = "quadrivium"
