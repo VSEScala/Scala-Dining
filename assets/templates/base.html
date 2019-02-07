@@ -35,22 +35,21 @@
                         </a>
                         {% if request.user.can_access_back %}
                             <a class="dropdown-item justify-content-between d-flex" href="{% url 'admin:index' %}" target="_blank">
-                                <span class="mr-2">Control Panel</span><i class="fas fa-toolbox fa-fw"></i>
+                                <span class="mr-2">Control panel</span><i class="fas fa-toolbox fa-fw"></i>
                             </a>
                         {% endif %}
-                        {% if user.groups.all.count > 0 %}
-                            <hr>
-                            {% for group in user.groups.all %}
-                                <a class="dropdown-item justify-content-between d-flex" href="{% url 'association_credits' association_name=group.associationdetails.shorthand %}">
-                            <span href="#" class="header-dropdown-line-content">
-                                {{ group.associationdetails.shorthand }}
-                            </span>
+                        {% if user.groups.all.count > 0 %}<hr>{% endif %}
+                        {% for group in user.groups.all %}
+                            <a class="dropdown-item justify-content-between d-flex"
+                               href="{% url 'association_credits' association_name=group.association.slug %}">
+                                <span href="#" class="header-dropdown-line-content">{{ group.association.slug }}</span>
+                                {% if group.association.image %}
                                     <i class="fas fa-fw">
-                                        <img src="{{ group.associationdetails.image.url }}" style="width: 100%;">
+                                        <img src="{{ group.association.image.url }}" style="width: 100%;">
                                     </i>
-                                </a>
-                            {% endfor %}
-                        {% endif %}
+                                {% endif %}
+                            </a>
+                        {% endfor %}
                         <hr>
                         <a class="dropdown-item justify-content-between d-flex mb-4" href="{% url 'logout' %}">
                             <span class="header-dropdown-line-content">Log out</span><i class="fas fa-power-off fa-fw"></i>

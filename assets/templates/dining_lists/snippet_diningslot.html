@@ -13,11 +13,7 @@
             {% endif %}
         {% endif %}">
     <div class="col-2 slot_image"
-            {% if slot.association %}
-                style="background-image: url({{ slot.association.associationdetails.image.url }})"
-            {% endif %}>
-
-    </div>
+         {% if slot.association and slot.association.image %}style="background-image: url({{ slot.association.image.url }});"{% endif %}></div>
     <div class="col-8">
         <div class="text-size-5">
         {% if slot.claimed_by %}
@@ -37,15 +33,24 @@
             {% endif %}
 
             {# Create the clickable frame overlay #}
-            {% url 'slot_details' day=date.day month=date.month year=date.year identifier=slot.association.associationdetails.shorthand as url%}
+            {% url 'slot_details' day=date.day month=date.month year=date.year identifier=slot.association.slug as url %}
             <a class="slot-back" href={{ url }}></a>
 
 
             {% if can_join %}
-                {% url 'entry_join' day=date.day month=date.month year=date.year identifier=slot.association.associationdetails.shorthand as url%}
+<<<<<<< HEAD
+                {% url 'entry_add' day=date.day month=date.month year=date.year identifier=slot.association.slug as url%}
+                {% url 'slot_details' day=date.day month=date.month year=date.year identifier=slot.association.associationdetails.shorthand as next%}
+                <form method="post" action="{{ url }}?next={{ next }}" class="btn-block col-2 slot-signup d-inline-flex">
+                    {% csrf_token %}
+                    <button type="submit" class="btn-block btn btn-primary slot-signup"></button>
+                </form>
+=======
+                {% url 'entry_join' day=date.day month=date.month year=date.year identifier=slot.association.slug as url %}
                 <a class="btn-block col-2 btn btn-primary slot-signup" href={{ url }}></a>
+>>>>>>> dbd89bcc93dd9b30b001ae085c1d0f1f326d8667
             {% elif slot|is_on_slot:request.user and slot.is_open %}
-                {% url 'entry_remove' day=date.day month=date.month year=date.year identifier=slot.association.associationdetails.shorthand as url%}
+                {% url 'entry_remove' day=date.day month=date.month year=date.year identifier=slot.association.slug as url %}
                 <a class="btn-block col-2 btn btn-primary slot-unlist" href={{ url }}?next={{ request.path_info }}></a>
             {% endif %}
         {% endwith %}

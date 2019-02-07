@@ -166,24 +166,21 @@ class DiningList(models.Model):
         return True
 
     def __str__(self):
-        return "{date} - {assoc} by {claimer}".format(date=self.date,
-                                                      assoc= self.association.associationdetails.shorthand,
-                                                      claimer=self.claimed_by)
+        return "{} - {} by {}".format(self.date, self.association.slug, self.claimed_by)
 
     def get_absolute_url(self):
         from django.shortcuts import reverse
-        slug = self.association.associationdetails.shorthand
+        slug = self.association.slug
         d = self.date
         return reverse('slot_details', kwargs={'year': d.year, 'month': d.month, 'day': d.day, 'identifier': slug})
 
     def internal_dining_entries(self):
         """All dining entries that are not for external people."""
         return DiningEntryUser.objects.filter(dining_list=self)
-        return self.dining_entries.filter(diningentryuser__isnull=False)
 
     def external_dining_entries(self):
         """All dining entries that are not for external people."""
-        return self.dining_entries.filter(diningentryexternal__isnull=False)
+        return DiningEntryExternal.objects.filter(dining_list=self)
 
 
 class DiningEntry(models.Model):
@@ -254,6 +251,7 @@ class DiningEntry(models.Model):
             return self.get_external().name
         else:
             return self.user
+
 
 class DiningWork(models.Model):
     # Define the unique id name to prevent conflicts with DiningEntry
