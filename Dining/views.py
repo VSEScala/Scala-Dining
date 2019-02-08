@@ -15,9 +15,8 @@ from django.views.generic.base import ContextMixin
 from django.views.generic.edit import DeleteView
 from django.conf import settings
 
-from .forms import CreateSlotForm, DiningInfoForm, DiningPaymentForm, DiningEntryCreateForm, DiningEntryDeleteForm, \
-    DiningListDeleteForm
-from .models import DiningList, DiningEntry, DiningDayAnnouncements, DiningComment, DiningCommentView, DiningEntryUser
+from .forms import *
+from .models import *
 
 
 def index(request):
@@ -164,7 +163,7 @@ class NewSlotView(LoginRequiredMixin, DayMixin, TemplateView):
 
             # Create dining entry for current user
             # Todo: should maybe move this to CreateSlotForm
-            entry = DiningEntryCreateForm(request.user, dining_list, data={})
+            entry = DiningEntryUserCreateForm(request.user, dining_list, data={})
             if entry.is_valid():
                 entry.save()
             else:
@@ -194,6 +193,7 @@ class NewSlotView(LoginRequiredMixin, DayMixin, TemplateView):
 
 class EntryAddView(LoginRequiredMixin, DiningListMixin, TemplateView):
     template_name = "dining_lists/dining_entry_add.html"
+    add_external_button_name = "addExternalButton"
 
     def get(self, request, *args, **kwargs):
         context = self.get_context_data()
@@ -232,7 +232,9 @@ class EntryAddView(LoginRequiredMixin, DiningListMixin, TemplateView):
             context['error_input'] = None
 
         # Form rendering
-        context['form'] = DiningEntryCreateForm(request.user, self.dining_list)
+        context['form'] = DiningEntryUserCreateForm(request.user, self.dining_list)
+
+        context['add_external_button_name'] = self.add_external_button_name
 
         return self.render_to_response(context)
 
@@ -240,8 +242,15 @@ class EntryAddView(LoginRequiredMixin, DiningListMixin, TemplateView):
         # Todo: re-enable External Dining Entries
         context = self.get_context_data()
 
+
+        print(request.POST)
         # Do form shenanigans
-        form = DiningEntryCreateForm(request.user, self.dining_list, data=request.POST)
+        if self.add_external_button_name in request.POST:
+            form = DiningEntryExternalCreateForm(request.user, self.dining_list,
+                                                 request.POST['external_name'], data=request.POST)
+        else:
+            form = DiningEntryUserCreateForm(request.user, self.dining_list, data=request.POST)
+
         if form.is_valid():
             form.save()
 

@@ -247,8 +247,9 @@ class DiningEntry(models.Model):
             return None
 
     def name(self):
-        if self.get_external():
-            return self.get_external().name
+        external = self.get_external()
+        if external:
+            return external.name
         else:
             return self.user
 
@@ -266,7 +267,11 @@ class DiningWork(models.Model):
 class DiningEntryUser(DiningEntry, DiningWork):
     added_by = models.ForeignKey(User, related_name="added_entry_on_dining", on_delete=models.SET_DEFAULT, blank=True,
                                  default=None, null=True)
-    # Todo: Check that dining_list and user are unique together, can't be implemented here implicit due to inheritance
+
+    def clean(self):
+        if self.pk is None:
+            if DiningEntryUser.objects.filter(dining_list=self.dining_list, user=self.user):
+                raise ValidationError(_("User is already on this dininglist"))
 
 
 class DiningEntryExternal(DiningEntry):

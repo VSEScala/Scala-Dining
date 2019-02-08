@@ -6,7 +6,7 @@ from django.utils.translation import gettext as _
 from django.core.exceptions import ValidationError, PermissionDenied
 
 from UserDetails.models import Association, User
-from .models import DiningList, DiningEntry, DiningEntryUser
+from .models import DiningList, DiningEntry, DiningEntryUser, DiningEntryExternal
 from General.util import SelectWithDisabled
 
 
@@ -103,10 +103,10 @@ class DiningPaymentForm(forms.ModelForm):
         self.instance.save(update_fields=self.Meta.fields)
 
 
-class DiningEntryCreateForm(forms.ModelForm):
+class DiningEntryUserCreateForm(forms.ModelForm):
     user = forms.ModelChoiceField(queryset=None)
 
-    class Meta():
+    class Meta:
         model = DiningEntryUser
         fields = ['dining_list', 'user']
 
@@ -130,18 +130,48 @@ class DiningEntryCreateForm(forms.ModelForm):
         # Filter by the adder if he is not the owner, since then he only may add himself, not others
         if adder != dining_list.claimed_by:
             users.filter(pk=adder.pk)
+        # Todo: Add fund check
+
+        self.fields['user'].queryset = users
+
+
+
+class DiningEntryExternalCreateForm(forms.ModelForm):
+    user = forms.ModelChoiceField(queryset=None)
+
+    class Meta:
+        model = DiningEntryExternal
+        fields = ['dining_list', 'user', 'name']
+
+    def __init__(self, adder, dining_list, name, data=None, **kwargs):
+        """
+        The adder and dining_list parameters are used to find the users that can be used for this entry.
+        """
+        if data is not None:
+            # User defaults to adder if not set
+            data = data.copy()
+            data.setdefault('user', adder.pk)
+            data.setdefault('dining_list', dining_list.pk)
+            data.setdefault('name', name)
+
+        super().__init__(**kwargs, data=data)
+
+        # Find available users for this dining entry
+        users = User.objects.all()
+        # First filter by association if the dining list is limited
+        if dining_list.limit_signups_to_association_only:
+            users.filter(usermembership__association=dining_list.association)
+        # Filter by the adder if he is not the owner, since then he only may add himself, not others
+        if adder != dining_list.claimed_by:
+            users.filter(pk=adder.pk)
+
         self.fields['user'].queryset = users
 
     def clean(self):
         cleaned_data = super().clean()
+        # Todo: Add fund check
         return cleaned_data
 
-    def save(self, commit=True):
-        """
-        Also creates a transaction when commit==True.
-        """
-        instance = super().save(commit)
-        return instance
 
 
 class DiningEntryDeleteForm(forms.ModelForm):
