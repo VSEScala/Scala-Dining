@@ -201,12 +201,22 @@ class EntryAddView(LoginRequiredMixin, DiningListMixin, TemplateView):
         # Search processing
         search = self.request.GET.get('search')
         if search:
+            users = None
+            # split over all spaces
+            for search_part in search.split(" "):
+                # query the substring if it is part of either the first, last or username
+                search_result = get_user_model().objects.filter(
+                    Q(first_name__contains=search_part) |
+                    Q(last_name__contains=search_part) |
+                    Q(username__contains=search_part)
+                )
+                if users is None:
+                    users = search_result
+                elif search_result.count()>0:
+                    users = users.intersection(search_result)
+
             # Search all users corresponding with the typed in name
-            context['users'] = get_user_model().objects.filter(
-                Q(first_name__contains=search) |
-                Q(last_name__contains=search) |
-                Q(username__contains=search)
-            )
+            context['users'] = users
             context['search'] = search
 
             if len(context['users']) == 0:

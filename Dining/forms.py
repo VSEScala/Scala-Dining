@@ -140,9 +140,7 @@ class DiningEntryCreateForm(forms.ModelForm):
         """
         Also creates a transaction when commit==True.
         """
-        with transaction.atomic():
-            # Possible race condition regarding instance validation
-            instance = super().save(commit)
+        instance = super().save(commit)
         return instance
 
 
