@@ -44,7 +44,7 @@ class RegisterView(View):
         account_detail_form.save_as(user)
         associationlink_form.create_links_for(user)
         
-        login(request, user)
+        login(request, user, backend='django.contrib.auth.backends.ModelBackend')
 
         return HttpResponseRedirect(reverse('index'))
 

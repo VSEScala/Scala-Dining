@@ -4,6 +4,7 @@ from django.contrib.auth import authenticate
 from django.contrib.auth.forms import UserCreationForm
 from .models import User, Association, UserMembership
 from Dining.models import UserDiningSettings
+from django.core.exceptions import ValidationError
 
 
 class LoginForm(forms.Form):
@@ -26,6 +27,15 @@ class RegisterUserForm(UserCreationForm):
     class Meta:
         model = User
         fields = ('username', 'password1', 'password2', 'email')
+
+    def clean(self):
+        # Check if the email is not already used.
+        email = self.cleaned_data.get('email')
+        if User.objects.filter(email=email).exists():
+            msg = 'E-mail is already used.'
+            self._errors['email'] = self.error_class([msg])
+            del self.cleaned_data['email']
+        return self.cleaned_data
 
 
 class RegisterUserDetails(forms.ModelForm):
@@ -56,7 +66,7 @@ class RegisterAssociationLinks(forms.Form):
 
     def create_links_for(self, user):
         for association in self.cleaned_data['associations']:
-            UserMembership.objects.create(related_user=user, association=association)
+            UserMembership.objects.create(related_user=user, association_id=association)
 
 
 class Settings_Essentials_Form(ModelForm):
