@@ -132,6 +132,16 @@ class DiningList(models.Model):
         """
         return timezone.now() < self.sign_up_deadline
 
+    def has_room(self):
+        """
+        Determines whether this dining list can have more entries
+        :return: Whether this list can get more entries
+        """
+        if self.is_open():
+            if self.diners.count() < self.max_diners:
+                return True
+        return False
+
     def can_join(self, user, check_for_self=True):
         """
         Determines if a user can join a dining list by checking the status of the list and the status of
@@ -157,7 +167,7 @@ class DiningList(models.Model):
             return True
 
         # if dining list is closed
-        if not self.is_open() or self.dining_entries.count() >= self.max_diners:
+        if not self.has_room():
             return False
 
         if self.limit_signups_to_association_only:

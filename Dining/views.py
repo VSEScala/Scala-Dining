@@ -427,8 +427,18 @@ class SlotInfoView(LoginRequiredMixin, SlotMixin, TemplateView):
         last_visit.timestamp = timezone.now()
         last_visit.save()
 
+        from django.db.models import CharField
+        from django.db.models.functions import Length
+        CharField.register_lookup(Length)
+        context['number_of_allergies'] = self.dining_list.internal_dining_entries().filter(
+            user__userdiningsettings__allergies__length__gt=1).count()
+
         if self.dining_list.claimed_by == self.request.user or self.dining_list.purchaser == self.request.user:
             context['can_change_settings'] = True
+        if self.dining_list.claimed_by == self.request.user and self.dining_list.diners.count() < self.dining_list.min_diners:
+            context['can_remove_list'] = True
+        else:
+            context['can_remove_list'] = False
         return context
 
     def post(self, request, *args, **kwargs):
