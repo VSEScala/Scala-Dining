@@ -1,5 +1,6 @@
 from django import forms
 from django.contrib.auth import get_user_model
+from django.conf import settings
 from django.db.models import OuterRef, Exists
 from django.db import transaction
 from django.utils.translation import gettext as _
@@ -53,6 +54,15 @@ class CreateSlotForm(forms.ModelForm):
             self.fields['association'].initial = available[0].pk
             self.fields['association'].disabled = True
 
+    def clean(self, *args, **kwargs):
+        cleaned_data = super(CreateSlotForm, self).clean(*args, **kwargs)
+        # Check if the time is within time limits
+        serve_time = cleaned_data['serve_time']
+        if serve_time < settings.KITCHEN_USE_START_TIME:
+            self.add_error('serve_time', _("Kitchen can't be used this early"))
+        if serve_time > settings.KITCHEN_USE_END_TIME:
+            self.add_error('serve_time', _("Kitchen can't be used this late"))
+
     def save(self, commit=True):
         instance = super().save(commit=False)
         instance.claimed_by = self.user
@@ -75,6 +85,15 @@ class DiningInfoForm(forms.ModelForm):
     class Meta:
         model = DiningList
         fields = ['serve_time', 'min_diners', 'max_diners', 'sign_up_deadline', 'purchaser']
+
+    def clean(self, *args, **kwargs):
+        cleaned_data = super(DiningInfoForm, self).clean(*args, **kwargs)
+        # Check if the time is within time limits
+        serve_time = cleaned_data['serve_time']
+        if serve_time < settings.KITCHEN_USE_START_TIME:
+            self.add_error('serve_time', _("Kitchen can't be used this early"))
+        if serve_time > settings.KITCHEN_USE_END_TIME:
+            self.add_error('serve_time', _("Kitchen can't be used this late"))
 
     def save(self):
         self.instance.save(update_fields=self.Meta.fields)
