@@ -11,5 +11,9 @@ MIN_SLOT_DINER_MAXIMUM = 12
 # Last claim time for dining slots
 DINING_SLOT_CLAIM_CLOSURE_TIME = time(17, 00)
 
+# Kitchen use time
+KITCHEN_USE_START_TIME = time(16, 30)
+KITCHEN_USE_END_TIME = time(19, 30)
+
 # Balance bottom limit
 MINIMUM_BALANCE = Decimal('-2.00')

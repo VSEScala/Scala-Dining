@@ -1,4 +1,6 @@
 from django import forms
+from django.contrib.auth import get_user_model
+from django.conf import settings
 from django.db.models import OuterRef, Exists
 from django.db import transaction
 from django.utils.translation import gettext as _
@@ -23,7 +25,19 @@ def _clean_form(form):
         raise ValidationError(validation_errors)
 
 
-class CreateSlotForm(forms.ModelForm):
+class ServeTimeCheckMixin:
+    """
+    Mixin with clean_serve_time which gives errors on the serve_time if it is not within the kitchen opening hours
+    """
+    def clean_serve_time(self):
+        serve_time = self.cleaned_data['serve_time']
+        if serve_time < settings.KITCHEN_USE_START_TIME:
+            self.add_error('serve_time', _("Kitchen can't be used this early"))
+        if serve_time > settings.KITCHEN_USE_END_TIME:
+            self.add_error('serve_time', _("Kitchen can't be used this late"))
+
+
+class CreateSlotForm(ServeTimeCheckMixin, forms.ModelForm):
     class Meta:
         model = DiningList
         fields = ('dish', 'association', 'max_diners', 'serve_time')
@@ -55,6 +69,12 @@ class CreateSlotForm(forms.ModelForm):
             self.fields['association'].initial = available[0].pk
             self.fields['association'].disabled = True
 
+    def clean(self, *args, **kwargs):
+        cleaned_data = super(CreateSlotForm, self).clean(*args, **kwargs)
+        # Check if the time is within time limits
+        self.clean_serve_time()
+        return cleaned_data
+
     def save(self, commit=True):
         instance = super().save(commit=False)
         instance.claimed_by = self.user
@@ -66,7 +86,7 @@ class CreateSlotForm(forms.ModelForm):
         return instance
 
 
-class DiningInfoForm(forms.ModelForm):
+class DiningInfoForm(ServeTimeCheckMixin, forms.ModelForm):
     def __init__(self, *args, **kwargs):
         dining_list = kwargs.get("instance")
         super(DiningInfoForm, self).__init__(*args, **kwargs)
@@ -77,6 +97,13 @@ class DiningInfoForm(forms.ModelForm):
     class Meta:
         model = DiningList
         fields = ['serve_time', 'min_diners', 'max_diners', 'sign_up_deadline', 'purchaser']
+
+    def clean(self, *args, **kwargs):
+        cleaned_data = super(DiningInfoForm, self).clean(*args, **kwargs)
+        # Check if the time is within time limits
+        self.clean_serve_time()
+
+        return cleaned_data
 
     def save(self):
         self.instance.save(update_fields=self.Meta.fields)
