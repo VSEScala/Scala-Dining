@@ -174,7 +174,7 @@
         {% endfor %}
     </div>
     <form class="col-12" method="post">
-        <textarea name="comment" class="col-12"></textarea>
+        <textarea name="comment" class="col-12" placeholder="leave a remark"></textarea>
         <input type="submit" value="Post" class="btn btn-block btn-primary"/>
         {% csrf_token %}
     </form>
