@@ -6,6 +6,7 @@
 
 {% block details %}
     <div class="col-12 row m-0">
+    {# Primary information #}
         <div class="col-12 col-md-10 row px-0">
             <div class="col-12 h3">
                 {{ dining_list.dish }}
@@ -43,9 +44,11 @@
             {% endif %}
 
         </div>
+        {# Display the association image #}
         <div class="col-2 slot_image d-none d-md-flex"
              style="{% if dining_list.association.image %}background-image: url({{ dining_list.association.image.url }});{% endif %}">
         </div>
+        {# Display options for changing dining_list stuff #}
         {% if can_change_settings %}
             {% url 'slot_change' day=date.day month=date.month year=date.year identifier=dining_list.association.slug as url %}
             <a class="btn btn-primary col-12 col-md-6 mt-3 " href={{ url }}>
@@ -61,6 +64,7 @@
     <hr class="col-12 my-3 p-0">
 
     <div class="col-12 row m-0">
+    {# User status options #}
         {# Display the current status of the user #}
         {% if user_is_on_list %}
             <div class="alert alert-success col-12">
