@@ -8,7 +8,7 @@ from UserDetails.models import Association, User
 from .models import DiningList, DiningEntry, DiningEntryUser, DiningEntryExternal
 from General.util import SelectWithDisabled
 
-from decimal import Decimal
+from decimal import Decimal, ROUND_UP
 from django.core.validators import MinValueValidator
 
 
@@ -108,10 +108,10 @@ class DiningPaymentForm(forms.ModelForm):
         if total_dinner_cost > 0:
             s_cost = total_dinner_cost / self.instance.diners.count()
             # round up slightly, to remove missing cents
-            s_cost = round(s_cost+Decimal(0.0049), 2)
+            s_cost = Decimal(s_cost).quantize(Decimal('.01'), rounding=ROUND_UP)
             self.instance.dining_cost = s_cost
 
-        self.instance.save(update_fields=self.Meta.save_fields)
+        self.instance.save(update_fields=DiningPaymentForm.Meta.save_fields)
 
 
 class DiningEntryUserCreateForm(forms.ModelForm):

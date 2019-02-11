@@ -136,10 +136,7 @@ class DiningList(models.Model):
         Determines whether this dining list can have more entries
         :return: Whether this list can get more entries
         """
-        if self.is_open():
-            if self.diners.count() < self.max_diners:
-                return True
-        return False
+        return self.is_open() and self.diners.count() < self.max_diners
 
     def can_join(self, user, check_for_self=True):
         """

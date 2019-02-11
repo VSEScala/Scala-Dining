@@ -56,7 +56,7 @@
             </a>
             {% if can_remove_list %}
             {% url "slot_delete" year=date.year month=date.month day=date.day identifier=dining_list.association.slug as url %}
-            <a href="{{ url }}" class="btn btn-outline-danger col-12 col-md-6 mt-3"><i class="fas fa-trash-alt"></i> Remove Dininglist</a>
+            <a href="{{ url }}" class="btn btn-outline-danger col-12 col-md-6 mt-3"><i class="fas fa-trash-alt"></i> Remove dining list</a>
             {% endif %}
         {% endif %}
     </div>
@@ -143,7 +143,7 @@
             </div>
             <div class="col-6 pt-3">
                 {% if number_of_allergies > 0 %}
-                    {{ number_of_allergies }} allerg{{ number_of_allergies|pluralize:"y,ies" }}
+                    {{ number_of_allergies }} {{ number_of_allergies|pluralize:"has an allergy,have allergies" }}
                 {% endif %}
             </div>
 
@@ -174,7 +174,7 @@
         {% endfor %}
     </div>
     <form class="col-12" method="post">
-        <textarea name="comment" class="col-12" placeholder="leave a remark"></textarea>
+        <textarea name="comment" class="col-12" placeholder="Leave a remark"></textarea>
         <input type="submit" value="Post" class="btn btn-block btn-primary"/>
         {% csrf_token %}
     </form>
