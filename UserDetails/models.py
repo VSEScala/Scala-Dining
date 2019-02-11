@@ -48,7 +48,7 @@ class User(AbstractUser):
 class Association(Group):
     slug = models.SlugField(max_length=10)
     image = models.ImageField(blank=True)
-
+    is_choosable = models.BooleanField(default=True, verbose_name="Whether this association can be chosen as membership by users")
 
 class UserMembership(models.Model):
     """

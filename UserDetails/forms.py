@@ -59,8 +59,9 @@ class RegisterAssociationLinks(forms.Form):
     # Try except is needed in case Associations is not yet a created table
     # (this line is reached in a migrate command, which fails)
     try:
-        associations = forms.MultipleChoiceField(choices=[(a.pk, a.name) for a in Association.objects.all()],
-                                             help_text='At which associations are you active?')
+        associations = forms.MultipleChoiceField(
+            choices=[(a.pk, a.name) for a in Association.objects.filter(is_choosable=True)],
+            help_text='At which associations are you active?')
     except:
         pass
 

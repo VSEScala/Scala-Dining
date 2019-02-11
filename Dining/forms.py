@@ -97,8 +97,8 @@ class DiningPaymentForm(forms.ModelForm):
         # also check if it has changed from earlier status
         old_list = DiningList.objects.get(id=self.instance.id)
 
-        if 0 < self.instance.dinner_cost_single != old_list.dinner_cost_single:
-            self.instance.dinner_cost_total = self.instance.dinner_cost_single * self.instance.diners
+        if self.instance.dinner_cost_single != old_list.dinner_cost_single:
+            self.instance.dinner_cost_total = self.instance.dinner_cost_single * self.instance.diners.count()
 
         self.instance.save(update_fields=self.Meta.fields)
 
@@ -133,7 +133,6 @@ class DiningEntryUserCreateForm(forms.ModelForm):
         # Todo: Add fund check
 
         self.fields['user'].queryset = users
-
 
 
 class DiningEntryExternalCreateForm(forms.ModelForm):
@@ -171,7 +170,6 @@ class DiningEntryExternalCreateForm(forms.ModelForm):
         cleaned_data = super().clean()
         # Todo: Add fund check
         return cleaned_data
-
 
 
 class DiningEntryDeleteForm(forms.ModelForm):

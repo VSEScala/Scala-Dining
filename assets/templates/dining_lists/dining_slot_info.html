@@ -5,174 +5,179 @@
 
 
 {% block details %}
-
-    {% if dining_list.association %}
-        <div class="col-2 slot_image"
-             style="{% if dining_list.association.image %}background-image: url({{ dining_list.association.image.url }});{% endif %}"></div>
-        <div class="col-10 col-md-8 row pr-0">
-    {% else %}
-        <div class="col-12 row p-0">
-    {% endif %}
-        <div class="col-12 text-size-5 pr-0">
-            {{ dining_list.dish }}
-            {# Show delete button when user is owner #}
-            {% if user == dining_list.claimed_by %}
-                {% url "slot_delete" year=date.year month=date.month day=date.day identifier=dining_list.association.slug as url %}
-                <a href="{{ url }}" class="btn btn-danger"><i class="fas fa-trash-alt"></i></a>
-            {% endif %}
-        </div>
-        <div class="col-12 text-size-3 pr-0 mb-3 mb-md-5">
-            by {{ dining_list.claimed_by }}
-            {% if dining_list.purchaser != None %}
-                and {{ dining_list.purchaser }}
-            {% endif %}
-        </div>
-        <div class="col-12 mt-3">
-            <div class="hide-md">
-                {{ dining_list.dining_entries.count }} / {{ dining_list.max_diners }} diners on the list
+    <div class="col-12 row m-0">
+    {# Primary information #}
+        <div class="col-12 col-md-10 row px-0">
+            <div class="col-12 h3">
+                {{ dining_list.dish }}
             </div>
-        </div>
-    </div>
-    <div class="show-md col-2 p-0">
-        <div class="col-12">
-            <span class="text-size-7">
-            {{ dining_list.dining_entries.count }}
-            </span>
-            / {{ dining_list.max_diners }}
-        </div>
-        <div class="col-12">
-            Diners
-        </div>
-    </div>
-</div>
-<div class="row col-12 m-0 p-0">
-    <div class="col-12 pt-4">
-        {% if dining_list.dinner_cost_single %}
-            <div class="row">
-                <div class="col-2 text-size-4 text-center">
-                    &euro;{{ dining_list.dinner_cost_single }}
+            <div class="col-3">
+                by
+            </div>
+            <div class="col-9 h4">
+                {{ dining_list.claimed_by }}
+                {% if dining_list.purchaser != None %}
+                    and {{ dining_list.purchaser }}
+                {% endif %}
+            </div>
+            <div class="col-9 offset-3">
+                {{ dining_list.association }}
+            </div>
+            <div class="col-3 pt-3">Served at:</div>
+            <div class="col-9 pt-3">
+                {{ dining_list.date }}<br>
+                <span class="h5">{{ dining_list.serve_time|date:"H:i" }}</span>
+            </div>
+            {% if dining_list.dinner_cost_single %}
+                <div class="col-3 mt-3">
+                    Meal cost
                 </div>
-                <div class="col-10 text-size-4">
-                    {% if dining_list.auto_pay %}
-                        automatically paid to {{ dining_list.get_purchaser }}
-                    {% elif dining_list|has_paid:request.user %}
-                        has been paid to {{ dining_list.get_purchaser }}
-                    {% else %}
-                        to be paid to {{ dining_list.get_purchaser }}
+                <div class="col-9 mt-3">
+                    &euro; {{ dining_list.dinner_cost_single }}
+                    <span>to be paid to {{ dining_list.get_purchaser }}</span>
+                    {% if dining_list.payment_link %}
+                        <br>
+                        <a href="{{ dining_list.payment_link }}">{{ dining_list.payment_link }}</a>
+
                     {% endif %}
                 </div>
-            </div>
-        {% endif %}
-        <div class="row mb-4">
-            <div class="col-2 text-size-3 text-center">
-                {% if dining_list.dinner_cost_single %}+{% endif %}
-                &euro;{{ dining_list.kitchen_cost }}
-            </div>
-            <div class="col-10 text-size-3">
-                for the kitchen <span class="text-size-3">automatically subtracted</span>
-            </div>
+            {% endif %}
+
         </div>
-        <div class="row">
-            <div class="col-2 text-center">
-                {{ dining_list.min_diners }}
-            </div>
-            <div class="col-10">
-                Minimum diners needed
-            </div>
+        {# Display the association image #}
+        <div class="col-2 slot_image d-none d-md-flex"
+             style="{% if dining_list.association.image %}background-image: url({{ dining_list.association.image.url }});{% endif %}">
         </div>
-        <div class="row">
-            <div class="col-2 text-center">
-                {{ dining_list.max_diners }}
-            </div>
-            <div class="col-10">
-                Maximum diners allowed
-            </div>
-        </div>
+        {# Display options for changing dining_list stuff #}
         {% if can_change_settings %}
             {% url 'slot_change' day=date.day month=date.month year=date.year identifier=dining_list.association.slug as url %}
-            <a class="btn-block btn btn-primary offset-2 col-6" href={{ url }}>Change information</a>
+            <a class="btn btn-primary col-12 col-md-6 mt-3 " href={{ url }}>
+                <i class="fas fa-tools"></i> Change information
+            </a>
+            {% if can_remove_list %}
+            {% url "slot_delete" year=date.year month=date.month day=date.day identifier=dining_list.association.slug as url %}
+            <a href="{{ url }}" class="btn btn-outline-danger col-12 col-md-6 mt-3"><i class="fas fa-trash-alt"></i> Remove Dininglist</a>
+            {% endif %}
         {% endif %}
     </div>
-    <hr class="">
-    <div class="col-12 pt-4">
-        <div class="row">
-            <div class="col-10 offset-md-2 text-size-5">
-                {% if dining_list.is_open %}
-                    {% if dining_list.dining_entries.count < dining_list.max_diners %}
-                        Signup closes
-                        {% if dining_list.sign_up_deadline.date == dining_list.date %}
-                            at {{ dining_list.sign_up_deadline |date:"H:i" }}
-                        {% else %}
-                            on {{ dining_list.sign_up_deadline |date:"l H:i" }}
-                        {% endif %}
+
+    <hr class="col-12 my-3 p-0">
+
+    <div class="col-12 row m-0">
+    {# User status options #}
+        {# Display the current status of the user #}
+        {% if user_is_on_list %}
+            <div class="alert alert-success col-12">
+                <p class="mb-0">You are on this list</p>
+            </div>
+        {% elif user_can_add_self %}
+            <div class="alert alert-warning col-12">
+                <p class="mb-0">You are not on the dining list</p>
+            </div>
+        {% else %}
+            <div class="alert alert-danger col-12">
+                <p class="mb-0">You are not on this list and can no longer join</p>
+            </div>
+        {% endif %}
+
+        {# Define the buttons #}
+        {% if dining_list.is_open %}
+            {# The user add/removal button #}
+            {% if user_is_on_list %}
+                {% url 'entry_remove' day=date.day month=date.month year=date.year identifier=dining_list.association.slug as url %}
+                <form method="post"
+                      action="{{ url }}?next={{ request.path_info }}"
+                      class="col-12 col-md-6 p-0 my-md-0 my-3">
+                    {% csrf_token %}
+                    <button type="submit" class="btn-block btn btn-outline-warning">Sign out</button>
+                </form>
+            {% elif user_can_add_self %}
+                {% url 'entry_add' day=date.day month=date.month year=date.year identifier=dining_list.association.slug as url%}
+                <form method="post"
+                      action="{{ url }}?next={{ request.path_info }}"
+                      class="col-12 col-md-6 p-0 my-md-0 my-3">
+                    {% csrf_token %}
+                    <button type="submit" class="btn-block btn btn-primary">Sign up</button>
+                </form>
+            {% else %}
+                <div class="btn-disabled btn col-12 col-md-6 ">You can not join this list</div>
+            {% endif %}
+
+            {% if user_can_add_others %}
+                {% url 'entry_add' day=date.day month=date.month year=date.year identifier=dining_list.association.slug as url %}
+                <a href="{{ url }}" class="btn btn-outline-primary col-12 col-md-6 ">Add others</a>
+            {% endif %}
+        {% else %}
+            {% if user_can_add_others %}
+                {# Add other button #}
+                {% url 'entry_add' day=date.day month=date.month year=date.year identifier=dining_list.association.slug as url %}
+                <a href="{{ url }}" class="btn btn-outline-primary col-12 col-md-6 offset-md-6">Add others</a>
+            {% endif %}
+        {% endif %}
+    </div>
+
+    <hr class="col-12 my-3 p-0">
+
+    <div class="col-12 row m-0">
+        <div class="col-12 col-md-10 row px-0">
+            {% if dining_list.is_open %}
+                <div class="col-3">
+                    Open till
+                </div>
+                <div class="col-9 h5">
+                    {% if dining_list.sign_up_deadline.date == dining_list.date %}
+                        {{ dining_list.sign_up_deadline |date:"H:i" }}
                     {% else %}
-                        Max number of diners reached
+                        {{ dining_list.sign_up_deadline |date:"l H:i" }}
                     {% endif %}
-                {% else %}
-                    <div class="text-size-3">Dining list is closed</div>
-                    {% if user_is_on_list %}
-                        You are on the dining list!
-                    {% endif %}
+                </div>
+            {% else %}
+                <div class="col-9 offset-3">
+                    Dining list is closed, contact {{ dining_list.claimed_by }} if you want to join
+                </div>
+            {% endif %}
+
+            <div class="col-3 pt-3">Diners:</div>
+            <div class="col-3 pt-3">
+                <span class="h5">{{ dining_list.dining_entries.count }}</span> / {{ dining_list.max_diners }}
+            </div>
+            <div class="col-6 pt-3">
+                {% if number_of_allergies > 0 %}
+                    {{ number_of_allergies }} allerg{{ number_of_allergies|pluralize:"y,ies" }}
                 {% endif %}
             </div>
 
-        </div>
-        {% if dining_list.is_open %}
-            <div class="row">
-                {% if not user_is_on_list %}
-                    <div class="col-12 col-md-6 offset-md-2 text-size-6">
-                        {% if user_can_add_self %}
-                            {% url 'entry_add' day=date.day month=date.month year=date.year identifier=dining_list.association.slug as url%}
-                            <form method="post" action="{{ url }}?next={{ request.path_info }}">
-                                {% csrf_token %}
-                                <button type="submit" class="btn-block btn btn-primary">Sign up</button>
-                            </form>
-                        {% else %}
-                            <div class="btn-block btn btn-disabled">Sign up</div>
-                        {% endif %}
-                    </div>
-                {% else %}
-                    <div class="col-12 col-md-10 offset-md-2 my-2">
-                        You are on the dining list!
-                    </div>
-                    <div class="col-12 col-md-4 offset-md-2 text-size-6">
-                        {% url 'entry_remove' day=date.day month=date.month year=date.year identifier=dining_list.association.slug as url %}
-                        <form method="post" action="{{ url }}?next={{ request.path_info }}">
-                            {% csrf_token %}
-                            <button type="submit" class="btn btn-block btn-warning">Remove yourself</button>
-                        </form>
-                    </div>
-                {% endif %}
-                {% url 'entry_add' day=date.day month=date.month year=date.year identifier=dining_list.association.slug as url %}
-                {% if user_is_on_list %}
-                    <div class="col-12 col-md-6">
-                {% else %}
-                    <div class="col-12 col-md-4">
-                {% endif %}
-                        {% if dining_list.claimed_by != request.user and not user_can_add_others%}
-                            <a class="btn-block btn mt-4 mt-md-0 btn-disabled">Add others</a>
-                        {% else %}
-                            <a href="{{ url }}" class="btn-block btn mt-4 mt-md-0">Add others</a>
-                        {% endif %}
-                    </div>
+            {% if dining_list.dining_entries.count < dining_list.min_diners %}
+                <div class="col-3">Minimum diners:</div>
+                <div class="col-9">
+                    {{ dining_list.min_diners }}
+                </div>
+            {% endif %}
+
+            <div class="col-12 mt-2"></div>
+
+            <div class="col-3">
+                Kitchen cost
             </div>
-        {% endif %}
+            <div class="col-9">
+                &euro; {{ dining_list.kitchen_cost }}
+                <span class="small">(automatically subtracted)</span>
+            </div>
+        </div>
     </div>
-    <hr class="">
-    <div class="col-12 p-0">
-        <h3 class="offset-md-2 col-md-10 col-12 p-3 my-1">Comments</h3>
-        <div class="offset-md-2 col-md-10 col-12">
+
+    <hr class="col-12 my-2 p-0">
+
+    <div class="col-12">
         {% for comment in comments %}
             {% include 'snippets/snippet_comments.html' %}
         {% endfor %}
-        </div>
-        <form class="offset-md-2 col-md-10 col-12" method="post">
-            <textarea name="comment" class="col-12"></textarea>
-            <input type="submit" value="Post" class="btn btn-block btn-primary"/>
-            {% csrf_token %}
-        </form>
-
-
     </div>
-</div>
+    <form class="col-12" method="post">
+        <textarea name="comment" class="col-12" placeholder="leave a remark"></textarea>
+        <input type="submit" value="Post" class="btn btn-block btn-primary"/>
+        {% csrf_token %}
+    </form>
+
+
 {% endblock details %}
