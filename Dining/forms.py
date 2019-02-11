@@ -1,5 +1,4 @@
 from django import forms
-from django.contrib.auth import get_user_model
 from django.db.models import OuterRef, Exists
 from django.db import transaction
 from django.utils.translation import gettext as _
@@ -8,6 +7,9 @@ from django.core.exceptions import ValidationError, PermissionDenied
 from UserDetails.models import Association, User
 from .models import DiningList, DiningEntry, DiningEntryUser, DiningEntryExternal
 from General.util import SelectWithDisabled
+
+from decimal import Decimal
+from django.core.validators import MinValueValidator
 
 
 def _clean_form(form):
@@ -81,9 +83,13 @@ class DiningInfoForm(forms.ModelForm):
 
 
 class DiningPaymentForm(forms.ModelForm):
+    dinner_cost_total = forms.DecimalField(decimal_places=2, max_digits=10, initial=Decimal(0.00),
+                                           validators=[MinValueValidator(Decimal('0.00'))])
+
     class Meta:
         model = DiningList
-        fields = ['dish', 'dinner_cost_total', 'dinner_cost_single', 'payment_link']
+        fields = ['dish', 'dinner_cost_total', 'dining_cost', 'payment_link']
+        save_fields = ['dish', 'dining_cost', 'payment_link']
         help_texts = {
             'dinner_cost_total': 'Either adjust total dinner cost or single dinner cost',
             'dinner_cost_single': 'Either adjust total dinner cost or single dinner cost',
@@ -97,10 +103,15 @@ class DiningPaymentForm(forms.ModelForm):
         # also check if it has changed from earlier status
         old_list = DiningList.objects.get(id=self.instance.id)
 
-        if self.instance.dinner_cost_single != old_list.dinner_cost_single:
-            self.instance.dinner_cost_total = self.instance.dinner_cost_single * self.instance.diners.count()
+        total_dinner_cost = self.cleaned_data['dinner_cost_total']
 
-        self.instance.save(update_fields=self.Meta.fields)
+        if total_dinner_cost > 0:
+            s_cost = total_dinner_cost / self.instance.diners.count()
+            # round up slightly, to remove missing cents
+            s_cost = round(s_cost+Decimal(0.0049), 2)
+            self.instance.dining_cost = s_cost
+
+        self.instance.save(update_fields=self.Meta.save_fields)
 
 
 class DiningEntryUserCreateForm(forms.ModelForm):

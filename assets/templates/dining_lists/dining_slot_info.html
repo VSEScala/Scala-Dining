@@ -28,12 +28,12 @@
                 {{ dining_list.date }}<br>
                 <span class="h5">{{ dining_list.serve_time|date:"H:i" }}</span>
             </div>
-            {% if dining_list.dinner_cost_single %}
+            {% if dining_list.dining_cost %}
                 <div class="col-3 mt-3">
                     Meal cost
                 </div>
                 <div class="col-9 mt-3">
-                    &euro; {{ dining_list.dinner_cost_single }}
+                    &euro; {{ dining_list.dining_cost }}
                     <span>to be paid to {{ dining_list.get_purchaser }}</span>
                     {% if dining_list.payment_link %}
                         <br>

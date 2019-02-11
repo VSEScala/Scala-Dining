@@ -63,12 +63,11 @@ class DiningList(models.Model):
     # Kitchen cost may not be changed after creation
     kitchen_cost = models.DecimalField(decimal_places=2, verbose_name="kitchen cost per person", max_digits=10,
                                        default=Decimal('0.50'), validators=[MinValueValidator(Decimal('0.00'))])
-    dinner_cost_total = models.DecimalField(decimal_places=2, verbose_name="total dinner costs", max_digits=10,
-                                            default=0, validators=[MinValueValidator(Decimal('0.00'))])
-    dinner_cost_single = models.DecimalField(decimal_places=2, verbose_name="dinner cost per person", max_digits=5,
+
+    dining_cost = models.DecimalField(decimal_places=2, verbose_name="dinner cost per person", max_digits=5,
                                              blank=True, null=True, default=0,
                                              validators=[MinValueValidator(Decimal('0.00'))])
-    dinner_cost_keep_single_constant = models.BooleanField(default=False, verbose_name="Define costs from single price")
+
     auto_pay = models.BooleanField(default=False)
 
     payment_link = models.CharField(blank=True, max_length=100, help_text=_('Link for payment, e.g. a Tikkie link.'))
