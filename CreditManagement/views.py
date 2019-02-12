@@ -70,10 +70,12 @@ class UserTransactionListView(ListView):
 
 class TransactionFinalisationView(View):
     context = {}
-    template = ""
+    template_name = "credit_management/transaction_finalise.html"
 
     def get(self, request):
-        pass
+        return render(request, self.template_name, self.context)
 
     def post(self, request):
-        pass
+        self.context['transactions'] = AbstractPendingTransaction.finalise_all_expired()
+
+        return render(request, self.template_name, self.context)

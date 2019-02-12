@@ -8,5 +8,8 @@
             <input type="submit" value="Finalise transactions" class="btn btn-block btn-primary"/>
         </form>
         <h3>Processed:</h3>
+        {% for transaction in transactions %}
+            {{ transaction }}<br>
+        {% endfor %}
     </div>
 {% endblock %}

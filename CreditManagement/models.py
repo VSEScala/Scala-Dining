@@ -307,6 +307,8 @@ class PendingTransaction(AbstractPendingTransaction):
             self.delete()
             fixed_transaction.save()
 
+        return fixed_transaction
+
     @classmethod
     def finalise_all_expired(cls):
         # Get all finalised items
@@ -314,8 +316,7 @@ class PendingTransaction(AbstractPendingTransaction):
         new_transactions = []
         for transaction in expired_transactions:
             # finalise transaction
-            new_transactions.append(transaction)
-            #TODO new_transactions.append(transaction.finalise())
+            new_transactions.append(transaction.finalise())
 
         return new_transactions
 
@@ -380,12 +381,13 @@ class PendingDiningTransaction(AbstractPendingTransaction):
     class Meta:
         managed = False
 
-
     @classmethod
     def finalise_all_expired(cls):
         # Get all finished dining lists
-        expired_lists = PendingDiningListTracker.objects.filter_lists_expired()
-
+        results = []
+        for list in PendingDiningListTracker.objects.filter_lists_expired():
+            results += list.finalise()
+        return results
 
     @classmethod
     def get_all_transactions(cls, user=None, association=None):
