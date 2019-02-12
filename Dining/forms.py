@@ -91,7 +91,7 @@ class DiningInfoForm(ServeTimeCheckMixin, forms.ModelForm):
         dining_list = kwargs.get("instance")
         super(DiningInfoForm, self).__init__(*args, **kwargs)
 
-        query = dining_list.diners
+        query = dining_list.diners.distinct()
         self.fields['purchaser'].queryset = query
 
     class Meta:
