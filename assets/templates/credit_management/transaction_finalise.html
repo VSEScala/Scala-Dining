@@ -1,0 +1,12 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    <div>
+        <p>Run the script that moves all expired pending transactions to the fixed dining transactions</p>
+        <form method="post">
+            {% csrf_token %}
+            <input type="submit" value="Finalise transactions" class="btn btn-block btn-primary"/>
+        </form>
+        <h3>Processed:</h3>
+    </div>
+{% endblock %}

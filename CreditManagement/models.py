@@ -9,7 +9,8 @@ from django.utils.translation import gettext as _
 from Dining.models import DiningList
 from UserDetails.models import Association, User
 
-from .querysets import TransactionQuerySet, DiningTransactionQuerySet, PendingDiningTrackerQuerySet
+from .querysets import TransactionQuerySet, DiningTransactionQuerySet,\
+    PendingDiningTrackerQuerySet, PendingTransactionQuerySet
 
 """""""""""""""""""""""""""""""""""""""""""""
 New implementation of the transaction models
@@ -232,6 +233,9 @@ class AbstractPendingTransaction(AbstractTransaction):
     """
     balance_annotation_name = "balance_pending"
 
+    class Meta:
+        abstract = True
+
     @classmethod
     def get_children(cls):
         return [PendingTransaction, PendingDiningTransaction]
@@ -239,8 +243,22 @@ class AbstractPendingTransaction(AbstractTransaction):
     def finalise(self):
         raise NotImplementedError()
 
-    class Meta:
-        abstract = True
+    @classmethod
+    def finalise_all_expired(cls):
+        """
+        Moves all pending transactions to the fixed transactions table
+        :return: All new entries in the fixed transaction table
+        """
+        result = None
+        # Get all child classes
+        children = cls.get_children()
+
+        # Loop over all children, finalise them and add all retrieved items to a combined list
+        result = []
+        for child in children:
+            result = result + child.finalise_all_expired()
+
+        return result
 
 
 class PendingTransaction(AbstractPendingTransaction):
@@ -248,7 +266,7 @@ class PendingTransaction(AbstractPendingTransaction):
     Model for the general Pending Transactions
     """
 
-    objects = TransactionQuerySet.as_manager()
+    objects = PendingTransactionQuerySet.as_manager()
     balance_annotation_name = "balance_pending_normal"
 
     def clean(self):
@@ -288,6 +306,18 @@ class PendingTransaction(AbstractPendingTransaction):
         with transaction.atomic():
             self.delete()
             fixed_transaction.save()
+
+    @classmethod
+    def finalise_all_expired(cls):
+        # Get all finalised items
+        expired_transactions = cls.objects.get_expired_transactions()
+        new_transactions = []
+        for transaction in expired_transactions:
+            # finalise transaction
+            new_transactions.append(transaction)
+            #TODO new_transactions.append(transaction.finalise())
+
+        return new_transactions
 
     @classmethod
     def get_all_transactions(cls, user=None, association=None):
@@ -350,6 +380,13 @@ class PendingDiningTransaction(AbstractPendingTransaction):
     class Meta:
         managed = False
 
+
+    @classmethod
+    def finalise_all_expired(cls):
+        # Get all finished dining lists
+        expired_lists = PendingDiningListTracker.objects.filter_lists_expired()
+
+
     @classmethod
     def get_all_transactions(cls, user=None, association=None):
         if association:
@@ -384,7 +421,7 @@ class PendingDiningTransaction(AbstractPendingTransaction):
     def finalise(self):
         raise NotImplementedError("PendingDiningTransactions are read-only")
 
-    def __get_fixedform__(self):
+    def _get_fixedform_(self):
         return FixedTransaction(source_user=self.source_user, source_association=self.source_association,
                                 target_user=self.target_user, target_association=self.target_association,
                                 amount=self.amount,
@@ -407,13 +444,15 @@ class PendingDiningListTracker(models.Model):
         # Get all corresponding dining transactions
         # loop over all items and make the transactions
         for dining_transaction in PendingDiningTransaction.objects.get_queryset(dining_list=self.dining_list):
-            transactions.append(dining_transaction.__get_fixedform__())
+            transactions.append(dining_transaction._get_fixedform_())
 
         # Save the changes
         with transaction.atomic():
             for fixed_transaction in transactions:
                 fixed_transaction.save()
             self.delete()
+
+        return transactions
 
     @classmethod
     def finalise_to_date(cls, date):

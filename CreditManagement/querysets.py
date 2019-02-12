@@ -4,6 +4,7 @@ from django.db.models.functions import Coalesce, Cast
 
 from Dining.models import DiningEntry, DiningList
 from UserDetails.models import User, Association
+from django.utils import timezone
 
 
 class AbstractTransactionQuerySet(models.QuerySet):
@@ -118,6 +119,13 @@ class TransactionQuerySet(AbstractTransactionQuerySet):
     def compute_association_balance(self, association):
         return self._compute_balance(association, self.source_association_column, self.target_association_column)
 
+
+class PendingTransactionQuerySet(TransactionQuerySet):
+    def get_expired_transactions(self):
+        """
+        Returns all transactions that are expired and should be moved to Fixed Transactions
+        """
+        return self.filter(confirm_moment__lte=timezone.now())
 
 class DiningTransactionQuerySet(AbstractTransactionQuerySet):
     """

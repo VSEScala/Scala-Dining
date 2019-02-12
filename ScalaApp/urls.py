@@ -31,8 +31,6 @@ urlpatterns = [
     path('credit/', include('CreditManagement.urls')),
     path('site/', include('General.urls')),
     path('', include('Dining.urls')),
-    path('test', CMviews.TransactionTestView.as_view()),
-    path('test/<user>', CMviews.TransactionTestView.as_view()),
     # Quadrivium OpenID Connect
     path('oidc/', include('mozilla_django_oidc.urls')),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
