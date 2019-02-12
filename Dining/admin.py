@@ -50,8 +50,7 @@ class DiningListAdmin(admin.ModelAdmin):
               ('dish'),
               ('claimed_by', 'association', 'purchaser', 'limit_signups_to_association_only'),
               ('min_diners', 'max_diners'),
-              ('kitchen_cost', 'dinner_cost_single'),
-              ('dinner_cost_total', 'auto_pay', 'dinner_cost_keep_single_constant'),
+              ('kitchen_cost', 'dining_cost', 'auto_pay'),
               'payment_link')
 
 
