@@ -36,6 +36,8 @@ class ServeTimeCheckMixin:
         if serve_time > settings.KITCHEN_USE_END_TIME:
             raise ValidationError(_("Kitchen can't be used this late"))
 
+        return serve_time
+
 
 class CreateSlotForm(ServeTimeCheckMixin, forms.ModelForm):
     class Meta:
@@ -68,6 +70,10 @@ class CreateSlotForm(ServeTimeCheckMixin, forms.ModelForm):
         if len(available) == 1:
             self.fields['association'].initial = available[0].pk
             self.fields['association'].disabled = True
+
+    def clean(self, *args, **kwargs):
+        cleaned_data = super(CreateSlotForm, self).clean(*args, **kwargs)
+        return cleaned_data
 
     def save(self, commit=True):
         instance = super().save(commit=False)
