@@ -42,8 +42,8 @@ class AbstractTransaction(models.Model):
                                            null=True, blank=True,
                                            verbose_name="The association recieving the money")
 
-    order_moment = models.DateTimeField(default=datetime.now)
-    confirm_moment = models.DateTimeField(default=datetime.now)
+    order_moment = models.DateTimeField(default=timezone.now)
+    confirm_moment = models.DateTimeField(default=timezone.now)
     description = models.CharField(default="", blank=True, max_length=50)
 
     balance_annotation_name = "balance"
