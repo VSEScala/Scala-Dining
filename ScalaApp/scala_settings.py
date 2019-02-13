@@ -1,5 +1,5 @@
 from decimal import Decimal
-from datetime import time
+from datetime import time, timedelta
 
 # Maximum number of slots on each date
 MAX_SLOT_NUMBER = 3
@@ -17,3 +17,6 @@ KITCHEN_USE_END_TIME = time(19, 30)
 
 # Balance bottom limit
 MINIMUM_BALANCE = Decimal('-2.00')
+
+# The duration that pending transactions should last
+TRANSACTION_PENDING_DURATION = timedelta(days=2)
