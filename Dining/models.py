@@ -45,7 +45,7 @@ class DiningList(models.Model):
     dish = models.CharField(default="", max_length=30, blank=True, help_text="The dish made")
     # The days adjustable is implemented to prevent adjustment in credits or aid due to a deletion of a user account.
     adjustable_duration = models.DurationField(
-        default=timedelta(days=2),
+        default=settings.TRANSACTION_PENDING_DURATION,
         help_text="The amount of time the dining list can be adjusted after its date")
     claimed_by = models.ForeignKey(settings.AUTH_USER_MODEL, blank=True, related_name="dininglist_claimer", null=True,
                                    on_delete=models.SET_NULL)

@@ -43,7 +43,7 @@ class AbstractTransaction(models.Model):
                                            verbose_name="The association recieving the money")
 
     order_moment = models.DateTimeField(default=timezone.now)
-    confirm_moment = models.DateTimeField(default=timezone.now)
+    confirm_moment = models.DateTimeField(default=timezone.now, blank=True)
     description = models.CharField(default="", blank=True, max_length=50)
 
     balance_annotation_name = "balance"
@@ -193,6 +193,13 @@ class FixedTransaction(AbstractTransaction):
     objects = TransactionQuerySet.as_manager()
     balance_annotation_name = "balance_fixed"
 
+    def save(self, *args, **kwargs):
+        if self.id is None:
+            self.confirm_moment = timezone.now()
+            super(FixedTransaction, self).save(*args, **kwargs)
+
+
+
     @classmethod
     def get_all_transactions(cls, user=None, association=None):
         """
@@ -308,6 +315,13 @@ class PendingTransaction(AbstractPendingTransaction):
             fixed_transaction.save()
 
         return fixed_transaction
+
+    def save(self, *args, **kwargs):
+        # If no confirm moment is given, set it to the standard
+        if self.confirm_moment is None:
+            self.confirm_moment = self.order_moment + settings.MINIMUM_BALANCE
+
+        super(PendingTransaction, self).save(*args, **kwargs)
 
     @classmethod
     def finalise_all_expired(cls):
