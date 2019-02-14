@@ -17,6 +17,7 @@ KITCHEN_USE_END_TIME = time(19, 30)
 
 # Balance bottom limit
 MINIMUM_BALANCE_FOR_DINING_SIGN_UP = Decimal('-2.00')
+MINIMUM_BALANCE_FOR_DINING_SLOT_CLAIM = Decimal('-1.50')
 
 # The duration that pending transactions should last
 TRANSACTION_PENDING_DURATION = timedelta(days=2)

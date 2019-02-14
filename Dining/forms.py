@@ -73,6 +73,15 @@ class CreateSlotForm(ServeTimeCheckMixin, forms.ModelForm):
 
     def clean(self, *args, **kwargs):
         cleaned_data = super(CreateSlotForm, self).clean(*args, **kwargs)
+
+        # Check if user has enough money to claim a slot
+        if self.user.usercredit.balance < settings.MINIMUM_BALANCE_FOR_DINING_SLOT_CLAIM:
+            raise ValidationError("Your balance is too low to claim a slot")
+
+        # Check if user has not already claimed another dining slot this day
+        if DiningList.objects.filter(date=self.date, claimed_by=self.user).count() > 0:
+            raise ValidationError(_("User has already claimed a dining slot this day"))
+
         return cleaned_data
 
     def save(self, commit=True):
@@ -82,6 +91,7 @@ class CreateSlotForm(ServeTimeCheckMixin, forms.ModelForm):
 
         if commit:
             instance.save()
+            DiningEntryUser(user=self.user, dining_list = instance).save()
 
         return instance
 
@@ -171,7 +181,7 @@ class DiningEntryUserCreateForm(forms.ModelForm):
 
     def clean(self):
         cleaned_data = super().clean()
-        user = cleaned_data['user']
+        user = cleaned_data.get('user')
         if user.usercredit.balance < settings.MINIMUM_BALANCE_FOR_DINING_SIGN_UP:
             raise ValidationError("The balance of this user is to low to add")
         return cleaned_data
@@ -216,7 +226,7 @@ class DiningEntryExternalCreateForm(forms.ModelForm):
 
     def clean(self):
         cleaned_data = super().clean()
-        user = cleaned_data['user']
+        user = cleaned_data.get('user')
         if user.usercredit.balance < settings.MINIMUM_BALANCE_FOR_DINING_SIGN_UP:
             raise ValidationError("Your balance is to low to add any external people")
         return cleaned_data

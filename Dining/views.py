@@ -161,15 +161,6 @@ class NewSlotView(LoginRequiredMixin, DayMixin, TemplateView):
         if form.is_valid():
             dining_list = form.save()
 
-            # Create dining entry for current user
-            # Todo: should maybe move this to CreateSlotForm
-            entry = DiningEntryUserCreateForm(request.user, dining_list, data={})
-            if entry.is_valid():
-                entry.save()
-            else:
-                for field, errors in entry.errors.items():
-                    for error in errors:
-                        messages.add_message(request, messages.WARNING, error)
 
             return redirect(dining_list)
 
@@ -185,9 +176,14 @@ class NewSlotView(LoginRequiredMixin, DayMixin, TemplateView):
         self.init_date()
         available_slots = DiningList.objects.available_slots(self.date)
         if available_slots <= 0:
-            return HttpResponseForbidden('No available slots')
+            error = _("No free slots availlable")
+            messages.add_message(request, messages.ERROR, error)
+            return HttpResponseRedirect(self.reverse('day_view', kwargs={}))
+
         if len(DiningList.objects.filter(date=self.date).filter(claimed_by=self.request.user)) > 0:
-            return HttpResponseForbidden('You already have dining slot claimed today')
+            error = _("You already have dining slot claimed today")
+            messages.add_message(request, messages.ERROR, error)
+            return HttpResponseRedirect(self.reverse('day_view', kwargs={}))
         return super().dispatch(request, *args, **kwargs)
 
 
