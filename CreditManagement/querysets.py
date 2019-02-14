@@ -127,6 +127,7 @@ class PendingTransactionQuerySet(TransactionQuerySet):
         """
         return self.filter(confirm_moment__lte=timezone.now())
 
+
 class DiningTransactionQuerySet(AbstractTransactionQuerySet):
     """
     Queryset for the DiningTransaction, uses special implementation to 'imitate' a working database model.
