@@ -177,7 +177,6 @@ class AbstractTransaction(models.Model):
 
         return result
 
-
     def source(self):
         return self.source_association if self.source_association else self.source_user
 
@@ -493,7 +492,15 @@ class UserCredit(models.Model):
     user = models.OneToOneField(User, primary_key=True,
                                   db_column='id',
                                 on_delete=models.DO_NOTHING)
-    balance = models.DecimalField(blank=True, null=True, db_column='balance', decimal_places=2, max_digits=6)
+    balance = models.DecimalField(blank=True, null=True,
+                                  db_column=AbstractTransaction.balance_annotation_name,
+                                  decimal_places=2,
+                                  max_digits=6)
+    balance_fixed = models.DecimalField(blank=True,
+                                        null=True,
+                                        db_column=FixedTransaction.balance_annotation_name,
+                                        decimal_places=2,
+                                        max_digits=6)
 
     @classmethod
     def view(cls):
@@ -501,6 +508,6 @@ class UserCredit(models.Model):
         This method returns the SQL string that creates the view
         """
 
-        qs = FixedTransaction.objects.annotate_user_balance(). \
-            values('id', 'balance')
+        qs = AbstractTransaction.annotate_balance(users=User.objects.all()). \
+            values('id', AbstractTransaction.balance_annotation_name, FixedTransaction.balance_annotation_name)
         return str(qs.query)
