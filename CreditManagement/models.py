@@ -502,6 +502,27 @@ class UserCredit(models.Model):
                                         decimal_places=2,
                                         max_digits=6)
 
+    def negative_since(self):
+        """
+        Compute the date in the confirmed moments that
+        :return:
+        """
+        balance = self.balance_fixed
+        if balance >= 0:
+            # balance is already positive, return nothing
+            return None
+
+        # Loop over all transactions from new to old, reverse its balance
+        transactions = FixedTransaction.get_all_transactions(user=self.user).order_by('-order_moment')
+        for transaction in transactions:
+            balance += transaction.amount
+            # If balance is positive now, return the current transaction date
+            if balance >= 0:
+                return transaction.order_moment
+
+        # This should not be reached, it would indicate that the starting balance was 0
+        raise Exception("Balance started as negative, negative_since could not be computed")
+
     @classmethod
     def view(cls):
         """

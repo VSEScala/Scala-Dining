@@ -1,3 +1,5 @@
+{% load humanize %}
+
 <div class="row mb-1">
     <div class="col-2">
         {{ entry.get_username }}
@@ -9,16 +11,16 @@
         {{ entry.email }}
     </div>
     {# Todo: credit #}
-    {% with entry.usercredit.get_current_credits as credit %}
+    {% with entry.usercredit.balance as credit %}
         <div class="col-2">
             {{ credit }}
         </div>
         <div class="col-2">
             {% if credit < 0 %}
-                {% if entry.usercredit.negative_since %}
-                    {{ entry.usercredit.negative_since }}
+                {% if entry.usercredit.balance_fixed >= 0 %}
+                    Currently pending
                 {% else %}
-                    Recently
+                    {{ entry.usercredit.negative_since|naturalday }}
                 {% endif %}
             {% endif %}
         </div>
