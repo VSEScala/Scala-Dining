@@ -158,12 +158,17 @@ class DiningEntryUserCreateForm(forms.ModelForm):
         # First filter by association if the dining list is limited
         if dining_list.limit_signups_to_association_only:
             users.filter(usermembership__association=dining_list.association)
+
         # Filter by the adder if he is not the owner, since then he only may add himself, not others
         if adder != dining_list.claimed_by:
             users.filter(pk=adder.pk)
-        # Todo: Add fund check
 
         self.fields['user'].queryset = users
+
+    def clean(self):
+        user = self.cleaned_data.get('user')
+        if user.usercredit.balance < settings.MINIMUM_BALANCE_FOR_DINING_SIGN_UP:
+            raise ValidationError("The balance of this user is to low to add")
 
 
 class DiningEntryExternalCreateForm(forms.ModelForm):
