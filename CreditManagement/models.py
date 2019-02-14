@@ -285,7 +285,7 @@ class PendingTransaction(AbstractPendingTransaction):
         # Checked here as this is primary user interaction. Check in fixed introduces possible problems where old
         # entries are not yet removed resulting in new fixed entries not allowed
         if self.source_user:
-            balance = self.source_user.balance
+            balance = AbstractTransaction.get_user_balance(self.source_user)
             # If the object is being altered instead of created, take difference into account
             if self.pk:
                 change = self.amount - self.objects.get(id=self.id).amount

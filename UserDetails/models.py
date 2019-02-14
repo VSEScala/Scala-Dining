@@ -30,16 +30,6 @@ class User(AbstractUser):
                 return True
         return False
 
-    # Todo: move balance to CreditManagement app
-    @cached_property
-    def balance(self):
-        # Calculate sum of target minus sum of source
-        from CreditManagement.models import AbstractTransaction
-        balance = AbstractTransaction.get_user_balance(self)
-
-        # Convert to two decimals in an exact manner
-        return balance.quantize(Decimal('0.01'), context=Context(traps=[Inexact]))
-
     def can_access_back(self):
         is_a_boardmember = (self.groups.count() > 0)
         return self.is_staff or is_a_boardmember
