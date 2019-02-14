@@ -195,8 +195,32 @@ class EntryAddView(LoginRequiredMixin, DiningListMixin, TemplateView):
     template_name = "dining_lists/dining_entry_add.html"
     add_external_button_name = "addExternalButton"
 
+    def check_user_permission(self, request, user):
+        # If user is dining list owner or purchaser
+        if user == self.dining_list.claimed_by or user == self.dining_list.purchaser:
+            return True
+
+        if not self.dining_list.is_open():
+            # Dining list is closed. Go back to the info screen
+            error = _("Dining list is closed, people can no longer join")
+            messages.add_message(request, messages.ERROR, error)
+            return False
+
+        if not self.dining_list.has_room():
+            # dining list is full. Go back to the info screen
+            error = _("Dining list is already full, ask the chef personally if you want to join")
+            messages.add_message(request, messages.ERROR, error)
+            return False
+
+        # No problems, use can add people
+        return True
+
     def get(self, request, *args, **kwargs):
         context = self.get_context_data()
+
+        # Check permissions, if user has no access to this page, reject it.
+        if not self.check_user_permission(request, request.user):
+            return HttpResponseRedirect(self.reverse('slot_details'))
 
         # Search processing
         search = self.request.GET.get('search')
@@ -239,11 +263,12 @@ class EntryAddView(LoginRequiredMixin, DiningListMixin, TemplateView):
         return self.render_to_response(context)
 
     def post(self, request, *args, **kwargs):
-        # Todo: re-enable External Dining Entries
         context = self.get_context_data()
 
+        # Check permissions, if user has no access to this page, reject it.
+        if not self.check_user_permission(request, request.user):
+            return HttpResponseRedirect(self.reverse('slot_details'))
 
-        print(request.POST)
         # Do form shenanigans
         if self.add_external_button_name in request.POST:
             form = DiningEntryExternalCreateForm(request.user, self.dining_list,
