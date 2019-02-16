@@ -318,7 +318,7 @@ class PendingTransaction(AbstractPendingTransaction):
     def save(self, *args, **kwargs):
         # If no confirm moment is given, set it to the standard
         if self.confirm_moment is None:
-            self.confirm_moment = self.order_moment + settings.MINIMUM_BALANCE
+            self.confirm_moment = self.order_moment + settings.TRANSACTION_PENDING_DURATION
 
         super(PendingTransaction, self).save(*args, **kwargs)
 
@@ -504,8 +504,8 @@ class UserCredit(models.Model):
 
     def negative_since(self):
         """
-        Compute the date in the confirmed moments that
-        :return:
+        Compute the date from the balance_fixed table when the users balance has become negative
+        :return: The date when the users balance became negative
         """
         balance = self.balance_fixed
         if balance >= 0:
@@ -520,8 +520,8 @@ class UserCredit(models.Model):
             if balance >= 0:
                 return transaction.order_moment
 
-        # This should not be reached, it would indicate that the starting balance was 0
-        raise Exception("Balance started as negative, negative_since could not be computed")
+        # This should not be reached, it would indicate that the starting balance was below 0
+        raise RuntimeError("Balance started as negative, negative_since could not be computed")
 
     @classmethod
     def view(cls):

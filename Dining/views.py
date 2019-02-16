@@ -181,7 +181,7 @@ class NewSlotView(LoginRequiredMixin, DayMixin, TemplateView):
             return HttpResponseRedirect(self.reverse('day_view', kwargs={}))
 
         if len(DiningList.objects.filter(date=self.date).filter(claimed_by=self.request.user)) > 0:
-            error = _("You already have dining slot claimed today")
+            error = _("You have already a dining slot claimed today")
             messages.add_message(request, messages.ERROR, error)
             return HttpResponseRedirect(self.reverse('day_view', kwargs={}))
         return super().dispatch(request, *args, **kwargs)
