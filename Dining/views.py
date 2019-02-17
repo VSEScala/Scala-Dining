@@ -191,9 +191,9 @@ class EntryAddView(LoginRequiredMixin, DiningListMixin, TemplateView):
     template_name = "dining_lists/dining_entry_add.html"
     add_external_button_name = "addExternalButton"
 
-    def check_user_permission(self, request, user):
+    def check_user_permission(self, request):
         # If user is dining list owner or purchaser
-        if user == self.dining_list.claimed_by or user == self.dining_list.purchaser:
+        if request.user == self.dining_list.claimed_by or request.user == self.dining_list.purchaser:
             return True
 
         if not self.dining_list.is_open():
@@ -211,12 +211,8 @@ class EntryAddView(LoginRequiredMixin, DiningListMixin, TemplateView):
         # No problems, use can add people
         return True
 
-    def get(self, request, *args, **kwargs):
-        context = self.get_context_data()
-
-        # Check permissions, if user has no access to this page, reject it.
-        if not self.check_user_permission(request, request.user):
-            return HttpResponseRedirect(self.reverse('slot_details'))
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
 
         # Search processing
         search = self.request.GET.get('search')
@@ -251,10 +247,19 @@ class EntryAddView(LoginRequiredMixin, DiningListMixin, TemplateView):
             context['search'] = ""
             context['error_input'] = None
 
+        context['add_external_button_name'] = self.add_external_button_name
+
+        return context
+
+    def get(self, request, *args, **kwargs):
+        # Check permissions, if user has no access to this page, reject it.
+        if not self.check_user_permission(request, request.user):
+            return HttpResponseRedirect(self.reverse('slot_details'))
+
+        context = self.get_context_data()
+
         # Form rendering
         context['form'] = DiningEntryUserCreateForm(request.user, self.dining_list)
-
-        context['add_external_button_name'] = self.add_external_button_name
 
         return self.render_to_response(context)
 
