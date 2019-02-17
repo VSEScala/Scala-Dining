@@ -253,7 +253,7 @@ class EntryAddView(LoginRequiredMixin, DiningListMixin, TemplateView):
 
     def get(self, request, *args, **kwargs):
         # Check permissions, if user has no access to this page, reject it.
-        if not self.check_user_permission(request, request.user):
+        if not self.check_user_permission(request):
             return HttpResponseRedirect(self.reverse('slot_details'))
 
         context = self.get_context_data()
