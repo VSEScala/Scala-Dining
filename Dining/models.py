@@ -279,10 +279,14 @@ class DiningEntryUser(DiningEntry, DiningWork):
             if DiningEntryUser.objects.filter(dining_list=self.dining_list, user=self.user):
                 raise ValidationError(_("User is already on this dininglist"))
 
+    def __str__(self):
+        return "{0}: {1}".format(self.dining_list.date, self.user)
 
 class DiningEntryExternal(DiningEntry):
     name = models.CharField(max_length=40)
 
+    def __str__(self):
+        return "{0}: {1}".format(self.dining_list, self.name)
 
 class DiningComment(models.Model):
     """

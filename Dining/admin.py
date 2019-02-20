@@ -2,18 +2,27 @@ from django.contrib import admin
 from Dining.models import *
 
 
-class DiningSettingsAdmin(admin.ModelAdmin):
+class DiningSettingAdmin(admin.ModelAdmin):
     """
     Set up limited view of the user page
     """
 
-    list_display = ('user', )
-
     fields = ('user', 'allergies',)
+    readonly_fields = ('user',)
 
     actions = ['credit_zero']
 
-    #readonly_fields = ('user',)
+    list_display = ('user', 'allergies')
+    list_filter = ['user__usermembership__association']
+
+
+class DiningEntryAdmin(admin.ModelAdmin):
+    """
+    Sets up the admin for the dining list entries
+    """
+
+    list_display = ('__str__', 'dining_list', 'user')
+    list_filter = ['dining_list__date', 'user']
 
 
 class DiningListEntryLink(admin.StackedInline):
@@ -88,12 +97,11 @@ class DiningListCommentsAdmin(admin.ModelAdmin):
     fields = ('date', ('claimed_by', 'association'),)
 
 
-#admin.site.register(UserDiningSettings, DiningSettingsAdmin)
+admin.site.register(UserDiningSettings, DiningSettingAdmin)
 admin.site.register(DiningList, DiningListAdmin)
 #admin.site.register(DiningListComment, DiningListCommentsAdmin)
-#admin.site.register(DiningDayAnnouncements)
+admin.site.register(DiningDayAnnouncements)
 #admin.site.register(DiningCommentView)
-admin.site.register(DiningEntry)
-admin.site.register(DiningEntryUser)
-admin.site.register(DiningEntryExternal)
+admin.site.register(DiningEntryUser, DiningEntryAdmin)
+admin.site.register(DiningEntryExternal, DiningEntryAdmin)
 admin.site.register(DiningWork)
