@@ -222,9 +222,9 @@ class EntryAddView(LoginRequiredMixin, DiningListMixin, TemplateView):
             for search_part in search.split(" "):
                 # query the substring if it is part of either the first, last or username
                 search_result = get_user_model().objects.filter(
-                    Q(first_name__contains=search_part) |
-                    Q(last_name__contains=search_part) |
-                    Q(username__contains=search_part)
+                    Q(first_name__icontains=search_part) |
+                    Q(last_name__icontains=search_part) |
+                    Q(username__icontains=search_part)
                 )
                 if users is None:
                     users = search_result
