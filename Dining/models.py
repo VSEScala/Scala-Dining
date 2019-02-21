@@ -120,10 +120,25 @@ class DiningList(models.Model):
         if self.pk and not self.is_adjustable():
             raise ValidationError(gettext('The dining list is not adjustable.'), code='not_adjustable')
 
+        if self.sign_up_deadline.date() > self.date:
+            raise ValidationError(
+                {'sign_up_deadline': ["Sign up deadline can not be later than the day dinner is served",]})
+
         # Check if purchaser is present when using auto pay
         if self.auto_pay and not self.get_purchaser():
             raise ValidationError(
                 {'purchaser': ValidationError('When autopay is enabled, a purchaser must be defined.', code='invalid')})
+
+    def clean_sign_up_deadline(self):
+        print("CHECKUP")
+        sign_up_cleaned = super(DiningList, self).clean_sign_up_deadline()
+        if sign_up_cleaned.date() > self.date():
+            raise ValidationError("Sign up deadline can not be later than the day dinner is served")
+        if sign_up_cleaned.date() == self.date():
+            raise ValidationError("Sign up can not be on this day")
+
+        return sign_up_cleaned
+
 
     def is_open(self):
         """
