@@ -129,17 +129,6 @@ class DiningList(models.Model):
             raise ValidationError(
                 {'purchaser': ValidationError('When autopay is enabled, a purchaser must be defined.', code='invalid')})
 
-    def clean_sign_up_deadline(self):
-        print("CHECKUP")
-        sign_up_cleaned = super(DiningList, self).clean_sign_up_deadline()
-        if sign_up_cleaned.date() > self.date():
-            raise ValidationError("Sign up deadline can not be later than the day dinner is served")
-        if sign_up_cleaned.date() == self.date():
-            raise ValidationError("Sign up can not be on this day")
-
-        return sign_up_cleaned
-
-
     def is_open(self):
         """
         Whether normal users can sign in/out for the dining list (i.e. the deadline has not expired)
