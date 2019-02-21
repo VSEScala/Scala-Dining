@@ -73,6 +73,15 @@ class CreateSlotForm(ServeTimeCheckMixin, forms.ModelForm):
 
     def clean(self, *args, **kwargs):
         cleaned_data = super(CreateSlotForm, self).clean(*args, **kwargs)
+
+        # Check if user has enough money to claim a slot
+        if self.user.usercredit.balance < settings.MINIMUM_BALANCE_FOR_DINING_SLOT_CLAIM:
+            raise ValidationError("Your balance is too low to claim a slot")
+
+        # Check if user has not already claimed another dining slot this day
+        if DiningList.objects.filter(date=self.date, claimed_by=self.user).count() > 0:
+            raise ValidationError(_("User has already claimed a dining slot this day"))
+
         return cleaned_data
 
     def save(self, commit=True):
@@ -82,6 +91,7 @@ class CreateSlotForm(ServeTimeCheckMixin, forms.ModelForm):
 
         if commit:
             instance.save()
+            DiningEntryUser(user=self.user, dining_list = instance).save()
 
         return instance
 
@@ -91,7 +101,7 @@ class DiningInfoForm(ServeTimeCheckMixin, forms.ModelForm):
         dining_list = kwargs.get("instance")
         super(DiningInfoForm, self).__init__(*args, **kwargs)
 
-        query = dining_list.diners
+        query = dining_list.diners.distinct()
         self.fields['purchaser'].queryset = query
 
     class Meta:
@@ -141,29 +151,44 @@ class DiningEntryUserCreateForm(forms.ModelForm):
         model = DiningEntryUser
         fields = ['dining_list', 'user']
 
-    def __init__(self, adder, dining_list, data=None, **kwargs):
+    def __init__(self, added_by, dining_list, data=None, **kwargs):
         """
         The adder and dining_list parameters are used to find the users that can be used for this entry.
         """
         if data is not None:
-            # User defaults to adder if not set
+            # User defaults to added_by if not set
             data = data.copy()
-            data.setdefault('user', adder.pk)
+            data.setdefault('user', added_by.pk)
             data.setdefault('dining_list', dining_list.pk)
 
         super().__init__(**kwargs, data=data)
+
+        # Set the added_by to the user who added it
+        self.added_by = added_by
+        self.instance.added_by = self.added_by
 
         # Find available users for this dining entry
         users = User.objects.all()
         # First filter by association if the dining list is limited
         if dining_list.limit_signups_to_association_only:
             users.filter(usermembership__association=dining_list.association)
-        # Filter by the adder if he is not the owner, since then he only may add himself, not others
-        if adder != dining_list.claimed_by:
-            users.filter(pk=adder.pk)
-        # Todo: Add fund check
+
+        # Filter by the added_by if he is not the owner, since then he only may add himself, not others
+        if added_by != dining_list.claimed_by:
+            users.filter(pk=added_by.pk)
 
         self.fields['user'].queryset = users
+
+    def clean(self):
+        cleaned_data = super().clean()
+        user = cleaned_data.get('user')
+        if user.usercredit.balance < settings.MINIMUM_BALANCE_FOR_DINING_SIGN_UP:
+            raise ValidationError("The balance of this user is to low to add")
+        return cleaned_data
+
+    def save(self, *args, **kwargs):
+        self.instance.added_by = self.added_by
+        super(DiningEntryUserCreateForm, self).save(*args, **kwargs)
 
 
 class DiningEntryExternalCreateForm(forms.ModelForm):
@@ -191,15 +216,19 @@ class DiningEntryExternalCreateForm(forms.ModelForm):
         # First filter by association if the dining list is limited
         if dining_list.limit_signups_to_association_only:
             users.filter(usermembership__association=dining_list.association)
-        # Filter by the adder if he is not the owner, since then he only may add himself, not others
-        if adder != dining_list.claimed_by:
-            users.filter(pk=adder.pk)
+
+        # Limit the user to the person added it
+        self.instance.user = adder
+        users.filter(pk=adder.pk)
+
 
         self.fields['user'].queryset = users
 
     def clean(self):
         cleaned_data = super().clean()
-        # Todo: Add fund check
+        user = cleaned_data.get('user')
+        if user.usercredit.balance < settings.MINIMUM_BALANCE_FOR_DINING_SIGN_UP:
+            raise ValidationError("Your balance is to low to add any external people")
         return cleaned_data
 
 

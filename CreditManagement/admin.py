@@ -138,13 +138,22 @@ class PendingDiningTransactionAdmin(admin.ModelAdmin):
     def has_delete_permission(self, request, obj=None):
         return False
 
-# admin.site.register(UserCredit, UserCreditAdmin)
-# admin.site.register(Transaction, TransactionsAdmin)
-# admin.site.register(AssociationCredit, AssociationCreditAdmin)
+
+class UserCreditAdmin(admin.ModelAdmin):
+    list_display = ('user', 'balance', 'balance_fixed')
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
 
 
 admin.site.register(FixedTransaction, FixedTransactionAdmin)
 admin.site.register(PendingTransaction, PendingTransactionAdmin)
 admin.site.register(PendingDiningTransaction, PendingDiningTransactionAdmin)
 admin.site.register(PendingDiningListTracker, PendingDiningListTrackerAdmin)
-admin.site.register(UserCredit)
+admin.site.register(UserCredit, UserCreditAdmin)

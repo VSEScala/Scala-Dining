@@ -9,7 +9,8 @@ from django.utils.translation import gettext as _
 from Dining.models import DiningList
 from UserDetails.models import Association, User
 
-from .querysets import TransactionQuerySet, DiningTransactionQuerySet, PendingDiningTrackerQuerySet
+from .querysets import TransactionQuerySet, DiningTransactionQuerySet,\
+    PendingDiningTrackerQuerySet, PendingTransactionQuerySet
 
 """""""""""""""""""""""""""""""""""""""""""""
 New implementation of the transaction models
@@ -41,8 +42,8 @@ class AbstractTransaction(models.Model):
                                            null=True, blank=True,
                                            verbose_name="The association recieving the money")
 
-    order_moment = models.DateTimeField(default=datetime.now)
-    confirm_moment = models.DateTimeField(default=datetime.now)
+    order_moment = models.DateTimeField(default=timezone.now)
+    confirm_moment = models.DateTimeField(default=timezone.now, blank=True)
     description = models.CharField(default="", blank=True, max_length=50)
 
     balance_annotation_name = "balance"
@@ -176,7 +177,6 @@ class AbstractTransaction(models.Model):
 
         return result
 
-
     def source(self):
         return self.source_association if self.source_association else self.source_user
 
@@ -191,6 +191,13 @@ class FixedTransaction(AbstractTransaction):
     """
     objects = TransactionQuerySet.as_manager()
     balance_annotation_name = "balance_fixed"
+
+    def save(self, *args, **kwargs):
+        if self.id is None:
+            self.confirm_moment = timezone.now()
+            super(FixedTransaction, self).save(*args, **kwargs)
+
+
 
     @classmethod
     def get_all_transactions(cls, user=None, association=None):
@@ -232,6 +239,9 @@ class AbstractPendingTransaction(AbstractTransaction):
     """
     balance_annotation_name = "balance_pending"
 
+    class Meta:
+        abstract = True
+
     @classmethod
     def get_children(cls):
         return [PendingTransaction, PendingDiningTransaction]
@@ -239,8 +249,22 @@ class AbstractPendingTransaction(AbstractTransaction):
     def finalise(self):
         raise NotImplementedError()
 
-    class Meta:
-        abstract = True
+    @classmethod
+    def finalise_all_expired(cls):
+        """
+        Moves all pending transactions to the fixed transactions table
+        :return: All new entries in the fixed transaction table
+        """
+        result = None
+        # Get all child classes
+        children = cls.get_children()
+
+        # Loop over all children, finalise them and add all retrieved items to a combined list
+        result = []
+        for child in children:
+            result = result + child.finalise_all_expired()
+
+        return result
 
 
 class PendingTransaction(AbstractPendingTransaction):
@@ -248,7 +272,7 @@ class PendingTransaction(AbstractPendingTransaction):
     Model for the general Pending Transactions
     """
 
-    objects = TransactionQuerySet.as_manager()
+    objects = PendingTransactionQuerySet.as_manager()
     balance_annotation_name = "balance_pending_normal"
 
     def clean(self):
@@ -261,7 +285,7 @@ class PendingTransaction(AbstractPendingTransaction):
         # Checked here as this is primary user interaction. Check in fixed introduces possible problems where old
         # entries are not yet removed resulting in new fixed entries not allowed
         if self.source_user:
-            balance = self.source_user.balance
+            balance = AbstractTransaction.get_user_balance(self.source_user)
             # If the object is being altered instead of created, take difference into account
             if self.pk:
                 change = self.amount - self.objects.get(id=self.id).amount
@@ -288,6 +312,26 @@ class PendingTransaction(AbstractPendingTransaction):
         with transaction.atomic():
             self.delete()
             fixed_transaction.save()
+
+        return fixed_transaction
+
+    def save(self, *args, **kwargs):
+        # If no confirm moment is given, set it to the standard
+        if self.confirm_moment is None:
+            self.confirm_moment = self.order_moment + settings.TRANSACTION_PENDING_DURATION
+
+        super(PendingTransaction, self).save(*args, **kwargs)
+
+    @classmethod
+    def finalise_all_expired(cls):
+        # Get all finalised items
+        expired_transactions = cls.objects.get_expired_transactions()
+        new_transactions = []
+        for transaction in expired_transactions:
+            # finalise transaction
+            new_transactions.append(transaction.finalise())
+
+        return new_transactions
 
     @classmethod
     def get_all_transactions(cls, user=None, association=None):
@@ -351,6 +395,14 @@ class PendingDiningTransaction(AbstractPendingTransaction):
         managed = False
 
     @classmethod
+    def finalise_all_expired(cls):
+        # Get all finished dining lists
+        results = []
+        for list in PendingDiningListTracker.objects.filter_lists_expired():
+            results += list.finalise()
+        return results
+
+    @classmethod
     def get_all_transactions(cls, user=None, association=None):
         if association:
             # Return none, no associations can be involved in dining lists
@@ -384,7 +436,7 @@ class PendingDiningTransaction(AbstractPendingTransaction):
     def finalise(self):
         raise NotImplementedError("PendingDiningTransactions are read-only")
 
-    def __get_fixedform__(self):
+    def _get_fixedform_(self):
         return FixedTransaction(source_user=self.source_user, source_association=self.source_association,
                                 target_user=self.target_user, target_association=self.target_association,
                                 amount=self.amount,
@@ -407,13 +459,15 @@ class PendingDiningListTracker(models.Model):
         # Get all corresponding dining transactions
         # loop over all items and make the transactions
         for dining_transaction in PendingDiningTransaction.objects.get_queryset(dining_list=self.dining_list):
-            transactions.append(dining_transaction.__get_fixedform__())
+            transactions.append(dining_transaction._get_fixedform_())
 
         # Save the changes
         with transaction.atomic():
             for fixed_transaction in transactions:
                 fixed_transaction.save()
             self.delete()
+
+        return transactions
 
     @classmethod
     def finalise_to_date(cls, date):
@@ -438,7 +492,36 @@ class UserCredit(models.Model):
     user = models.OneToOneField(User, primary_key=True,
                                   db_column='id',
                                 on_delete=models.DO_NOTHING)
-    balance = models.DecimalField(blank=True, null=True, db_column='balance', decimal_places=2, max_digits=6)
+    balance = models.DecimalField(blank=True, null=True,
+                                  db_column=AbstractTransaction.balance_annotation_name,
+                                  decimal_places=2,
+                                  max_digits=6)
+    balance_fixed = models.DecimalField(blank=True,
+                                        null=True,
+                                        db_column=FixedTransaction.balance_annotation_name,
+                                        decimal_places=2,
+                                        max_digits=6)
+
+    def negative_since(self):
+        """
+        Compute the date from the balance_fixed table when the users balance has become negative
+        :return: The date when the users balance became negative
+        """
+        balance = self.balance_fixed
+        if balance >= 0:
+            # balance is already positive, return nothing
+            return None
+
+        # Loop over all transactions from new to old, reverse its balance
+        transactions = FixedTransaction.get_all_transactions(user=self.user).order_by('-order_moment')
+        for transaction in transactions:
+            balance += transaction.amount
+            # If balance is positive now, return the current transaction date
+            if balance >= 0:
+                return transaction.order_moment
+
+        # This should not be reached, it would indicate that the starting balance was below 0
+        raise RuntimeError("Balance started as negative, negative_since could not be computed")
 
     @classmethod
     def view(cls):
@@ -446,6 +529,6 @@ class UserCredit(models.Model):
         This method returns the SQL string that creates the view
         """
 
-        qs = FixedTransaction.objects.annotate_user_balance(). \
-            values('id', 'balance')
+        qs = AbstractTransaction.annotate_balance(users=User.objects.all()). \
+            values('id', AbstractTransaction.balance_annotation_name, FixedTransaction.balance_annotation_name)
         return str(qs.query)
