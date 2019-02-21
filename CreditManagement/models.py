@@ -292,7 +292,7 @@ class PendingTransaction(AbstractPendingTransaction):
             else:
                 change = self.amount
             new_balance = balance - change
-            if new_balance < settings.MINIMUM_BALANCE:
+            if new_balance < settings.MINIMUM_BALANCE_FOR_USER_TRANSACTION:
                 raise ValidationError(_("Balance becomes too low"))
 
         # Associations cannot transfer money between each other

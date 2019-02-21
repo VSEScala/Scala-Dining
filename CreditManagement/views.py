@@ -2,6 +2,8 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import render
 from django.views.generic.list import ListView
 from CreditManagement.models import *
+from django.contrib import messages
+from django.utils.translation import gettext as _
 from django.contrib.auth.decorators import login_required
 from django.utils.decorators import method_decorator
 from .forms import *
@@ -48,6 +50,7 @@ class TransactionAddView(LoginRequiredMixin, View):
 
         if form.is_valid():
             form.save()
+            messages.add_message(request, messages.SUCCESS, _("Transaction has been succesfully added."))
             return HttpResponseRedirect(request.path_info)
 
         self.context['slot_form'] = form
