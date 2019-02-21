@@ -468,10 +468,19 @@ class SlotInfoView(LoginRequiredMixin, SlotMixin, TemplateView):
         return context
 
     def post(self, request, *args, **kwargs):
-        # Add the comment
-        DiningComment(dining_list=self.dining_list, poster=request.user, message=request.POST['comment']).save()
+        context = self.get_context_data(**kwargs)
 
-        return HttpResponseRedirect(self.reverse('slot_details'))
+        # Add the comment
+        comment_form = DiningCommentForm(request.user, self.dining_list, data=request.POST)
+
+        if comment_form.is_valid():
+            comment_form.save()
+            return HttpResponseRedirect(self.reverse('slot_details'))
+        else:
+            context['form'] = comment_form
+            return self.render_to_response(context)
+
+
 
 
 # Could possibly use the Django built-in FormView or ModelFormView in combination with FormSet

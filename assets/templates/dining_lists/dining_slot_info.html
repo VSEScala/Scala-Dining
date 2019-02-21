@@ -174,7 +174,15 @@
         {% endfor %}
     </div>
     <form class="col-12" method="post">
-        <textarea name="comment" class="col-12" placeholder="Leave a remark"></textarea>
+        {% if form.errors %}
+            <div class="alert alert-dismissable alert-warning">
+                <button type="button" class="close" data-dismiss="alert">×</button>
+                {% for key, value in form.errors.items %}
+                    {{ value.as_text }}
+                {% endfor %}
+            </div>
+        {% endif %}
+        <textarea name="message" class="col-12" placeholder="Leave a remark"></textarea>
         <input type="submit" value="Post" class="btn btn-block btn-primary"/>
         {% csrf_token %}
     </form>

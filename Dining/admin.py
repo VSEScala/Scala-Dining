@@ -95,12 +95,11 @@ class DiningListCommentsAdmin(admin.ModelAdmin):
     inlines = [DininglistCommentsLink]
     fields = ('date', ('claimed_by', 'association'),)
 
-
 admin.site.register(UserDiningSettings, DiningSettingAdmin)
 admin.site.register(DiningList, DiningListAdmin)
 #admin.site.register(DiningListComment, DiningListCommentsAdmin)
 admin.site.register(DiningDayAnnouncements)
-#admin.site.register(DiningCommentView)
+admin.site.register(DiningComment)
 admin.site.register(DiningEntryUser, DiningEntryAdmin)
 admin.site.register(DiningEntryExternal, DiningEntryAdmin)
 admin.site.register(DiningWork)

@@ -282,11 +282,13 @@ class DiningEntryUser(DiningEntry, DiningWork):
     def __str__(self):
         return "{0}: {1}".format(self.dining_list.date, self.user)
 
+
 class DiningEntryExternal(DiningEntry):
     name = models.CharField(max_length=40)
 
     def __str__(self):
         return "{0}: {1}".format(self.dining_list, self.name)
+
 
 class DiningComment(models.Model):
     """
@@ -295,7 +297,7 @@ class DiningComment(models.Model):
     dining_list = models.ForeignKey(DiningList, on_delete=models.CASCADE)
     timestamp = models.DateTimeField(auto_now_add=True)
     poster = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    message = models.TextField()
+    message = models.CharField(max_length=256)
     pinned_to_top = models.BooleanField(default=False)
 
 

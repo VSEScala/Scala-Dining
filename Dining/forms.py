@@ -7,7 +7,7 @@ from django.utils.translation import gettext as _
 from django.core.exceptions import ValidationError, PermissionDenied
 
 from UserDetails.models import Association, User
-from .models import DiningList, DiningEntry, DiningEntryUser, DiningEntryExternal
+from .models import DiningList, DiningEntry, DiningEntryUser, DiningEntryExternal, DiningComment
 from General.util import SelectWithDisabled
 
 from decimal import Decimal, ROUND_UP
@@ -317,3 +317,43 @@ class DiningListDeleteForm(forms.ModelForm):
 
         # After database succeeded, send out a mail to all entries
         # mail()
+
+
+class DiningCommentForm(forms.ModelForm):
+    min_message_length = 3
+
+    class Meta:
+        model = DiningComment
+        fields = ['message']
+
+    def __init__(self, poster, dining_list, pinned=False, data=None, **kwargs):
+        if data is not None:
+            print(dining_list)
+            # User defaults to added_by if not set
+            data = data.copy()
+            data.setdefault('poster', poster.pk)
+            data.setdefault('dining_list', dining_list.pk)
+            data.setdefault('pinned_to_top', pinned)
+
+        super().__init__(**kwargs, data=data)
+
+        self.dining_list = dining_list
+        self.added_by = poster
+        self.pinned = pinned
+
+    def clean_message(self):
+        cleaned_data = super().clean()
+        message = cleaned_data.get('message')
+
+        if len(message) < self.min_message_length:
+            raise ValidationError(_("Comments needs to be at least {0} character").format(self.min_message_length))
+
+        return message
+
+    def save(self, *args, **kwargs):
+        self.instance.poster = self.added_by
+        self.instance.dining_list = self.dining_list
+        self.instance.pinned_to_top = self.pinned
+        print(self.instance.message)
+
+        super(DiningCommentForm, self).save(*args, **kwargs)
