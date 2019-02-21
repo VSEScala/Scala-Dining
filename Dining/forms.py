@@ -113,7 +113,7 @@ class DiningInfoForm(ServeTimeCheckMixin, forms.ModelForm):
 
 
 class DiningPaymentForm(forms.ModelForm):
-    dinner_cost_total = forms.DecimalField(decimal_places=2, max_digits=10, initial=Decimal(0.00),
+    dinner_cost_total = forms.DecimalField(decimal_places=2, max_digits=5, initial=Decimal(0.00),
                                            validators=[MinValueValidator(Decimal('0.00'))])
 
     class Meta:
@@ -136,7 +136,10 @@ class DiningPaymentForm(forms.ModelForm):
         total_dinner_cost = self.cleaned_data['dinner_cost_total']
 
         if total_dinner_cost > 0:
-            s_cost = total_dinner_cost / self.instance.diners.count()
+            if self.instance.diners.count() > 0:
+                s_cost = total_dinner_cost / self.instance.diners.count()
+            else:
+                s_cost = total_dinner_cost
             # round up slightly, to remove missing cents
             s_cost = Decimal(s_cost).quantize(Decimal('.01'), rounding=ROUND_UP)
             self.instance.dining_cost = s_cost
