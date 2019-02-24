@@ -83,8 +83,7 @@ class DiningList(models.Model):
     def save(self, *args, **kwargs):
         # Set the sign-up deadline to it's default value if none was provided.
         if not self.pk and not self.sign_up_deadline:
-            from Dining.constants import DINING_LIST_CLOSURE_TIME
-            loc_time = timezone.datetime.combine(self.date, DINING_LIST_CLOSURE_TIME)
+            loc_time = timezone.datetime.combine(self.date, settings.DINING_LIST_CLOSURE_TIME)
             loc_time = timezone.get_default_timezone().localize(loc_time)
             self.sign_up_deadline = loc_time
 
