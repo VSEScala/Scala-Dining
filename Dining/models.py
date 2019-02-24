@@ -120,7 +120,7 @@ class DiningList(models.Model):
         if self.pk and not self.is_adjustable():
             raise ValidationError(gettext('The dining list is not adjustable.'), code='not_adjustable')
 
-        if self.sign_up_deadline.date() > self.date:
+        if self.sign_up_deadline is not None and self.sign_up_deadline.date() > self.date:
             raise ValidationError(
                 {'sign_up_deadline': ["Sign up deadline can not be later than the day dinner is served",]})
 
