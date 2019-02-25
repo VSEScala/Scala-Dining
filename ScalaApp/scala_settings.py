@@ -10,7 +10,8 @@ MIN_SLOT_DINER_MAXIMUM = 12
 
 # Last claim time for dining slots
 DINING_LIST_CLOSURE_TIME = time(15, 30)
-DINING_SLOT_CLAIM_CLOSURE_TIME = time(17, 00)
+DINING_SLOT_CLAIM_CLOSURE_TIME = time(14, 00)
+DINING_SLOT_CLAIM_AHEAD = timedelta(days=30)
 
 # Kitchen use time
 KITCHEN_USE_START_TIME = time(16, 30)
