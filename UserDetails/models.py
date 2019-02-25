@@ -40,6 +40,7 @@ class Association(Group):
     image = models.ImageField(blank=True)
     is_choosable = models.BooleanField(default=True, verbose_name="Whether this association can be chosen as membership by users")
 
+
 class UserMembership(models.Model):
     """
     Stores membership information

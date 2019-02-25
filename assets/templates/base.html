@@ -41,7 +41,7 @@
                         {% if user.groups.all.count > 0 %}<hr>{% endif %}
                         {% for group in user.groups.all %}
                             <a class="dropdown-item justify-content-between d-flex"
-                               href="{% url 'association_credits' association_name=group.association.slug %}">
+                               href="{% url 'association_overview' association_name=group.association.slug %}">
                                 <span href="#" class="header-dropdown-line-content">{{ group.association.slug }}</span>
                                 {% if group.association.image %}
                                     <i class="fas fa-fw">
