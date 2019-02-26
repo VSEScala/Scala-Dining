@@ -111,7 +111,7 @@ class AbstractTransaction(models.Model):
             if child_value:
                 result += child_value
 
-        return result
+        return result.quantize(Decimal('.00'))
 
     @classmethod
     def get_association_balance(cls, association):
@@ -120,7 +120,7 @@ class AbstractTransaction(models.Model):
         :return: The current credits
         """
 
-        result = Decimal(0.00)
+        result = Decimal('0.00')
         children = cls.get_children()
 
         # Loop over all children and get the credits
@@ -131,7 +131,7 @@ class AbstractTransaction(models.Model):
             if child_value:
                 result += child_value
 
-        return result
+        return result.quantize(Decimal('.00'))
 
     @classmethod
     def annotate_balance(cls, users=None, associations=None):
@@ -348,7 +348,9 @@ class PendingTransaction(AbstractPendingTransaction):
 
     @classmethod
     def get_user_balance(cls, user):
-        return cls.objects.compute_user_balance(user)
+        a = cls.objects.compute_user_balance(user)
+        print(a)
+        return a
 
     @classmethod
     def get_association_balance(cls, association):
@@ -357,7 +359,9 @@ class PendingTransaction(AbstractPendingTransaction):
         :param association: The association
         :return: The balance in Decimal
         """
-        return cls.objects.compute_association_balance(association)
+        a = cls.objects.compute_association_balance(association)
+        print(a)
+        return a
 
     @classmethod
     def annotate_balance(cls, users=None, associations=None, output_name=balance_annotation_name):
