@@ -10,6 +10,7 @@ from django.utils.translation import gettext, gettext_lazy as _
 from datetime import datetime, timedelta, time
 from decimal import Decimal
 from UserDetails.models import User, Association
+from General.models import AbstractVisitTracker
 
 
 class UserDiningSettings(models.Model):
@@ -304,13 +305,11 @@ class DiningComment(models.Model):
     pinned_to_top = models.BooleanField(default=False)
 
 
-class DiningCommentView(models.Model):
+class DiningCommentVisitTracker(AbstractVisitTracker):
     """
     Tracks whether certain comments have been read, i.e. the last time the comments page was visited.
     """
     dining_list = models.ForeignKey(DiningList, on_delete=models.CASCADE)
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    timestamp = models.DateTimeField(auto_now_add=True)
 
 
 class DiningDayAnnouncements(models.Model):
