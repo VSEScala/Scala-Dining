@@ -1,5 +1,4 @@
 from django import forms
-from django.contrib.auth import get_user_model
 from django.conf import settings
 from django.db.models import OuterRef, Exists
 from django.db import transaction
@@ -11,6 +10,7 @@ from .models import DiningList, DiningEntry, DiningEntryUser, DiningEntryExterna
 from General.util import SelectWithDisabled
 
 from decimal import Decimal, ROUND_UP
+from django.utils import timezone
 from django.core.validators import MinValueValidator
 
 
@@ -74,6 +74,9 @@ class CreateSlotForm(ServeTimeCheckMixin, forms.ModelForm):
     def clean(self, *args, **kwargs):
         cleaned_data = super(CreateSlotForm, self).clean(*args, **kwargs)
 
+        if DiningList.objects.available_slots(self.date) <= 0:
+            raise ValidationError("All dining slots are already occupied on this day")
+
         # Check if user has enough money to claim a slot
         if self.user.usercredit.balance < settings.MINIMUM_BALANCE_FOR_DINING_SLOT_CLAIM:
             raise ValidationError("Your balance is too low to claim a slot")
@@ -81,6 +84,18 @@ class CreateSlotForm(ServeTimeCheckMixin, forms.ModelForm):
         # Check if user has not already claimed another dining slot this day
         if DiningList.objects.filter(date=self.date, claimed_by=self.user).count() > 0:
             raise ValidationError(_("User has already claimed a dining slot this day"))
+
+        # If date is valid
+        if self.date < timezone.now().date():
+            raise ValidationError("This date is in the past")
+        if self.date == timezone.now().date() and timezone.now().time() > settings.DINING_SLOT_CLAIM_CLOSURE_TIME:
+            raise ValidationError("It's too late to claim any dining slots")
+        if self.date > timezone.now().date() + settings.DINING_SLOT_CLAIM_AHEAD:
+            raise ValidationError("Dining list is too far in the future")
+
+
+
+        raise ValidationError("End reached")
 
         return cleaned_data
 
