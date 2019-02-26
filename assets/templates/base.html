@@ -21,7 +21,13 @@
                 </li>
                 <li class="dropdown p-1">
                     <a class="nav-link dropdown-toggle px-2 h4" href="#" id="navbardrop" data-toggle="dropdown">
-                        <i class="fas fa-user"></i>
+                        <i class="fas fa-user">
+                            {% if user.requires_action %}
+                                <span class="badge badge-pill badge-warning"
+                                    style="font-size: x-small; vertical-align: top; position: absolute">!</span>
+                                <span style="padding-right: 10px;"></span>
+                            {% endif %}
+                        </i>
                     </a>
                     <div class="dropdown-menu dropdown-menu-right" style="position: absolute;">
                         <a class="dropdown-item justify-content-between d-flex" href="{% url 'history_lists' %}">
@@ -38,14 +44,19 @@
                                 <span class="mr-2">Control panel</span><i class="fas fa-toolbox fa-fw"></i>
                             </a>
                         {% endif %}
-                        {% if user.groups.all.count > 0 %}<hr>{% endif %}
-                        {% for group in user.groups.all %}
+                        {% if user.boards.count > 0 %}<hr>{% endif %}
+                        {% for association in user.boards %}
                             <a class="dropdown-item justify-content-between d-flex"
-                               href="{% url 'association_overview' association_name=group.association.slug %}">
-                                <span href="#" class="header-dropdown-line-content">{{ group.association.slug }}</span>
-                                {% if group.association.image %}
+                               href="{% url 'association_overview' association_name=association.slug %}">
+                                <span href="#" class="header-dropdown-line-content">{{ association.slug }}
+                                    {% if association.requires_action %}
+                                        <span class="badge badge-pill badge-warning">!</span>
+                                    {% endif %}
+                                </span>
+
+                                {% if association.image %}
                                     <i class="fas fa-fw">
-                                        <img src="{{ group.association.image.url }}" style="width: 100%;">
+                                        <img src="{{ association.image.url }}" style="width: 100%;">
                                     </i>
                                 {% endif %}
                             </a>

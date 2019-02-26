@@ -9,6 +9,7 @@ from django.shortcuts import get_object_or_404
 from django.views import View
 from django.views.generic import ListView, TemplateView
 from django.utils.http import is_safe_url
+from django.utils import timezone
 
 from CreditManagement.models import AbstractTransaction, FixedTransaction
 from .models import UserMembership, Association, User
@@ -21,6 +22,9 @@ class AssociationBoardMixin:
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['association'] = self.association
+
+        context['notify_overview'] = self.association.has_new_member_requests
+
         return context
 
     def dispatch(self, request, *args, **kwargs):

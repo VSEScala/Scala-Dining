@@ -34,12 +34,45 @@ class User(AbstractUser):
         is_a_boardmember = (self.groups.count() > 0)
         return self.is_staff or is_a_boardmember
 
+    @cached_property
+    def boards(self):
+        """
+        Returns all associations of which this member has board access
+        :return: A queryset of all associations on which this member is board member
+        """
+        return Association.objects.filter(user=self).all()
+
+    @cached_property
+    def requires_action(self):
+        """
+        Whether some action is required by the user
+        :return: True or False
+        """
+        for board in self.boards:
+            if board.requires_action:
+                return True
+
+        return False
+
 
 class Association(Group):
     slug = models.SlugField(max_length=10)
     image = models.ImageField(blank=True)
     is_choosable = models.BooleanField(default=True, verbose_name="Whether this association can be chosen as membership by users")
 
+    @cached_property
+    def requires_action(self):
+        """
+        Whether some action needs to be done by the board. Used for display of notifications on the site
+        :return: True or false
+        """
+        return self.has_new_member_requests
+
+    @cached_property
+    def has_new_member_requests(self):
+        return UserMembership.objects.filter(
+            association=self.association,
+            verified_on__isnull=True).count() > 0
 
 class UserMembership(models.Model):
     """

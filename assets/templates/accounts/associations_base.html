@@ -6,8 +6,12 @@
 
         <ul class="nav nav-tabs">
             <li class="nav-item">
+
                 <a class="nav-link{% block tab_overview %}{% endblock %}"
-                   href="{% url 'association_overview' association_name=association.slug %}">Overview</a>
+                   href="{% url 'association_overview' association_name=association.slug %}">Overview
+                    {% if notify_overview %}<span class="badge badge-pill badge-warning">!</span>{% endif %}
+                </a>
+
             </li>
             <li class="nav-item">
                 <a class="nav-link{% block tab_credits %}{% endblock %}"
