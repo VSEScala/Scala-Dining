@@ -348,7 +348,7 @@ class SlotMixin(DiningListMixin):
         context['comments_total'] = self.dining_list.diningcomment_set.count()
         # Get the amount of unread messages
         try:
-            view_time = DiningCommentView.objects.get(user=self.request.user,
+            view_time = DiningCommentVisitTracker.objects.get(user=self.request.user,
                                                       dining_list=self.dining_list).timestamp
             context['comments_unread'] = self.dining_list.diningcomment_set.filter(timestamp__gte=view_time).count()
         except DiningCommentView.DoesNotExist:
@@ -448,7 +448,7 @@ class SlotInfoView(LoginRequiredMixin, SlotMixin, TemplateView):
         context['comments'] = self.dining_list.diningcomment_set.order_by('-pinned_to_top', 'timestamp').all()
 
         # Last visit
-        last_visit = DiningCommentView.objects.get_or_create(user=self.request.user, dining_list=self.dining_list)[0]
+        last_visit = DiningCommentVisitTracker.get_latest_vistit(user=self.request.user, dining_list=self.dining_list)[0]
         context['last_visited'] = last_visit.timestamp
         last_visit.timestamp = timezone.now()
         last_visit.save()

@@ -1,6 +1,7 @@
 from django.views.generic import View
 from django.shortcuts import render
-from .models import SiteUpdate
+from .models import SiteUpdate, PageVisitTracker
+from django.utils import timezone
 import math
 
 
@@ -32,8 +33,15 @@ class SiteUpdateView(View, PageListView):
     def get(self, request, page=1):
 
         # Set up the list display
-        updates = SiteUpdate.objects.order_by('date').all()
+        updates = SiteUpdate.objects.order_by('-date').all()
         super(SiteUpdateView, self).set_up_list(updates, page)
+        if updates:
+            latest_update = updates[0].date
+        else:
+            latest_update = timezone.now()
+
+        self.context['latest_visit'] = PageVisitTracker.get_latest_vistit('updates', request.user, update=True)
+        self.context['latest_update'] = latest_update
 
         return render(request, self.template, self.context)
 
@@ -44,7 +52,6 @@ class BugReportView(View):
 
     def get(self, request):
         self.context["Sourcepage"] = request.GET.get('source', '')
-
         return render(request, self.template, self.context)
 
 
