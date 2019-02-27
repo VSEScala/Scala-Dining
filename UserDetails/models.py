@@ -54,6 +54,17 @@ class User(AbstractUser):
 
         return False
 
+    def is_staff(self):
+        # For each group the member is part of, if it has permissions
+        for group in self.groups.all():
+            if group.permissions.count() > 0:
+                return True
+        if self.user_permissions.count() > 0:
+            return True
+        if self.is_superuser:
+            return True
+        return False
+
 
 class Association(Group):
     slug = models.SlugField(max_length=10)

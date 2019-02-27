@@ -39,7 +39,7 @@
                         <a class="dropdown-item justify-content-between d-flex" href="{% url 'settings' %}">
                             <span>Settings</span><i class="fas fa-cog fa-fw"></i>
                         </a>
-                        {% if request.user.can_access_back %}
+                        {% if request.user.is_staff %}
                             <a class="dropdown-item justify-content-between d-flex" href="{% url 'admin:index' %}" target="_blank">
                                 <span class="mr-2">Control panel</span><i class="fas fa-toolbox fa-fw"></i>
                             </a>
