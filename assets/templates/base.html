@@ -78,8 +78,14 @@
                         </i>
                     </a>
                     <div class="dropdown-menu dropdown-menu-right" style="position: absolute;">
-                        <a class="dropdown-item" href="{% url 'rules_and_regulations' %}">Rules & Regulation</a>
-                        <a class="dropdown-item" href="{% url 'site_updates' %}">News and Updates
+                        <a class="dropdown-item" href="{% url 'rules_and_regulations' %}">
+                            Rules & Regulation
+                            {% if user.requires_information_rules %}
+                                <span class="badge badge-pill badge-warning">!</span>
+                            {% endif %}
+                        </a>
+                        <a class="dropdown-item" href="{% url 'site_updates' %}">
+                            News and Updates
                             {% if user.requires_information_updates %}
                                 <span class="badge badge-pill badge-warning">!</span>
                             {% endif %}

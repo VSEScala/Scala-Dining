@@ -56,12 +56,17 @@ class User(AbstractUser):
 
     @cached_property
     def requires_information(self):
-        return self.requires_information_updates
+        return self.requires_information_updates or self.requires_information_rules
 
     @cached_property
     def requires_information_updates(self):
         from General.views import SiteUpdateView
         return SiteUpdateView.has_new_update(self)
+
+    @cached_property
+    def requires_information_rules(self):
+        from General.views import RulesPageView
+        return RulesPageView.has_new_update(self)
 
     @cached_property
     def is_staff(self):

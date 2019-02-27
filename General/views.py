@@ -2,6 +2,7 @@ from django.views.generic import View
 from django.shortcuts import render
 from .models import SiteUpdate, PageVisitTracker
 from django.utils import timezone
+from datetime import datetime
 import math
 
 
@@ -28,7 +29,6 @@ class PageListView:
 
 class SiteUpdateView(View, PageListView):
     template = "general/version_overview.html"
-    length = 4
 
     def get(self, request, page=1):
 
@@ -40,7 +40,7 @@ class SiteUpdateView(View, PageListView):
         else:
             latest_update = timezone.now()
 
-        self.context['latest_visit'] = PageVisitTracker.get_latest_visit('updates', request.user, update=False)
+        self.context['latest_visit'] = PageVisitTracker.get_latest_visit('updates', request.user, update=True)
         self.context['latest_update'] = latest_update
 
         return render(request, self.template, self.context)
@@ -71,6 +71,26 @@ class BugReportView(View):
 class RulesPageView(View):
     template = "general/rules_and_regulations.html"
     context = {}
+    change_date = timezone.make_aware(datetime(2019, 2, 27, 17, 49))
 
     def get(self, request):
+        # Store the recent updates/visit data in the local context
+        self.context['latest_visit'] = PageVisitTracker.get_latest_visit('rules', request.user, update=True)
+        self.context['latest_update'] = self.change_date
+
         return render(request, self.template, self.context)
+
+    @staticmethod
+    def has_new_update(user):
+        """
+        Checks whether a new update for the given user is present
+        :param user:
+        :return:
+        """
+        visit_timestamp = PageVisitTracker.get_latest_visit('rules', user)
+        print(visit_timestamp)
+        if visit_timestamp is None:
+            return False
+        print(RulesPageView.change_date)
+
+        return RulesPageView.change_date > visit_timestamp
