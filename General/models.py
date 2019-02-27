@@ -44,7 +44,7 @@ class PageVisitTracker(AbstractVisitTracker):
         return None
 
     @classmethod
-    def get_latest_vistit(cls, page_name, user, update=False):
+    def get_latest_visit(cls, page_name, user, update=False):
         """
         Get the datetime of the latest visit.
         If there isn't one it either returns None, or the current time if update is set to True

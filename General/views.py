@@ -40,10 +40,23 @@ class SiteUpdateView(View, PageListView):
         else:
             latest_update = timezone.now()
 
-        self.context['latest_visit'] = PageVisitTracker.get_latest_vistit('updates', request.user, update=True)
+        self.context['latest_visit'] = PageVisitTracker.get_latest_visit('updates', request.user, update=False)
         self.context['latest_update'] = latest_update
 
         return render(request, self.template, self.context)
+
+
+    @staticmethod
+    def has_new_update(user):
+        """
+        Checks whether a new update for the given user is present
+        :param user:
+        :return:
+        """
+        visit_timestamp = PageVisitTracker.get_latest_visit('updates', user)
+        if visit_timestamp is None:
+            return False
+        return SiteUpdate.objects.latest('date').date > visit_timestamp
 
 
 class BugReportView(View):

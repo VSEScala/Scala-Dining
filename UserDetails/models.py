@@ -54,6 +54,16 @@ class User(AbstractUser):
 
         return False
 
+    @cached_property
+    def requires_information(self):
+        return self.requires_information_updates
+
+    @cached_property
+    def requires_information_updates(self):
+        from General.views import SiteUpdateView
+        return SiteUpdateView.has_new_update(self)
+
+    @cached_property
     def is_staff(self):
         # For each group the member is part of, if it has permissions
         for group in self.groups.all():
