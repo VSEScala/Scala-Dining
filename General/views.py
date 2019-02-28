@@ -88,9 +88,7 @@ class RulesPageView(View):
         :return:
         """
         visit_timestamp = PageVisitTracker.get_latest_visit('rules', user)
-        print(visit_timestamp)
         if visit_timestamp is None:
             return False
-        print(RulesPageView.change_date)
 
         return RulesPageView.change_date > visit_timestamp

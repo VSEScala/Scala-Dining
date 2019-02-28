@@ -348,9 +348,7 @@ class PendingTransaction(AbstractPendingTransaction):
 
     @classmethod
     def get_user_balance(cls, user):
-        a = cls.objects.compute_user_balance(user)
-        print(a)
-        return a
+        return cls.objects.compute_user_balance(user)a
 
     @classmethod
     def get_association_balance(cls, association):
@@ -359,9 +357,7 @@ class PendingTransaction(AbstractPendingTransaction):
         :param association: The association
         :return: The balance in Decimal
         """
-        a = cls.objects.compute_association_balance(association)
-        print(a)
-        return a
+        return cls.objects.compute_association_balance(association)
 
     @classmethod
     def annotate_balance(cls, users=None, associations=None, output_name=balance_annotation_name):
