@@ -56,7 +56,11 @@ class User(AbstractUser):
 
     @cached_property
     def requires_information(self):
-        return self.requires_information_updates or self.requires_information_rules
+        if self.requires_information_rules:
+            return True
+        if self.requires_information_updates:
+            return True
+        return False
 
     @cached_property
     def requires_information_updates(self):
