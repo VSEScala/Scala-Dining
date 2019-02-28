@@ -311,6 +311,30 @@ class DiningCommentVisitTracker(AbstractVisitTracker):
     """
     dining_list = models.ForeignKey(DiningList, on_delete=models.CASCADE)
 
+    @classmethod
+    def get_latest_visit(cls, dining_list, user, update=False):
+        """
+        Get the datetime of the latest visit.
+        If there isn't one it either returns None, or the current time if update is set to True
+        :param dining_list: The dining list the comment is part of
+        :param user: The user visiting the page
+        :param update:
+        :return:
+        """
+        if update:
+            latest_visit_obj = cls.objects.get_or_create(user=user, dining_list=dining_list)[0]
+        else:
+            try:
+                latest_visit_obj = cls.objects.get(user=user, dining_list=dining_list)
+            except cls.DoesNotExist:
+                return None
+
+        timestamp = latest_visit_obj.timestamp
+        if update:
+            latest_visit_obj.timestamp = timezone.now()
+            latest_visit_obj.save()
+        return timestamp
+
 
 class DiningDayAnnouncements(models.Model):
     date = models.DateField()

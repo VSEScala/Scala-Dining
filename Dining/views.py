@@ -347,12 +347,11 @@ class SlotMixin(DiningListMixin):
         # Get the amount of messages
         context['comments_total'] = self.dining_list.diningcomment_set.count()
         # Get the amount of unread messages
-        try:
-            view_time = DiningCommentVisitTracker.objects.get(user=self.request.user,
-                                                      dining_list=self.dining_list).timestamp
-            context['comments_unread'] = self.dining_list.diningcomment_set.filter(timestamp__gte=view_time).count()
-        except DiningCommentVisitTracker.DoesNotExist:
+        view_time = DiningCommentVisitTracker.get_latest_visit(user=self.request.user, dining_list=self.dining_list)
+        if view_time is None:
             context['comments_unread'] = context['comments_total']
+        else:
+            context['comments_unread'] = self.dining_list.diningcomment_set.filter(timestamp__gte=view_time).count()
 
         return context
 
@@ -448,10 +447,10 @@ class SlotInfoView(LoginRequiredMixin, SlotMixin, TemplateView):
         context['comments'] = self.dining_list.diningcomment_set.order_by('-pinned_to_top', 'timestamp').all()
 
         # Last visit
-        last_visit = DiningCommentVisitTracker.get_latest_vistit(user=self.request.user, dining_list=self.dining_list)[0]
-        context['last_visited'] = last_visit.timestamp
-        last_visit.timestamp = timezone.now()
-        last_visit.save()
+        context['last_visited'] = DiningCommentVisitTracker.get_latest_visit(
+            user=self.request.user,
+            dining_list=self.dining_list,
+            update=True)
 
         from django.db.models import CharField
         from django.db.models.functions import Length
