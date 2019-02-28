@@ -351,7 +351,7 @@ class SlotMixin(DiningListMixin):
             view_time = DiningCommentVisitTracker.objects.get(user=self.request.user,
                                                       dining_list=self.dining_list).timestamp
             context['comments_unread'] = self.dining_list.diningcomment_set.filter(timestamp__gte=view_time).count()
-        except DiningCommentView.DoesNotExist:
+        except DiningCommentVisitTracker.DoesNotExist:
             context['comments_unread'] = context['comments_total']
 
         return context
