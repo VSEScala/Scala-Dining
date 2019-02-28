@@ -66,6 +66,14 @@ class UserAdmin(admin.ModelAdmin):
     inlines = [AssociationLinks]
     fields = ('username', ('first_name', 'last_name'), 'date_joined', 'email', 'external_link')
 
+    actions = ['update_general_viewtimes']
+
+    def update_general_viewtimes(self, request, queryset):
+        from General.models import PageVisitTracker
+        for user in queryset:
+            PageVisitTracker.get_latest_visit('rules', user, update=True)
+            PageVisitTracker.get_latest_visit('updates', user, update=True)
+
 
 class GroupAdminForm(forms.ModelForm):
     """
