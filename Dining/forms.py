@@ -93,10 +93,6 @@ class CreateSlotForm(ServeTimeCheckMixin, forms.ModelForm):
         if self.date > timezone.now().date() + settings.DINING_SLOT_CLAIM_AHEAD:
             raise ValidationError("Dining list is too far in the future")
 
-
-
-        raise ValidationError("End reached")
-
         return cleaned_data
 
     def save(self, commit=True):
