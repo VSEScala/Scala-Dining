@@ -348,7 +348,7 @@ class PendingTransaction(AbstractPendingTransaction):
 
     @classmethod
     def get_user_balance(cls, user):
-        return cls.objects.compute_user_balance(user)a
+        return cls.objects.compute_user_balance(user)
 
     @classmethod
     def get_association_balance(cls, association):
