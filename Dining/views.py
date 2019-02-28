@@ -161,6 +161,9 @@ class NewSlotView(LoginRequiredMixin, DayMixin, TemplateView):
         if form.is_valid():
             dining_list = form.save()
 
+            message = _("You succesfully created a new dining list")
+            messages.add_message(request, messages.SUCCESS, message)
+
 
             return redirect(dining_list)
 
@@ -274,11 +277,23 @@ class EntryAddView(LoginRequiredMixin, DiningListMixin, TemplateView):
         if self.add_external_button_name in request.POST:
             form = DiningEntryExternalCreateForm(request.user, self.dining_list,
                                                  request.POST['external_name'], data=request.POST)
+            if form.is_valid():
+                form.save()
+                message = _("You succesfully added {0} to the dining list").format(form.cleaned_data.get('name'))
+                messages.add_message(request, messages.SUCCESS, message)
         else:
             form = DiningEntryUserCreateForm(request.user, self.dining_list, data=request.POST)
+            if form.is_valid():
+                form.save()
+                # Notify the user
+                if form.cleaned_data.get('user') == request.user:
+                    message = _("You succesfully joined the dining list")
+                else:
+                    message = _("You succesfully added {0} to the dining list").format(form.cleaned_data.get('user'))
+                messages.add_message(request, messages.SUCCESS, message)
 
-        if form.is_valid():
-            form.save()
+
+
 
         # If next is provided, put possible error messages on the messages system and redirect
         next = request.GET.get('next', None)
