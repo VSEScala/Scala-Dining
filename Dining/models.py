@@ -63,7 +63,7 @@ class DiningList(models.Model):
 
     # Kitchen cost may not be changed after creation
     kitchen_cost = models.DecimalField(decimal_places=2, verbose_name="kitchen cost per person", max_digits=10,
-                                       default=Decimal('0.50'), validators=[MinValueValidator(Decimal('0.00'))])
+                                       default=settings.KITCHEN_COST, validators=[MinValueValidator(Decimal('0.00'))])
 
     dining_cost = models.DecimalField(decimal_places=2, verbose_name="dinner cost per person", max_digits=5,
                                              blank=True, null=True, default=0,
