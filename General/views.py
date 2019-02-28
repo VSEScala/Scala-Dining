@@ -71,7 +71,7 @@ class BugReportView(View):
 class RulesPageView(View):
     template = "general/rules_and_regulations.html"
     context = {}
-    change_date = timezone.make_aware(datetime(2019, 2, 27, 17, 49))
+    change_date = timezone.make_aware(datetime(2019, 2, 28, 12, 6))
 
     def get(self, request):
         # Store the recent updates/visit data in the local context
