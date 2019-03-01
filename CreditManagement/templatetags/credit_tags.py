@@ -8,7 +8,8 @@ register = template.Library()
 @register.filter
 def euro(value):
     """Format for euro values."""
-    v = "{}€{}".format('-' if value < 0 else '', intcomma(abs(value)))
+    amount = "{:.2f}".format(abs(value))
+    v = "{}€{}".format('-' if value < 0 else '', amount)
     return mark_safe(v)
 
 
