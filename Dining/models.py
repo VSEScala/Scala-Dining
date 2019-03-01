@@ -10,6 +10,7 @@ from django.utils.translation import gettext, gettext_lazy as _
 from datetime import datetime, timedelta, time
 from decimal import Decimal
 from UserDetails.models import User, Association
+from General.models import AbstractVisitTracker
 
 
 class UserDiningSettings(models.Model):
@@ -62,7 +63,7 @@ class DiningList(models.Model):
 
     # Kitchen cost may not be changed after creation
     kitchen_cost = models.DecimalField(decimal_places=2, verbose_name="kitchen cost per person", max_digits=10,
-                                       default=Decimal('0.50'), validators=[MinValueValidator(Decimal('0.00'))])
+                                       default=settings.KITCHEN_COST, validators=[MinValueValidator(Decimal('0.00'))])
 
     dining_cost = models.DecimalField(decimal_places=2, verbose_name="dinner cost per person", max_digits=5,
                                              blank=True, null=True, default=0,
@@ -304,13 +305,35 @@ class DiningComment(models.Model):
     pinned_to_top = models.BooleanField(default=False)
 
 
-class DiningCommentView(models.Model):
+class DiningCommentVisitTracker(AbstractVisitTracker):
     """
     Tracks whether certain comments have been read, i.e. the last time the comments page was visited.
     """
     dining_list = models.ForeignKey(DiningList, on_delete=models.CASCADE)
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    timestamp = models.DateTimeField(auto_now_add=True)
+
+    @classmethod
+    def get_latest_visit(cls, dining_list, user, update=False):
+        """
+        Get the datetime of the latest visit.
+        If there isn't one it either returns None, or the current time if update is set to True
+        :param dining_list: The dining list the comment is part of
+        :param user: The user visiting the page
+        :param update:
+        :return:
+        """
+        if update:
+            latest_visit_obj = cls.objects.get_or_create(user=user, dining_list=dining_list)[0]
+        else:
+            try:
+                latest_visit_obj = cls.objects.get(user=user, dining_list=dining_list)
+            except cls.DoesNotExist:
+                return None
+
+        timestamp = latest_visit_obj.timestamp
+        if update:
+            latest_visit_obj.timestamp = timezone.now()
+            latest_visit_obj.save()
+        return timestamp
 
 
 class DiningDayAnnouncements(models.Model):

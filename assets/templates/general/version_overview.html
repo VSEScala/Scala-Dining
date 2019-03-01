@@ -2,12 +2,15 @@
 {% load form_extras %}
 
 {% block content %}
+
     <div class="col-12 row">
         {% for entry in entries %}
-            <div>
-                <h3><b>{{ entry.date }}</b>{{ entry.title }}</h3>
-                {{ entry.message }}
+            <div class="col-12 row">
+                <h3 class="col-12"><b>{{ entry.title }}</b><p class="h6">{{ entry.date|date:"SHORT_DATE_FORMAT" }}</p> </h3>
+                <p class="col-12">{{ entry.message|linebreaksbr }}</p>
             </div>
+            <hr class="col-12">
+            <br>
         {% endfor %}
     </div>
 

@@ -161,6 +161,9 @@ class NewSlotView(LoginRequiredMixin, DayMixin, TemplateView):
         if form.is_valid():
             dining_list = form.save()
 
+            message = _("You succesfully created a new dining list")
+            messages.add_message(request, messages.SUCCESS, message)
+
 
             return redirect(dining_list)
 
@@ -274,11 +277,23 @@ class EntryAddView(LoginRequiredMixin, DiningListMixin, TemplateView):
         if self.add_external_button_name in request.POST:
             form = DiningEntryExternalCreateForm(request.user, self.dining_list,
                                                  request.POST['external_name'], data=request.POST)
+            if form.is_valid():
+                form.save()
+                message = _("You succesfully added {0} to the dining list").format(form.cleaned_data.get('name'))
+                messages.add_message(request, messages.SUCCESS, message)
         else:
             form = DiningEntryUserCreateForm(request.user, self.dining_list, data=request.POST)
+            if form.is_valid():
+                form.save()
+                # Notify the user
+                if form.cleaned_data.get('user') == request.user:
+                    message = _("You succesfully joined the dining list")
+                else:
+                    message = _("You succesfully added {0} to the dining list").format(form.cleaned_data.get('user'))
+                messages.add_message(request, messages.SUCCESS, message)
 
-        if form.is_valid():
-            form.save()
+
+
 
         # If next is provided, put possible error messages on the messages system and redirect
         next = request.GET.get('next', None)
@@ -347,12 +362,11 @@ class SlotMixin(DiningListMixin):
         # Get the amount of messages
         context['comments_total'] = self.dining_list.diningcomment_set.count()
         # Get the amount of unread messages
-        try:
-            view_time = DiningCommentView.objects.get(user=self.request.user,
-                                                      dining_list=self.dining_list).timestamp
-            context['comments_unread'] = self.dining_list.diningcomment_set.filter(timestamp__gte=view_time).count()
-        except DiningCommentView.DoesNotExist:
+        view_time = DiningCommentVisitTracker.get_latest_visit(user=self.request.user, dining_list=self.dining_list)
+        if view_time is None:
             context['comments_unread'] = context['comments_total']
+        else:
+            context['comments_unread'] = self.dining_list.diningcomment_set.filter(timestamp__gte=view_time).count()
 
         return context
 
@@ -448,10 +462,10 @@ class SlotInfoView(LoginRequiredMixin, SlotMixin, TemplateView):
         context['comments'] = self.dining_list.diningcomment_set.order_by('-pinned_to_top', 'timestamp').all()
 
         # Last visit
-        last_visit = DiningCommentView.objects.get_or_create(user=self.request.user, dining_list=self.dining_list)[0]
-        context['last_visited'] = last_visit.timestamp
-        last_visit.timestamp = timezone.now()
-        last_visit.save()
+        context['last_visited'] = DiningCommentVisitTracker.get_latest_visit(
+            user=self.request.user,
+            dining_list=self.dining_list,
+            update=True)
 
         from django.db.models import CharField
         from django.db.models.functions import Length
