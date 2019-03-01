@@ -20,12 +20,16 @@
                     {{ user.usercredit.balance|euro }}
                 </li>
                 <li class="dropdown p-1">
-                    <a class="nav-link dropdown-toggle px-2 h4" href="#" id="navbardrop" data-toggle="dropdown">
-                        <i class="fas fa-user">
-                            {% if user.requires_action %}
+                    <a class="nav-link dropdown-toggle px-2 h4"
+                       style="position: relative;"
+                        href="#" id="navbardrop" data-toggle="dropdown">
+                        <i class="fas fa-user"
+                            {% if user.requires_information %}
+                                style="padding-right: 5px;">
                                 <span class="badge badge-pill badge-warning"
-                                    style="font-size: x-small; vertical-align: top; position: absolute">!</span>
-                                <span style="padding-right: 10px;"></span>
+                                    style="font-size: x-small; position: absolute; top: 10%; left: 40%;">!</span>
+                            {% else %}
+                                >
                             {% endif %}
                         </i>
                     </a>
@@ -68,12 +72,16 @@
                     </div>
                 </li>
                 <li class="dropdown p-1">
-                    <a class="nav-link dropdown-toggle py-2 h4" href="#" id="navbardrop" data-toggle="dropdown">
-                        <i class="fas fa-info">
+                    <a class="nav-link dropdown-toggle py-2 h4"
+                       style="position: relative;"
+                       href="#" id="navbardrop" data-toggle="dropdown">
+                        <i class="fas fa-info"
                             {% if user.requires_information %}
+                                style="padding-right: 10px;">
                                 <span class="badge badge-pill badge-warning"
-                                      style="font-size: x-small; vertical-align: top; position: absolute">!</span>
-                                <span style="padding-right: 10px;"></span>
+                                      style="font-size: x-small; position: absolute; top: 10%; left: 25%;">!</span>
+                            {% else %}
+                            >
                             {% endif %}
                         </i>
                     </a>
