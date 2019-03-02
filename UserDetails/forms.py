@@ -69,7 +69,7 @@ class RegisterAssociationLinks(forms.Form):
             UserMembership.objects.create(related_user=user, association_id=association)
 
 
-class Settings_Essentials_Form(ModelForm):
+class SettingsEssentialsForm(ModelForm):
     password_prev = forms.CharField(widget=forms.PasswordInput, required=False, label="Current password")
     password_new = forms.CharField(widget=forms.PasswordInput, required=False, label="New password",
                                    help_text="Leave empty if you don't want to change password")
@@ -92,10 +92,10 @@ class Settings_Essentials_Form(ModelForm):
                     self.add_error('password_check', "Passwords do not match")
                     return
 
-        super(Settings_Essentials_Form, self).clean()
+        super(SettingsEssentialsForm, self).clean()
 
     def save(self, commit=True):
-        super(Settings_Essentials_Form, self).save()
+        super(SettingsEssentialsForm, self).save()
 
         if len(self.data['password_new']) > 0:
             self.instance.set_password(self.cleaned_data["password_new"])
