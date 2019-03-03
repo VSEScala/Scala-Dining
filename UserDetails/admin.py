@@ -1,8 +1,11 @@
 from django import forms
 from django.contrib import admin
+from django.contrib.auth.admin import UserAdmin, GroupAdmin
 
 from .models import User, UserMembership, Association
 
+
+# TODO: the classes in this file are not in use currently
 
 class AssociationLinks(admin.TabularInline):
     """
@@ -54,7 +57,7 @@ class BoardFilter(admin.RelatedOnlyFieldListFilter):
         self.title = 'Boardmembers'
 
 
-class UserAdmin(admin.ModelAdmin):
+class CustomUserAdmin(admin.ModelAdmin):
     """
     Set up limited view of the user page
     """
@@ -111,5 +114,4 @@ class AssociationAdmin(admin.ModelAdmin):
 
 
 admin.site.register(User, UserAdmin)
-admin.site.register(Association, AssociationAdmin)
-
+admin.site.register(Association, GroupAdmin)
