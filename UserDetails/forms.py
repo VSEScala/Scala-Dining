@@ -4,6 +4,7 @@ from django.contrib.auth import authenticate
 from django.contrib.auth.forms import UserCreationForm
 from .models import User, Association, UserMembership
 from Dining.models import UserDiningSettings
+from django.db.utils import OperationalError
 
 
 class LoginForm(forms.Form):
@@ -27,6 +28,15 @@ class RegisterUserForm(UserCreationForm):
         model = User
         fields = ('username', 'password1', 'password2', 'email')
 
+    def clean(self):
+        # Check if the email is not already used.
+        email = self.cleaned_data.get('email')
+        if User.objects.filter(email=email).exists():
+            msg = 'E-mail is already used.'
+            self._errors['email'] = self.error_class([msg])
+            del self.cleaned_data['email']
+        return self.cleaned_data
+
 
 class RegisterUserDetails(forms.ModelForm):
     first_name = forms.CharField(max_length=40, required=True)
@@ -45,18 +55,18 @@ class RegisterUserDetails(forms.ModelForm):
 
 
 class RegisterAssociationLinks(forms.Form):
-    # Could change the widget to e.g. checkboxes
-    # Try except is needed in case Associations is not yet a created table
-    # (this line is reached in a migrate command, which fails)
+    # Todo? Could change the widget to e.g. checkboxes
     try:
-        associations = forms.MultipleChoiceField(choices=[(a.pk, a.name) for a in Association.objects.all()],
-                                             help_text='At which associations are you active?')
-    except:
+        associations = forms.MultipleChoiceField(
+            choices=[(a.pk, a.name) for a in Association.objects.filter(is_choosable=True)],
+            help_text='At which associations are you active?')
+        # In case associations table did not exist yet, except the operation
+    except OperationalError:
         pass
 
     def create_links_for(self, user):
         for association in self.cleaned_data['associations']:
-            UserMembership.objects.create(related_user=user, association=association)
+            UserMembership.objects.create(related_user=user, association_id=association)
 
 
 class Settings_Essentials_Form(ModelForm):

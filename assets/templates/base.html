@@ -11,17 +11,27 @@
                     <img src="/static/images/Scala_dining.png" height="40"></img>
                     <span class="h3 d-none d-lg-inline" style="line-height: 40px; vertical-align: middle; margin: 0 0 0 10px"> Scala Dining</span>
                     <span class="h5 d-none d-md-inline d-lg-none" style="line-height: 40px; vertical-align: middle; margin: 0 0 0 10px"> Scala Dining</span>
-                    <span class="text-warning" style="font-size: small"> v 0.9</span>
+                    <span class="text-warning" style="font-size: small"> beta</span>
                 </a>
             </div>
             <ul class="nav-user navbar-nav navbar-right" style="flex-direction: row">
                 <li class="navbar-text small text-right px-2 align-middle">
                     {{ user }}<br>
-                    {{ user.balance|euro }}
+                    {{ user.usercredit.balance|euro }}
                 </li>
                 <li class="dropdown p-1">
-                    <a class="nav-link dropdown-toggle px-2 h4" href="#" id="navbardrop" data-toggle="dropdown">
-                        <i class="fas fa-user"></i>
+                    <a class="nav-link dropdown-toggle px-2 h4"
+                       style="position: relative;"
+                        href="#" id="navbardrop" data-toggle="dropdown">
+                        <i class="fas fa-user"
+                            {% if user.requires_information %}
+                                style="padding-right: 5px;">
+                                <span class="badge badge-pill badge-warning"
+                                    style="font-size: x-small; position: absolute; top: 10%; left: 40%;">!</span>
+                            {% else %}
+                                >
+                            {% endif %}
+                        </i>
                     </a>
                     <div class="dropdown-menu dropdown-menu-right" style="position: absolute;">
                         <a class="dropdown-item justify-content-between d-flex" href="{% url 'history_lists' %}">
@@ -33,19 +43,24 @@
                         <a class="dropdown-item justify-content-between d-flex" href="{% url 'settings' %}">
                             <span>Settings</span><i class="fas fa-cog fa-fw"></i>
                         </a>
-                        {% if request.user.can_access_back %}
+                        {% if request.user.is_staff %}
                             <a class="dropdown-item justify-content-between d-flex" href="{% url 'admin:index' %}" target="_blank">
                                 <span class="mr-2">Control panel</span><i class="fas fa-toolbox fa-fw"></i>
                             </a>
                         {% endif %}
-                        {% if user.groups.all.count > 0 %}<hr>{% endif %}
-                        {% for group in user.groups.all %}
+                        {% if user.boards.count > 0 %}<hr>{% endif %}
+                        {% for association in user.boards %}
                             <a class="dropdown-item justify-content-between d-flex"
-                               href="{% url 'association_credits' association_name=group.association.slug %}">
-                                <span href="#" class="header-dropdown-line-content">{{ group.association.slug }}</span>
-                                {% if group.association.image %}
+                               href="{% url 'association_overview' association_name=association.slug %}">
+                                <span href="#" class="header-dropdown-line-content">{{ association.slug }}
+                                    {% if association.requires_action %}
+                                        <span class="badge badge-pill badge-warning">!</span>
+                                    {% endif %}
+                                </span>
+
+                                {% if association.image %}
                                     <i class="fas fa-fw">
-                                        <img src="{{ group.association.image.url }}" style="width: 100%;">
+                                        <img src="{{ association.image.url }}" style="width: 100%;">
                                     </i>
                                 {% endif %}
                             </a>
@@ -57,12 +72,32 @@
                     </div>
                 </li>
                 <li class="dropdown p-1">
-                    <a class="nav-link dropdown-toggle py-2 h4" href="#" id="navbardrop" data-toggle="dropdown">
-                        <i class="fas fa-info"></i>
+                    <a class="nav-link dropdown-toggle py-2 h4"
+                       style="position: relative;"
+                       href="#" id="navbardrop" data-toggle="dropdown">
+                        <i class="fas fa-info"
+                            {% if user.requires_information %}
+                                style="padding-right: 10px;">
+                                <span class="badge badge-pill badge-warning"
+                                      style="font-size: x-small; position: absolute; top: 10%; left: 25%;">!</span>
+                            {% else %}
+                            >
+                            {% endif %}
+                        </i>
                     </a>
                     <div class="dropdown-menu dropdown-menu-right" style="position: absolute;">
-                        <a class="dropdown-item" href="{% url 'rules_and_regulations' %}">Rules & Regulation</a>
-                        <a class="dropdown-item" href="{% url 'site_updates' %}">News and Updates</a>
+                        <a class="dropdown-item" href="{% url 'rules_and_regulations' %}">
+                            Rules & Regulation
+                            {% if user.requires_information_rules %}
+                                <span class="badge badge-pill badge-warning">!</span>
+                            {% endif %}
+                        </a>
+                        <a class="dropdown-item" href="{% url 'site_updates' %}">
+                            News and Updates
+                            {% if user.requires_information_updates %}
+                                <span class="badge badge-pill badge-warning">!</span>
+                            {% endif %}
+                        </a>
                         <a class="dropdown-item" href="{% url 'site_bugreport' %}?source={{ request.get_full_path }}">Report Bug</a>
                     </div>
                 </li>
@@ -70,22 +105,14 @@
 
     </nav>
 
-    {% if messages %}
-        <div class="col-12 header-msg py-1">
-            {% for message in messages %}
-                <div {% if message.tags %} class="{{ message.tags }}"{% endif %}
-                        {% if message.level == DEFAULT_MESSAGE_LEVELS.ERROR %} msg-warning {% endif %}>
-                    <div class="width-max-lg">
-                        {% if message.level < DEFAULT_MESSAGE_LEVELS.WARNING %}
-                            &bull;
-                        {% else %}
-                            <span class="bold text-size-4">!</span>
-                        {% endif %}
-                        {{ message }}
-                    </div>
-                </div>
-            {% endfor %}
-        </div>
+    {% if True %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible" role="alert">
+                <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span
+                        aria-hidden="true">&times;</span></button>
+                {{ message }}
+            </div>
+        {% endfor %}
     {% endif %}
 
 <div class="container pt-2">

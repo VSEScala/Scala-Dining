@@ -2,7 +2,7 @@ from datetime import date
 
 from django.test import TestCase
 
-from Dining.forms import DiningEntryCreateForm
+from Dining.forms import DiningEntryUserCreateForm
 from UserDetails.models import User
 from tests.dining.helpers import create_dining_list
 
@@ -16,7 +16,7 @@ class DiningEntryCreateFormTestCase(TestCase):
     def test_dining_list_closed(self):
         user = User.objects.create_user('noortje')
         dl = create_dining_list(date=date(2018, 1, 1))
-        form = DiningEntryCreateForm(user, dl, {})
+        form = DiningEntryUserCreateForm(user, dl, {})
         self.assertFalse(form.is_valid())
         self.assertTrue(form.has_error('dining_list', 'closed'))
 
@@ -25,7 +25,7 @@ class DiningEntryCreateFormTestCase(TestCase):
         # Choosing a date far in the future so that the dining list is open
         # Could also patch timezone.now using unittest.mock
         dl = create_dining_list(date=date(2100, 1, 1), max_diners=0)
-        form = DiningEntryCreateForm(user, dl, {})
+        form = DiningEntryUserCreateForm(user, dl, {})
         self.assertFalse(form.is_valid())
         self.assertTrue(form.has_error('dining_list', 'full'))
 
@@ -37,11 +37,11 @@ class DiningEntryCreateFormTestCase(TestCase):
         list = create_dining_list(date=date(2100, 1, 1), max_diners=1)
 
         # Create first entry
-        entry1form = DiningEntryCreateForm(user1, list, {})
+        entry1form = DiningEntryUserCreateForm(user1, list, {})
         entry1valid = entry1form.is_valid()
         print(entry1form.errors)
         # Try creating next entry without saving first entry
-        entry2form = DiningEntryCreateForm(user2, list, {})
+        entry2form = DiningEntryUserCreateForm(user2, list, {})
         # Todo: this should throw an exception or block
         entry2valid = entry2form.is_valid()
 

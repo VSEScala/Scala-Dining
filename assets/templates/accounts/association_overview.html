@@ -2,18 +2,26 @@
 {% load form_extras %}
 {% load credit_tags %}
 
-{% block tab_credits %} active{% endblock %}
+{% block tab_overview %} active{% endblock %}
 
 {% block details %}
-    <p>Current balance: <strong>{{ balance|euro }}</strong></p>
+    {% if pending_memberships %}
+        <h3>New member requests:</h3>
+        {# Pending member overview #}
+        <form method="post"
+              action="{% url 'association_members_edit' association_name=association.slug %}?next={{ request.path }}">
+            {% csrf_token %}
+            {% for entry in pending_memberships %}{% include 'accounts/snippet_member_edits.html' %}{% endfor %}
+        </form>
+        <br>
+    {% endif %}
 
-    {% for transaction in object_list %}
-        {% include 'credit_management/snippet_credit_history_association.html' %}
+    <h3>Latest transactions:</h3>
+    {% for transaction in transactions %}
+        {% include 'accounts/snippet_credit_history_association.html' %}
     {% endfor %}
-
-    {% include 'snippets/paginator.html' %}
-
     <a class="btn btn-block btn-primary" href="{% url 'transaction_add' association_name=association.slug %}">
         Transfer credits
     </a>
+
 {% endblock %}

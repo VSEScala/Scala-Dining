@@ -1,7 +1,6 @@
 {% load form_extras %}
 
-<div class="row col-12 m-0 p-0 p-md-2 py-2 diningentry
-    {% if entry.user == request.user and entry|get_class == "DiningEntry" %}diningentry-user{% endif %}">
+<div class="row col-12 m-0 p-0 p-md-2 py-2 diningentry">
     <div class="{% if can_delete_all or can_delete_some %} col-10 col-sm-11 {% else %} col-12 {% endif %}">
         <div class="row pr-2">
             <div class="col-12 col-md-6 p-0">

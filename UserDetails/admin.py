@@ -9,8 +9,7 @@ class AssociationLinks(admin.TabularInline):
     Create the membership information on the User page
     """
     model = UserMembership
-    min_num = 1
-    extra = 0
+    extra = 1
 
 
 class MemberOfFilter(admin.SimpleListFilter):
@@ -66,6 +65,14 @@ class UserAdmin(admin.ModelAdmin):
     readonly_fields = ('date_joined', 'last_login', 'external_link')
     inlines = [AssociationLinks]
     fields = ('username', ('first_name', 'last_name'), 'date_joined', 'email', 'external_link')
+
+    actions = ['update_general_viewtimes']
+
+    def update_general_viewtimes(self, request, queryset):
+        from General.models import PageVisitTracker
+        for user in queryset:
+            PageVisitTracker.get_latest_visit('rules', user, update=True)
+            PageVisitTracker.get_latest_visit('updates', user, update=True)
 
 
 class GroupAdminForm(forms.ModelForm):

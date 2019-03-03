@@ -1,13 +1,17 @@
 from django import forms
-from django.contrib.auth import get_user_model
+from django.conf import settings
 from django.db.models import OuterRef, Exists
 from django.db import transaction
 from django.utils.translation import gettext as _
 from django.core.exceptions import ValidationError, PermissionDenied
 
 from UserDetails.models import Association, User
-from .models import DiningList, DiningEntry, DiningEntryUser
+from .models import DiningList, DiningEntry, DiningEntryUser, DiningEntryExternal, DiningComment
 from General.util import SelectWithDisabled
+
+from decimal import Decimal, ROUND_UP
+from django.utils import timezone
+from django.core.validators import MinValueValidator
 
 
 def _clean_form(form):
@@ -21,7 +25,21 @@ def _clean_form(form):
         raise ValidationError(validation_errors)
 
 
-class CreateSlotForm(forms.ModelForm):
+class ServeTimeCheckMixin:
+    """
+    Mixin with clean_serve_time which gives errors on the serve_time if it is not within the kitchen opening hours
+    """
+    def clean_serve_time(self):
+        serve_time = self.cleaned_data['serve_time']
+        if serve_time < settings.KITCHEN_USE_START_TIME:
+            raise ValidationError(_("Kitchen can't be used this early"))
+        if serve_time > settings.KITCHEN_USE_END_TIME:
+            raise ValidationError(_("Kitchen can't be used this late"))
+
+        return serve_time
+
+
+class CreateSlotForm(ServeTimeCheckMixin, forms.ModelForm):
     class Meta:
         model = DiningList
         fields = ('dish', 'association', 'max_diners', 'serve_time')
@@ -53,6 +71,30 @@ class CreateSlotForm(forms.ModelForm):
             self.fields['association'].initial = available[0].pk
             self.fields['association'].disabled = True
 
+    def clean(self, *args, **kwargs):
+        cleaned_data = super(CreateSlotForm, self).clean(*args, **kwargs)
+
+        if DiningList.objects.available_slots(self.date) <= 0:
+            raise ValidationError("All dining slots are already occupied on this day")
+
+        # Check if user has enough money to claim a slot
+        if self.user.usercredit.balance < settings.MINIMUM_BALANCE_FOR_DINING_SLOT_CLAIM:
+            raise ValidationError("Your balance is too low to claim a slot")
+
+        # Check if user has not already claimed another dining slot this day
+        if DiningList.objects.filter(date=self.date, claimed_by=self.user).count() > 0:
+            raise ValidationError(_("User has already claimed a dining slot this day"))
+
+        # If date is valid
+        if self.date < timezone.now().date():
+            raise ValidationError("This date is in the past")
+        if self.date == timezone.now().date() and timezone.now().time() > settings.DINING_SLOT_CLAIM_CLOSURE_TIME:
+            raise ValidationError("It's too late to claim any dining slots")
+        if self.date > timezone.now().date() + settings.DINING_SLOT_CLAIM_AHEAD:
+            raise ValidationError("Dining list is too far in the future")
+
+        return cleaned_data
+
     def save(self, commit=True):
         instance = super().save(commit=False)
         instance.claimed_by = self.user
@@ -60,16 +102,17 @@ class CreateSlotForm(forms.ModelForm):
 
         if commit:
             instance.save()
+            DiningEntryUser(user=self.user, dining_list = instance).save()
 
         return instance
 
 
-class DiningInfoForm(forms.ModelForm):
+class DiningInfoForm(ServeTimeCheckMixin, forms.ModelForm):
     def __init__(self, *args, **kwargs):
         dining_list = kwargs.get("instance")
         super(DiningInfoForm, self).__init__(*args, **kwargs)
 
-        query = dining_list.diners
+        query = dining_list.diners.distinct()
         self.fields['purchaser'].queryset = query
 
     class Meta:
@@ -81,9 +124,13 @@ class DiningInfoForm(forms.ModelForm):
 
 
 class DiningPaymentForm(forms.ModelForm):
+    dinner_cost_total = forms.DecimalField(decimal_places=2, max_digits=5, initial=Decimal(0.00),
+                                           validators=[MinValueValidator(Decimal('0.00'))])
+
     class Meta:
         model = DiningList
-        fields = ['dish', 'dinner_cost_total', 'dinner_cost_single', 'payment_link']
+        fields = ['dish', 'dinner_cost_total', 'dining_cost', 'payment_link']
+        save_fields = ['dish', 'dining_cost', 'payment_link']
         help_texts = {
             'dinner_cost_total': 'Either adjust total dinner cost or single dinner cost',
             'dinner_cost_single': 'Either adjust total dinner cost or single dinner cost',
@@ -97,20 +144,75 @@ class DiningPaymentForm(forms.ModelForm):
         # also check if it has changed from earlier status
         old_list = DiningList.objects.get(id=self.instance.id)
 
-        if 0 < self.instance.dinner_cost_single != old_list.dinner_cost_single:
-            self.instance.dinner_cost_total = self.instance.dinner_cost_single * self.instance.diners
+        total_dinner_cost = self.cleaned_data['dinner_cost_total']
 
-        self.instance.save(update_fields=self.Meta.fields)
+        if total_dinner_cost > 0:
+            if self.instance.diners.count() > 0:
+                s_cost = total_dinner_cost / self.instance.diners.count()
+            else:
+                s_cost = total_dinner_cost
+            # round up slightly, to remove missing cents
+            s_cost = Decimal(s_cost).quantize(Decimal('.01'), rounding=ROUND_UP)
+            self.instance.dining_cost = s_cost
+
+        self.instance.save(update_fields=DiningPaymentForm.Meta.save_fields)
 
 
-class DiningEntryCreateForm(forms.ModelForm):
+class DiningEntryUserCreateForm(forms.ModelForm):
     user = forms.ModelChoiceField(queryset=None)
 
-    class Meta():
+    class Meta:
         model = DiningEntryUser
         fields = ['dining_list', 'user']
 
-    def __init__(self, adder, dining_list, data=None, **kwargs):
+    def __init__(self, added_by, dining_list, data=None, **kwargs):
+        """
+        The adder and dining_list parameters are used to find the users that can be used for this entry.
+        """
+        if data is not None:
+            # User defaults to added_by if not set
+            data = data.copy()
+            data.setdefault('user', added_by.pk)
+            data.setdefault('dining_list', dining_list.pk)
+
+        super().__init__(**kwargs, data=data)
+
+        # Set the added_by to the user who added it
+        self.added_by = added_by
+        self.instance.added_by = self.added_by
+
+        # Find available users for this dining entry
+        users = User.objects.all()
+        # First filter by association if the dining list is limited
+        if dining_list.limit_signups_to_association_only:
+            users.filter(usermembership__association=dining_list.association)
+
+        # Filter by the added_by if he is not the owner, since then he only may add himself, not others
+        if added_by != dining_list.claimed_by:
+            users.filter(pk=added_by.pk)
+
+        self.fields['user'].queryset = users
+
+    def clean(self):
+        cleaned_data = super().clean()
+        user = cleaned_data.get('user')
+        if user.usercredit.balance < settings.MINIMUM_BALANCE_FOR_DINING_SIGN_UP:
+            raise ValidationError("The balance of this user is to low to add")
+        return cleaned_data
+
+    def save(self, *args, **kwargs):
+        self.instance.added_by = self.added_by
+        super(DiningEntryUserCreateForm, self).save(*args, **kwargs)
+
+
+class DiningEntryExternalCreateForm(forms.ModelForm):
+    user = forms.ModelChoiceField(queryset=None)
+
+    class Meta:
+        model = DiningEntryExternal
+        fields = ['dining_list', 'user', 'name']
+
+    def __init__(self, adder, dining_list, name, data=None, **kwargs):
         """
         The adder and dining_list parameters are used to find the users that can be used for this entry.
         """
@@ -119,6 +221,7 @@ class DiningEntryCreateForm(forms.ModelForm):
             data = data.copy()
             data.setdefault('user', adder.pk)
             data.setdefault('dining_list', dining_list.pk)
+            data.setdefault('name', name)
 
         super().__init__(**kwargs, data=data)
 
@@ -127,23 +230,20 @@ class DiningEntryCreateForm(forms.ModelForm):
         # First filter by association if the dining list is limited
         if dining_list.limit_signups_to_association_only:
             users.filter(usermembership__association=dining_list.association)
-        # Filter by the adder if he is not the owner, since then he only may add himself, not others
-        if adder != dining_list.claimed_by:
-            users.filter(pk=adder.pk)
+
+        # Limit the user to the person added it
+        self.instance.user = adder
+        users.filter(pk=adder.pk)
+
+
         self.fields['user'].queryset = users
 
     def clean(self):
         cleaned_data = super().clean()
+        user = cleaned_data.get('user')
+        if user.usercredit.balance < settings.MINIMUM_BALANCE_FOR_DINING_SIGN_UP:
+            raise ValidationError("Your balance is to low to add any external people")
         return cleaned_data
-
-    def save(self, commit=True):
-        """
-        Also creates a transaction when commit==True.
-        """
-        with transaction.atomic():
-            # Possible race condition regarding instance validation
-            instance = super().save(commit)
-        return instance
 
 
 class DiningEntryDeleteForm(forms.ModelForm):
@@ -231,3 +331,43 @@ class DiningListDeleteForm(forms.ModelForm):
 
         # After database succeeded, send out a mail to all entries
         # mail()
+
+
+class DiningCommentForm(forms.ModelForm):
+    min_message_length = 3
+
+    class Meta:
+        model = DiningComment
+        fields = ['message']
+
+    def __init__(self, poster, dining_list, pinned=False, data=None, **kwargs):
+        if data is not None:
+            print(dining_list)
+            # User defaults to added_by if not set
+            data = data.copy()
+            data.setdefault('poster', poster.pk)
+            data.setdefault('dining_list', dining_list.pk)
+            data.setdefault('pinned_to_top', pinned)
+
+        super().__init__(**kwargs, data=data)
+
+        self.dining_list = dining_list
+        self.added_by = poster
+        self.pinned = pinned
+
+    def clean_message(self):
+        cleaned_data = super().clean()
+        message = cleaned_data.get('message')
+
+        if len(message) < self.min_message_length:
+            raise ValidationError(_("Comments needs to be at least {0} character").format(self.min_message_length))
+
+        return message
+
+    def save(self, *args, **kwargs):
+        self.instance.poster = self.added_by
+        self.instance.dining_list = self.dining_list
+        self.instance.pinned_to_top = self.pinned
+        print(self.instance.message)
+
+        super(DiningCommentForm, self).save(*args, **kwargs)

@@ -15,9 +15,8 @@ from django.views.generic.base import ContextMixin
 from django.views.generic.edit import DeleteView
 from django.conf import settings
 
-from .forms import CreateSlotForm, DiningInfoForm, DiningPaymentForm, DiningEntryCreateForm, DiningEntryDeleteForm, \
-    DiningListDeleteForm
-from .models import DiningList, DiningEntry, DiningDayAnnouncements, DiningComment, DiningCommentView, DiningEntryUser
+from .forms import *
+from .models import *
 
 
 def index(request):
@@ -162,15 +161,9 @@ class NewSlotView(LoginRequiredMixin, DayMixin, TemplateView):
         if form.is_valid():
             dining_list = form.save()
 
-            # Create dining entry for current user
-            # Todo: should maybe move this to CreateSlotForm
-            entry = DiningEntryCreateForm(request.user, dining_list, data={})
-            if entry.is_valid():
-                entry.save()
-            else:
-                for field, errors in entry.errors.items():
-                    for error in errors:
-                        messages.add_message(request, messages.WARNING, error)
+            message = _("You succesfully created a new dining list")
+            messages.add_message(request, messages.SUCCESS, message)
+
 
             return redirect(dining_list)
 
@@ -186,27 +179,63 @@ class NewSlotView(LoginRequiredMixin, DayMixin, TemplateView):
         self.init_date()
         available_slots = DiningList.objects.available_slots(self.date)
         if available_slots <= 0:
-            return HttpResponseForbidden('No available slots')
+            error = _("No free slots availlable")
+            messages.add_message(request, messages.ERROR, error)
+            return HttpResponseRedirect(self.reverse('day_view', kwargs={}))
+
         if len(DiningList.objects.filter(date=self.date).filter(claimed_by=self.request.user)) > 0:
-            return HttpResponseForbidden('You already have dining slot claimed today')
+            error = _("You have already a dining slot claimed today")
+            messages.add_message(request, messages.ERROR, error)
+            return HttpResponseRedirect(self.reverse('day_view', kwargs={}))
         return super().dispatch(request, *args, **kwargs)
 
 
 class EntryAddView(LoginRequiredMixin, DiningListMixin, TemplateView):
     template_name = "dining_lists/dining_entry_add.html"
+    add_external_button_name = "addExternalButton"
 
-    def get(self, request, *args, **kwargs):
-        context = self.get_context_data()
+    def check_user_permission(self, request):
+        # If user is dining list owner or purchaser
+        if request.user == self.dining_list.claimed_by or request.user == self.dining_list.purchaser:
+            return True
+
+        if not self.dining_list.is_open():
+            # Dining list is closed. Go back to the info screen
+            error = _("Dining list is closed, people can no longer join")
+            messages.add_message(request, messages.ERROR, error)
+            return False
+
+        if not self.dining_list.has_room():
+            # dining list is full. Go back to the info screen
+            error = _("Dining list is already full, ask the chef personally if you want to join")
+            messages.add_message(request, messages.ERROR, error)
+            return False
+
+        # No problems, use can add people
+        return True
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
 
         # Search processing
         search = self.request.GET.get('search')
         if search:
+            users = None
+            # split over all spaces
+            for search_part in search.split(" "):
+                # query the substring if it is part of either the first, last or username
+                search_result = get_user_model().objects.filter(
+                    Q(first_name__icontains=search_part) |
+                    Q(last_name__icontains=search_part) |
+                    Q(username__icontains=search_part)
+                )
+                if users is None:
+                    users = search_result
+                elif search_result.count()>0:
+                    users = users.intersection(search_result)
+
             # Search all users corresponding with the typed in name
-            context['users'] = get_user_model().objects.filter(
-                Q(first_name__contains=search) |
-                Q(last_name__contains=search) |
-                Q(username__contains=search)
-            )
+            context['users'] = users
             context['search'] = search
 
             if len(context['users']) == 0:
@@ -221,19 +250,50 @@ class EntryAddView(LoginRequiredMixin, DiningListMixin, TemplateView):
             context['search'] = ""
             context['error_input'] = None
 
+        context['add_external_button_name'] = self.add_external_button_name
+
+        return context
+
+    def get(self, request, *args, **kwargs):
+        # Check permissions, if user has no access to this page, reject it.
+        if not self.check_user_permission(request):
+            return HttpResponseRedirect(self.reverse('slot_details'))
+
+        context = self.get_context_data()
+
         # Form rendering
-        context['form'] = DiningEntryCreateForm(request.user, self.dining_list)
+        context['form'] = DiningEntryUserCreateForm(request.user, self.dining_list)
 
         return self.render_to_response(context)
 
     def post(self, request, *args, **kwargs):
-        # Todo: re-enable External Dining Entries
         context = self.get_context_data()
 
+        # Check permissions, if user has no access to this page, reject it.
+        if not self.check_user_permission(request):
+            return HttpResponseRedirect(self.reverse('slot_details'))
+
         # Do form shenanigans
-        form = DiningEntryCreateForm(request.user, self.dining_list, data=request.POST)
-        if form.is_valid():
-            form.save()
+        if self.add_external_button_name in request.POST:
+            form = DiningEntryExternalCreateForm(request.user, self.dining_list,
+                                                 request.POST['external_name'], data=request.POST)
+            if form.is_valid():
+                form.save()
+                message = _("You succesfully added {0} to the dining list").format(form.cleaned_data.get('name'))
+                messages.add_message(request, messages.SUCCESS, message)
+        else:
+            form = DiningEntryUserCreateForm(request.user, self.dining_list, data=request.POST)
+            if form.is_valid():
+                form.save()
+                # Notify the user
+                if form.cleaned_data.get('user') == request.user:
+                    message = _("You succesfully joined the dining list")
+                else:
+                    message = _("You succesfully added {0} to the dining list").format(form.cleaned_data.get('user'))
+                messages.add_message(request, messages.SUCCESS, message)
+
+
+
 
         # If next is provided, put possible error messages on the messages system and redirect
         next = request.GET.get('next', None)
@@ -302,12 +362,11 @@ class SlotMixin(DiningListMixin):
         # Get the amount of messages
         context['comments_total'] = self.dining_list.diningcomment_set.count()
         # Get the amount of unread messages
-        try:
-            view_time = DiningCommentView.objects.get(user=self.request.user,
-                                                      dining_list=self.dining_list).timestamp
-            context['comments_unread'] = self.dining_list.diningcomment_set.filter(timestamp__gte=view_time).count()
-        except DiningCommentView.DoesNotExist:
+        view_time = DiningCommentVisitTracker.get_latest_visit(user=self.request.user, dining_list=self.dining_list)
+        if view_time is None:
             context['comments_unread'] = context['comments_total']
+        else:
+            context['comments_unread'] = self.dining_list.diningcomment_set.filter(timestamp__gte=view_time).count()
 
         return context
 
@@ -403,20 +462,39 @@ class SlotInfoView(LoginRequiredMixin, SlotMixin, TemplateView):
         context['comments'] = self.dining_list.diningcomment_set.order_by('-pinned_to_top', 'timestamp').all()
 
         # Last visit
-        last_visit = DiningCommentView.objects.get_or_create(user=self.request.user, dining_list=self.dining_list)[0]
-        context['last_visited'] = last_visit.timestamp
-        last_visit.timestamp = timezone.now()
-        last_visit.save()
+        context['last_visited'] = DiningCommentVisitTracker.get_latest_visit(
+            user=self.request.user,
+            dining_list=self.dining_list,
+            update=True)
+
+        from django.db.models import CharField
+        from django.db.models.functions import Length
+        CharField.register_lookup(Length)
+        context['number_of_allergies'] = self.dining_list.internal_dining_entries().filter(
+            user__userdiningsettings__allergies__length__gt=1).count()
 
         if self.dining_list.claimed_by == self.request.user or self.dining_list.purchaser == self.request.user:
             context['can_change_settings'] = True
+        if self.dining_list.claimed_by == self.request.user and self.dining_list.diners.count() < self.dining_list.min_diners:
+            context['can_remove_list'] = True
+        else:
+            context['can_remove_list'] = False
         return context
 
     def post(self, request, *args, **kwargs):
-        # Add the comment
-        DiningComment(dining_list=self.dining_list, poster=request.user, message=request.POST['comment']).save()
+        context = self.get_context_data(**kwargs)
 
-        return HttpResponseRedirect(self.reverse('slot_details'))
+        # Add the comment
+        comment_form = DiningCommentForm(request.user, self.dining_list, data=request.POST)
+
+        if comment_form.is_valid():
+            comment_form.save()
+            return HttpResponseRedirect(self.reverse('slot_details'))
+        else:
+            context['form'] = comment_form
+            return self.render_to_response(context)
+
+
 
 
 # Could possibly use the Django built-in FormView or ModelFormView in combination with FormSet
@@ -488,7 +566,7 @@ class SlotAllergyView(LoginRequiredMixin, SlotMixin, TemplateView):
         from django.db.models.functions import Length
         CharField.register_lookup(Length)
         context['allergy_entries'] = self.dining_list.internal_dining_entries().filter(
-            user__userdiningsettings__allergies__length__gt=1)
+            user__userdiningsettings__allergies__length__gte=1)
 
         return context
 

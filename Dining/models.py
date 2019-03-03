@@ -10,6 +10,7 @@ from django.utils.translation import gettext, gettext_lazy as _
 from datetime import datetime, timedelta, time
 from decimal import Decimal
 from UserDetails.models import User, Association
+from General.models import AbstractVisitTracker
 
 
 class UserDiningSettings(models.Model):
@@ -45,7 +46,7 @@ class DiningList(models.Model):
     dish = models.CharField(default="", max_length=30, blank=True, help_text="The dish made")
     # The days adjustable is implemented to prevent adjustment in credits or aid due to a deletion of a user account.
     adjustable_duration = models.DurationField(
-        default=timedelta(days=2),
+        default=settings.TRANSACTION_PENDING_DURATION,
         help_text="The amount of time the dining list can be adjusted after its date")
     claimed_by = models.ForeignKey(settings.AUTH_USER_MODEL, blank=True, related_name="dininglist_claimer", null=True,
                                    on_delete=models.SET_NULL)
@@ -62,13 +63,12 @@ class DiningList(models.Model):
 
     # Kitchen cost may not be changed after creation
     kitchen_cost = models.DecimalField(decimal_places=2, verbose_name="kitchen cost per person", max_digits=10,
-                                       default=Decimal('0.50'), validators=[MinValueValidator(Decimal('0.00'))])
-    dinner_cost_total = models.DecimalField(decimal_places=2, verbose_name="total dinner costs", max_digits=10,
-                                            default=0, validators=[MinValueValidator(Decimal('0.00'))])
-    dinner_cost_single = models.DecimalField(decimal_places=2, verbose_name="dinner cost per person", max_digits=5,
+                                       default=settings.KITCHEN_COST, validators=[MinValueValidator(Decimal('0.00'))])
+
+    dining_cost = models.DecimalField(decimal_places=2, verbose_name="dinner cost per person", max_digits=5,
                                              blank=True, null=True, default=0,
                                              validators=[MinValueValidator(Decimal('0.00'))])
-    dinner_cost_keep_single_constant = models.BooleanField(default=False, verbose_name="Define costs from single price")
+
     auto_pay = models.BooleanField(default=False)
 
     payment_link = models.CharField(blank=True, max_length=100, help_text=_('Link for payment, e.g. a Tikkie link.'))
@@ -84,8 +84,7 @@ class DiningList(models.Model):
     def save(self, *args, **kwargs):
         # Set the sign-up deadline to it's default value if none was provided.
         if not self.pk and not self.sign_up_deadline:
-            from Dining.constants import DINING_LIST_CLOSURE_TIME
-            loc_time = timezone.datetime.combine(self.date, DINING_LIST_CLOSURE_TIME)
+            loc_time = timezone.datetime.combine(self.date, settings.DINING_LIST_CLOSURE_TIME)
             loc_time = timezone.get_default_timezone().localize(loc_time)
             self.sign_up_deadline = loc_time
 
@@ -121,6 +120,10 @@ class DiningList(models.Model):
         if self.pk and not self.is_adjustable():
             raise ValidationError(gettext('The dining list is not adjustable.'), code='not_adjustable')
 
+        if self.sign_up_deadline is not None and self.sign_up_deadline.date() > self.date:
+            raise ValidationError(
+                {'sign_up_deadline': ["Sign up deadline can not be later than the day dinner is served",]})
+
         # Check if purchaser is present when using auto pay
         if self.auto_pay and not self.get_purchaser():
             raise ValidationError(
@@ -131,6 +134,13 @@ class DiningList(models.Model):
         Whether normal users can sign in/out for the dining list (i.e. the deadline has not expired)
         """
         return timezone.now() < self.sign_up_deadline
+
+    def has_room(self):
+        """
+        Determines whether this dining list can have more entries
+        :return: Whether this list can get more entries
+        """
+        return self.is_open() and self.diners.count() < self.max_diners
 
     def can_join(self, user, check_for_self=True):
         """
@@ -157,7 +167,7 @@ class DiningList(models.Model):
             return True
 
         # if dining list is closed
-        if not self.is_open() or self.dining_entries.count() >= self.max_diners:
+        if not self.has_room():
             return False
 
         if self.limit_signups_to_association_only:
@@ -247,8 +257,9 @@ class DiningEntry(models.Model):
             return None
 
     def name(self):
-        if self.get_external():
-            return self.get_external().name
+        external = self.get_external()
+        if external:
+            return external.name
         else:
             return self.user
 
@@ -266,11 +277,21 @@ class DiningWork(models.Model):
 class DiningEntryUser(DiningEntry, DiningWork):
     added_by = models.ForeignKey(User, related_name="added_entry_on_dining", on_delete=models.SET_DEFAULT, blank=True,
                                  default=None, null=True)
-    # Todo: Check that dining_list and user are unique together, can't be implemented here implicit due to inheritance
+
+    def clean(self):
+        if self.pk is None:
+            if DiningEntryUser.objects.filter(dining_list=self.dining_list, user=self.user):
+                raise ValidationError(_("User is already on this dininglist"))
+
+    def __str__(self):
+        return "{0}: {1}".format(self.dining_list.date, self.user)
 
 
 class DiningEntryExternal(DiningEntry):
     name = models.CharField(max_length=40)
+
+    def __str__(self):
+        return "{0}: {1}".format(self.dining_list, self.name)
 
 
 class DiningComment(models.Model):
@@ -280,17 +301,39 @@ class DiningComment(models.Model):
     dining_list = models.ForeignKey(DiningList, on_delete=models.CASCADE)
     timestamp = models.DateTimeField(auto_now_add=True)
     poster = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    message = models.TextField()
+    message = models.CharField(max_length=256)
     pinned_to_top = models.BooleanField(default=False)
 
 
-class DiningCommentView(models.Model):
+class DiningCommentVisitTracker(AbstractVisitTracker):
     """
     Tracks whether certain comments have been read, i.e. the last time the comments page was visited.
     """
     dining_list = models.ForeignKey(DiningList, on_delete=models.CASCADE)
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    timestamp = models.DateTimeField(auto_now_add=True)
+
+    @classmethod
+    def get_latest_visit(cls, dining_list, user, update=False):
+        """
+        Get the datetime of the latest visit.
+        If there isn't one it either returns None, or the current time if update is set to True
+        :param dining_list: The dining list the comment is part of
+        :param user: The user visiting the page
+        :param update:
+        :return:
+        """
+        if update:
+            latest_visit_obj = cls.objects.get_or_create(user=user, dining_list=dining_list)[0]
+        else:
+            try:
+                latest_visit_obj = cls.objects.get(user=user, dining_list=dining_list)
+            except cls.DoesNotExist:
+                return None
+
+        timestamp = latest_visit_obj.timestamp
+        if update:
+            latest_visit_obj.timestamp = timezone.now()
+            latest_visit_obj.save()
+        return timestamp
 
 
 class DiningDayAnnouncements(models.Model):
