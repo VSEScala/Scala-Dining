@@ -1,5 +1,7 @@
 {% extends 'accounts/settings_base.html' %}
 
+{% block tab_dining %}active{% endblock %}
+
 {% block details%}
     <form method="post">
         {% csrf_token %}

@@ -1,13 +1,17 @@
 import math
 
+from django.contrib import messages
 from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import render
+from django.urls import reverse_lazy
 from django.utils.decorators import method_decorator
-from django.views.generic import View
+from django.utils.translation import gettext as _
+from django.views.generic import View, FormView
 
 from Dining.models import DiningEntryUser
-from .forms import Settings_Essentials_Form, Settings_Dining_Form
+from .forms import SettingsEssentialsForm, SettingsDiningForm
 
 
 class DiningHistoryView(View):
@@ -21,67 +25,46 @@ class DiningHistoryView(View):
         upper_bound = length * page
 
         # get all dining lists
-        self.context['dining_entries'] = DiningEntryUser.objects.filter(user=request.user).order_by('-dining_list__date')
+        self.context['dining_entries'] = DiningEntryUser.objects.filter(user=request.user).order_by(
+            '-dining_list__date')
         self.context['dining_entries_select'] = self.context['dining_entries'][lower_bound:upper_bound]
         self.context['page'] = page
         self.context['pages'] = math.ceil(len(self.context['dining_entries']) / length)
         if self.context['pages'] > 1:
             self.context['show_page_navigation'] = True
-            self.context['pages'] = range(1, self.context['pages']+1)
+            self.context['pages'] = range(1, self.context['pages'] + 1)
         return render(request, self.template, self.context)
 
 
-class SettingsView(View):
-    context = {}
-    template = "accounts/settings_base.html"
+class SettingViewEssentials(LoginRequiredMixin, FormView):
+    template_name = "accounts/settings_essentials.html"
+    success_url = reverse_lazy('settings_essential')
+    form_class = SettingsEssentialsForm
 
-    @method_decorator(login_required)
-    def get(self, request):
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs.update({'instance': self.request.user})
+        return kwargs
 
-        return render(request, self.template, self.context)
-
-
-class SettingView_Essentials(View):
-    context = {}
-    template = "accounts/settings_essentials.html"
-    context['tab_account'] = True
-
-    @method_decorator(login_required)
-    def get(self, request):
-        self.context['form'] = Settings_Essentials_Form(instance=request.user)
-
-        return render(request, self.template, self.context)
-
-    @method_decorator(login_required)
-    def post(self, request, *args, **kwargs):
-        self.context['form'] = Settings_Essentials_Form(request.POST, instance=request.user)
-
-        if self.context['form'].is_valid():
-            self.context['form'].save()
-            update_session_auth_hash(request, request.user)
-            return self.get(request)
-
-        return render(request, self.template, self.context)
+    def form_valid(self, form):
+        form.save()
+        # Prevent the user from logging out when password has changed
+        update_session_auth_hash(self.request, self.request.user)
+        messages.success(self.request, _("Settings saved."))
+        return super().form_valid(form)
 
 
-class SettingView_Dining(View):
-    context = {}
-    template = "accounts/settings_dining.html"
-    context['tab_dining'] = True
+class SettingViewDining(LoginRequiredMixin, FormView):
+    template_name = "accounts/settings_dining.html"
+    success_url = reverse_lazy('settings_dining')
+    form_class = SettingsDiningForm
 
-    @method_decorator(login_required)
-    def get(self, request):
-        self.context['form'] = Settings_Dining_Form(instance=request.user.userdiningsettings)
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs.update({'instance': self.request.user.userdiningsettings})
+        return kwargs
 
-        return render(request, self.template, self.context)
-
-    @method_decorator(login_required)
-    def post(self, request, *args, **kwargs):
-        self.context['form'] = Settings_Dining_Form(request.POST, instance=request.user.userdiningsettings)
-
-        if self.context['form'].is_valid():
-            self.context['form'].save()
-            return self.get(request)
-
-        return render(request, self.template, self.context)
-
+    def form_valid(self, form):
+        form.save()
+        messages.success(self.request, _("Settings saved."))
+        return super().form_valid(form)
