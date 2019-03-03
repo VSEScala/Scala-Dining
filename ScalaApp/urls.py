@@ -23,8 +23,6 @@ from CreditManagement import views as CMviews
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('accounts/login/', LoginView.as_view(), name='login'),
-    path('logout/', UDviews.log_out, name='logout'),
     path('register/', UDviews.RegisterView.as_view(), name='register'),
     path('user/', include('UserDetails.urls_user')),
     path('association/<association_name>/', include('UserDetails.urls_association')),

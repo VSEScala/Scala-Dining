@@ -47,7 +47,3 @@ class RegisterView(View):
         login(request, user, backend='django.contrib.auth.backends.ModelBackend')
 
         return HttpResponseRedirect(reverse('index'))
-
-def log_out(request):
-    logout(request)
-    return HttpResponseRedirect(reverse('login'))

@@ -1,19 +1,16 @@
-{% extends 'base_no_navbar.html' %}
+{% extends 'account/base.html' %}
 {% load static %}
 
 {% block head %}
     <link rel="stylesheet" href="{% static 'css/Log-in.css' %}">
 {% endblock %}
 
+{% block content %}
+    <div class="col-12 login-heightcontrol">
+        <div class="DiningLogo"></div>
+        <p class="text-center DiningTitle">Scala Dining</p>
+    </div>
 
-{% block body %}
-<div class="col-12 login-heightcontrol">
-    <div class="DiningLogo"></div>
-    <p class="text-center DiningTitle">Scala Dining</p>
-</div>
-
-
-<div class="container">
     <div class="row">
         <div class="col-sm-6 order-sm-1 login-heightcontrol">
             <div class="position-relative h-100">
@@ -31,18 +28,20 @@
         <div class="col-sm-6 order-sm-0 login-heightcontrol">
             <div class="login-verline d-none d-sm-block"></div>
 
-            <form method="post" class="position-relative h-100">
+            <form method="post" action="{% url 'account_login' %}" class="position-relative h-100">
+                {% csrf_token %}
+                {# See https://github.com/pennersr/django-allauth/blob/master/allauth/templates/account/login.html #}
+                {% if redirect_field_value %}
+                    <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}">
+                {% endif %}
                 <div class="login-log_height_offset">
                     <p class="hide-sm text-center">Already have an account? Log in!</p>
-                    {% csrf_token %}
                     {% include "snippets/bootstrap_form.html" %}
                 </div>
                 <p><a href="{% url 'oidc_authentication_init' %}">Quadrivium member? Click here.</a></p>
+                <p><a href="{% url 'account_reset_password' %}">Forgot password?</a></p>
                 <button type="submit" class="btn btn-block btn-primary login-hooklow">Log in</button>
             </form>
-
         </div>
-        <!--<div class="verticalLine"></div>-->
     </div>
-</div>
 {% endblock %}
