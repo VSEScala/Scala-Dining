@@ -104,7 +104,7 @@ class SettingsEssentialsForm(ModelForm):
             self.instance.save()
 
 
-class Settings_Dining_Form(ModelForm):
+class SettingsDiningForm(ModelForm):
     class Meta:
         model = UserDiningSettings
         exclude = ('user',)

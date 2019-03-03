@@ -5,12 +5,13 @@ from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import render
+from django.urls import reverse_lazy
 from django.utils.decorators import method_decorator
 from django.utils.translation import gettext as _
 from django.views.generic import View, FormView
 
 from Dining.models import DiningEntryUser
-from .forms import SettingsEssentialsForm
+from .forms import SettingsEssentialsForm, SettingsDiningForm
 
 
 class DiningHistoryView(View):
@@ -36,8 +37,8 @@ class DiningHistoryView(View):
 
 
 class SettingViewEssentials(LoginRequiredMixin, FormView):
-    success_url = 'settings_essential'
     template_name = "accounts/settings_essentials.html"
+    success_url = reverse_lazy('settings_essential')
     form_class = SettingsEssentialsForm
 
     def get_form_kwargs(self):
@@ -55,7 +56,8 @@ class SettingViewEssentials(LoginRequiredMixin, FormView):
 
 class SettingViewDining(LoginRequiredMixin, FormView):
     template_name = "accounts/settings_dining.html"
-    success_url = 'settings_dining'
+    success_url = reverse_lazy('settings_dining')
+    form_class = SettingsDiningForm
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
