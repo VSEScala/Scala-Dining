@@ -110,28 +110,24 @@
 
     </nav>
 
-    {% if True %}
-        {% for message in messages %}
-            <div class="alert alert-{{ message.tags }} alert-dismissible" role="alert">
-                <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span
-                        aria-hidden="true">&times;</span></button>
-                {{ message }}
-            </div>
-        {% endfor %}
+    {% if messages %}
+        <div class="container mt-3">
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} alert-dismissible" role="alert">
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                    {{ message }}
+                </div>
+            {% endfor %}
+        </div>
     {% endif %}
 
-<div class="container pt-2">
-    <div class="row width-max-lg text-size-md-5">
-        <div class="col-12">
-            <!-- Content -->
-            {% block content %}{% endblock %}
+    <div class="container mt-3">
+        <div class="row width-max-lg text-size-md-5">
+            <div class="col-12">
+                {% block content %}{% endblock %}
+            </div>
         </div>
     </div>
-</div>
-
-<!-- Debug info -->
-{#<script>#}
-{#    var sql_queries = {{ sql_queries|safe }};#}
-{#    console.log(sql_queries);#}
-{#</script>#}
 {% endblock %}
