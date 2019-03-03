@@ -23,15 +23,12 @@ from CreditManagement import views as CMviews
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('user/', include('UserDetails.urls_user')),
-    path('association/<association_name>/', include('UserDetails.urls_association')),
     path('credit/', include('CreditManagement.urls')),
     path('site/', include('General.urls')),
     path('', include('Dining.urls')),
     # Quadrivium OpenID Connect
     path('oidc/', include('mozilla_django_oidc.urls')),
-    # Override allauth sign up page
-    path('accounts/signup/', UDviews.RegisterView.as_view(), name='account_signup'),
+    path('accounts/', include('UserDetails.urls')),
     path('accounts/', include('allauth.urls')),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
