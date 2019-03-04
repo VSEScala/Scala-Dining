@@ -43,7 +43,7 @@
                         <a class="dropdown-item justify-content-between d-flex" href="{% url 'account_profile' %}">
                             <span>Profile</span><i class="fas fa-user fa-fw"></i>
                         </a>
-                        {% if request.user.is_staff %}
+                        {% if user.has_admin_site_access %}
                             <a class="dropdown-item justify-content-between d-flex" href="{% url 'admin:index' %}" target="_blank">
                                 <span class="mr-2">Control panel</span><i class="fas fa-toolbox fa-fw"></i>
                             </a>

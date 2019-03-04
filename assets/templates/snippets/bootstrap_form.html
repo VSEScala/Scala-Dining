@@ -19,6 +19,9 @@
         {# Field label #}
         <label for="{{ field.id_for_label }}" class="col-sm-2 col-form-label">
             {{ field.label }}
+            {% if field.field.required %}
+                <span class="text-danger">*</span>
+            {% endif %}
         </label>
         <div class="col-sm-10">
             {# Field widget #}
