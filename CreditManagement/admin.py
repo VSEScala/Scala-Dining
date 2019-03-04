@@ -1,7 +1,6 @@
 from django.contrib import admin
 
 from CreditManagement.models import *
-from UserDetails.admin import site
 from UserDetails.models import Association, UserMembership
 
 
@@ -150,8 +149,8 @@ class UserCreditAdmin(admin.ModelAdmin):
         return False
 
 
-site.register(FixedTransaction, FixedTransactionAdmin)
-site.register(PendingTransaction, PendingTransactionAdmin)
-site.register(PendingDiningTransaction, PendingDiningTransactionAdmin)
-site.register(PendingDiningListTracker, PendingDiningListTrackerAdmin)
-site.register(UserCredit, UserCreditAdmin)
+admin.site.register(FixedTransaction, FixedTransactionAdmin)
+admin.site.register(PendingTransaction, PendingTransactionAdmin)
+admin.site.register(PendingDiningTransaction, PendingDiningTransactionAdmin)
+admin.site.register(PendingDiningListTracker, PendingDiningListTrackerAdmin)
+admin.site.register(UserCredit, UserCreditAdmin)
