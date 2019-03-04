@@ -60,7 +60,7 @@ class SettingView_Essentials(View):
         if self.context['form'].is_valid():
             self.context['form'].save()
             update_session_auth_hash(request, request.user)
-            messages.add_message(request, messages.ERROR, "Succesfully altered settings")
+            messages.add_message(request, messages.SUCCESS, "Succesfully altered settings")
 
             return self.get(request)
 
@@ -84,7 +84,7 @@ class SettingView_Dining(View):
 
         if self.context['form'].is_valid():
             self.context['form'].save()
-            messages.add_message(request, messages.ERROR, "Succesfully altered settings")
+            messages.add_message(request, messages.SUCCESS, "Succesfully altered settings")
             return self.get(request)
 
         return render(request, self.template, self.context)
