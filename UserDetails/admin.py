@@ -15,7 +15,8 @@ class MyAdminSite(AdminSite):
 
     def has_permission(self, request):
         """Whether the request user has access to the admin site."""
-        return request.user.has_admin_site_access() or super().has_permission(request)
+        # Need to check for anonymous user because she doesn't have the has_admin_site_access method
+        return not request.user.is_anonymous and request.user.has_admin_site_access()
 
 
 # This is the actual admin site instance that should be used when registering models
