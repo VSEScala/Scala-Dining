@@ -5,6 +5,7 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import render
 from django.utils.decorators import method_decorator
 from django.views.generic import View
+from django.contrib import messages
 
 from Dining.models import DiningEntryUser
 from .forms import Settings_Essentials_Form, Settings_Dining_Form
@@ -59,6 +60,8 @@ class SettingView_Essentials(View):
         if self.context['form'].is_valid():
             self.context['form'].save()
             update_session_auth_hash(request, request.user)
+            messages.add_message(request, messages.ERROR, "Succesfully altered settings")
+
             return self.get(request)
 
         return render(request, self.template, self.context)
@@ -81,6 +84,7 @@ class SettingView_Dining(View):
 
         if self.context['form'].is_valid():
             self.context['form'].save()
+            messages.add_message(request, messages.ERROR, "Succesfully altered settings")
             return self.get(request)
 
         return render(request, self.template, self.context)
