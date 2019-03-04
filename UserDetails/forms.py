@@ -29,8 +29,10 @@ class RegisterUserForm(UserCreationForm):
         fields = ('username', 'password1', 'password2', 'email')
 
     def clean(self):
+        cleaned_data = super(RegisterUserForm, self).clean()
+
         # Check if the email is not already used.
-        email = self.cleaned_data.get('email')
+        email = cleaned_data.get('email')
         if User.objects.filter(email=email).exists():
             msg = 'E-mail is already used.'
             self._errors['email'] = self.error_class([msg])
@@ -40,6 +42,7 @@ class RegisterUserForm(UserCreationForm):
 
 class RegisterUserDetails(forms.ModelForm):
     first_name = forms.CharField(max_length=40, required=True)
+    last_name = forms.CharField(max_length=40, required=True)
     allergies = forms.CharField(max_length=100, required=False, help_text="Max 100 characters, leave empty if none")
 
     class Meta:
@@ -92,7 +95,7 @@ class Settings_Essentials_Form(ModelForm):
                     self.add_error('password_check', "Passwords do not match")
                     return
 
-        super(Settings_Essentials_Form, self).clean()
+        return super(Settings_Essentials_Form, self).clean()
 
     def save(self, commit=True):
         super(Settings_Essentials_Form, self).save()
