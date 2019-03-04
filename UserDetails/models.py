@@ -1,20 +1,9 @@
 from decimal import Decimal, Context, Inexact
 
-from django.contrib.auth.models import AbstractUser, Group, UserManager as DjangoUserManager
+from django.contrib.auth.models import AbstractUser, Group
 from django.db import models
 from django.utils import timezone
 from django.utils.functional import cached_property
-
-
-class UserManager(DjangoUserManager):
-    def _create_user(self, username, email, password, **extra_fields):
-        """
-        Create and save a user with the given username, email, and password.
-        """
-        # Remove is_staff from the extra fields as it is redacted
-        if 'is_staff' in extra_fields:
-            extra_fields.pop('is_staff')
-        return super(UserManager, self)._create_user(username, email, password, **extra_fields)
 
 
 class User(AbstractUser):
@@ -22,8 +11,6 @@ class User(AbstractUser):
     # Should contain something like a UUID.
     external_link = models.CharField(max_length=150, editable=False, default="",
                                      help_text="When this is set, the account is linked to an external system.")
-
-    objects = UserManager()
 
     def __str__(self):
         name = self.first_name + " " + self.last_name
@@ -116,7 +103,6 @@ class Association(Group):
         return UserMembership.objects.filter(
             association=self.association,
             verified_on__isnull=True).count() > 0
-
 
 class UserMembership(models.Model):
     """
