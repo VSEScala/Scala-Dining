@@ -5,6 +5,7 @@ from django.contrib.auth.forms import UserCreationForm
 from .models import User, Association, UserMembership
 from Dining.models import UserDiningSettings
 from django.db.utils import OperationalError
+from django.core.exceptions import ValidationError
 
 
 class LoginForm(forms.Form):
@@ -28,16 +29,12 @@ class RegisterUserForm(UserCreationForm):
         model = User
         fields = ('username', 'password1', 'password2', 'email')
 
-    def clean(self):
-        cleaned_data = super(RegisterUserForm, self).clean()
-
-        # Check if the email is not already used.
-        email = cleaned_data.get('email')
-        if User.objects.filter(email=email).exists():
-            msg = 'E-mail is already used.'
-            self._errors['email'] = self.error_class([msg])
-            del self.cleaned_data['email']
-        return self.cleaned_data
+    def clean_email(self):
+        cleaned_email = self.cleaned_data['email']
+        if User.objects.filter(email=cleaned_email).exists():
+            msg = 'E-mail is already used. Did you forget your password?'
+            raise ValidationError(msg)
+        return cleaned_email
 
 
 class RegisterUserDetails(forms.ModelForm):
