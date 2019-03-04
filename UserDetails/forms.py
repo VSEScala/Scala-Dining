@@ -5,6 +5,7 @@ from django.contrib.auth.forms import UserCreationForm
 from .models import User, Association, UserMembership
 from Dining.models import UserDiningSettings
 from django.db.utils import OperationalError
+from django.core.exceptions import ValidationError
 
 
 class LoginForm(forms.Form):
@@ -28,18 +29,17 @@ class RegisterUserForm(UserCreationForm):
         model = User
         fields = ('username', 'password1', 'password2', 'email')
 
-    def clean(self):
-        # Check if the email is not already used.
-        email = self.cleaned_data.get('email')
-        if User.objects.filter(email=email).exists():
-            msg = 'E-mail is already used.'
-            self._errors['email'] = self.error_class([msg])
-            del self.cleaned_data['email']
-        return self.cleaned_data
+    def clean_email(self):
+        cleaned_email = self.cleaned_data['email']
+        if User.objects.filter(email=cleaned_email).exists():
+            msg = 'E-mail is already used. Did you forget your password?'
+            raise ValidationError(msg)
+        return cleaned_email
 
 
 class RegisterUserDetails(forms.ModelForm):
     first_name = forms.CharField(max_length=40, required=True)
+    last_name = forms.CharField(max_length=40, required=True)
     allergies = forms.CharField(max_length=100, required=False, help_text="Max 100 characters, leave empty if none")
 
     class Meta:
@@ -92,7 +92,7 @@ class Settings_Essentials_Form(ModelForm):
                     self.add_error('password_check', "Passwords do not match")
                     return
 
-        super(Settings_Essentials_Form, self).clean()
+        return super(Settings_Essentials_Form, self).clean()
 
     def save(self, commit=True):
         super(Settings_Essentials_Form, self).save()
