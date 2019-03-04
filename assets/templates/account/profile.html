@@ -6,7 +6,7 @@
     <form method="post" action="{% url 'account_profile' %}">
         {% csrf_token %}
         {% include "snippets/bootstrap_form.html" with form=user_form %}
-        <button type="submit" name="user_submit" class="btn btn-primary btn-block">Save</button>
+        <p><button type="submit" name="user_submit" class="btn btn-primary btn-block">Save</button></p>
     </form>
 
     <p><a href="{% url 'account_email' %}">Manage your e-mail addresses</a></p>
@@ -16,7 +16,7 @@
     <form method="post" action="{% url 'account_profile' %}">
         {% csrf_token %}
         {% include "snippets/bootstrap_form.html" with form=dining_form %}
-        <button type="submit" name="dining_submit" class="btn btn-primary btn-block">Save</button>
+        <p><button type="submit" name="dining_submit" class="btn btn-primary btn-block">Save</button></p>
     </form>
 
     <h2>Associations</h2>

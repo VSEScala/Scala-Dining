@@ -64,4 +64,10 @@ class DiningProfileForm(ModelForm):
 class UserForm(ModelForm):
     class Meta:
         model = User
-        fields = ['username', 'first_name', 'last_name']
+        fields = ['username', 'first_name', 'last_name', 'email']
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['first_name'].disabled = True
+        self.fields['last_name'].disabled = True
+        self.fields['email'].disabled = True
