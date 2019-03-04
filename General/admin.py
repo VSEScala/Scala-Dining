@@ -1,7 +1,5 @@
-from django.contrib import admin
+from UserDetails.admin import site
 from .models import SiteUpdate, PageVisitTracker
 
-# Register your models here.
-
-admin.site.register(SiteUpdate)
-admin.site.register(PageVisitTracker)
+site.register(SiteUpdate)
+site.register(PageVisitTracker)
