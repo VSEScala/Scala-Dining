@@ -66,9 +66,14 @@
                             </a>
                         {% endfor %}
                         <hr>
-                        <a class="dropdown-item justify-content-between d-flex mb-4" href="{% url 'account_logout' %}">
-                            <span class="header-dropdown-line-content">Log out</span><i class="fas fa-power-off fa-fw"></i>
-                        </a>
+                        <form method="post" action="{% url 'account_logout' %}">
+                            {% csrf_token %}
+                            <button type="submit" class="dropdown-item justify-content-between d-flex btn"
+                                    {# Undo the border radius that is set by .btn #}
+                                    style="border-top-left-radius: 0; border-top-right-radius: 0;">
+                                Log out <i class="fas fa-power-off fa-fw"></i>
+                            </button>
+                        </form>
                     </div>
                 </li>
                 <li class="dropdown p-1">
