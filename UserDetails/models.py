@@ -4,6 +4,7 @@ from django.contrib.auth.models import AbstractUser, Group
 from django.db import models
 from django.utils import timezone
 from django.utils.functional import cached_property
+from django.utils.translation import gettext_lazy as _
 
 
 class User(AbstractUser):
@@ -11,6 +12,7 @@ class User(AbstractUser):
     # Should contain something like a UUID.
     external_link = models.CharField(max_length=150, editable=False, default="",
                                      help_text="When this is set, the account is linked to an external system.")
+    email = models.EmailField(_('email address'), unique=True)
 
     def __str__(self):
         name = self.first_name + " " + self.last_name
@@ -99,6 +101,7 @@ class Association(Group):
         return UserMembership.objects.filter(
             association=self.association,
             verified_on__isnull=True).count() > 0
+
 
 class UserMembership(models.Model):
     """
