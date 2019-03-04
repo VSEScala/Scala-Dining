@@ -31,6 +31,10 @@
                         <h3>Memberships</h3>
                         {% include "snippets/bootstrap_form.html" with form=associationlink_form %}
 
+                        <br>
+                        <span class="text-danger">*</span> required<br>
+                        <br>
+
                         <h3>Terms of service</h3>
                         {# Todo: privacy documents #}
                         <div class="offset-sm-3 col-sm-8">
@@ -44,11 +48,11 @@
                         <br>
 
                         <label for="accept_rules" class="row m-0">
-
+<!--
                             <div class="col-1 col-sm-3 p-2">
                                 <input type="checkbox" id="accept_rules" required="required" class=""/>
                                 <div class="checkbox"></div>
-                            </div>
+                            </div>-->
                             <div class="col-11 col-sm-9">
                                 I understand and accept both the privacy and the user guidelines.
                             </div>
