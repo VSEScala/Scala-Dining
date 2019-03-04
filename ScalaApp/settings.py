@@ -41,8 +41,13 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django.contrib.humanize',
+    'django.contrib.sites',
 
     'widget_tweaks',
+
+    'allauth',
+    'allauth.account',
+    'allauth.socialaccount',
 
     # Quadrivium OpenID Connect
     'mozilla_django_oidc',
@@ -111,9 +116,6 @@ DATABASES = {
 
 # Password validation
 # https://docs.djangoproject.com/en/2.0/ref/settings/#auth-password-validators
-
-# Commented out for maintenance convencience
-
 AUTH_PASSWORD_VALIDATORS = [
     {
         'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
@@ -170,5 +172,22 @@ from .scala_settings import *
 from .settings_q_oidc import *
 AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
+    'allauth.account.auth_backends.AuthenticationBackend',
     'UserDetails.oidc.QuadriviumOIDCAB',
 ]
+
+SITE_ID = 1
+
+# Show e-mails in console for development
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+
+# Allauth configuration
+ACCOUNT_EMAIL_REQUIRED = True
+ACCOUNT_FORMS = {
+    'change_password': 'UserDetails.forms_allauth.CustomChangePasswordForm',
+    'reset_password_from_key': 'UserDetails.forms_allauth.CustomResetPasswordKeyForm',
+}
+# ACCOUNT_EMAIL_VERIFICATION = "mandatory"
+ACCOUNT_LOGIN_ON_PASSWORD_RESET = True
+# Set to None to ask the user ("Remember me?")
+ACCOUNT_SESSION_REMEMBER = True

@@ -1,25 +1,11 @@
 from django import forms
-from django.forms import ModelForm
-from django.contrib.auth import authenticate
 from django.contrib.auth.forms import UserCreationForm
-from .models import User, Association, UserMembership
-from Dining.models import UserDiningSettings
 from django.db.utils import OperationalError
+from django.forms import ModelForm
 from django.core.exceptions import ValidationError
 
-
-class LoginForm(forms.Form):
-    username = forms.CharField(
-        label="Gebruikersnaam",
-        max_length=80,
-        required=True,
-    )
-
-    password = forms.CharField(
-        widget=forms.PasswordInput,
-        label="Wachtwoord",
-        required=True
-    )
+from Dining.models import UserDiningSettings
+from .models import User, Association, UserMembership
 
 
 class RegisterUserForm(UserCreationForm):
@@ -69,42 +55,19 @@ class RegisterAssociationLinks(forms.Form):
             UserMembership.objects.create(related_user=user, association_id=association)
 
 
-class Settings_Essentials_Form(ModelForm):
-    password_prev = forms.CharField(widget=forms.PasswordInput, required=False, label="Current password")
-    password_new = forms.CharField(widget=forms.PasswordInput, required=False, label="New password",
-                                   help_text="Leave empty if you don't want to change password")
-    password_check = forms.CharField(widget=forms.PasswordInput, required=False, label="Repeat new password")
-
-    class Meta:
-        model = User
-        fields = ('username', 'email', 'password_prev', 'password_new', 'password_check')
-
-    def clean(self):
-
-        # If the password needs to be changed (i.e. a new password is given
-        if len(self.data['password_new']) > 0:
-            user = authenticate(username=self.instance.username, password=self.data['password_prev'])
-            if user is None:
-                self.add_error('password_prev', "Password is not correct")
-                return
-            else:
-                if self.cleaned_data['password_new'] != self.cleaned_data['password_check']:
-                    self.add_error('password_check', "Passwords do not match")
-                    return
-
-        return super(Settings_Essentials_Form, self).clean()
-
-    def save(self, commit=True):
-        super(Settings_Essentials_Form, self).save()
-
-        if len(self.data['password_new']) > 0:
-            self.instance.set_password(self.cleaned_data["password_new"])
-
-        if commit:
-            self.instance.save()
-
-
-class Settings_Dining_Form(ModelForm):
+class DiningProfileForm(ModelForm):
     class Meta:
         model = UserDiningSettings
-        exclude = ('user',)
+        fields = ['allergies']
+
+
+class UserForm(ModelForm):
+    class Meta:
+        model = User
+        fields = ['username', 'first_name', 'last_name', 'email']
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['first_name'].disabled = True
+        self.fields['last_name'].disabled = True
+        self.fields['email'].disabled = True

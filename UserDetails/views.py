@@ -1,24 +1,33 @@
-from django.shortcuts import render
-from django.http import *
-from django.contrib.auth import login, logout
-from django.views import View
-from .models import User
-from .forms import RegisterUserForm, RegisterUserDetails, RegisterAssociationLinks
+import math
+
+from django.contrib import messages
+from django.contrib.auth import login
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.http import HttpResponseRedirect
+from django.shortcuts import render, redirect
 from django.urls import reverse
+from django.utils.decorators import method_decorator
+from django.views import View
+from django.views.generic import TemplateView
+from django.utils.translation import gettext as _
+
+from Dining.models import DiningEntryUser
+from .forms import RegisterUserForm, RegisterUserDetails, RegisterAssociationLinks, UserForm, DiningProfileForm
+from .models import User
 
 
-class RegisterView(View):
-    def get(self, request):
-        account_form = RegisterUserForm()
-        account_detail_form = RegisterUserDetails()
-        associationlink_form = RegisterAssociationLinks()
+class RegisterView(TemplateView):
+    template_name = "account/signup.html"
 
-        context = {
-            'account_form': account_form,
-            'account_detail_form': account_detail_form,
-            'associationlink_form': associationlink_form,
-        }
-        return render(request, 'accounts/register.html', context)
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.update({
+            'account_form': RegisterUserForm(),
+            'account_detail_form': RegisterUserDetails(),
+            'associationlink_form': RegisterAssociationLinks(),
+        })
+        return context
 
     def post(self, request, *args, **kwargs):
         account_form = RegisterUserForm(request.POST)
@@ -31,23 +40,66 @@ class RegisterView(View):
             'associationlink_form': associationlink_form,
         }
 
-        if not account_form.is_valid():
-            return render(request, 'accounts/register.html', context)
-        if not account_detail_form.is_valid():
-            return render(request, 'accounts/register.html', context)
-        if not associationlink_form.is_valid():
-            return render(request, 'accounts/register.html', context)
+        if account_form.is_valid() and account_detail_form.is_valid() and associationlink_form.is_valid():
+            # User is valid, safe it to the server
+            user = account_form.save()
+            user = User.objects.get(pk=user.pk)
+            account_detail_form.save_as(user)
+            associationlink_form.create_links_for(user)
 
-        # User is valid, safe it to the server
-        user = account_form.save()
-        user = User.objects.get(pk=user.pk)
-        account_detail_form.save_as(user)
-        associationlink_form.create_links_for(user)
-        
-        login(request, user, backend='django.contrib.auth.backends.ModelBackend')
+            login(request, user, backend='django.contrib.auth.backends.ModelBackend')
+            return HttpResponseRedirect(reverse('index'))
 
-        return HttpResponseRedirect(reverse('index'))
+        return self.render_to_response(context)
 
-def log_out(request):
-    logout(request)
-    return HttpResponseRedirect(reverse('login'))
+
+class DiningHistoryView(View):
+    context = {}
+    template = "accounts/history_dining.html"
+
+    @method_decorator(login_required)
+    def get(self, request, page=1, **kwargs):
+        length = 3
+        lower_bound = length * (page - 1)
+        upper_bound = length * page
+
+        # get all dining lists
+        self.context['dining_entries'] = DiningEntryUser.objects.filter(user=request.user).order_by(
+            '-dining_list__date')
+        self.context['dining_entries_select'] = self.context['dining_entries'][lower_bound:upper_bound]
+        self.context['page'] = page
+        self.context['pages'] = math.ceil(len(self.context['dining_entries']) / length)
+        if self.context['pages'] > 1:
+            self.context['show_page_navigation'] = True
+            self.context['pages'] = range(1, self.context['pages'] + 1)
+        return render(request, self.template, self.context)
+
+
+class ProfileView(LoginRequiredMixin, TemplateView):
+    template_name = "account/profile.html"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.update({
+            'user_form': UserForm(instance=self.request.user),
+            'dining_form': DiningProfileForm(instance=self.request.user.userdiningsettings),
+        })
+        return context
+
+    def post(self, request, *args, **kwargs):
+        context = self.get_context_data()
+
+        # Populate the right form
+        if 'user_submit' in request.POST:
+            form = UserForm(request.POST, instance=request.user)
+            context['user_form'] = form
+        else:
+            form = DiningProfileForm(request.POST, instance=request.user.userdiningsettings)
+            context['dining_form'] = form
+
+        if form.is_valid():
+            form.save()
+            messages.success(request, _("Profile saved."))
+            return redirect('account_profile')
+
+        return self.render_to_response(context)
