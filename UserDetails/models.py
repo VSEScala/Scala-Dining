@@ -68,18 +68,17 @@ class User(AbstractUser):
         from General.views import RulesPageView
         return RulesPageView.has_new_update(self)
 
-    # TODO
-    # @cached_property
-    # def is_staff(self):
-    #     # For each group the member is part of, if it has permissions
-    #     for group in self.groups.all():
-    #         if group.permissions.count() > 0:
-    #             return True
-    #     if self.user_permissions.count() > 0:
-    #         return True
-    #     if self.is_superuser:
-    #         return True
-    #     return False
+    def has_any_perm(self):
+        """Returns true if the user has one or more permissions."""
+        for group in self.groups.all():
+            if group.permissions.count() > 0:
+                return True
+        if self.user_permissions.count() > 0:
+            return True
+        return False
+
+    def has_admin_site_access(self):
+        return self.is_active and (self.has_any_perm() or self.is_superuser)
 
 
 class Association(Group):

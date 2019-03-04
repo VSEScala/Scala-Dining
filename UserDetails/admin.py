@@ -1,8 +1,25 @@
 from django import forms
 from django.contrib import admin
-from django.contrib.auth.admin import UserAdmin, GroupAdmin
+from django.contrib.admin import AdminSite
+from django.contrib.auth.admin import GroupAdmin, UserAdmin
 
 from .models import User, UserMembership, Association
+
+
+class MyAdminSite(AdminSite):
+    """Custom admin site. See
+    https://docs.djangoproject.com/en/2.1/ref/contrib/admin/#customizing-the-adminsite-class."""
+    site_header = "Scala app administration"
+    # site_title = "Scala app admin panel"
+    # index_title = "Site administration"
+
+    def has_permission(self, request):
+        """Whether the request user has access to the admin site."""
+        return request.user.has_admin_site_access() or super().has_permission(request)
+
+
+# This is the actual admin site instance that should be used when registering models
+site = MyAdminSite()
 
 
 # TODO: the classes in this file are not in use currently
@@ -113,5 +130,5 @@ class AssociationAdmin(admin.ModelAdmin):
     form = GroupAdminForm
 
 
-admin.site.register(User, UserAdmin)
-admin.site.register(Association, GroupAdmin)
+site.register(User, UserAdmin)
+site.register(Association, GroupAdmin)
