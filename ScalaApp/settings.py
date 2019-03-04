@@ -180,3 +180,14 @@ SITE_ID = 1
 
 # Show e-mails in console for development
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+
+# Allauth configuration
+ACCOUNT_EMAIL_REQUIRED = True
+ACCOUNT_FORMS = {
+    'change_password': 'UserDetails.forms_allauth.CustomChangePasswordForm',
+    'reset_password_from_key': 'UserDetails.forms_allauth.CustomResetPasswordKeyForm',
+}
+# ACCOUNT_EMAIL_VERIFICATION = "mandatory"
+ACCOUNT_LOGIN_ON_PASSWORD_RESET = True
+# Set to None to ask the user ("Remember me?")
+ACCOUNT_SESSION_REMEMBER = True
