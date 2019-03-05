@@ -1,7 +1,8 @@
 from django.urls import path, include
 
 from CreditManagement.views import TransactionAddView
-from .views import RegisterView, DiningHistoryView, ProfileView
+from .views import RegisterView, DiningHistoryView
+from .views_user_settings import SettingsView, Settings_Profile_View
 from .views_association import CreditsOverview, TransactionsCsvView, MembersOverview, MembersEditView, \
     AssociationOverview
 
@@ -20,5 +21,9 @@ urlpatterns = [
 
     path('history/dining/', DiningHistoryView.as_view(), name='history_lists'),
     path('history/dining/<int:page>/', DiningHistoryView.as_view(), name='history_lists'),
-    path('profile/', ProfileView.as_view(), name='account_profile'),
+    path('settings/', include([
+        path('', SettingsView.as_view(), name='settings_empty'),
+        path('account/', Settings_Profile_View.as_view(), name='settings_account'),
+    ])),
+    path('settings/', include('allauth.urls')),
 ]

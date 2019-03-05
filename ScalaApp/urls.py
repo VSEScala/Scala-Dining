@@ -13,5 +13,5 @@ urlpatterns = [
     # Quadrivium OpenID Connect
     path('oidc/', include('mozilla_django_oidc.urls')),
     path('accounts/', include('UserDetails.urls')),
-    path('accounts/', include('allauth.urls')),
+
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

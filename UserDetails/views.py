@@ -75,31 +75,4 @@ class DiningHistoryView(View):
         return render(request, self.template, self.context)
 
 
-class ProfileView(LoginRequiredMixin, TemplateView):
-    template_name = "account/profile.html"
 
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context.update({
-            'user_form': UserForm(instance=self.request.user),
-            'dining_form': DiningProfileForm(instance=self.request.user.userdiningsettings),
-        })
-        return context
-
-    def post(self, request, *args, **kwargs):
-        context = self.get_context_data()
-
-        # Populate the right form
-        if 'user_submit' in request.POST:
-            form = UserForm(request.POST, instance=request.user)
-            context['user_form'] = form
-        else:
-            form = DiningProfileForm(request.POST, instance=request.user.userdiningsettings)
-            context['dining_form'] = form
-
-        if form.is_valid():
-            form.save()
-            messages.success(request, _("Profile saved."))
-            return redirect('account_profile')
-
-        return self.render_to_response(context)

@@ -1,0 +1,19 @@
+{% extends 'account/settings/settings_base.html' %}
+
+{% block tab_account %}active{% endblock %}
+
+{% block details %}
+    {# Username #}
+    <form method="post" action="{% url 'settings_account' %}">
+        <h3>Account</h3>
+        {% csrf_token %}
+        {% include "snippets/bootstrap_form.html" with form=user_form %}
+        <h3>Dining</h3>
+        {% include "snippets/bootstrap_form.html" with form=dining_form %}
+        <h3>Associations</h3>
+        {# Todo! #}
+        <p>To be added</p>
+        <p><button type="submit" name="user_submit" class="btn btn-primary btn-block">Save</button></p>
+    </form>
+
+{% endblock %}
