@@ -1,6 +1,8 @@
-{% extends 'base.html' %}
+{% extends 'account/base_logged_in.html' %}
 
-{% block content %}
+{% block tab_profile %}active{% endblock %}
+
+{% block tab_content %}
     <h1>Profile</h1>
     {# Username #}
     <form method="post" action="{% url 'account_profile' %}">

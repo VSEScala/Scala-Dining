@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <nav class="nav nav-tabs mb-3">
+        <a class="nav-item nav-link {% block tab_profile %}{% endblock %}" href="{% url 'account_profile' %}">
+            Account
+        </a>
+        <a class="nav-item nav-link {% block tab_mail %}{% endblock %}" href="{% url 'account_email' %}">
+            Mailing
+        </a>
+        <a class="nav-item nav-link {% block tab_password %}{% endblock %}" href="{% url 'account_change_password' %}">
+            Password
+        </a>
+    </nav>
+    {% block tab_content %}{% endblock %}
+{% endblock %}

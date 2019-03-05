@@ -1,8 +1,10 @@
-{% extends "base.html" %}
+{% extends "account/base_logged_in.html" %}
 
 {% load i18n %}
 
-{% block content %}
+{% block tab_mail %}active{% endblock %}
+
+{% block tab_content %}
     <p><a href="{% url 'account_profile' %}">&larr; Back to profile</a></p>
     <h1>{% trans "E-mail addresses" %}</h1>
     {% if user.emailaddress_set.all %}
