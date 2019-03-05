@@ -133,3 +133,4 @@ class AssociationAdmin(admin.ModelAdmin):
 
 site.register(User, UserAdmin)
 site.register(Association, GroupAdmin)
+site.register(UserMembership)

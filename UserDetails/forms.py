@@ -1,8 +1,9 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.db.utils import OperationalError
+from django.db.models import Q
 from django.forms import ModelForm
-from django.core.exceptions import ValidationError
+from django.core.exceptions import ValidationError, ObjectDoesNotExist
 
 from Dining.models import UserDiningSettings
 from .models import User, Association, UserMembership
@@ -45,7 +46,8 @@ class RegisterAssociationLinks(forms.Form):
     try:
         associations = forms.MultipleChoiceField(
             choices=[(a.pk, a.name) for a in Association.objects.filter(is_choosable=True)],
-            help_text='At which associations are you active?')
+            help_text='At which associations are you active?',
+            widget=forms.CheckboxSelectMultiple)
         # In case associations table did not exist yet, except the operation
     except OperationalError:
         pass
@@ -73,3 +75,51 @@ class UserForm(ModelForm):
         self.fields['name'].disabled = True
         self.fields['name'].initial = self.instance
         self.fields['email'].disabled = True
+
+
+class AssociationLinkForm(forms.Form):
+
+    def __init__(self, user, *args, **kwargs):
+        super(AssociationLinkForm, self).__init__(*args, **kwargs)
+
+        self.user = user
+
+        # Get all associations and make a checkbox field
+        for association in Association.objects.filter(
+                Q(is_choosable=True) |
+                (Q(is_choosable=False) & Q(usermembership__related_user=user)))\
+                .distinct().order_by('slug'):
+
+            try:
+                link = association.usermembership_set.get(related_user=user)
+            except ObjectDoesNotExist:
+                link = None
+            print(link)
+
+            if link is not None:
+                self.fields[association.name] = forms.BooleanField(label=association.name,
+                                                                   required=False,
+                                                                   initial=True)
+                self.fields[association.name].validated = True
+            else:
+                self.fields[association.name] = forms.BooleanField(label=association.name,
+                                                                   required=False,
+                                                                   initial=False)
+                self.fields[association.name].validated = False
+
+
+    def save(self):
+        for key, value in self.cleaned_data.items():
+            try:
+                link = UserMembership.objects.get(related_user=self.user, association__name=key)
+            except ObjectDoesNotExist:
+                link = None
+
+            if link is not None and not value:
+                # Remove an associationlink
+                print("remove {0}".format(key))
+            elif link is None and value:
+                # Add an association link
+                association = Association.objects.get(name=key)
+                link = UserMembership(related_user=self.user, association=association)
+                print("add {0}".format(key))

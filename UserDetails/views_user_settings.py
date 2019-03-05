@@ -4,7 +4,7 @@ from django.shortcuts import render, redirect
 from django.views.generic import TemplateView
 from django.utils.translation import gettext as _
 
-from .forms import UserForm, DiningProfileForm
+from .forms import UserForm, DiningProfileForm, AssociationLinkForm
 
 
 class SettingsView(TemplateView):
@@ -19,6 +19,7 @@ class Settings_Profile_View(LoginRequiredMixin, TemplateView):
         context.update({
             'user_form': UserForm(instance=self.request.user),
             'dining_form': DiningProfileForm(instance=self.request.user.userdiningsettings),
+            'association_links_form': AssociationLinkForm(self.request.user),
         })
         return context
 
@@ -28,11 +29,15 @@ class Settings_Profile_View(LoginRequiredMixin, TemplateView):
         context.update({
             'user_form': UserForm(request.POST, instance=self.request.user),
             'dining_form': DiningProfileForm(request.POST, instance=self.request.user.userdiningsettings),
+            'association_links_form': AssociationLinkForm(self.request.user, request.POST),
         })
 
-        if context['user_form'].is_valid() and context['dining_form'].is_valid():
+        if context['user_form'].is_valid() and \
+            context['dining_form'].is_valid() and \
+            context['association_links_form'].is_valid():
             context['user_form'].save()
             context['dining_form'].save()
+            context['association_links_form'].save()
             messages.success(request, _("Profile saved."))
 
             return redirect('settings_account')
