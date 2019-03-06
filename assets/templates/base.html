@@ -123,11 +123,5 @@
         </div>
     {% endif %}
 
-    <div class="container mt-3">
-        <div class="row width-max-lg text-size-md-5">
-            <div class="col-12">
-                {% block content %}{% endblock %}
-            </div>
-        </div>
-    </div>
+    <div class="container mt-3">{% block content %}{% endblock %}</div>
 {% endblock %}
