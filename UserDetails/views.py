@@ -13,7 +13,7 @@ from django.views.generic import TemplateView
 from django.utils.translation import gettext as _
 
 from Dining.models import DiningEntryUser
-from .forms import RegisterUserForm, RegisterUserDetails, RegisterAssociationLinks, UserForm, DiningProfileForm
+from .forms import RegisterUserForm, RegisterUserDetails, AssociationLinkForm
 from .models import User
 
 
@@ -25,14 +25,14 @@ class RegisterView(TemplateView):
         context.update({
             'account_form': RegisterUserForm(),
             'account_detail_form': RegisterUserDetails(),
-            'associationlink_form': RegisterAssociationLinks(),
+            'associationlink_form': AssociationLinkForm(None),
         })
         return context
 
     def post(self, request, *args, **kwargs):
         account_form = RegisterUserForm(request.POST)
         account_detail_form = RegisterUserDetails(request.POST)
-        associationlink_form = RegisterAssociationLinks(request.POST)
+        associationlink_form = AssociationLinkForm(None, request.POST)
 
         context = {
             'account_form': account_form,
@@ -45,7 +45,7 @@ class RegisterView(TemplateView):
             user = account_form.save()
             user = User.objects.get(pk=user.pk)
             account_detail_form.save_as(user)
-            associationlink_form.create_links_for(user)
+            associationlink_form.save(user=user)
 
             login(request, user, backend='django.contrib.auth.backends.ModelBackend')
             return HttpResponseRedirect(reverse('index'))

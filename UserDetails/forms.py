@@ -93,6 +93,7 @@ class AssociationLinkField(forms.BooleanField):
         self.label = association.name
         self.user = user
         self.association = association
+        self.membership = None
 
         # Find the membership, if any
         if user is not None:
@@ -116,7 +117,7 @@ class AssociationLinkField(forms.BooleanField):
                             self.disabled = True
 
             except ObjectDoesNotExist:
-                self.membership = None
+                pass
         if association is None:
             raise ValueError("Association can not be None")
 
@@ -129,7 +130,7 @@ class AssociationLinkField(forms.BooleanField):
         # Check input data for correctness
         if self.user is None and user is None:
             raise ValueError("Field does not contain user and user was not given in method")
-        if user is not None and self.user != user:
+        if user is not None and self.user is not None and self.user != user:
             raise ValueError("Given user differs from field user")
 
         if self.membership is not None:
@@ -155,22 +156,44 @@ class AssociationLinkForm(forms.Form):
 
         self.user = user
 
-        # Get all associations and make a checkbox field
-        for association in Association.objects.filter(
+        if user is None:
+            associations = Association.objects.filter(is_choosable=True)
+        else:
+            associations = Association.objects.filter(
                 Q(is_choosable=True) |
                 (Q(is_choosable=False) & Q(usermembership__related_user=user))) \
-                .distinct().order_by('slug'):
+                .distinct().order_by('slug')
+
+        # Get all associations and make a checkbox field
+        for association in associations:
             field = AssociationLinkField(user, association)
 
-            self.fields[association.name] = field
+            self.fields[field.label] = field
 
-    def save(self):
+    def clean(self):
+        cleaned_data = super(AssociationLinkForm, self).clean()
+        has_association = False
+        for key, value in self.cleaned_data.items():
+            if value:
+                has_association = True
+
+        if not has_association:
+            raise ValidationError("At least one association needs to be chosen")
+
+        return cleaned_data
+
+    def save(self, user=None):
         """
         Saves the association links. Removes
         :return:
         """
+        if self.user is None and user is None:
+            raise ValueError("Both self.user and user are None")
+        if user is None:
+            user = self.user
+
         for key, value in self.cleaned_data.items():
-            link = self.fields[key].get_membership_model(self.user, new_value=value)
+            link = self.fields[key].get_membership_model(user, new_value=value)
             if value:
                 if link.id is None:
                     link.save()
