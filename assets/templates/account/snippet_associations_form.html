@@ -46,7 +46,15 @@
         </div>
         {# Field label #}
         <label for="{{ field.id_for_label }}" class="col-10">
-            {{ field.label }}
+            <span class="{% if field.field.disabled %} text-muted {% endif %}">
+                {{ field.label }}
+            </span>
+
+            {% if field.field.verified %}
+                <span class="text-success">verified</span>
+            {% elif field.field.verified == False %}
+                <span class="text-danger">Rejected</span>
+            {% endif %}
         </label>
 
     </div>

@@ -77,6 +77,61 @@ class UserForm(ModelForm):
         self.fields['email'].disabled = True
 
 
+class AssociationLinkField(forms.BooleanField):
+    """
+    A special BooleanField model for association links.
+    Can also indicate current validation state and auto-sets initial value
+    """
+    def __init__(self, user, association, *args, **kwargs):
+        super(AssociationLinkField, self).__init__(*args, **kwargs)
+
+        self.initial = False
+        self.required = False
+        self.label = association.name
+        self.user = user
+        self.association = association
+
+        # Find the membership, if any
+        if user is not None:
+            try:
+                self.membership = association.usermembership_set.get(related_user=user)
+                self.initial = self.membership.is_member()
+                if not self.membership.is_member():
+                    # There is a link object, but he's not a member, so block it
+                    self.disabled = True
+            except ObjectDoesNotExist:
+                self.membership = None
+        if association is None:
+            raise ValueError("Association can not be None")
+
+    def verified(self):
+        if self.membership is None:
+            return None
+        return self.membership.get_verified_state()
+
+    def get_membership_model(self, user=None, new_value=True):
+        # Check input data for correctness
+        if self.user is None and user is None:
+            raise ValueError("Field does not contain user and user was not given in method")
+        if user is not None and self.user != user:
+            raise ValueError("Given user differs from field user")
+
+        if self.membership is not None:
+            return self.membership
+        if self.user is not None:
+            # If there was a user given, but the link was not found. Create a new link if allowed
+            if new_value:
+                return UserMembership(related_user=self.user, association=self.association)
+        else:
+            # user originally not given. Try to find the link
+            try:
+                return self.association.usermembership_set.get(related_user=user)
+            except ObjectDoesNotExist:
+                if new_value:
+                    return UserMembership(related_user=user, association=self.association)
+        return None
+
+
 class AssociationLinkForm(forms.Form):
 
     def __init__(self, user, *args, **kwargs):
@@ -87,39 +142,23 @@ class AssociationLinkForm(forms.Form):
         # Get all associations and make a checkbox field
         for association in Association.objects.filter(
                 Q(is_choosable=True) |
-                (Q(is_choosable=False) & Q(usermembership__related_user=user)))\
+                (Q(is_choosable=False) & Q(usermembership__related_user=user))) \
                 .distinct().order_by('slug'):
 
-            try:
-                link = association.usermembership_set.get(related_user=user)
-            except ObjectDoesNotExist:
-                link = None
-            print(link)
+            field = AssociationLinkField(user, association)
 
-            if link is not None:
-                self.fields[association.name] = forms.BooleanField(label=association.name,
-                                                                   required=False,
-                                                                   initial=True)
-                self.fields[association.name].validated = True
-            else:
-                self.fields[association.name] = forms.BooleanField(label=association.name,
-                                                                   required=False,
-                                                                   initial=False)
-                self.fields[association.name].validated = False
-
+            self.fields[association.name] = field
 
     def save(self):
+        """
+        Saves the association links. Removes
+        :return:
+        """
         for key, value in self.cleaned_data.items():
-            try:
-                link = UserMembership.objects.get(related_user=self.user, association__name=key)
-            except ObjectDoesNotExist:
-                link = None
-
-            if link is not None and not value:
-                # Remove an associationlink
-                print("remove {0}".format(key))
-            elif link is None and value:
-                # Add an association link
-                association = Association.objects.get(name=key)
-                link = UserMembership(related_user=self.user, association=association)
-                print("add {0}".format(key))
+            link = self.fields[key].get_membership_model(self.user, new_value=value)
+            if value:
+                if link.id is None:
+                    link.save()
+            else:
+                if link is not None and link.get_verified_state() != False:
+                    link.delete()
