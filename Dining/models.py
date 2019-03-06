@@ -120,9 +120,9 @@ class DiningList(models.Model):
         if self.pk and not self.is_adjustable():
             raise ValidationError(gettext('The dining list is not adjustable.'), code='not_adjustable')
 
-        if self.sign_up_deadline is not None and self.sign_up_deadline.date() > self.date:
+        if self.sign_up_deadline and self.sign_up_deadline.date() > self.date:
             raise ValidationError(
-                {'sign_up_deadline': ["Sign up deadline can not be later than the day dinner is served",]})
+                {'sign_up_deadline': ["Sign up deadline can not be later than the day dinner is served."]})
 
         # Check if purchaser is present when using auto pay
         if self.auto_pay and not self.get_purchaser():
@@ -192,6 +192,14 @@ class DiningList(models.Model):
         """All dining entries that are not for external people."""
         return DiningEntryExternal.objects.filter(dining_list=self)
 
+    def can_modify(self, user):
+        """Users can modify when the dining list is open, owner can modify when dining list is still adjustable."""
+        if user == self.claimed_by:
+            return self.is_adjustable()
+        else:
+            return self.is_open()
+
+
 
 class DiningEntry(models.Model):
     """
@@ -206,16 +214,6 @@ class DiningEntry(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
 
     has_paid = models.BooleanField(default=False)
-
-    def save(self, *args, **kwargs):
-        # If dining list can not be adjusted, limit saving only to the update of the has_paid field.
-        if not self.dining_list.is_adjustable():
-            if self.id:
-                # Only has_payed changes can go through
-                super(DiningEntry, self).save(update_fields=['has_paid'])
-                return
-
-        super().save(*args, **kwargs)
 
     def clean(self):
         """

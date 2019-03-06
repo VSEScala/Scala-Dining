@@ -179,12 +179,12 @@ class NewSlotView(LoginRequiredMixin, DayMixin, TemplateView):
         self.init_date()
         available_slots = DiningList.objects.available_slots(self.date)
         if available_slots <= 0:
-            error = _("No free slots availlable")
+            error = _("No free slots available.")
             messages.add_message(request, messages.ERROR, error)
             return HttpResponseRedirect(self.reverse('day_view', kwargs={}))
 
         if len(DiningList.objects.filter(date=self.date).filter(claimed_by=self.request.user)) > 0:
-            error = _("You have already a dining slot claimed today")
+            error = _("You already have a dining slot claimed today.")
             messages.add_message(request, messages.ERROR, error)
             return HttpResponseRedirect(self.reverse('day_view', kwargs={}))
         return super().dispatch(request, *args, **kwargs)
