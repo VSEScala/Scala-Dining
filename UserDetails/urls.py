@@ -27,6 +27,6 @@ urlpatterns = [
     path('settings/', include('allauth.urls')),
 
     # Override allauth login and sign up page with our registration page
-    path('login/', LoginView.as_view(), name='login_view'),
+    path('login/', LoginView.as_view(), name='account_login'),
     path('signup/', RegisterView.as_view(), name='account_signup'),
 ]
