@@ -242,7 +242,7 @@ class DiningEntry(models.Model):
                 raise ValidationError(gettext('This user is already subscribed to the dining list.'))
 
             # (Optionally) validate if user is not already on another dining list
-            #if DiningList.objects.filter(date=self.dining_list.date, dining_entries__user=self.user)
+            # if DiningList.objects.filter(date=self.dining_list.date, dining_entries__user=self.user)
 
     def get_internal(self):
         try:
@@ -279,19 +279,20 @@ class DiningEntryUser(DiningEntry, DiningWork):
                                  default=None, null=True)
 
     def clean(self):
-        if self.pk is None:
+        super().clean()
+        if not self.pk:
             if DiningEntryUser.objects.filter(dining_list=self.dining_list, user=self.user):
-                raise ValidationError(_("User is already on this dininglist"))
+                raise ValidationError(_("User is already on this dining list."))
 
     def __str__(self):
-        return "{0}: {1}".format(self.dining_list.date, self.user)
+        return "{}: {}".format(self.dining_list.date, self.user)
 
 
 class DiningEntryExternal(DiningEntry):
     name = models.CharField(max_length=40)
 
     def __str__(self):
-        return "{0}: {1}".format(self.dining_list, self.name)
+        return "{}: {}".format(self.dining_list, self.name)
 
 
 class DiningComment(models.Model):

@@ -58,7 +58,9 @@
         <div class="row m-0 mt-4">
             <button type="submit" class="col-12 col-sm-6 mb-2 mb-sm-0 btn btn-block btn-primary">Search user</button>
             <div class="col-12 col-sm-6 m-0 p-0 pr-sm-2 order-sm-first">
-                <button type="submit" name="{{ add_external_button_name }}" id="{{ add_external_button_name }}" class="col-12 btn btn-block btn-outline-primary">Add as external</button>
+                <button type="submit" name="add_external_submit" id="addExternalBtn" class="col-12 btn btn-block btn-outline-primary">
+                    Add as external
+                </button>
             </div>
             <i class="col-12 text-size-3 text-muted">* Required credits are subtracted from your account</i>
         </div>
@@ -66,7 +68,7 @@
     <!-- jQuery to implement the add as external button -->
     <script>
         document.addEventListener("DOMContentLoaded", function (event) {
-            $("#{{ add_external_button_name }}").click(function (e) {
+            $("#addExternalBtn").click(function (e) {
                 // Update input name
                 $("#searchbox").attr("name", "external_name");
                 // Update form method
