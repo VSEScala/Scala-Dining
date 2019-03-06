@@ -4,6 +4,8 @@ from django.db.utils import OperationalError
 from django.db.models import Q
 from django.forms import ModelForm
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
+from django.conf import settings
+from django.utils import timezone
 
 from Dining.models import UserDiningSettings
 from .models import User, Association, UserMembership
@@ -82,6 +84,7 @@ class AssociationLinkField(forms.BooleanField):
     A special BooleanField model for association links.
     Can also indicate current validation state and auto-sets initial value
     """
+
     def __init__(self, user, association, *args, **kwargs):
         super(AssociationLinkField, self).__init__(*args, **kwargs)
 
@@ -96,9 +99,22 @@ class AssociationLinkField(forms.BooleanField):
             try:
                 self.membership = association.usermembership_set.get(related_user=user)
                 self.initial = self.membership.is_member()
-                if not self.membership.is_member():
-                    # There is a link object, but he's not a member, so block it
-                    self.disabled = True
+                if self.membership.get_verified_state() is None:
+                    self.pending = True
+
+                # Check how recently the member has been verified or not. If too recent, block change
+                if self.membership.verified_on is not None:
+                    if self.membership.is_verified:
+                        if self.membership.verified_on + \
+                                settings.DURATION_AFTER_MEMBERSHIP_CONFIRMATION > timezone.now():
+                            # The user has been verified to recently (prevent spamming)
+                            self.disabled = True
+                    else:
+                        if self.membership.verified_on + \
+                                settings.DURATION_AFTER_MEMBERSHIP_REJECTION > timezone.now():
+                            # The user has been verified not to be a member to recently (prevent spamming)
+                            self.disabled = True
+
             except ObjectDoesNotExist:
                 self.membership = None
         if association is None:
@@ -144,7 +160,6 @@ class AssociationLinkForm(forms.Form):
                 Q(is_choosable=True) |
                 (Q(is_choosable=False) & Q(usermembership__related_user=user))) \
                 .distinct().order_by('slug'):
-
             field = AssociationLinkField(user, association)
 
             self.fields[association.name] = field
@@ -158,6 +173,10 @@ class AssociationLinkForm(forms.Form):
             link = self.fields[key].get_membership_model(self.user, new_value=value)
             if value:
                 if link.id is None:
+                    link.save()
+                elif link.get_verified_state() == False:
+                    # If user was rejected, and a new request is entered
+                    link.verified_on = None
                     link.save()
             else:
                 if link is not None and link.get_verified_state() != False:

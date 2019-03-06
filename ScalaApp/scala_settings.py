@@ -25,3 +25,7 @@ MINIMUM_BALANCE_FOR_USER_TRANSACTION = Decimal('0.00')
 
 # The duration that pending transactions should last
 TRANSACTION_PENDING_DURATION = timedelta(days=2)
+
+# Membership change settings
+DURATION_AFTER_MEMBERSHIP_CONFIRMATION = timedelta(days=30)
+DURATION_AFTER_MEMBERSHIP_REJECTION = timedelta(days=30)
