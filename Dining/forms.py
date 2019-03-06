@@ -158,6 +158,14 @@ class DiningPaymentForm(forms.ModelForm):
         self.instance.save(update_fields=DiningPaymentForm.Meta.save_fields)
 
 
+def _can_add_diner(user, dining_list):
+    """User can add diner when the dining list is open, owner can also add when dining list is still adjustable."""
+    if user == dining_list.claimed_by:
+        return dining_list.is_adjustable()
+    else:
+        return dining_list.is_open()
+
+
 class DiningEntryUserCreateForm(forms.ModelForm):
     user = forms.ModelChoiceField(queryset=None)
 
@@ -200,7 +208,7 @@ class DiningEntryUserCreateForm(forms.ModelForm):
             raise ValidationError("The balance of this user is too low to add.")
         # Check dining list open (written naively)
         dining_list = cleaned_data.get('dining_list')
-        if not dining_list.can_modify(self.added_by):
+        if not _can_add_diner(self.added_by, dining_list):
             raise ValidationError(_("Dining list is closed or can't be changed."), code='closed')
         return cleaned_data
 
@@ -245,7 +253,7 @@ class DiningEntryExternalCreateForm(forms.ModelForm):
             raise ValidationError("Your balance is too low to add any external people.")
         # Check dining list open (written naively)
         dining_list = cleaned_data.get('dining_list')
-        if not dining_list.can_modify(user):
+        if not _can_add_diner(user, dining_list):
             raise ValidationError(_("Dining list is closed or can't be changed."), code='closed')
         return cleaned_data
 

@@ -192,14 +192,6 @@ class DiningList(models.Model):
         """All dining entries that are not for external people."""
         return DiningEntryExternal.objects.filter(dining_list=self)
 
-    def can_modify(self, user):
-        """Users can modify when the dining list is open, owner can modify when dining list is still adjustable."""
-        if user == self.claimed_by:
-            return self.is_adjustable()
-        else:
-            return self.is_open()
-
-
 
 class DiningEntry(models.Model):
     """
@@ -222,13 +214,6 @@ class DiningEntry(models.Model):
         a mutex lock for the time between validation and saving.
         """
         if not self.pk:
-            # Validate dining list open
-            # REDACTED: blocks owners from adding entries
-            # if not self.dining_list.is_open():
-            #     raise ValidationError({
-            #         'dining_list': ValidationError(_("Dining list is closed."), code='closed'),
-            #     })
-
             # Validate room available in dining list
             if self.dining_list.dining_entries.count() >= self.dining_list.max_diners:
                 raise ValidationError({
