@@ -40,7 +40,7 @@
                         <a class="dropdown-item justify-content-between d-flex" href="{% url 'credits:transaction_list' %}">
                             <span>Transactions</span><i class="fas fa-euro-sign fa-fw"></i>
                         </a>
-                        <a class="dropdown-item justify-content-between d-flex" href="{% url 'settings_empty' %}">
+                        <a class="dropdown-item justify-content-between d-flex" href="{% url 'settings_account' %}">
                             <span>Settings</span><i class="fas fa-cog fa-fw"></i>
                         </a>
                         {% if user.has_admin_site_access %}

@@ -7,10 +7,6 @@ from django.utils.translation import gettext as _
 from .forms import UserForm, DiningProfileForm, AssociationLinkForm
 
 
-class SettingsView(TemplateView):
-    template_name = "account/settings/settings_base.html"
-
-
 class Settings_Profile_View(LoginRequiredMixin, TemplateView):
     template_name = "account/settings/settings_account.html"
 
