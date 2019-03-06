@@ -1,26 +1,8 @@
 from django import forms
 from django.contrib import admin
-from django.contrib.admin import AdminSite
 from django.contrib.auth.admin import GroupAdmin, UserAdmin
 
 from .models import User, UserMembership, Association
-
-
-class MyAdminSite(AdminSite):
-    """Custom admin site. See
-    https://docs.djangoproject.com/en/2.1/ref/contrib/admin/#customizing-the-adminsite-class."""
-    site_header = "Scala app administration"
-    # site_title = "Scala app admin panel"
-    # index_title = "Site administration"
-
-    def has_permission(self, request):
-        """Whether the request user has access to the admin site."""
-        # Need to check for anonymous user because she doesn't have the has_admin_site_access method
-        return not request.user.is_anonymous and request.user.has_admin_site_access()
-
-
-# This is the actual admin site instance that should be used when registering models
-site = MyAdminSite()
 
 
 # TODO: the classes in this file are not in use currently
@@ -131,6 +113,5 @@ class AssociationAdmin(admin.ModelAdmin):
     form = GroupAdminForm
 
 
-site.register(User, UserAdmin)
-site.register(Association, GroupAdmin)
-site.register(UserMembership)
+admin.site.register(User, UserAdmin)
+admin.site.register(Association, GroupAdmin)

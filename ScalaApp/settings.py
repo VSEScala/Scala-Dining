@@ -34,7 +34,8 @@ AUTH_USER_MODEL = 'UserDetails.User'
 # Application definition
 
 INSTALLED_APPS = [
-    'django.contrib.admin',
+    # 'django.contrib.admin', # replaced by ScalaApp.apps.MyAdminConfig
+    'ScalaApp.apps.MyAdminConfig',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',

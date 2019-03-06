@@ -1,7 +1,6 @@
 from django.contrib import admin
 
 from Dining.models import *
-from UserDetails.admin import site
 
 
 class DiningSettingAdmin(admin.ModelAdmin):
@@ -98,11 +97,11 @@ class DiningListCommentsAdmin(admin.ModelAdmin):
     fields = ('date', ('claimed_by', 'association'),)
 
 
-site.register(UserDiningSettings, DiningSettingAdmin)
-site.register(DiningList, DiningListAdmin)
-#site.register(DiningListComment, DiningListCommentsAdmin)
-site.register(DiningDayAnnouncements)
-site.register(DiningComment)
-site.register(DiningEntryUser, DiningEntryAdmin)
-site.register(DiningEntryExternal, DiningEntryAdmin)
-site.register(DiningWork)
+admin.site.register(UserDiningSettings, DiningSettingAdmin)
+admin.site.register(DiningList, DiningListAdmin)
+#admin.site.register(DiningListComment, DiningListCommentsAdmin)
+admin.site.register(DiningDayAnnouncements)
+admin.site.register(DiningComment)
+admin.site.register(DiningEntryUser, DiningEntryAdmin)
+admin.site.register(DiningEntryExternal, DiningEntryAdmin)
+admin.site.register(DiningWork)

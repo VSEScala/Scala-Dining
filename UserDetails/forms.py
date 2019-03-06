@@ -12,18 +12,9 @@ from .models import User, Association, UserMembership
 
 
 class RegisterUserForm(UserCreationForm):
-    password2 = forms.CharField(widget=forms.PasswordInput, label="Password confirmation")
-
     class Meta:
         model = User
         fields = ('username', 'password1', 'password2', 'email')
-
-    def clean_email(self):
-        cleaned_email = self.cleaned_data['email']
-        if User.objects.filter(email=cleaned_email).exists():
-            msg = 'E-mail is already used. Did you forget your password?'
-            raise ValidationError(msg)
-        return cleaned_email
 
 
 class RegisterUserDetails(forms.ModelForm):

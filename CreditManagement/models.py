@@ -141,7 +141,7 @@ class AbstractTransaction(models.Model):
         :param associations: a list of associations to annnotate
         :return: The list annotated with 'balance'
         """
-        if users and associations:
+        if users is not None and associations is not None:
             raise ValueError("Either users or associations need to have a value, not both")
 
         # Set the query result
