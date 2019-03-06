@@ -161,7 +161,7 @@ class NewSlotView(LoginRequiredMixin, DayMixin, TemplateView):
         if form.is_valid():
             dining_list = form.save()
 
-            message = _("You succesfully created a new dining list")
+            message = _("You successfully created a new dining list")
             messages.add_message(request, messages.SUCCESS, message)
 
 
