@@ -1,5 +1,8 @@
 # Scala-Dining-WebApp
+
 Contains the Scala Dining Website Design
+
+[![Build Status](https://travis-ci.com/DutcherNL/Scala-Dining-WebApp.svg?branch=master)](https://travis-ci.com/DutcherNL/Scala-Dining-WebApp)
 
 ## Prerequisites
 
