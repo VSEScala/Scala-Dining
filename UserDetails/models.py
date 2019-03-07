@@ -53,14 +53,6 @@ class User(AbstractUser):
         return False
 
     @cached_property
-    def requires_information(self):
-        if self.requires_information_rules:
-            return True
-        if self.requires_information_updates:
-            return True
-        return False
-
-    @cached_property
     def requires_information_updates(self):
         from General.views import SiteUpdateView
         return SiteUpdateView.has_new_update(self)
