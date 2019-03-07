@@ -3,7 +3,7 @@ from allauth.account.views import LoginView
 
 from CreditManagement.views import TransactionAddView
 from .views import RegisterView, DiningHistoryView
-from .views_user_settings import Settings_Profile_View
+from .views_user_settings import SettingsProfileView
 from .views_association import CreditsOverview, TransactionsCsvView, MembersOverview, MembersEditView, \
     AssociationOverview
 
@@ -23,7 +23,7 @@ urlpatterns = [
     ])),
 
 
-    path('settings/account', Settings_Profile_View.as_view(), name='settings_account'),
+    path('settings/account/', SettingsProfileView.as_view(), name='settings_account'),
     path('settings/', include('allauth.urls')),
 
     # Override allauth login and sign up page with our registration page

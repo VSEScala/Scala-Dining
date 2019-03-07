@@ -7,7 +7,7 @@ from django.utils.translation import gettext as _
 from .forms import UserForm, DiningProfileForm, AssociationLinkForm
 
 
-class Settings_Profile_View(LoginRequiredMixin, TemplateView):
+class SettingsProfileView(LoginRequiredMixin, TemplateView):
     template_name = "account/settings/settings_account.html"
 
     def get_context_data(self, **kwargs):

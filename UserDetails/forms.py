@@ -3,7 +3,7 @@ from django.contrib.auth.forms import UserCreationForm
 from django.db.utils import OperationalError
 from django.db.models import Q
 from django.forms import ModelForm
-from django.core.exceptions import ValidationError, ObjectDoesNotExist
+from django.core.exceptions import ValidationError
 from django.conf import settings
 from django.utils import timezone
 
@@ -66,7 +66,7 @@ class UserForm(ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['name'].disabled = True
-        self.fields['name'].initial = self.instance
+        self.fields['name'].initial = str(self.instance)
         self.fields['email'].disabled = True
 
 
@@ -107,7 +107,7 @@ class AssociationLinkField(forms.BooleanField):
                             # The user has been verified not to be a member to recently (prevent spamming)
                             self.disabled = True
 
-            except ObjectDoesNotExist:
+            except UserMembership.DoesNotExist:
                 pass
         if association is None:
             raise ValueError("Association can not be None")
@@ -134,7 +134,7 @@ class AssociationLinkField(forms.BooleanField):
             # user originally not given. Try to find the link
             try:
                 return self.association.usermembership_set.get(related_user=user)
-            except ObjectDoesNotExist:
+            except UserMembership.DoesNotExist:
                 if new_value:
                     return UserMembership(related_user=user, association=self.association)
         return None
@@ -153,7 +153,7 @@ class AssociationLinkForm(forms.Form):
             associations = Association.objects.filter(
                 Q(is_choosable=True) |
                 (Q(is_choosable=False) & Q(usermembership__related_user=user))) \
-                .distinct().order_by('slug')
+                .order_by('slug')
 
         # Get all associations and make a checkbox field
         for association in associations:
@@ -163,10 +163,8 @@ class AssociationLinkForm(forms.Form):
 
     def clean(self):
         cleaned_data = super(AssociationLinkForm, self).clean()
-        has_association = False
-        for key, value in self.cleaned_data.items():
-            if value:
-                has_association = True
+        # Check if user is assigned to at least one association
+        has_association = True in self.cleaned_data.values()
 
         if not has_association:
             raise ValidationError("At least one association needs to be chosen")
@@ -175,10 +173,10 @@ class AssociationLinkForm(forms.Form):
 
     def save(self, user=None):
         """
-        Saves the association links. Removes
+        Saves the association links by creating or removing UserMembership instances.
         :return:
         """
-        if self.user is None and user is None:
+        if not self.user and not user:
             raise ValueError("Both self.user and user are None")
         if user is None:
             user = self.user
@@ -193,5 +191,5 @@ class AssociationLinkForm(forms.Form):
                     link.verified_on = None
                     link.save()
             else:
-                if link is not None and link.get_verified_state() != False:
+                if link and link.get_verified_state() != False:
                     link.delete()
