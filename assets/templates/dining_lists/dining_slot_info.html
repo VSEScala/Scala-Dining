@@ -84,11 +84,11 @@
 
     {# Current user status #}
     {% if user_is_on_list %}
-        <div class="alert alert-success">You are on this list.</div>
+        <div class="alert alert-success">You are on this list</div>
     {% elif user_can_add_self %}
-        <div class="alert alert-warning">You are not on the dining list.</div>
+        <div class="alert alert-warning">You are not on the dining list</div>
     {% else %}
-        <div class="alert alert-danger">You are not on this list and can no longer join.</div>
+        <div class="alert alert-danger">You are not on this list and can no longer join</div>
     {% endif %}
 
     {# Join/leave/add others buttons #}
