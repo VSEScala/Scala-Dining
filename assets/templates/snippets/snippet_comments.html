@@ -1,6 +1,6 @@
 {% load humanize %}
 
-<div class="card mb-2">
+<div class="card mb-3">
     <div class="card-header">
         <span class="h5 mr-1">
             {% if comment.timestamp > last_visited %}
@@ -9,7 +9,6 @@
             {{ comment.poster }}
         </span>
         <i class="small">{{ comment.timestamp|naturaltime }}</i>
-
     </div>
     <div class="card-body">
         <p class="card-text">{{ comment.message }}</p>
