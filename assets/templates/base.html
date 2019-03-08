@@ -2,95 +2,88 @@
 {% load credit_tags %}
 
 {% block body %}
-<!-- Navbar navbar-right -->
-
-    <nav class="navbar navbar-dark bg-primary">
-
-            <div class="navbar-header">
-                <a href="{% url 'index' %}" class="navbar-brand">
-                    <img src="/static/images/Scala_dining.png" height="40"></img>
-                    <span class="h3 d-none d-lg-inline" style="line-height: 40px; vertical-align: middle; margin: 0 0 0 10px"> Scala Dining</span>
-                    <span class="h5 d-none d-md-inline d-lg-none" style="line-height: 40px; vertical-align: middle; margin: 0 0 0 10px"> Scala Dining</span>
-                    <span class="text-warning" style="font-size: small"> beta</span>
-                </a>
-            </div>
-            <ul class="nav-user navbar-nav navbar-right" style="flex-direction: row">
-                <li class="navbar-text small text-right px-2 align-middle">
-                    {{ user }}<br>
-                    {{ user.usercredit.balance|euro }}
-                </li>
-                <li class="dropdown p-1">
-                    <a class="nav-link dropdown-toggle px-2 h4"
-                       style="position: relative;"
-                        href="#" id="navbardrop" data-toggle="dropdown">
-                        <i class="fas fa-user"
-                            {% if user.requires_action %}
-                                style="padding-right: 5px;">
+    <nav class="navbar navbar-expand navbar-dark bg-primary">
+        <a href="{% url 'index' %}" class="navbar-brand mr-auto">
+            <img src="/static/images/Scala_dining.png" height="40"></img>
+            <span class="h3 d-none d-lg-inline"
+                  style="line-height: 40px; vertical-align: middle; margin: 0 0 0 10px"> Scala Dining</span>
+            <span class="h5 d-none d-md-inline d-lg-none"
+                  style="line-height: 40px; vertical-align: middle; margin: 0 0 0 10px"> Scala Dining</span>
+            <span class="text-warning" style="font-size: small"> beta</span>
+        </a>
+        <span class="navbar-text small text-right px-2">
+            {{ user }}<br>
+            {{ user.usercredit.balance|euro }}
+        </span>
+        <div class="navbar-nav">
+            {% with justify="d-flex justify-content-between align-items-center" %}
+                <div class="nav-item dropdown">
+                    {# (mb-0 is needed to cancel the margin that gets added by h4) #}
+                    <a class="nav-link dropdown-toggle h4 mb-0" href="#" data-toggle="dropdown">
+                        <i class="fas fa-user"></i>
+                        {% if user.requires_action %}
+                            <span style="position: relative;">
                                 <span class="badge badge-pill badge-warning"
-                                    style="font-size: x-small; position: absolute; top: 10%; left: 40%;">!</span>
-                            {% else %}
-                                >
-                            {% endif %}
-                        </i>
+                                      style="font-size: x-small; position: absolute; top: -5px; left: -8px">!</span>
+                            </span>
+                        {% endif %}
                     </a>
-                    <div class="dropdown-menu dropdown-menu-right" style="position: absolute;">
-                        <a class="dropdown-item justify-content-between d-flex" href="{% url 'history_lists' %}">
-                            <span>History</span><i class="fas fa-history fa-fw"></i>
+                    {# A slightly larger min-width to add space between the text and icons #}
+                    <div class="dropdown-menu dropdown-menu-right" style="min-width: 10.5rem;">
+                        <a class="dropdown-item {{ justify }}" href="{% url 'history_lists' %}">
+                            History <i class="fas fa-history fa-fw"></i>
                         </a>
-                        <a class="dropdown-item justify-content-between d-flex" href="{% url 'credits:transaction_list' %}">
-                            <span>Transactions</span><i class="fas fa-euro-sign fa-fw"></i>
+                        <a class="dropdown-item {{ justify }}" href="{% url 'credits:transaction_list' %}">
+                            Transactions <i class="fas fa-euro-sign fa-fw"></i>
                         </a>
-                        <a class="dropdown-item justify-content-between d-flex" href="{% url 'settings_account' %}">
-                            <span>Settings</span><i class="fas fa-cog fa-fw"></i>
+                        <a class="dropdown-item {{ justify }}" href="{% url 'settings_account' %}">
+                            Settings <i class="fas fa-cog fa-fw"></i>
                         </a>
                         {% if user.has_admin_site_access %}
-                            <a class="dropdown-item justify-content-between d-flex" href="{% url 'admin:index' %}" target="_blank">
-                                <span class="mr-2">Control panel</span><i class="fas fa-toolbox fa-fw"></i>
+                            <a class="dropdown-item {{ justify }}" href="{% url 'admin:index' %}" target="_blank">
+                                Control panel <i class="fas fa-toolbox fa-fw"></i>
                             </a>
                         {% endif %}
-                        {% if user.boards.count > 0 %}<hr>{% endif %}
+                        {% if user.boards.count > 0 %}
+                            <div class="dropdown-divider"></div>
+                        {% endif %}
                         {% for association in user.boards %}
-                            <a class="dropdown-item justify-content-between d-flex"
+                            <a class="dropdown-item {{ justify }}"
                                href="{% url 'association_overview' association_name=association.slug %}">
-                                <span href="#" class="header-dropdown-line-content">{{ association.slug }}
+                                <span>
+                                    {{ association.slug }}
                                     {% if association.requires_action %}
                                         <span class="badge badge-pill badge-warning">!</span>
                                     {% endif %}
                                 </span>
-
                                 {% if association.image %}
                                     <i class="fas fa-fw">
-                                        <img src="{{ association.image.url }}" style="width: 100%;">
+                                        <img src="{{ association.image.url }}" class="w-100">
                                     </i>
                                 {% endif %}
                             </a>
                         {% endfor %}
-                        <hr>
+                        <div class="dropdown-divider"></div>
                         <form method="post" action="{% url 'account_logout' %}">
                             {% csrf_token %}
-                            <button type="submit" class="dropdown-item justify-content-between d-flex btn"
-                                    {# Undo the border radius that is set by .btn #}
-                                    style="border-top-left-radius: 0; border-top-right-radius: 0;">
+                            <button type="submit" class="dropdown-item {{ justify }}">
                                 Log out <i class="fas fa-power-off fa-fw"></i>
                             </button>
                         </form>
                     </div>
-                </li>
-                <li class="dropdown p-1">
-                    <a class="nav-link dropdown-toggle py-2 h4"
-                       style="position: relative;"
-                       href="#" id="navbardrop" data-toggle="dropdown">
-                        <i class="fas fa-info"
-                            {% if user.requires_information %}
-                                style="padding-right: 10px;">
+                </div>
+                <div class="nav-item dropdown">
+                    {# (mb-0 is needed to cancel the margin that gets added by h4) #}
+                    <a class="nav-link dropdown-toggle h4 mb-0" href="#" data-toggle="dropdown">
+                        <i class="fas fa-info"></i>
+                        {% if user.requires_information_rules or user.requires_information_updates %}
+                            <span style="position: relative;">
                                 <span class="badge badge-pill badge-warning"
-                                      style="font-size: x-small; position: absolute; top: 10%; left: 25%;">!</span>
-                            {% else %}
-                            >
-                            {% endif %}
-                        </i>
+                                      style="font-size: x-small; position: absolute; top: -5px; left: -6px">!</span>
+                            </span>
+                        {% endif %}
                     </a>
-                    <div class="dropdown-menu dropdown-menu-right" style="position: absolute;">
+                    <div class="dropdown-menu dropdown-menu-right">
                         <a class="dropdown-item" href="{% url 'rules_and_regulations' %}">
                             Rules & Regulation
                             {% if user.requires_information_rules %}
@@ -103,11 +96,13 @@
                                 <span class="badge badge-pill badge-warning">!</span>
                             {% endif %}
                         </a>
-                        <a class="dropdown-item" href="{% url 'site_bugreport' %}?source={{ request.get_full_path }}">Report Bug</a>
+                        <a class="dropdown-item" href="{% url 'site_bugreport' %}?source={{ request.get_full_path }}">
+                            Report Bug
+                        </a>
                     </div>
-                </li>
-            </ul>
-
+                </div>
+            {% endwith %}
+        </div>
     </nav>
 
     {% if messages %}
