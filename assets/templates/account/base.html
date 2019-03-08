@@ -1,18 +1,25 @@
 {% extends "base_no_navbar.html" %}
+{% load static %}
 
 {% block body %}
-    {% if messages %}
-        <div class="container mt-3">
+    <div class="container my-5">
+        {# Scala dining logo, could put it in a grid to allow responsize size of the logo #}
+        <div class="text-center">
+            <img src="{% static 'images/Scala_dining.png' %}" width="180" class="img-fluid">
+            <h1 class="display-4">Scala Dining</h1>
+        </div>
+
+        {% if messages %}
             {% for message in messages %}
-                <div class="alert alert-{{ message.tags }} alert-dismissible" role="alert">
+                <div class="alert alert-{{ message.tags }} alert-dismissible mt-3" role="alert">
                     <button type="button" class="close" data-dismiss="alert" aria-label="Close">
                         <span aria-hidden="true">&times;</span>
                     </button>
                     {{ message }}
                 </div>
             {% endfor %}
-        </div>
-    {% endif %}
+        {% endif %}
 
-    <div class="container mt-3">{% block content %}{% endblock %}</div>
+        <div class="mt-3">{% block content %}{% endblock %}</div>
+    </div>
 {% endblock %}

@@ -1,46 +1,32 @@
 {% extends 'account/base.html' %}
 {% load static %}
 
-{% block head %}
-    <link rel="stylesheet" href="{% static 'css/Log-in.css' %}">
-{% endblock %}
 
 {% block content %}
-    <div class="col-12 login-heightcontrol">
-        <div class="DiningLogo"></div>
-        <p class="text-center DiningTitle">Scala Dining</p>
-    </div>
-
     <div class="row">
-        <div class="col-sm-6 order-sm-1 login-heightcontrol">
-            <div class="position-relative h-100">
-                <div class="login-reg_height_offset text-center">
-                    Are you hungry?
-                    <br>
-                    Sign up now and join dinner with the other culture associations.
-                </div>
-                <br class="d-sm-none">
-                <br class="d-sm-none">
-                <a class="btn btn-block btn-primary login-hooklow" href="{% url 'account_signup' %}">Create account</a>
-                <div class="login-horline d-sm-none d-block"></div>
+        {# Create account. Uses flex classes to put the button at the bottom #}
+        <div class="col-sm text-center d-flex flex-column justify-content-between">
+            <div class="my-auto">
+                <p>Are you hungry?</p>
+                <p>Sign up now and join dinner with the other culture associations.</p>
             </div>
+            <a class="btn btn-block btn-primary" href="{% url 'account_signup' %}">Create account</a>
+{#                <div class="login-horline d-sm-none d-block"></div>#}
         </div>
-        <div class="col-sm-6 order-sm-0 login-heightcontrol">
-            <div class="login-verline d-none d-sm-block"></div>
+        <div class="col-sm order-sm-first mt-3">
+{#            <div class="login-verline d-none d-sm-block"></div>#}
+            <p class="d-none d-sm-block text-center">Already have an account? Log in!</p>
 
-            <form method="post" action="{% url 'account_login' %}" class="position-relative h-100">
+            <form method="post" action="{% url 'account_login' %}">
                 {% csrf_token %}
                 {# See https://github.com/pennersr/django-allauth/blob/master/allauth/templates/account/login.html #}
                 {% if redirect_field_value %}
                     <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}">
                 {% endif %}
-                <div class="login-log_height_offset">
-                    <p class="hide-sm text-center">Already have an account? Log in!</p>
-                    {% include "snippets/bootstrap_form.html" %}
-                </div>
+                {% include "snippets/bootstrap_form.html" %}
                 <p><a href="{% url 'oidc_authentication_init' %}">Quadrivium member? Click here.</a></p>
                 <p><a href="{% url 'account_reset_password' %}">Forgot password?</a></p>
-                <button type="submit" class="btn btn-block btn-primary login-hooklow">Log in</button>
+                <button type="submit" class="btn btn-block btn-primary">Log in</button>
             </form>
         </div>
     </div>

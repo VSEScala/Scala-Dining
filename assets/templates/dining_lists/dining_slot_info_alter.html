@@ -8,13 +8,13 @@
         {# Display the info form #}
         {% if info_form %}
             <h1>General info</h1>
-            {% include "snippets/bootstrap_form.html" with form=info_form %}
+            {% include "snippets/bootstrap_form.html" with form=info_form horizontal=True %}
         {% endif %}
 
         {# Display the payment form #}
         {% if payment_form %}
             <h1>Cost and payment</h1>
-            {% include "snippets/bootstrap_form.html" with form=payment_form %}
+            {% include "snippets/bootstrap_form.html" with form=payment_form horizontal=True %}
         {% else %}
             {# Display information that the payment form is absent because it is enabled for someone else #}
             <h3>Cost and payment</h3>

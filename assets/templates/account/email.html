@@ -51,7 +51,7 @@
 
     <form method="post" action="{% url 'account_email' %}">
         {% csrf_token %}
-        {% include "snippets/bootstrap_form.html" %}
+        {% include "snippets/bootstrap_form.html" with horizontal=True %}
         <button name="action_add" type="submit" class="btn btn-primary btn-block">{% trans "Add e-mail" %}</button>
     </form>
 

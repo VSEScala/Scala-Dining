@@ -12,20 +12,24 @@
 {% endif %}
 
 {% for field in form.visible_fields %}
-    <div class="form-group row">
+    <div class="form-group {% if horizontal %}row{% endif %}">
         {# The col width is hardcoded on purpose but could be softcoded as explained here: #}
         {# https://docs.djangoproject.com/en/2.1/ref/templates/builtins/#include #}
 
         {# Field label #}
-        <label for="{{ field.id_for_label }}" class="col-sm-2 col-form-label">
+        <label for="{{ field.id_for_label }}" class="{% if horizontal %}col-sm-2 col-form-label{% endif %}">
             {{ field.label }}
             {% if field.field.required %}
                 <span class="text-danger">*</span>
             {% endif %}
         </label>
-        <div class="col-sm-10">
+        <div class="{% if horizontal %}col-sm-10{% endif %}">
             {# Field widget #}
-            {% if form.is_bound %}
+            {% if field.field.disabled %}
+                {# Readonly widget #}
+                {% render_field field class="form-control-plaintext" placeholder=field.label %}
+            {% elif form.is_bound %}
+                {# Validated widget #}
                 {% if field.errors %}
                     {# Errors present #}
                     {% render_field field class="form-control is-invalid" placeholder=field.label %}
@@ -39,13 +43,10 @@
                     {% render_field field class="form-control is-valid" placeholder=field.label %}
                 {% endif %}
             {% else %}
-                {# Not submitted yet #}
-                {% if field.field.disabled %}
-                    {% render_field field class="form-control-plaintext" placeholder=field.label %}
-                {% else %}
-                    {% render_field field class="form-control" placeholder=field.label %}
-                {% endif %}
+                {# Plain widget #}
+                {% render_field field class="form-control" placeholder=field.label %}
             {% endif %}
+
             {# Help text #}
             {% if field.help_text %}
                 <small class="form-text text-muted">{{ field.help_text }}</small>
