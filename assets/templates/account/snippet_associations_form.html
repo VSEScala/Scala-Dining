@@ -17,7 +17,7 @@
                 {% if field.errors %}
                     {# Errors present #}
                     {% render_field field class="custom-control-input is-invalid" placeholder=field.label %}
-                    <span class="custom-control-label"></span>
+                    <span class="custom-control-label">&zwnj;</span>
 
                     {% for error in field.errors %}
                         <div class="invalid-feedback">
@@ -27,16 +27,16 @@
                 {% else %}
                     {# No errors #}
                     {% render_field field class="custom-control-input is-valid" placeholder=field.label %}
-                    <span class="custom-control-label"></span>
+                    <span class="custom-control-label">&zwnj;</span>
                 {% endif %}
             {% else %}
                 {# Not submitted yet #}
                 {% if field.field.disabled %}
                     {% render_field field class="custom-control-input" placeholder=field.label %}
-                    <span class="custom-control-label"></span>
+                    <span class="custom-control-label">&zwnj;</span>
                 {% else %}
                     {% render_field field class="custom-control-input" placeholder=field.label %}
-                    <span class="custom-control-label"></span>
+                    <span class="custom-control-label">&zwnj;</span>
                 {% endif %}
             {% endif %}
             {# Help text #}
@@ -51,7 +51,7 @@
             </span>
 
             {% if field.field.verified %}
-                <span class="badge badge-success">Verified</span>
+                <span class="badge badge-success">verified</span>
             {% elif field.field.verified == False %}
                 <span class="badge badge-danger">Rejected</span>
             {% elif field.field.pending %}
