@@ -34,22 +34,6 @@ class RegisterUserDetails(forms.ModelForm):
         user.userdiningsettings.save()
 
 
-class RegisterAssociationLinks(forms.Form):
-    # Todo? Could change the widget to e.g. checkboxes
-    try:
-        associations = forms.MultipleChoiceField(
-            choices=[(a.pk, a.name) for a in Association.objects.filter(is_choosable=True)],
-            help_text='At which associations are you active?',
-            widget=forms.CheckboxSelectMultiple)
-        # In case associations table did not exist yet, except the operation
-    except OperationalError:
-        pass
-
-    def create_links_for(self, user):
-        for association in self.cleaned_data['associations']:
-            UserMembership.objects.create(related_user=user, association_id=association)
-
-
 class DiningProfileForm(ModelForm):
     class Meta:
         model = UserDiningSettings
