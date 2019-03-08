@@ -160,11 +160,7 @@ class NewSlotView(LoginRequiredMixin, DayMixin, TemplateView):
 
         if form.is_valid():
             dining_list = form.save()
-
-            message = _("You succesfully created a new dining list")
-            messages.add_message(request, messages.SUCCESS, message)
-
-
+            messages.success(request, _("You successfully created a new dining list"))
             return redirect(dining_list)
 
         context['slot_form'] = form
@@ -179,12 +175,12 @@ class NewSlotView(LoginRequiredMixin, DayMixin, TemplateView):
         self.init_date()
         available_slots = DiningList.objects.available_slots(self.date)
         if available_slots <= 0:
-            error = _("No free slots availlable")
+            error = _("No free slots available.")
             messages.add_message(request, messages.ERROR, error)
             return HttpResponseRedirect(self.reverse('day_view', kwargs={}))
 
         if len(DiningList.objects.filter(date=self.date).filter(claimed_by=self.request.user)) > 0:
-            error = _("You have already a dining slot claimed today")
+            error = _("You already have a dining slot claimed today.")
             messages.add_message(request, messages.ERROR, error)
             return HttpResponseRedirect(self.reverse('day_view', kwargs={}))
         return super().dispatch(request, *args, **kwargs)
@@ -192,7 +188,6 @@ class NewSlotView(LoginRequiredMixin, DayMixin, TemplateView):
 
 class EntryAddView(LoginRequiredMixin, DiningListMixin, TemplateView):
     template_name = "dining_lists/dining_entry_add.html"
-    add_external_button_name = "addExternalButton"
 
     def check_user_permission(self, request):
         # If user is dining list owner or purchaser
@@ -250,8 +245,6 @@ class EntryAddView(LoginRequiredMixin, DiningListMixin, TemplateView):
             context['search'] = ""
             context['error_input'] = None
 
-        context['add_external_button_name'] = self.add_external_button_name
-
         return context
 
     def get(self, request, *args, **kwargs):
@@ -274,26 +267,23 @@ class EntryAddView(LoginRequiredMixin, DiningListMixin, TemplateView):
             return HttpResponseRedirect(self.reverse('slot_details'))
 
         # Do form shenanigans
-        if self.add_external_button_name in request.POST:
+        if 'add_external_submit' in request.POST:
             form = DiningEntryExternalCreateForm(request.user, self.dining_list,
                                                  request.POST['external_name'], data=request.POST)
             if form.is_valid():
                 form.save()
-                message = _("You succesfully added {0} to the dining list").format(form.cleaned_data.get('name'))
-                messages.add_message(request, messages.SUCCESS, message)
+                message = _("You successfully added {} to the dining list.").format(form.cleaned_data.get('name'))
+                messages.success(request, message)
         else:
             form = DiningEntryUserCreateForm(request.user, self.dining_list, data=request.POST)
             if form.is_valid():
                 form.save()
                 # Notify the user
                 if form.cleaned_data.get('user') == request.user:
-                    message = _("You succesfully joined the dining list")
+                    message = _("You successfully joined the dining list.")
                 else:
-                    message = _("You succesfully added {0} to the dining list").format(form.cleaned_data.get('user'))
-                messages.add_message(request, messages.SUCCESS, message)
-
-
-
+                    message = _("You successfully added {0} to the dining list.").format(form.cleaned_data.get('user'))
+                messages.success(request, message)
 
         # If next is provided, put possible error messages on the messages system and redirect
         next = request.GET.get('next', None)
@@ -314,12 +304,7 @@ class EntryAddView(LoginRequiredMixin, DiningListMixin, TemplateView):
 
 
 class EntryRemoveView(LoginRequiredMixin, DiningListMixin, View):
-    #http_method_names = ['post']
-
-    def get(self, request, *args, entry_id=None, **kwargs):
-        # TODO: This is a quick fix, some places still refer to a get page, but are already in a form
-        # (e.g. diners display) and thus this is needed.
-        return self.post(request, *args, entry_id=entry_id, **kwargs)
+    http_method_names = ['post']
 
     def post(self, request, *args, entry_id=None, **kwargs):
         # Get entry
@@ -493,8 +478,6 @@ class SlotInfoView(LoginRequiredMixin, SlotMixin, TemplateView):
         else:
             context['form'] = comment_form
             return self.render_to_response(context)
-
-
 
 
 # Could possibly use the Django built-in FormView or ModelFormView in combination with FormSet

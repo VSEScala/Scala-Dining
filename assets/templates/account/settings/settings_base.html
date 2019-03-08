@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+    <ul class="nav nav-tabs">
+        <li class="nav-item">
+            <a class="nav-link {% block tab_account %}{% endblock %}"
+               href="{% url 'settings_account' %}">
+                Account
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link {% block tab_mail %}{% endblock %}"
+               href="{% url 'account_email' %}">
+                Mailing
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link {% block tab_authentication %}{% endblock %}"
+               href="{% url 'account_change_password' %}">
+                Password
+            </a>
+        </li>
+    </ul>
+
+    <div class="pt-4">
+        {% block details %} {% endblock details %}
+    </div>
+
+{% endblock content %}

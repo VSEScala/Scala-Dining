@@ -1,10 +1,8 @@
-{% extends "base.html" %}
+{% extends 'account/settings/settings_emails.html' %}
 
 {% load i18n %}
 
-{% block content %}
-    <p><a href="{% url 'account_profile' %}">&larr; Back to profile</a></p>
-    <h1>{% trans "E-mail addresses" %}</h1>
+{% block details %}
     {% if user.emailaddress_set.all %}
         <p>{% trans 'The following e-mail addresses are associated with your account:' %}</p>
 

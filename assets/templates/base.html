@@ -36,8 +36,8 @@
                         <a class="dropdown-item {{ justify }}" href="{% url 'credits:transaction_list' %}">
                             Transactions <i class="fas fa-euro-sign fa-fw"></i>
                         </a>
-                        <a class="dropdown-item {{ justify }}" href="{% url 'account_profile' %}">
-                            Profile <i class="fas fa-user fa-fw"></i>
+                        <a class="dropdown-item {{ justify }}" href="{% url 'settings_account' %}">
+                            Settings <i class="fas fa-cog fa-fw"></i>
                         </a>
                         {% if user.has_admin_site_access %}
                             <a class="dropdown-item {{ justify }}" href="{% url 'admin:index' %}" target="_blank">
@@ -105,28 +105,18 @@
         </div>
     </nav>
 
-    {% if True %}
-        {% for message in messages %}
-            <div class="alert alert-{{ message.tags }} alert-dismissible" role="alert">
-                <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span
-                        aria-hidden="true">&times;</span></button>
-                {{ message }}
-            </div>
-        {% endfor %}
+    {% if messages %}
+        <div class="container mt-3">
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} alert-dismissible" role="alert">
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                    {{ message }}
+                </div>
+            {% endfor %}
+        </div>
     {% endif %}
 
-<div class="container pt-2">
-    <div class="row width-max-lg text-size-md-5">
-        <div class="col-12">
-            <!-- Content -->
-            {% block content %}{% endblock %}
-        </div>
-    </div>
-</div>
-
-<!-- Debug info -->
-{#<script>#}
-{#    var sql_queries = {{ sql_queries|safe }};#}
-{#    console.log(sql_queries);#}
-{#</script>#}
+    <div class="container mt-3">{% block content %}{% endblock %}</div>
 {% endblock %}
