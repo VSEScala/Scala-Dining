@@ -53,14 +53,6 @@ class User(AbstractUser):
         return False
 
     @cached_property
-    def requires_information(self):
-        if self.requires_information_rules:
-            return True
-        if self.requires_information_updates:
-            return True
-        return False
-
-    @cached_property
     def requires_information_updates(self):
         from General.views import SiteUpdateView
         return SiteUpdateView.has_new_update(self)
@@ -112,3 +104,16 @@ class UserMembership(models.Model):
     is_verified = models.BooleanField(default=False)
     verified_on = models.DateTimeField(blank=True, null=True, default=None)
     created_on = models.DateTimeField(default=timezone.now)
+
+    def get_verified_state(self):
+        if self.is_verified:
+            return True
+        if self.verified_on is not None:
+            return False
+        return None
+
+    def is_member(self):
+        if not self.is_verified and self.verified_on:
+            # It is not verified, but has verification date, so is rejected
+            return False
+        return True

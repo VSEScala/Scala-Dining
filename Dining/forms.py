@@ -57,7 +57,7 @@ class CreateSlotForm(ServeTimeCheckMixin, forms.ModelForm):
         available = associations.annotate(occupied=Exists(dining_lists)).filter(occupied=False)
         unavailable = associations.annotate(occupied=Exists(dining_lists)).filter(occupied=True)
 
-        if unavailable:
+        if unavailable.exists():
             help_text = _(
                 'Some of your associations are not available since they already have a dining list for this date.')
         else:
@@ -71,8 +71,8 @@ class CreateSlotForm(ServeTimeCheckMixin, forms.ModelForm):
             self.fields['association'].initial = available[0].pk
             self.fields['association'].disabled = True
 
-    def clean(self, *args, **kwargs):
-        cleaned_data = super(CreateSlotForm, self).clean(*args, **kwargs)
+    def clean(self):
+        cleaned_data = super().clean()
 
         if DiningList.objects.available_slots(self.date) <= 0:
             raise ValidationError("All dining slots are already occupied on this day")
@@ -102,7 +102,7 @@ class CreateSlotForm(ServeTimeCheckMixin, forms.ModelForm):
 
         if commit:
             instance.save()
-            DiningEntryUser(user=self.user, dining_list = instance).save()
+            DiningEntryUser(user=self.user, dining_list=instance).save()
 
         return instance
 
@@ -158,6 +158,14 @@ class DiningPaymentForm(forms.ModelForm):
         self.instance.save(update_fields=DiningPaymentForm.Meta.save_fields)
 
 
+def _can_add_diner(user, dining_list):
+    """User can add diner when the dining list is open, owner can also add when dining list is still adjustable."""
+    if user == dining_list.claimed_by:
+        return dining_list.is_adjustable()
+    else:
+        return dining_list.is_open()
+
+
 class DiningEntryUserCreateForm(forms.ModelForm):
     user = forms.ModelChoiceField(queryset=None)
 
@@ -197,15 +205,16 @@ class DiningEntryUserCreateForm(forms.ModelForm):
         cleaned_data = super().clean()
         user = cleaned_data.get('user')
         if user.usercredit.balance < settings.MINIMUM_BALANCE_FOR_DINING_SIGN_UP:
-            raise ValidationError("The balance of this user is to low to add")
+            raise ValidationError("The balance of this user is too low to add.")
+        # Check dining list open (written naively)
+        dining_list = cleaned_data.get('dining_list')
+        if not _can_add_diner(self.added_by, dining_list):
+            raise ValidationError(_("Dining list is closed or can't be changed."), code='closed')
         return cleaned_data
-
-    def save(self, *args, **kwargs):
-        self.instance.added_by = self.added_by
-        super(DiningEntryUserCreateForm, self).save(*args, **kwargs)
 
 
 class DiningEntryExternalCreateForm(forms.ModelForm):
+    """Code smell: this is an almost exact duplicate of DiningEntryUserCreateForm."""
     user = forms.ModelChoiceField(queryset=None)
 
     class Meta:
@@ -231,10 +240,9 @@ class DiningEntryExternalCreateForm(forms.ModelForm):
         if dining_list.limit_signups_to_association_only:
             users.filter(usermembership__association=dining_list.association)
 
-        # Limit the user to the person added it
+        # Limit the user to the adder person
         self.instance.user = adder
         users.filter(pk=adder.pk)
-
 
         self.fields['user'].queryset = users
 
@@ -242,7 +250,11 @@ class DiningEntryExternalCreateForm(forms.ModelForm):
         cleaned_data = super().clean()
         user = cleaned_data.get('user')
         if user.usercredit.balance < settings.MINIMUM_BALANCE_FOR_DINING_SIGN_UP:
-            raise ValidationError("Your balance is to low to add any external people")
+            raise ValidationError("Your balance is too low to add any external people.")
+        # Check dining list open (written naively)
+        dining_list = cleaned_data.get('dining_list')
+        if not _can_add_diner(user, dining_list):
+            raise ValidationError(_("Dining list is closed or can't be changed."), code='closed')
         return cleaned_data
 
 
@@ -360,7 +372,7 @@ class DiningCommentForm(forms.ModelForm):
         message = cleaned_data.get('message')
 
         if len(message) < self.min_message_length:
-            raise ValidationError(_("Comments needs to be at least {0} character").format(self.min_message_length))
+            raise ValidationError(_("Comments need to be at least {} characters.").format(self.min_message_length))
 
         return message
 

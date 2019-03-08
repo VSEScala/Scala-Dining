@@ -15,8 +15,8 @@
     top: 0;
 }
 
-hr{
-    border-bottom: 1px solid #ccc;
+hr {
+    border-top: 1px solid #ccc;
 }
 
 .slot-signup, .slot-signed, .slot-unlist{
@@ -42,9 +42,8 @@ hr{
     background-color: #254a9999;
 }
 
-.dining-nav{
+.dining-nav {
     border-radius: 10px 10px 0 0 ;
-    text-decoration: none;
 }
 
 .collapser{
