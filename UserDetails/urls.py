@@ -1,7 +1,9 @@
 from django.urls import path, include
+from allauth.account.views import LoginView
 
 from CreditManagement.views import TransactionAddView
-from .views import RegisterView, DiningHistoryView, ProfileView
+from .views import RegisterView, DiningHistoryView
+from .views_user_settings import SettingsProfileView
 from .views_association import CreditsOverview, TransactionsCsvView, MembersOverview, MembersEditView, \
     AssociationOverview
 
@@ -15,10 +17,16 @@ urlpatterns = [
         path('members/edit/', MembersEditView.as_view(), name='association_members_edit'),
     ])),
 
-    # Override allauth sign up page with our registration page
-    path('signup/', RegisterView.as_view(), name='account_signup'),
+    path('statistics/', include([
+        path('dining/', DiningHistoryView.as_view(), name='history_lists'),
+        path('dining/<int:page>/', DiningHistoryView.as_view(), name='history_lists'),
+    ])),
 
-    path('history/dining/', DiningHistoryView.as_view(), name='history_lists'),
-    path('history/dining/<int:page>/', DiningHistoryView.as_view(), name='history_lists'),
-    path('profile/', ProfileView.as_view(), name='account_profile'),
+
+    path('settings/account/', SettingsProfileView.as_view(), name='settings_account'),
+    path('settings/', include('allauth.urls')),
+
+    # Override allauth login and sign up page with our registration page
+    path('login/', LoginView.as_view(), name='account_login'),
+    path('signup/', RegisterView.as_view(), name='account_signup'),
 ]

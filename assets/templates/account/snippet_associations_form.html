@@ -1,0 +1,63 @@
+{% load widget_tweaks %}
+
+{% for hidden in form.hidden_fields %}{{ hidden }}{% endfor %}
+
+{# Non field errors #}
+{% if form.non_field_errors %}
+    {% for error in form.non_field_errors %}
+        <div class="alert alert-danger" role="alert">{{ error }}</div>
+    {% endfor %}
+{% endif %}
+
+{% for field in form.visible_fields %}
+    <div class="form-group row">
+        <label for="{{ field.id_for_label }}" class="col-2 custom-control custom-checkbox text-center">
+            {# Field widget #}
+            {% if form.is_bound %}
+                {% if field.errors %}
+                    {# Errors present #}
+                    {% render_field field class="custom-control-input is-invalid" placeholder=field.label %}
+                    <span class="custom-control-label"></span>
+
+                    {% for error in field.errors %}
+                        <div class="invalid-feedback">
+                            {{ error }}
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    {# No errors #}
+                    {% render_field field class="custom-control-input is-valid" placeholder=field.label %}
+                    <span class="custom-control-label"></span>
+                {% endif %}
+            {% else %}
+                {# Not submitted yet #}
+                {% if field.field.disabled %}
+                    {% render_field field class="custom-control-input" placeholder=field.label %}
+                    <span class="custom-control-label"></span>
+                {% else %}
+                    {% render_field field class="custom-control-input" placeholder=field.label %}
+                    <span class="custom-control-label"></span>
+                {% endif %}
+            {% endif %}
+            {# Help text #}
+            {% if field.help_text %}
+                <small class="form-text text-muted">{{ field.help_text }}</small>
+            {% endif %}
+        </label>
+        {# Field label #}
+        <label for="{{ field.id_for_label }}" class="col-10">
+            <span class="{% if field.field.disabled %} text-muted {% endif %}">
+                {{ field.label }}
+            </span>
+
+            {% if field.field.verified %}
+                <span class="badge badge-success">Verified</span>
+            {% elif field.field.verified == False %}
+                <span class="badge badge-danger">Rejected</span>
+            {% elif field.field.pending %}
+                <span class="badge badge-info">Pending</span>
+            {% endif %}
+        </label>
+
+    </div>
+{% endfor %}
