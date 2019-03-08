@@ -120,9 +120,9 @@ class DiningList(models.Model):
         if self.pk and not self.is_adjustable():
             raise ValidationError(gettext('The dining list is not adjustable.'), code='not_adjustable')
 
-        if self.sign_up_deadline is not None and self.sign_up_deadline.date() > self.date:
+        if self.sign_up_deadline and self.sign_up_deadline.date() > self.date:
             raise ValidationError(
-                {'sign_up_deadline': ["Sign up deadline can not be later than the day dinner is served",]})
+                {'sign_up_deadline': ["Sign up deadline can not be later than the day dinner is served."]})
 
         # Check if purchaser is present when using auto pay
         if self.auto_pay and not self.get_purchaser():
@@ -207,16 +207,6 @@ class DiningEntry(models.Model):
 
     has_paid = models.BooleanField(default=False)
 
-    def save(self, *args, **kwargs):
-        # If dining list can not be adjusted, limit saving only to the update of the has_paid field.
-        if not self.dining_list.is_adjustable():
-            if self.id:
-                # Only has_payed changes can go through
-                super(DiningEntry, self).save(update_fields=['has_paid'])
-                return
-
-        super().save(*args, **kwargs)
-
     def clean(self):
         """
         This actually has a race condition problem which makes it possible to create more entries than max_diners, and
@@ -224,13 +214,6 @@ class DiningEntry(models.Model):
         a mutex lock for the time between validation and saving.
         """
         if not self.pk:
-            # Validate dining list open
-            # REDACTED: blocks owners from adding entries
-            # if not self.dining_list.is_open():
-            #     raise ValidationError({
-            #         'dining_list': ValidationError(_("Dining list is closed."), code='closed'),
-            #     })
-
             # Validate room available in dining list
             if self.dining_list.dining_entries.count() >= self.dining_list.max_diners:
                 raise ValidationError({
@@ -242,7 +225,7 @@ class DiningEntry(models.Model):
                 raise ValidationError(gettext('This user is already subscribed to the dining list.'))
 
             # (Optionally) validate if user is not already on another dining list
-            #if DiningList.objects.filter(date=self.dining_list.date, dining_entries__user=self.user)
+            # if DiningList.objects.filter(date=self.dining_list.date, dining_entries__user=self.user)
 
     def get_internal(self):
         try:
@@ -279,19 +262,20 @@ class DiningEntryUser(DiningEntry, DiningWork):
                                  default=None, null=True)
 
     def clean(self):
-        if self.pk is None:
+        super().clean()
+        if not self.pk:
             if DiningEntryUser.objects.filter(dining_list=self.dining_list, user=self.user):
-                raise ValidationError(_("User is already on this dininglist"))
+                raise ValidationError(_("User is already on this dining list."))
 
     def __str__(self):
-        return "{0}: {1}".format(self.dining_list.date, self.user)
+        return "{}: {}".format(self.dining_list.date, self.user)
 
 
 class DiningEntryExternal(DiningEntry):
     name = models.CharField(max_length=40)
 
     def __str__(self):
-        return "{0}: {1}".format(self.dining_list, self.name)
+        return "{}: {}".format(self.dining_list, self.name)
 
 
 class DiningComment(models.Model):
