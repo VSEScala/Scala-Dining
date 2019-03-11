@@ -456,7 +456,7 @@ class SlotInfoView(LoginRequiredMixin, SlotMixin, TemplateView):
         from django.db.models.functions import Length
         CharField.register_lookup(Length)
         context['number_of_allergies'] = self.dining_list.internal_dining_entries().filter(
-            user__userdiningsettings__allergies__length__gt=1).count()
+            user__userdiningsettings__allergies__length__gte=1).count()
 
         if self.dining_list.claimed_by == self.request.user or self.dining_list.purchaser == self.request.user:
             context['can_change_settings'] = True
