@@ -14,7 +14,7 @@
         <h3>Create new dining list</h3>
         <form method="post">
             {% csrf_token %}
-            {% include "snippets/bootstrap_form.html" with form=slot_form %}
+            {% include "snippets/bootstrap_form.html" with form=slot_form horizontal=True %}
             <input type="submit" value="Create dining slot" class="btn btn-block btn-primary"/>
         </form>
     </div>

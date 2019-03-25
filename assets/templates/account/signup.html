@@ -2,19 +2,7 @@
 {% load form_extras %}
 {% load static %}
 
-{% block head %}
-    <link rel="stylesheet" href="{% static 'css/Log-in.css' %}">
-{% endblock %}
-
 {% block content %}
-    <div class="col-12  min-height-33vh min-height-sm-200px">
-        <div class="DiningLogo"></div>
-        <p class="text-center DiningTitle">Scala Dining</p>
-
-        <div class="show-sm">
-        </div>
-    </div>
-
     <div class="row width-max-lg text-size-md-5">
         <div class="col-12">
             <form method="post">
@@ -22,13 +10,13 @@
 
                 <div class="">
                     <h3>Account specifications</h3>
-                    {% include "snippets/bootstrap_form.html" with form=account_form %}
+                    {% include "snippets/bootstrap_form.html" with form=account_form horizontal=True %}
 
                     <h3>Personal information</h3>
-                    {% include "snippets/bootstrap_form.html" with form=account_detail_form %}
+                    {% include "snippets/bootstrap_form.html" with form=account_detail_form horizontal=True %}
 
                     <h3>Memberships</h3>
-                    {% include "account/snippet_associations_form.html" with form=associationlink_form %}
+                    {% include "account/snippet_associations_form.html" with form=associationlink_form horizontal=True %}
 
                     <p>
                         <span class="text-danger">*</span> required
