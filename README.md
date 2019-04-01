@@ -44,6 +44,6 @@ To get a test coverage report:
 * Console report: `coverage report`
 * HTML report: `coverage html`
 
-## Todo
+## Deployment
 
-* Make app names lowercase to conform to Python style guide ([PEP8](https://www.python.org/dev/peps/pep-0008/)).
+For deployment, ensure that the table `creditmanagement_fixedtransaction` is insert only for the database user.
