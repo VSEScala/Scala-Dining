@@ -142,11 +142,11 @@ class AssociationLinkForm(forms.Form):
         # Get all associations and make a checkbox field
         for association in associations:
             field = AssociationLinkField(user, association)
-
-            self.fields[field.label] = field
+            # (using the slug since HTML IDs may not contain spaces)
+            self.fields[association.slug] = field
 
     def clean(self):
-        cleaned_data = super(AssociationLinkForm, self).clean()
+        cleaned_data = super().clean()
         # Check if user is assigned to at least one association
         has_association = True in self.cleaned_data.values()
 
