@@ -17,3 +17,8 @@
         font-size: 3.5rem;
     }
 }
+
+/* Fix for strange background behavior in Chrome */
+body {
+    background-color: #212121;
+}
