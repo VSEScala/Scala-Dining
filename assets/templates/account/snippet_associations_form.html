@@ -14,7 +14,8 @@
         {% for field in form.visible_fields %}
             <div class="custom-control custom-checkbox">
                 <input type="checkbox" class="custom-control-input" id="{{ field.id_for_label }}"
-                       name="{{ field.html_name }}" {% if field.value %}checked{% endif %}>
+                       name="{{ field.html_name }}" {% if field.value %}checked{% endif %}
+                       {% if field.field.disabled %}disabled{% endif %}>
                 <label class="custom-control-label w-100 mb-3" for="{{ field.id_for_label }}">
                     {{ field.label }}
                     {% if field.field.verified %}
