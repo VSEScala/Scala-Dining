@@ -279,12 +279,12 @@ class DiningEntryDeleteForm(forms.ModelForm):
 
         # Check permission
         if self.deleted_by != self.instance.user and self.deleted_by != list.claimed_by:
-            raise PermissionDenied('Can only delete own entries.')
+            raise PermissionDenied('Can only delete own entries')
 
         # Validate dining list is still open (except for claimant)
         if not list.is_open():
             if self.deleted_by != list.claimed_by:
-                raise ValidationError(_('The dining list is closed, ask the chef to remove this entry instead.'),
+                raise ValidationError(_('The dining list is closed, ask the chef to remove this entry instead'),
                                       code='closed')
 
         # (Optionally) block removal when the entry is the owner of the list

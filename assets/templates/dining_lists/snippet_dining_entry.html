@@ -67,11 +67,27 @@
         </div>
     </div>
     {% if can_delete_all or is_open and can_delete_some and request.user == entry.user %}
-        <a class="col-2 col-sm-1 btn btn-block btn-danger"
-        href="{% url 'entry_remove' day=date.day month=date.month year=date.year identifier=dining_list.association.slug entry_id=entry.id %}?next={{ request.path_info }}">
+        {% url "entry_remove" entry_id=entry.id identifier=dining_list.association.slug day=date.day month=date.month year=date.year as url %}
+
+        <a href="{{ url }}?next={{ request.path_info }}"
+           class="col-2 col-sm-1 btn btn-block btn-danger"
+           id="entryRemove{{ entry.id }}">
             <i class="fas fa-trash"></i>
+            <span class="sr-only">Delete entry</span>
         </a>
+
+        {# Post form for entry removal #}
+        <script>
+            var link = document.getElementById("entryRemove{{ entry.id }}");
+            link.addEventListener("click", function(event) {
+                event.preventDefault();
+                var form = document.createElement("form");
+                form.method = "post";
+                form.action = event.srcElement.getAttribute("href");
+                form.innerHTML += '{% csrf_token %}';
+                document.body.appendChild(form);
+                form.submit();
+            }, false);
+        </script>
     {% endif %}
 </div>
-
-

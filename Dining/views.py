@@ -206,7 +206,7 @@ class EntryAddView(LoginRequiredMixin, DiningListMixin, TemplateView):
             messages.add_message(request, messages.ERROR, error)
             return False
 
-        # No problems, use can add people
+        # No problems, user can add people
         return True
 
     def get_context_data(self, **kwargs):
@@ -304,10 +304,7 @@ class EntryAddView(LoginRequiredMixin, DiningListMixin, TemplateView):
 
 
 class EntryRemoveView(LoginRequiredMixin, DiningListMixin, View):
-    http_method_names = ['post']
-
     def post(self, request, *args, entry_id=None, **kwargs):
-        # Get entry
         if entry_id:
             entry = get_object_or_404(DiningEntry, id=entry_id)
         else:
@@ -318,14 +315,14 @@ class EntryRemoveView(LoginRequiredMixin, DiningListMixin, View):
         if form.is_valid():
             form.execute()
             if entry_id:
-                message = _('The user is removed from the dining list.')
+                message = _('The user is removed from the dining list')
             else:
-                message = _('You are removed from the dining list.')
-            messages.add_message(request, messages.SUCCESS, message)
+                message = _('You are removed from the dining list')
+            messages.success(request, message)
         else:
             for field, errors in form.errors.items():
                 for error in errors:
-                    messages.add_message(request, messages.ERROR, error)
+                    messages.error(request, error)
 
         # Go to next
         next = request.GET.get('next')
@@ -566,7 +563,7 @@ class SlotDeleteView(LoginRequiredMixin, SlotMixin, DeleteView):
     def get_object(self, queryset=None):
         if self.request.user != self.dining_list.claimed_by:
             # Block page for non slot owners
-            raise Http404("Deletion not available.")
+            raise PermissionDenied("Deletion not available")
         return self.dining_list
 
     def delete(self, request, *args, **kwargs):
@@ -574,7 +571,7 @@ class SlotDeleteView(LoginRequiredMixin, SlotMixin, DeleteView):
         form = DiningListDeleteForm(request.user, instance)
         if form.is_valid():
             form.execute()
-            messages.add_message(request, messages.SUCCESS, _("Dining list is deleted."))
+            messages.success(request, _("Dining list is deleted"))
             # Need to use reverse from the DiningListMixin superclass
             return HttpResponseRedirect(super(DiningListMixin, self).reverse("day_view"))
 
