@@ -3,6 +3,7 @@ from .models import *
 
 class TransactionForm(forms.ModelForm):
     origin = forms.CharField(disabled=True)
+    target_user = forms.ModelChoiceField(queryset=User.objects.all().order_by('first_name'))
 
     def __init__(self, *args, user=None, association=None, **kwargs):
         super(TransactionForm, self).__init__(*args, **kwargs)
