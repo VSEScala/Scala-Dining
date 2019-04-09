@@ -3,7 +3,7 @@
     <ul class="pagination">
         {% for pagenumber in pages %}
             <li class="page-item {% if pagenumber == page %}active{% endif %}">
-                <a class="page-link" href="{{ url }}/{{ pagenumber }}">
+                <a class="page-link" href="{{ url }}{{ pagenumber }}">
                     {{ pagenumber }}
                 </a>
             </li>
