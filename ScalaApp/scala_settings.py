@@ -29,3 +29,6 @@ TRANSACTION_PENDING_DURATION = timedelta(days=2)
 # Membership change settings
 DURATION_AFTER_MEMBERSHIP_CONFIRMATION = timedelta(days=30)
 DURATION_AFTER_MEMBERSHIP_REJECTION = timedelta(days=30)
+
+# Mail settings
+SEND_MAIL_FROM = "diningapp@studentencultuur.nl"
