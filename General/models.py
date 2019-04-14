@@ -15,7 +15,7 @@ class SiteUpdate(models.Model):
     message = models.TextField()
 
     def __str__(self):
-        return self.date + ": " + self.title
+        return "{date}: {title}".format(date=self.date.strftime("%Y-%m-%d"), title=self.title)
 
     def mail_users(self):
 
