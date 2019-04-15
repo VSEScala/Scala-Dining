@@ -6,7 +6,7 @@ from django.contrib import messages
 from django.utils.translation import gettext as _
 from django.contrib.auth.decorators import login_required
 from django.utils.decorators import method_decorator
-from .forms import *
+from .forms import UserTransactionForm, AssociationTransactionForm
 from django.views.generic import View
 from django.http import HttpResponseForbidden, HttpResponseRedirect
 
@@ -31,9 +31,9 @@ class TransactionAddView(LoginRequiredMixin, View):
             if not self.check_association_permission(request.user, association):
                 return HttpResponseForbidden()
             # Create the form
-            self.context['slot_form'] = TransactionForm(association=association)
+            self.context['slot_form'] = AssociationTransactionForm(association)
         else:
-            self.context['slot_form'] = TransactionForm(user=request.user)
+            self.context['slot_form'] = UserTransactionForm(request.user)
         return render(request, self.template_name, self.context)
 
     def post(self, request, association_name=None, *args, **kwargs):
@@ -44,9 +44,9 @@ class TransactionAddView(LoginRequiredMixin, View):
             if not self.check_association_permission(request.user, association):
                 return HttpResponseForbidden()
             # Create the form
-            form = TransactionForm(request.POST, association=association)
+            form = AssociationTransactionForm(association, request.POST)
         else:
-            form = TransactionForm(request.POST, user=request.user)
+            form = UserTransactionForm(request.user, request.POST)
 
         if form.is_valid():
             form.save()

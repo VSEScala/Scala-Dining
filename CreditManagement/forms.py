@@ -3,10 +3,11 @@ from .models import *
 
 class TransactionForm(forms.ModelForm):
     origin = forms.CharField(disabled=True)
+
     target_user = forms.ModelChoiceField(queryset=User.objects.all().order_by('first_name'))
 
     def __init__(self, *args, user=None, association=None, **kwargs):
-        super(TransactionForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
         # Set the transaction source
         if user:
@@ -22,8 +23,25 @@ class TransactionForm(forms.ModelForm):
         model = PendingTransaction
         fields = ['origin', 'amount', 'target_user', 'target_association']
 
-    def save(self):
-        self.instance.save()
+
+class AssociationTransactionForm(TransactionForm):
+
+    def __init__(self, association, *args, **kwargs):
+        super().__init__(*args, association=association, **kwargs)
+
+    class Meta(TransactionForm.Meta):
+        fields = ['origin', 'amount', 'target_user', 'description']
+
+
+class UserTransactionForm(TransactionForm):
+
+    def __init__(self, user, *args, **kwargs):
+        super().__init__(*args, user=user, **kwargs)
+        self.fields['target_user'].required = False
+        self.fields['target_association'].required = False
+
+    class Meta(TransactionForm.Meta):
+        fields = ['origin', 'amount', 'target_user', 'target_association', 'description']
 
     def clean(self):
         cleaned_data = super().clean()
