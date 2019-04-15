@@ -46,4 +46,18 @@ To get a test coverage report:
 
 ## Deployment
 
-For deployment, ensure that the table `creditmanagement_fixedtransaction` is insert only for the database user.
+The table `CreditManagement_fixedtransaction` needs to be insert-only for the database user that is used by the application.
+
+```sql
+-- Needs to be executed as superuser, e.g. postgres. Replace scala by the database user
+
+-- Grant select and insert on CreditManagement_fixedtransaction
+REVOKE ALL ON TABLE "CreditManagement_fixedtransaction" FROM scala;
+ALTER TABLE "CreditManagement_fixedtransaction" OWNER TO postgres;
+GRANT SELECT, INSERT ON TABLE "CreditManagement_fixedtransaction" TO scala;
+
+-- Grant usage on CreditManagement_fixedtransaction_id_seq
+REVOKE ALL ON SEQUENCE "CreditManagement_fixedtransaction_id_seq" FROM scala;
+ALTER SEQUENCE "CreditManagement_fixedtransaction_id_seq" OWNER TO postgres;
+GRANT USAGE ON SEQUENCE "CreditManagement_fixedtransaction_id_seq" TO scala;
+```
