@@ -11,98 +11,121 @@
             <span class="h5 d-none d-md-inline d-lg-none"
                   style="line-height: 40px; vertical-align: middle; margin: 0 0 0 10px"> Scala Dining</span>
         </a>
-        <span class="navbar-text small text-right px-2">
-            {{ user }}<br>
-            {{ user.usercredit.balance|euro }}
-        </span>
-        <div class="navbar-nav">
-            {% with justify="d-flex justify-content-between align-items-center" %}
-                <div class="nav-item dropdown">
-                    {# (mb-0 is needed to cancel the margin that gets added by h4) #}
-                    <a class="nav-link dropdown-toggle h4 mb-0" href="#" data-toggle="dropdown">
-                        <i class="fas fa-user"></i>
-                        {% if user.requires_action %}
-                            <span style="position: relative;">
-                                <span class="badge badge-pill badge-warning"
-                                      style="font-size: x-small; position: absolute; top: -5px; left: -8px">!</span>
-                            </span>
-                        {% endif %}
-                    </a>
-                    {# A slightly larger min-width to add space between the text and icons #}
-                    <div class="dropdown-menu dropdown-menu-right" style="min-width: 10.5rem;">
-                        <a class="dropdown-item {{ justify }}" href="{% url 'history_lists' %}">
-                            History <i class="fas fa-history fa-fw"></i>
-                        </a>
-                        <a class="dropdown-item {{ justify }}" href="{% url 'credits:transaction_list' %}">
-                            Transactions <i class="fas fa-euro-sign fa-fw"></i>
-                        </a>
-                        <a class="dropdown-item {{ justify }}" href="{% url 'settings_account' %}">
-                            Settings <i class="fas fa-cog fa-fw"></i>
-                        </a>
-                        {% if user.has_admin_site_access %}
-                            <a class="dropdown-item {{ justify }}" href="{% url 'admin:index' %}" target="_blank">
-                                Control panel <i class="fas fa-toolbox fa-fw"></i>
-                            </a>
-                        {% endif %}
-                        {% if user.boards.count > 0 %}
-                            <div class="dropdown-divider"></div>
-                        {% endif %}
-                        {% for association in user.boards %}
-                            <a class="dropdown-item {{ justify }}"
-                               href="{% url 'association_overview' association_name=association.slug %}">
-                                <span>
-                                    {{ association.slug }}
-                                    {% if association.requires_action %}
-                                        <span class="badge badge-pill badge-warning">!</span>
-                                    {% endif %}
+        {% with justify="d-flex justify-content-between align-items-center" %}
+            {% if user.is_authenticated %}
+            <span class="navbar-text small text-right px-2">
+                {{ user }}<br>
+                {{ user.usercredit.balance|euro }}
+            </span>
+            <div class="navbar-nav">
+                    <div class="nav-item dropdown">
+                        {# (mb-0 is needed to cancel the margin that gets added by h4) #}
+                        <a class="nav-link dropdown-toggle h4 mb-0" href="#" data-toggle="dropdown">
+                            <i class="fas fa-user"></i>
+                            {% if user.requires_action %}
+                                <span style="position: relative;">
+                                    <span class="badge badge-pill badge-warning"
+                                          style="font-size: x-small; position: absolute; top: -5px; left: -8px">!</span>
                                 </span>
-                                {% if association.image %}
-                                    <i class="fas fa-fw">
-                                        <img src="{{ association.image.url }}" class="w-100">
-                                    </i>
+                            {% endif %}
+                        </a>
+                        {# A slightly larger min-width to add space between the text and icons #}
+                        <div class="dropdown-menu dropdown-menu-right" style="min-width: 10.5rem;">
+                            <a class="dropdown-item {{ justify }}" href="{% url 'history_lists' %}">
+                                History <i class="fas fa-history fa-fw"></i>
+                            </a>
+                            <a class="dropdown-item {{ justify }}" href="{% url 'credits:transaction_list' %}">
+                                Transactions <i class="fas fa-euro-sign fa-fw"></i>
+                            </a>
+                            <a class="dropdown-item {{ justify }}" href="{% url 'settings_account' %}">
+                                Settings <i class="fas fa-cog fa-fw"></i>
+                            </a>
+                            {% if user.has_admin_site_access %}
+                                <a class="dropdown-item {{ justify }}" href="{% url 'admin:index' %}" target="_blank">
+                                    Control panel <i class="fas fa-toolbox fa-fw"></i>
+                                </a>
+                            {% endif %}
+                            {% if user.boards.count > 0 %}
+                                <div class="dropdown-divider"></div>
+                            {% endif %}
+                            {% for association in user.boards %}
+                                <a class="dropdown-item {{ justify }}"
+                                   href="{% url 'association_overview' association_name=association.slug %}">
+                                    <span>
+                                        {{ association.slug }}
+                                        {% if association.requires_action %}
+                                            <span class="badge badge-pill badge-warning">!</span>
+                                        {% endif %}
+                                    </span>
+                                    {% if association.image %}
+                                        <i class="fas fa-fw">
+                                            <img src="{{ association.image.url }}" class="w-100">
+                                        </i>
+                                    {% endif %}
+                                </a>
+                            {% endfor %}
+                            <div class="dropdown-divider"></div>
+                            <form method="post" action="{% url 'account_logout' %}">
+                                {% csrf_token %}
+                                <button type="submit" class="dropdown-item {{ justify }}">
+                                    Log out <i class="fas fa-power-off fa-fw"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                    <div class="nav-item dropdown">
+                        {# (mb-0 is needed to cancel the margin that gets added by h4) #}
+                        <a class="nav-link dropdown-toggle h4 mb-0" href="#" data-toggle="dropdown">
+                            <i class="fas fa-info"></i>
+                            {% if user.requires_information_rules or user.requires_information_updates %}
+                                <span style="position: relative;">
+                                    <span class="badge badge-pill badge-warning"
+                                          style="font-size: x-small; position: absolute; top: -5px; left: -6px">!</span>
+                                </span>
+                            {% endif %}
+                        </a>
+                        <div class="dropdown-menu dropdown-menu-right">
+                            <a class="dropdown-item" href="{% url 'rules_and_regulations' %}">
+                                Rules & Regulation
+                                {% if user.requires_information_rules %}
+                                    <span class="badge badge-pill badge-warning">!</span>
                                 {% endif %}
                             </a>
-                        {% endfor %}
-                        <div class="dropdown-divider"></div>
-                        <form method="post" action="{% url 'account_logout' %}">
-                            {% csrf_token %}
-                            <button type="submit" class="dropdown-item {{ justify }}">
-                                Log out <i class="fas fa-power-off fa-fw"></i>
-                            </button>
-                        </form>
+                            <a class="dropdown-item" href="{% url 'site_updates' %}">
+                                News and Updates
+                                {% if user.requires_information_updates %}
+                                    <span class="badge badge-pill badge-warning">!</span>
+                                {% endif %}
+                            </a>
+                            <a class="dropdown-item" href="{% url 'site_bugreport' %}?source={{ request.get_full_path }}">
+                                Report Bug
+                            </a>
+                        </div>
+                    </div>
+
+            </div>
+            {% else %}
+                <div class="navbar-nav">
+                    <div class="nav-item text-right px-2">
+                        <a class="nav-link" href="{% url 'account_login' %}?next={{ request.get_full_path }}">Log in</a>
+                    </div>
+                    <div class="nav-item dropdown">
+                        {# (mb-0 is needed to cancel the margin that gets added by h4) #}
+                        <a class="nav-link dropdown-toggle h4 mb-0" href="#" data-toggle="dropdown">
+                            <i class="fas fa-info"></i>
+                        </a>
+                        <div class="dropdown-menu dropdown-menu-right">
+                            <a class="dropdown-item" href="{% url 'rules_and_regulations' %}">
+                                Rules & Regulation
+                            </a>
+                            <a class="dropdown-item" href="{% url 'site_bugreport' %}?source={{ request.get_full_path }}">
+                                Report Bug
+                            </a>
+                        </div>
                     </div>
                 </div>
-                <div class="nav-item dropdown">
-                    {# (mb-0 is needed to cancel the margin that gets added by h4) #}
-                    <a class="nav-link dropdown-toggle h4 mb-0" href="#" data-toggle="dropdown">
-                        <i class="fas fa-info"></i>
-                        {% if user.requires_information_rules or user.requires_information_updates %}
-                            <span style="position: relative;">
-                                <span class="badge badge-pill badge-warning"
-                                      style="font-size: x-small; position: absolute; top: -5px; left: -6px">!</span>
-                            </span>
-                        {% endif %}
-                    </a>
-                    <div class="dropdown-menu dropdown-menu-right">
-                        <a class="dropdown-item" href="{% url 'rules_and_regulations' %}">
-                            Rules & Regulation
-                            {% if user.requires_information_rules %}
-                                <span class="badge badge-pill badge-warning">!</span>
-                            {% endif %}
-                        </a>
-                        <a class="dropdown-item" href="{% url 'site_updates' %}">
-                            News and Updates
-                            {% if user.requires_information_updates %}
-                                <span class="badge badge-pill badge-warning">!</span>
-                            {% endif %}
-                        </a>
-                        <a class="dropdown-item" href="{% url 'site_bugreport' %}?source={{ request.get_full_path }}">
-                            Report Bug
-                        </a>
-                    </div>
-                </div>
-            {% endwith %}
-        </div>
+            {% endif %}
+        {% endwith %}
     </nav>
 
     {% if messages %}
