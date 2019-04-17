@@ -75,7 +75,8 @@ class RulesPageView(View):
 
     def get(self, request):
         # Store the recent updates/visit data in the local context
-        self.context['latest_visit'] = PageVisitTracker.get_latest_visit('rules', request.user, update=True)
+        if request.user.is_authenticated:
+            self.context['latest_visit'] = PageVisitTracker.get_latest_visit('rules', request.user, update=True)
         self.context['latest_update'] = self.change_date
 
         return render(request, self.template, self.context)
