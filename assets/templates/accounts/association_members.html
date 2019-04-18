@@ -10,16 +10,35 @@
                href="{% url 'association_members_edit' association_name=association.slug %}">Edit list</a>
         </div>
     </div>
-    {# Bootstrap table instead of this? #}
-    <div class="row mb-1">
-        <div class="col-2"><strong>Username</strong></div>
-        <div class="col-3"><strong>Name</strong></div>
-        <div class="col-3"><strong>E-mail</strong></div>
-        <div class="col-2"><strong>Credits</strong></div>
-        <div class="col-2"><strong>Negative since</strong></div>
+
+    {# The actual table #}
+    <div class="row">
+        <div class="col-12 table-responsive">
+            <table class="table table-hover">
+                {# Table header #}
+                <thead>
+                <tr class="">
+                    <td class="">Username</td>
+                    <td class="">Name</td>
+                    <td class="">E-mail</td>
+                    <td class="">Credits</td>
+                    <td class="">Negative since</td>
+                </tr>
+                </thead>
+
+                <tbody>
+                {# Table rows #}
+                {% for entry in object_list %}
+                    {% include 'accounts/snippet_memberdetails.html' %}
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
     </div>
 
-    {% for entry in object_list %}{% include 'accounts/snippet_memberdetails.html' %}{% endfor %}
+    {# Bootstrap table instead of this? #}
+
+
 
     {% include 'snippets/paginator.html' %}
 {% endblock %}

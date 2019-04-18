@@ -1,33 +1,43 @@
 {% extends 'accounts/associations_base.html' %}
 {% load form_extras %}
 {% load credit_tags %}
-{% load humanize %}
 
 {% block tab_overview %} active{% endblock %}
 
 {% block details %}
     {% if pending_memberships %}
-        <h3>New member requests:</h3>
-        {# Pending member overview #}
-        <form method="post"
-              action="{% url 'association_members_edit' association_name=association.slug %}?next={{ request.path }}">
-            {% csrf_token %}
-            {% for entry in pending_memberships %}{% include 'accounts/snippet_member_edits.html' %}{% endfor %}
-        </form>
-        <br>
+        <div class="row">
+            <h3 class="col-12">New member requests:</h3>
+        </div>
+        <div class="row">
+            {# Pending member overview #}
+            <div class="col-12 table-responsive">
+                <table class="table table-hover">
+                    <tbody>
+                        <form method="post"
+                              action="{% url 'association_members_edit' association_name=association.slug %}?next={{ request.path }}">
+                            {% csrf_token %}
+                            {% for entry in pending_memberships %}{% include 'accounts/snippet_member_edits.html' %}{% endfor %}
+                        </form>
+                    </tbody>
+                </table>
+            </div>
+        </div>
     {% endif %}
 
-    <h3>Latest transactions:</h3>
     <div class="row">
-    <div class="col-12 table-responsive">
-        <table class="table table-hover" >
-            <tbody>
-                {% for transaction in transactions %}
-                    {% include 'accounts/snippet_credit_history_association.html' %}
-                {% endfor %}
-            </tbody>
-        </table>
+        <h3 class="col-12">Latest transactions:</h3>
     </div>
+    <div class="row">
+        <div class="col-12 table-responsive">
+            <table class="table table-hover" >
+                <tbody>
+                    {% for transaction in transactions %}
+                        {% include 'accounts/snippet_credit_history_association.html' %}
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
     </div>
     <a class="btn btn-block btn-primary" href="{% url 'transaction_add' association_name=association.slug %}">
         Transfer credits

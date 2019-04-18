@@ -1,10 +1,10 @@
 {% extends 'base.html' %}
 
 {% block content %}
-    <div class="mt-3">
-        <h2>{{ association }}</h2>
 
-        <ul class="nav nav-tabs">
+        <h2 class="row">{{ association }}</h2>
+
+        <ul class="row nav nav-tabs">
             <li class="nav-item">
 
                 <a class="nav-link{% block tab_overview %}{% endblock %}"
@@ -23,8 +23,9 @@
             </li>
         </ul>
 
-        <div class="mt-3">
-            {% block details %}{% endblock details %}
+        <div class="row">
+            <div class="col-12 p-4">
+                {% block details %}{% endblock details %}
+            </div>
         </div>
-    </div>
 {% endblock %}

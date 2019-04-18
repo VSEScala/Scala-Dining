@@ -10,18 +10,34 @@
                href="{% url 'association_members' association_name=association.slug %}">Back</a>
         </div>
     </div>
-    <div class="row mb-1">
-        <div class="col-2"><strong>Username</strong></div>
-        <div class="col-2"><strong>Full name</strong></div>
-        <div class="col-3"><strong>E-mail</strong></div>
-        <div class="col-3"><strong>Status</strong></div>
-        <div class="col-2"><strong>Action</strong></div>
+
+    {# The actual table #}
+    <div class="row">
+        <div class="col-12 table-responsive">
+            <table class="table table-hover">
+                {# Table header #}
+                <thead>
+                <tr class="">
+                    <td class="">Username</td>
+                    <td class="">Full name</td>
+                    <td class="">E-mail</td>
+                    <td class="">Status</td>
+                    <td class="">Action</td>
+                </tr>
+                </thead>
+
+                <tbody>
+                {# Table rows #}
+                <form method="post">
+                    {% csrf_token %}
+                    {% for entry in object_list %}{% include 'accounts/snippet_member_edits.html' %}{% endfor %}
+                </form>
+                </tbody>
+            </table>
+        </div>
     </div>
 
-    <form method="post">
-        {% csrf_token %}
-        {% for entry in object_list %}{% include 'accounts/snippet_member_edits.html' %}{% endfor %}
-    </form>
+
 
     {% include 'snippets/paginator.html' %}
 {% endblock %}
