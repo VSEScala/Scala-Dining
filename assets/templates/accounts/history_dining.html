@@ -22,7 +22,28 @@
                 <tbody>
                 {# Table rows #}
                 {% for entry in dining_entries_select %}
-                    {% include 'accounts/snippet_history_dininglist.html' %}
+                    <tr>
+                        <td>
+                            {{ entry.dining_list.date }}
+                        </td>
+                        <td>
+                            {{ entry.dining_list.dish }}
+                        </td>
+                        <td>
+                            {{ entry.dining_list.association.slug }}
+                        </td>
+                        <td>
+                            {{ entry.dining_list.claimed_by }}
+                        </td>
+                        <td>
+                            {% if entry.has_shopped %} Shop {% endif %}
+                            {% if entry.has_cooked %} Cook {% endif %}
+                            {% if entry.has_cleaned %} Dishes {% endif %}
+                        </td>
+                        <td>
+                            {% if entry.has_paid %} P {% endif %}
+                        </td>
+                    </tr>
                 {% endfor %}
                 </tbody>
             </table>
