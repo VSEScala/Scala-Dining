@@ -1,9 +1,16 @@
-{% extends 'base.html' %}
+{% extends 'accounts/user_history_base.html' %}
 {% load staticfiles %}
 
 {% block title %}{{ request.user }} - Dining history {% endblock %}
 
-{% block content %}
+{% block tab_claimed %} active{% endblock %}
+
+{% block details %}
+    <div class="row">
+        <p class="col-12">
+            Below all lists where you are either owner or purchaser
+        </p>
+    </div>
     <div class="row">
         <div class="col-12 table-responsive">
             <table class="table table-hover">
@@ -40,7 +47,13 @@
                             {{ entry.diners.count }}
                         </td>
                         <td>
-                            {{ entry.get_number_paid }}
+                            {% if entry.get_number_paid < entry.diners.count %}
+                                <span class="text-warning">
+                                    {{ entry.get_number_paid }}
+                                </span>
+                            {% else %}
+                                {{ entry.get_number_paid }}
+                            {% endif %}
                         </td>
                         <td class="py-2">
                             <a class="btn btn-outline-primary" href="{{ entry.get_absolute_url }}"><i class="fas fa-arrow-right"></i></a>

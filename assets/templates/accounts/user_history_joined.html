@@ -1,9 +1,17 @@
-{% extends 'base.html' %}
+{% extends 'accounts/user_history_base.html' %}
 {% load staticfiles %}
 
 {% block title %}{{ request.user }} - Dining history {% endblock %}
 
-{% block content %}
+{% block tab_joined %} active{% endblock %}
+
+{% block details %}
+    <div class="row">
+        <p class="col-12">
+            Below an overview of all the lists you have joined thus far
+
+        </p>
+    </div>
     <div class="row">
         <div class="col-12 table-responsive">
             <table class="table table-hover">
