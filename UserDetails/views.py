@@ -12,7 +12,8 @@ from django.views import View
 from django.views.generic import TemplateView
 from django.utils.translation import gettext as _
 
-from Dining.models import DiningEntryUser
+from Dining.models import DiningEntryUser, DiningList
+from General.views import PageListView
 from .forms import RegisterUserForm, RegisterUserDetails, AssociationLinkForm
 from .models import User
 
@@ -53,25 +54,28 @@ class RegisterView(TemplateView):
         return self.render_to_response(context)
 
 
-class DiningHistoryView(View):
+class DiningJoinHistoryView(View, PageListView):
     context = {}
-    template = "accounts/history_dining.html"
+    template = "accounts/user_history_joined.html"
 
     @method_decorator(login_required)
     def get(self, request, page=1, **kwargs):
-        length = 3
-        lower_bound = length * (page - 1)
-        upper_bound = length * page
 
-        # get all dining lists
-        self.context['dining_entries'] = DiningEntryUser.objects.filter(user=request.user).order_by(
-            '-dining_list__date')
-        self.context['dining_entries_select'] = self.context['dining_entries'][lower_bound:upper_bound]
-        self.context['page'] = page
-        self.context['pages'] = math.ceil(len(self.context['dining_entries']) / length)
-        if self.context['pages'] > 1:
-            self.context['show_page_navigation'] = True
-            self.context['pages'] = range(1, self.context['pages'] + 1)
+        entries = DiningEntryUser.objects.filter(user=request.user).order_by('-dining_list__date')
+        super().set_up_list(entries, page)
+        return render(request, self.template, self.context)
+
+
+class DiningClaimHistoryView(View, PageListView):
+    context = {}
+    template = "accounts/user_history_claimed.html"
+
+    @method_decorator(login_required)
+    def get(self, request, page=1, **kwargs):
+
+        from django.db.models import Q
+        entries = DiningList.objects.filter(Q(claimed_by=request.user) | Q(purchaser=request.user)).order_by('-date')
+        super().set_up_list(entries, page)
         return render(request, self.template, self.context)
 
 

@@ -1,0 +1,65 @@
+{% extends 'base.html' %}
+{% load staticfiles %}
+
+{% block title %}{{ request.user }} - Dining history {% endblock %}
+
+{% block content %}
+    <div class="row">
+        <div class="col-12 table-responsive">
+            <table class="table table-hover">
+                {# Table header #}
+                <thead>
+                <tr class="">
+                    <td>Date</td>
+                    <td>Dish</td>
+                    <td>Association</td>
+                    <td>Claimed by</td>
+                    <td>Help stats</td>
+                    <td>Paid</td>
+                    <td>Link</td>
+                </tr>
+                </thead>
+
+                <tbody>
+                {# Table rows #}
+                {% for entry in entries %}
+                    <tr>
+                        <td>
+                            {{ entry.dining_list.date }}
+                        </td>
+                        <td>
+                            {{ entry.dining_list.dish }}
+                        </td>
+                        <td>
+                            {{ entry.dining_list.association.slug }}
+                        </td>
+                        <td>
+                            {{ entry.dining_list.claimed_by }}
+                        </td>
+                        <td>
+                            {% if entry.has_shopped %} Shop {% endif %}
+                            {% if entry.has_cooked %} Cook {% endif %}
+                            {% if entry.has_cleaned %} Dishes {% endif %}
+                        </td>
+                        <td>
+                            {% if entry.has_paid %}
+                                <span class="text-success">Yes</span>
+                            {% else %}
+                                <span class="text-danger">No</span>
+                            {% endif %}
+                        </td>
+                        <td class="py-2">
+                            <a class="btn btn-outline-primary" href="{{ entry.dining_list.get_absolute_url }}">
+                                <i class="fas fa-arrow-right"></i>
+                            </a>
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% url 'history_lists' as url %}
+        {% include 'snippets/snippet_pagination.html' %}
+    </div>
+
+{% endblock %}

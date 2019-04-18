@@ -13,35 +13,37 @@
                     <td class="">Date</td>
                     <td class="">Dish</td>
                     <td class="">Association</td>
-                    <td class="">Claimed by</td>
-                    <td class="">Helped</td>
-                    <td class="">Paid</td>
+                    <td class="">Purchaser</td>
+                    <td class=""># Diners</td>
+                    <td class=""># Paid</td>
+                    <td class="">Link</td>
                 </tr>
                 </thead>
 
                 <tbody>
                 {# Table rows #}
-                {% for entry in dining_entries_select %}
+                {% for entry in entries %}
                     <tr>
                         <td>
-                            {{ entry.dining_list.date }}
+                            {{ entry.date }}
                         </td>
                         <td>
-                            {{ entry.dining_list.dish }}
+                            {{ entry.dish }}
                         </td>
                         <td>
-                            {{ entry.dining_list.association.slug }}
+                            {{ entry.association.slug }}
                         </td>
                         <td>
-                            {{ entry.dining_list.claimed_by }}
+                            {{ entry.get_purchaser }}
                         </td>
                         <td>
-                            {% if entry.has_shopped %} Shop {% endif %}
-                            {% if entry.has_cooked %} Cook {% endif %}
-                            {% if entry.has_cleaned %} Dishes {% endif %}
+                            {{ entry.diners.count }}
                         </td>
                         <td>
-                            {% if entry.has_paid %} P {% endif %}
+                            {{ entry.get_number_paid }}
+                        </td>
+                        <td class="py-2">
+                            <a class="btn btn-outline-primary" href="{{ entry.get_absolute_url }}"><i class="fas fa-arrow-right"></i></a>
                         </td>
                     </tr>
                 {% endfor %}
