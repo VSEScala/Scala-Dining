@@ -1,6 +1,7 @@
 {% extends 'accounts/associations_base.html' %}
 {% load form_extras %}
 {% load credit_tags %}
+{% load humanize %}
 
 {% block tab_overview %} active{% endblock %}
 
@@ -17,9 +18,17 @@
     {% endif %}
 
     <h3>Latest transactions:</h3>
-    {% for transaction in transactions %}
-        {% include 'accounts/snippet_credit_history_association.html' %}
-    {% endfor %}
+    <div class="row">
+    <div class="col-12 table-responsive">
+        <table class="table table-hover" >
+            <tbody>
+                {% for transaction in transactions %}
+                    {% include 'accounts/snippet_credit_history_association.html' %}
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    </div>
     <a class="btn btn-block btn-primary" href="{% url 'transaction_add' association_name=association.slug %}">
         Transfer credits
     </a>

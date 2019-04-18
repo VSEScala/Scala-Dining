@@ -14,19 +14,28 @@
     </div>
 
     {# 'Table' header #}
-    <div class="row mb-1">
-        <div class="col-2"><strong>When</strong></div>
-        <div class="col-1"><strong>From/to</strong></div>
-        <div class="col-4"><strong>Sender or recipient</strong></div>
-        <div class="col-2"><strong>Amount</strong></div>
-        <div class="col-3"><strong>Description</strong></div>
+    <div class="row">
+        <div class="col-12 table-responsive">
+            <table class="table table-hover" >
+                <thead>
+                    <tr class="">
+                        <td class="">When</td>
+                        <td class=""><strong>From/to</strong></td>
+                        <td class="">Sender or recipient</td>
+                        <td class="">Amount</td>
+                        <td class="">Description</td>
+                    </tr>
+                </thead>
+
+                <tbody>
+                {# Table rows #}
+                {% for transaction in object_list %}
+                    {% include 'accounts/snippet_credit_history_association.html' %}
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
     </div>
-
-    {# Table rows #}
-    {% for transaction in object_list %}
-        {% include 'accounts/snippet_credit_history_association.html' %}
-    {% endfor %}
-
     {% include 'snippets/paginator.html' %}
 
     <a class="btn btn-block btn-primary" href="{% url 'transaction_add' association_name=association.slug %}">
