@@ -1,16 +1,13 @@
-import math
-
-from django.contrib import messages
 from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import HttpResponseRedirect
-from django.shortcuts import render, redirect
+from django.shortcuts import render
 from django.urls import reverse
 from django.utils.decorators import method_decorator
 from django.views import View
 from django.views.generic import TemplateView
-from django.utils.translation import gettext as _
+from django.db.models import Q
 
 from Dining.models import DiningEntryUser, DiningList
 from General.views import PageListMixin
@@ -54,7 +51,7 @@ class RegisterView(TemplateView):
         return self.render_to_response(context)
 
 
-class DiningJoinHistoryView(View, PageListMixin):
+class DiningJoinHistoryView(View, PageListMixin, LoginRequiredMixin):
     context = {}
     template = "accounts/user_history_joined.html"
 
@@ -66,14 +63,13 @@ class DiningJoinHistoryView(View, PageListMixin):
         return render(request, self.template, self.context)
 
 
-class DiningClaimHistoryView(View, PageListMixin):
+class DiningClaimHistoryView(View, PageListMixin, LoginRequiredMixin):
     context = {}
     template = "accounts/user_history_claimed.html"
 
     @method_decorator(login_required)
     def get(self, request, page=1, **kwargs):
 
-        from django.db.models import Q
         entries = DiningList.objects.filter(Q(claimed_by=request.user) | Q(purchaser=request.user)).order_by('-date')
         super().set_up_list(entries, page)
         return render(request, self.template, self.context)
