@@ -118,5 +118,5 @@ class UserMembership(models.Model):
             return False
         return True
 
-    def str(self):
+    def __str__(self):
         return "{user} - {association}".format(user=self.related_user, association=self.association)
