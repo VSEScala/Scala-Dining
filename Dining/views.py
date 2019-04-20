@@ -374,6 +374,7 @@ class SlotListView(LoginRequiredMixin, SlotMixin, TemplateView):
         purchaser = self.dining_list.purchaser
         context['can_edit_pay'] = (self.request.user == purchaser or
                                    (purchaser is None and self.request.user == self.dining_list.claimed_by))
+        context['show_delete_column'] = context['can_delete_all'] or context['can_delete_some']
         return context
 
     def post(self, request, *args, **kwargs):
