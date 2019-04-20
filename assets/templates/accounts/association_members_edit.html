@@ -12,7 +12,8 @@
     </div>
 
     {# The actual table #}
-    <div class="row">
+    <form method="post" class="row">
+        {% csrf_token %}
         <div class="col-12 table-responsive">
             <table class="table table-hover">
                 {# Table header #}
@@ -22,20 +23,20 @@
                     <td>Full name</td>
                     <td>E-mail</td>
                     <td>Status</td>
-                    <td>Action</td>
+                    <td colspan="2">Action</td>
                 </tr>
                 </thead>
 
                 <tbody>
                 {# Table rows #}
-                <form method="post">
-                    {% csrf_token %}
-                    {% for entry in object_list %}{% include 'accounts/snippet_member_edits.html' %}{% endfor %}
-                </form>
+                {% for entry in object_list %}
+                    {% include 'accounts/snippet_member_edits.html' %}
+                {% endfor %}
+
                 </tbody>
             </table>
         </div>
-    </div>
+    </form>
 
 
 
