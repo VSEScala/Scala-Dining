@@ -29,30 +29,31 @@
                                 <td>
                                     {{ entry.name }}
                                     {% if entry.get_external %}
-                                        <span class="small font-italic">added by {{ entry.user }}</span>
+                                        <small class="font-italic">added by {{ entry.user }}</small>
                                     {% endif %}
                                 </td>
                                 <td>
-                                    <div class="text-center btn-group btn-group-toggle d-flex" data-toggle="buttons" style="width:100%;">
+                                    <!-- Todo: Make button ids start with a letter, instead of a number -->
+                                    <div class="btn-group btn-group-toggle d-flex" data-toggle="buttons" style="width:100%;">
                                         {% with entry.get_internal as entry_data %}
                                             {% if entry_data %}
                                                 {% if can_edit_stats %}
                                                     <label class="btn btn-outline-primary col-3
-                                                 {% if entry_data.has_shopped %} active {% endif %}">
+                                                            {% if entry_data.has_shopped %} active {% endif %}">
                                                         <input type="checkbox" autocomplete="off"
                                                                id="{{ entry_data.id }}:shop" name="{{ entry_data.id }}:has_shopped"
                                                                 {% if entry_data.has_shopped %} checked {% endif %}>
                                                         Shop
                                                     </label>
                                                     <label class="btn btn-outline-primary col-3
-                                                 {% if entry_data.has_cooked %} active {% endif %}">
+                                                            {% if entry_data.has_cooked %} active {% endif %}">
                                                         <input type="checkbox" autocomplete="off"
                                                                id="{{ entry_data.id }}:cook" name="{{ entry_data.id }}:has_cooked"
                                                                 {% if entry_data.has_cooked %} checked {% endif %}>
                                                         Cook
                                                     </label>
                                                     <label class="btn btn-outline-primary col-3
-                                                 {% if entry_data.has_cleaned %} active {% endif %}">
+                                                            {% if entry_data.has_cleaned %} active {% endif %}">
                                                         <input type="checkbox" autocomplete="off"
                                                                id="{{ entry_data.id }}:clean" name="{{ entry_data.id }}:has_cleaned"
                                                                 {% if entry_data.has_cleaned %} checked {% endif %}}>
@@ -130,7 +131,7 @@
                             </td>
                             <td>
                                 {% if can_edit_stats or can_edit_pay %}
-                                    <input type="submit" class="btn btn-block btn-primary" value="Update user stats"/>
+                                    <input type="submit" class="btn btn-block btn-primary" value="Update User Stats"/>
                                 {% endif %}
                             </td>
                             {% if show_delete_column %}
@@ -140,13 +141,13 @@
 
                         </tbody>
                     </table>
+                    {% csrf_token %}
                 </div>
             </div>
-            {% csrf_token %}
-            <div class="row d-flex d-sm-none">
+            <div class="row d-sm-none">
                 <div class="col-12">
                     {% if can_edit_stats or can_edit_pay %}
-                        <input type="submit" class="btn btn-block btn-primary" value="Update user stats"/>
+                        <input type="submit" class="btn btn-block btn-primary" value="Update User Stats"/>
                     {% endif %}
                    {% if user_can_add_others %}
                        <a class="btn btn-primary btn-block" href="
@@ -157,14 +158,6 @@
                 </div>
             </div>
         </form>
-    </div>
-
-    <div class="row col-12 m-0 p-0 p-md-2 py-2 text-size-3">
-        <div class="{% if can_delete_all or can_delete_some %} col-12 col-sm-11 {% else %} col-12 {% endif %} pl-sm-0">
-            <div class="row pr-2">
-
-            </div>
-        </div>
     </div>
 
 
