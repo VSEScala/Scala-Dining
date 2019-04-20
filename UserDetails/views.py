@@ -13,7 +13,7 @@ from django.views.generic import TemplateView
 from django.utils.translation import gettext as _
 
 from Dining.models import DiningEntryUser, DiningList
-from General.views import PageListView
+from General.views import PageListMixin
 from .forms import RegisterUserForm, RegisterUserDetails, AssociationLinkForm
 from .models import User
 
@@ -54,7 +54,7 @@ class RegisterView(TemplateView):
         return self.render_to_response(context)
 
 
-class DiningJoinHistoryView(View, PageListView):
+class DiningJoinHistoryView(View, PageListMixin):
     context = {}
     template = "accounts/user_history_joined.html"
 
@@ -66,7 +66,7 @@ class DiningJoinHistoryView(View, PageListView):
         return render(request, self.template, self.context)
 
 
-class DiningClaimHistoryView(View, PageListView):
+class DiningClaimHistoryView(View, PageListMixin):
     context = {}
     template = "accounts/user_history_claimed.html"
 

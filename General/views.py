@@ -6,7 +6,7 @@ from datetime import datetime
 import math
 
 
-class PageListView:
+class PageListMixin:
     """
     A base class used for views that prevent some sort of navigatable list with multiple pages
     """
@@ -27,7 +27,7 @@ class PageListView:
             self.context['show_page_navigation'] = False
 
 
-class SiteUpdateView(View, PageListView):
+class SiteUpdateView(View, PageListMixin):
     template = "general/version_overview.html"
 
     def get(self, request, page=1):
