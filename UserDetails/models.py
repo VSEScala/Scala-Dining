@@ -117,3 +117,6 @@ class UserMembership(models.Model):
             # It is not verified, but has verification date, so is rejected
             return False
         return True
+
+    def str(self):
+        return "{user} - {association}".format(user=self.related_user, association=self.association)
