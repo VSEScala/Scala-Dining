@@ -1,16 +1,11 @@
 from django.contrib.auth import login
-from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import HttpResponseRedirect
-from django.shortcuts import render
 from django.urls import reverse
-from django.utils.decorators import method_decorator
-from django.views import View
-from django.views.generic import TemplateView
+from django.views.generic import TemplateView, ListView
 from django.db.models import Q
 
 from Dining.models import DiningEntryUser, DiningList
-from General.views import PageListMixin
 from .forms import RegisterUserForm, RegisterUserDetails, AssociationLinkForm
 from .models import User
 
@@ -51,28 +46,23 @@ class RegisterView(TemplateView):
         return self.render_to_response(context)
 
 
-class DiningJoinHistoryView(View, PageListMixin, LoginRequiredMixin):
+class DiningJoinHistoryView(LoginRequiredMixin, ListView):
     context = {}
-    template = "accounts/user_history_joined.html"
+    template_name = "accounts/user_history_joined.html"
+    paginate_by = 20
 
-    @method_decorator(login_required)
-    def get(self, request, page=1, **kwargs):
-
-        entries = DiningEntryUser.objects.filter(user=request.user).order_by('-dining_list__date')
-        super().set_up_list(entries, page)
-        return render(request, self.template, self.context)
+    def get_queryset(self):
+        return DiningEntryUser.objects.filter(user=self.request.user).order_by('-dining_list__date')
 
 
-class DiningClaimHistoryView(View, PageListMixin, LoginRequiredMixin):
+class DiningClaimHistoryView(LoginRequiredMixin, ListView):
     context = {}
-    template = "accounts/user_history_claimed.html"
+    template_name = "accounts/user_history_claimed.html"
+    paginate_by = 20
 
-    @method_decorator(login_required)
-    def get(self, request, page=1, **kwargs):
-
-        entries = DiningList.objects.filter(Q(claimed_by=request.user) | Q(purchaser=request.user)).order_by('-date')
-        super().set_up_list(entries, page)
-        return render(request, self.template, self.context)
+    def get_queryset(self):
+        user = self.request.user
+        return DiningList.objects.filter(Q(claimed_by=user) | Q(purchaser=user)).order_by('-date')
 
 
 

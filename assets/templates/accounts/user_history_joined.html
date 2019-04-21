@@ -30,7 +30,7 @@
 
                 <tbody>
                 {# Table rows #}
-                {% for entry in entries %}
+                {% for entry in object_list %}
                     <tr>
                         <td>
                             {{ entry.dining_list.date }}
@@ -66,8 +66,6 @@
                 </tbody>
             </table>
         </div>
-        {% url 'history_lists' as url %}
-        {% include 'snippets/snippet_pagination.html' %}
     </div>
-
+    {% include 'snippets/paginator.html' %}
 {% endblock %}
