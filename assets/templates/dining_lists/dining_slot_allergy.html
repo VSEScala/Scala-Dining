@@ -4,34 +4,31 @@
 
 
 {% block details%}
-    <div class="row col-12 m-0 p-0 p-md-2 py-2">
-        <div class="col-12">
-            <div class="row pr-2">
-                <div class="col-12 col-md-6 p-0 show-md"><b>Name</b></div>
-                <div class="col-12 col-md-6 pr-3">
-                    <b>Allergy</b>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="col-12 p-md-2 py-2">
-        {% for entry in allergy_entries %}
-            <hr class="col-12 m-0">
-            <div class="col-12 my-2">
-                <div class="row pr-2">
-                    <div class="col-12 col-md-6 p-0">
-                        {{ entry.user }}
-                    </div>
+    <div class="row">
+        <div class="col-12 table-responsive">
+            <table class="table table-hover">
+                {# Table header #}
+                <thead>
+                <tr class="">
+                    <td style="min-width: 10rem">Name</td>
+                    <td style="min-width: 15rem">Allergy</td>
+                </tr>
+                </thead>
 
-                    <div class="col-12 col-md-6 pr-3">
-                        <div class="row dining-help-row">
-                            <div class="col-6">
-                                {{ entry.user.userdiningsettings.allergies }}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        {% endfor %}
+                <tbody>
+                {# Table rows #}
+                {% for entry in allergy_entries %}
+                <tr>
+                    <td>
+                        {{ entry.user }}
+                    </td>
+                    <td>
+                        {{ entry.user.userdiningsettings.allergies }}
+                    </td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
     </div>
 {% endblock details %}

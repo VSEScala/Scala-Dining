@@ -107,6 +107,13 @@ class DiningList(models.Model):
         else:
             return self.purchaser
 
+    def get_number_paid(self):
+        """
+        Returns the number of people who have paid
+        :return:
+        """
+        return DiningEntry.objects.filter(dining_list=self, has_paid=True).count()
+
     def is_adjustable(self):
         """
         Whether the dining list has not expired it's adjustable date and can therefore not be modified anymore

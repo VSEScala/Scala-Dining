@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+    <h2 class="row">{{ association }}</h2>
+
+    <ul class="row nav nav-tabs">
+        <li class="nav-item">
+
+            <a class="nav-link{% block tab_joined %}{% endblock %}"
+               href="{% url 'history_lists' %}">Joined lists
+            </a>
+
+        </li>
+        <li class="nav-item">
+            <a class="nav-link{% block tab_claimed %}{% endblock %}"
+               href="{% url 'history_claimed_lists' %}">Claimed lists</a>
+        </li>
+    </ul>
+
+    <div class="row">
+        <div class="col-12 p-4">
+            {% block details %}{% endblock details %}
+        </div>
+    </div>
+{% endblock %}

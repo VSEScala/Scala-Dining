@@ -1,26 +1,82 @@
+{% load computation_tags %}
+
 {# Works with the Django Paginator class. #}
 {# See: https://docs.djangoproject.com/en/2.1/topics/pagination/ #}
 {# It's also possible to change this so that multiple page numbers are shown instead of only the current page. #}
-<ul class="pagination justify-content-center">
-    {% if page_obj.has_previous %}
-        <li class="page-item"><a class="page-link" href="?page=1">&laquo; First</a></li>
-        <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}">Previous</a>
-        </li>
-    {% else %}
-        <li class="page-item disabled"><a class="page-link" href="#">&laquo; First</a></li>
-        <li class="page-item disabled"><a class="page-link" href="#">Previous</a></li>
-    {% endif %}
 
-    <li class="page-item disabled">
-        <a class="page-link" href="#">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</a>
-    </li>
+{% if page_obj.paginator.num_pages > 1 %}
 
-    {% if page_obj.has_next %}
-        <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}">Next</a></li>
-        <li class="page-item"><a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">Last &raquo;</a>
-        </li>
-    {% else %}
-        <li class="page-item disabled"><a class="page-link" href="#">Next</a></li>
-        <li class="page-item disabled"><a class="page-link" href="#">Last &raquo;</a></li>
-    {% endif %}
-</ul>
+    {# Set the amount of links that should be displayed above and below #}
+    {% with show_amount=2 %}
+        {# Compute the amount of pages above and below the current page #}
+        {% with low_num=page_obj.number|subtract:1 high_num=page_obj.paginator.num_pages|subtract:page_obj.number %}
+            {# Compute the maximum amount of possible page that can be displayed #}
+            {% with min_low=show_amount|minimum:low_num min_high=show_amount|minimum:high_num %}
+                {# Adjust the upper and lower output to display the right amount of pages #}
+                {% with disp_low=min_low|add:show_amount|subtract:min_high|minimum:low_num disp_high=min_high|add:show_amount|subtract:min_low|minimum:high_num %}
+
+                    {# Create the pagination layout #}
+                    <ul class="pagination justify-content-center">
+
+                        {# Create the first page #}
+                        {% if low_num > 0 %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page=1">
+                                    {% if page_obj.number|subtract:disp_low > 1 %}
+                                        1...
+                                    {% else %}
+                                        1
+                                    {% endif %}
+                                </a>
+                            </li>
+                        {% endif %}
+
+                        {# Create all entries between the first page and the current page #}
+                        {% with loop_amount=disp_low|subtract:1 %}
+                            {% for _ in ''|center:loop_amount %}
+                                <li class="page-item">
+                                    {% with page_number=page_obj.number|subtract:disp_low|add:forloop.counter %}
+                                        <a class="page-link" href="?page={{ page_number }}">
+                                            {{ page_number  }}
+                                        </a>
+                                    {% endwith %}
+                                </li>
+                            {% endfor %}
+                        {% endwith %}
+
+                        {# Add the current page entry #}
+                        <li class="page-item disabled">
+                            <a class="page-link" href="#">{{ page_obj.number }}</a>
+                        </li>
+
+                        {# Create all entries between the current page and the last page #}
+                        {% with loop_amount=disp_high|subtract:1 %}
+                            {% for _ in ''|center:loop_amount %}
+                                <li class="page-item">
+                                    {% with page_number=page_obj.number|add:forloop.counter %}
+                                        <a class="page-link" href="?page={{ page_number }}">
+                                            {{ page_number  }}
+                                        </a>
+                                    {% endwith %}
+                                </li>
+                            {% endfor %}
+                        {% endwith %}
+
+                        {# Create the last page #}
+                        {% if high_num > 0 %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">
+                                    {% if page_obj.number|add:disp_high < page_obj.paginator.num_pages  %}
+                                        ...{{ page_obj.paginator.num_pages }}
+                                    {% else %}
+                                        {{ page_obj.paginator.num_pages }}
+                                    {% endif %}
+                                </a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                {% endwith %}
+            {% endwith %}
+        {% endwith %}
+    {% endwith %}
+{% endif %}

@@ -4,28 +4,29 @@
 {% block title %}{{ request.user }} - Transaction history {% endblock %}
 
 {% block content %}
-    <div class="row col-12 p-0 m-0 text-size-3">
-        <div class="row col-12 m-0 p-0 p-md-2 py-2 font-bold">
-            <div class="col-2 p-0">
-                Date
-            </div>
-            <div class="col-1 p-0">
-
-            </div>
-            <div class="col-4 p-0">
-                Name
-            </div>
-            <div class="col-2 p-0">
-                Amount
-            </div>
-            <div class="col-3 p-0">
-                Description
-            </div>
+    <div class="row">
+        <div class="col-12 table-responsive">
+            <table class="table table-hover">
+                {# Table header #}
+                <thead>
+                <tr>
+                    <td>Date</td>
+                    <td></td>
+                    <td>Name</td>
+                    <td>Amount</td>
+                    <td>Description</td>
+                </tr>
+                </thead>
+                <tbody>
+                {# Table rows #}
+                {% for transaction in transactions %}
+                    {% include 'credit_management/snippet_credit_history_user.html' %}
+                {% endfor %}
+                </tbody>
+            </table>
         </div>
-        {% for transaction in transactions %}
-            <hr class="col-12 m-0">
-            {% include 'credit_management/snippet_credit_history_user.html' %}
-        {% endfor %}
+    </div>
+
         <br><br>
 
         {% url 'transaction_list' as url %}
