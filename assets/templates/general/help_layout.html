@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+
+    <h2>Manual</h2>
+    <p class="mb-5">
+        In case you need additional instructions, Hans Norg of the Knights has written a manaual with images:
+        <br>
+        <a target="_blank" rel="noopener noreferrer" href="{% static "files/ManualScalaDiningV6.pdf" %}">
+            Download Scala Dining App Manual</a>
+        <br>
+        <small>Note: The site is still being changed and improved. The file could be slightly outdated in some cases.</small>
+    </p>
+    <h2>Instructions</h2>
+    <div class="mb-5">
+        <p>I'm hungry...</p>
+        <ol>
+            <li>Join a dining slot before it's closing time (often 15:30).</li>
+            <li>Be on time and join the meal. Dinners take place in the kitchen and living room.</li>
+            <li>The cook will determine the price of the meal and share the costs. A payment link can be set on the dining list</li>
+            <li>€0,50 is automatically subtracted from your account. If your balance is negative, please contact your association board. Pay money to your association and they will upgrade the money on your account.</li>
+            <li>Be a nice person and help with the dishes. Please keep the kitchen clean for everyone 🙂</li>
+        </ol>
+        <p>I want to cook!</p>
+        <ol>
+            <li>Reserve a spot in the kitchen by claiming a dining slot. If you claim the last slot, choose your dinnertime 30 minutes before or after one of the other groups.</li>
+            <li>Fill in the requested information (meal, starttime, association). At least 12 people should be able to join.</li>
+            <li>Buy the groceries and cook! The kitchen can be used from 16:30h to 19:30h. Every board member can access the key of the kitchen.</li>
+            <li>Enjoy your meal. Don’t forget to provide food for the latecomers.</li>
+            <li>Recruit volunteers for the dishes and mark who did what (shop, cook, clean) in the app. This way we can ensure that everyone helps in the kitchen</li>
+        </ol>
+        Enjoy your meal!
+    </div>
+
+    <h2>Frequently asked questions</h2>
+    <p>
+        <i>Can I claim a slot for all associations?</i><br>
+        No, you can only claim a slot for the associations you are a member of (as long as that association doesn’t already have a slot claimed).
+    </p>
+    <p>
+        <i>Are the costs of the meal also taken from my in-app balance?</i><br>
+        No. Not at this point. There are still some technical and bureaucratic hurdles that need to be taken. Maybe one day, but not for now.
+    </p>
+    <p>
+        <i>Can I reserve the kitchen for only my association?</i><br>
+        This is possible in special cases, send an e-mail to secretaris@studentencultuur.nl.
+    </p>
+    <p>
+        <i>Is something broken, missing or do you have questions?</i><br>
+        Let us know and e-mail to <a href="mailto:diningapp@studentencultuur.nl">diningapp@studentencultuur.nl</a>.
+    </p>
+
+{% endblock %}

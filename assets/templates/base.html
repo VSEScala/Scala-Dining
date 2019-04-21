@@ -85,6 +85,9 @@
                             {% endif %}
                         </a>
                         <div class="dropdown-menu dropdown-menu-right">
+                            <a class="dropdown-item {{ justify }}" href="{% url 'help_page' %}">
+                                Help <i class="fas fa-question"></i>
+                            </a>
                             <a class="dropdown-item" href="{% url 'rules_and_regulations' %}">
                                 Rules & Regulation
                                 {% if user.requires_information_rules %}
