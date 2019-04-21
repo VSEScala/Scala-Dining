@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+{% load form_extras %}
+
+{% block content %}
+
+    <div class="row">
+        <div class="col-12">
+            {% for entry in object_list %}
+                <div class="row">
+                    <div class="col-12">
+                        <h3><b>{{ entry.title }}</b>
+                            <p class="h6">{{ entry.date|date:"SHORT_DATE_FORMAT" }}</p>
+                        </h3>
+                        <p>{{ entry.message|linebreaksbr }}</p>
+                    </div>
+                </div>
+                <div class="row">
+                    <hr class="col-12">
+                </div>
+                <br>
+            {% endfor %}
+        </div>
+    </div>
+
+    {% include 'snippets/paginator.html' %}
+
+{% endblock %}

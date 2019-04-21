@@ -1,5 +1,6 @@
-from django.views.generic import View
+from django.views.generic import View, ListView
 from django.shortcuts import render
+from django.db.models import ObjectDoesNotExist
 from .models import SiteUpdate, PageVisitTracker
 from django.utils import timezone
 from datetime import datetime
@@ -27,24 +28,24 @@ class PageListMixin:
             self.context['show_page_navigation'] = False
 
 
-class SiteUpdateView(View, PageListMixin):
-    template = "general/version_overview.html"
+class SiteUpdateView(ListView):
+    template_name = "general/site_updates.html"
+    paginate_by = 4
 
-    def get(self, request, page=1):
+    def get_queryset(self):
+        return SiteUpdate.objects.order_by('-date').all()
 
-        # Set up the list display
-        updates = SiteUpdate.objects.order_by('-date').all()
-        super(SiteUpdateView, self).set_up_list(updates, page)
-        if updates:
-            latest_update = updates[0].date
-        else:
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        try:
+            latest_update = SiteUpdate.objects.latest('date').date
+        except ObjectDoesNotExist:
             latest_update = timezone.now()
 
-        self.context['latest_visit'] = PageVisitTracker.get_latest_visit('updates', request.user, update=True)
-        self.context['latest_update'] = latest_update
+        context['latest_visit'] = PageVisitTracker.get_latest_visit('updates', self.request.user, update=True)
+        context['latest_update'] = latest_update
 
-        return render(request, self.template, self.context)
-
+        return context
 
     @staticmethod
     def has_new_update(user):
