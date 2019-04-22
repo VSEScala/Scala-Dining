@@ -1,0 +1,9 @@
+{% extends "socialaccount/base.html" %}
+
+{% block content %}
+    <h1>Login failure</h1>
+
+    <p>An error occurred while attempting to login via an external account.</p>
+
+    <code>{{ auth_error }}</code>
+{% endblock %}

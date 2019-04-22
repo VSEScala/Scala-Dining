@@ -1,5 +1,6 @@
 {% extends 'account/base.html' %}
 {% load static %}
+{% load socialaccount %}
 
 
 {% block content %}
@@ -27,6 +28,9 @@
                     <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}">
                 {% endif %}
                 {% include "snippets/bootstrap_form.html" %}
+                <p>
+                    <a href="{% provider_login_url "quadrivium" %}">ESMGQ</a>
+                </p>
                 <p><a href="{% url 'oidc_authentication_init' %}">Quadrivium member? Click here.</a></p>
                 <p><a href="{% url 'account_reset_password' %}">Forgot password?</a></p>
                 <button type="submit" class="btn btn-block btn-primary">Log in</button>

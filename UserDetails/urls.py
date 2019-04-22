@@ -23,10 +23,10 @@ urlpatterns = [
     ])),
 
 
-    path('settings/account/', SettingsProfileView.as_view(), name='settings_account'),
-    path('settings/', include('allauth.urls')),
+    path('settings/', SettingsProfileView.as_view(), name='settings_account'),
 
     # Override allauth login and sign up page with our registration page
     path('login/', LoginView.as_view(), name='account_login'),
     path('signup/', RegisterView.as_view(), name='account_signup'),
+
 ]

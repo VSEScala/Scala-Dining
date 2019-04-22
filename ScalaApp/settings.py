@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     'allauth',
     'allauth.account',
     'allauth.socialaccount',
+    'allauthproviders.quadrivium',
 
     # Quadrivium OpenID Connect
     'mozilla_django_oidc',
@@ -192,3 +193,4 @@ ACCOUNT_FORMS = {
 ACCOUNT_LOGIN_ON_PASSWORD_RESET = True
 # Set to None to ask the user ("Remember me?")
 ACCOUNT_SESSION_REMEMBER = True
+ACCOUNT_UNIQUE_EMAIL = True
