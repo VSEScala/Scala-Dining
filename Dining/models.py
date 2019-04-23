@@ -43,7 +43,7 @@ class DiningList(models.Model):
     sign_up_deadline = models.DateTimeField(help_text="The time before users need to sign up.")
     serve_time = models.TimeField(default=time(18, 00))
 
-    dish = models.CharField(default="", max_length=30, blank=True, help_text="The dish made")
+    dish = models.CharField(default="", max_length=100, blank=True, help_text="The dish made")
     # The days adjustable is implemented to prevent adjustment in credits or aid due to a deletion of a user account.
     adjustable_duration = models.DurationField(
         default=settings.TRANSACTION_PENDING_DURATION,
