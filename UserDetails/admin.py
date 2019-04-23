@@ -1,18 +1,17 @@
 from django import forms
 from django.contrib import admin
 from django.contrib.auth.admin import GroupAdmin, UserAdmin
+from django.contrib.auth.models import Group
 
 from .models import User, UserMembership, Association
 
-
-# TODO: the classes in this file are not in use currently
 
 class AssociationLinks(admin.TabularInline):
     """
     Create the membership information on the User page
     """
     model = UserMembership
-    extra = 1
+    extra = 0
 
 
 class MemberOfFilter(admin.SimpleListFilter):
@@ -57,6 +56,11 @@ class BoardFilter(admin.RelatedOnlyFieldListFilter):
         self.title = 'Boardmembers'
 
 
+class UserOverview(User):
+    class Meta:
+        proxy = True
+
+
 class CustomUserAdmin(admin.ModelAdmin):
     """
     Set up limited view of the user page
@@ -69,18 +73,11 @@ class CustomUserAdmin(admin.ModelAdmin):
     inlines = [AssociationLinks]
     fields = ('username', ('first_name', 'last_name'), 'date_joined', 'email', 'external_link')
 
-    actions = ['update_general_viewtimes']
-
-    def update_general_viewtimes(self, request, queryset):
-        from General.models import PageVisitTracker
-        for user in queryset:
-            PageVisitTracker.get_latest_visit('rules', user, update=True)
-            PageVisitTracker.get_latest_visit('updates', user, update=True)
-
 
 class GroupAdminForm(forms.ModelForm):
     """
-    Creates a multi-select form for the group panel (instead of users where the Django framework places it)
+    Creates a multi-select form for the members in teh group panel
+    ( opposed to Djangos standard location: in the user page)
     """
     users = forms.ModelMultipleChoiceField(
         User.objects.all(),
@@ -113,6 +110,7 @@ class AssociationAdmin(admin.ModelAdmin):
     form = GroupAdminForm
 
 
+admin.site.register(UserOverview, CustomUserAdmin)
 admin.site.register(User, UserAdmin)
-admin.site.register(Association, GroupAdmin)
+admin.site.register(Association, AssociationAdmin)
 admin.site.register(UserMembership)

@@ -1,18 +1,11 @@
-import math
-
-from django.contrib import messages
 from django.contrib.auth import login
-from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import HttpResponseRedirect
-from django.shortcuts import render, redirect
 from django.urls import reverse
-from django.utils.decorators import method_decorator
-from django.views import View
-from django.views.generic import TemplateView
-from django.utils.translation import gettext as _
+from django.views.generic import TemplateView, ListView
+from django.db.models import Q
 
-from Dining.models import DiningEntryUser
+from Dining.models import DiningEntryUser, DiningList
 from .forms import RegisterUserForm, RegisterUserDetails, AssociationLinkForm
 from .models import User
 
@@ -53,26 +46,23 @@ class RegisterView(TemplateView):
         return self.render_to_response(context)
 
 
-class DiningHistoryView(View):
+class DiningJoinHistoryView(LoginRequiredMixin, ListView):
     context = {}
-    template = "accounts/history_dining.html"
+    template_name = "accounts/user_history_joined.html"
+    paginate_by = 20
 
-    @method_decorator(login_required)
-    def get(self, request, page=1, **kwargs):
-        length = 3
-        lower_bound = length * (page - 1)
-        upper_bound = length * page
+    def get_queryset(self):
+        return DiningEntryUser.objects.filter(user=self.request.user).order_by('-dining_list__date')
 
-        # get all dining lists
-        self.context['dining_entries'] = DiningEntryUser.objects.filter(user=request.user).order_by(
-            '-dining_list__date')
-        self.context['dining_entries_select'] = self.context['dining_entries'][lower_bound:upper_bound]
-        self.context['page'] = page
-        self.context['pages'] = math.ceil(len(self.context['dining_entries']) / length)
-        if self.context['pages'] > 1:
-            self.context['show_page_navigation'] = True
-            self.context['pages'] = range(1, self.context['pages'] + 1)
-        return render(request, self.template, self.context)
+
+class DiningClaimHistoryView(LoginRequiredMixin, ListView):
+    context = {}
+    template_name = "accounts/user_history_claimed.html"
+    paginate_by = 20
+
+    def get_queryset(self):
+        user = self.request.user
+        return DiningList.objects.filter(Q(claimed_by=user) | Q(purchaser=user)).order_by('-date')
 
 
 

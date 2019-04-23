@@ -28,6 +28,7 @@ class AssociationTransactionForm(TransactionForm):
 
     def __init__(self, association, *args, **kwargs):
         super().__init__(*args, association=association, **kwargs)
+        self.fields['target_user'].queryset=User.objects.filter(usermembership__association=association).order_by('first_name')
 
     class Meta(TransactionForm.Meta):
         fields = ['origin', 'amount', 'target_user', 'description']

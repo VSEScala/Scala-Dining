@@ -2,7 +2,7 @@ from django.urls import path, include
 from allauth.account.views import LoginView
 
 from CreditManagement.views import TransactionAddView
-from .views import RegisterView, DiningHistoryView
+from .views import RegisterView, DiningJoinHistoryView, DiningClaimHistoryView
 from .views_user_settings import SettingsProfileView
 from .views_association import CreditsOverview, TransactionsCsvView, MembersOverview, MembersEditView, \
     AssociationOverview
@@ -18,8 +18,10 @@ urlpatterns = [
     ])),
 
     path('statistics/', include([
-        path('dining/', DiningHistoryView.as_view(), name='history_lists'),
-        path('dining/<int:page>/', DiningHistoryView.as_view(), name='history_lists'),
+        path('joined/', DiningJoinHistoryView.as_view(), name='history_lists'),
+        path('joined/<int:page>/', DiningJoinHistoryView.as_view(), name='history_lists'),
+        path('claimed/', DiningClaimHistoryView.as_view(), name='history_claimed_lists'),
+        path('claimed/<int:page>/', DiningClaimHistoryView.as_view(), name='history_claimed_lists'),
     ])),
 
 

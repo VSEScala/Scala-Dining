@@ -1,21 +1,20 @@
 {% load humanize %}
 
-<div class="row mb-1">
-    <div class="col-2">
+<tr>
+    <td>
         {{ entry.get_username }}
-    </div>
-    <div class="col-3">
+    </td>
+    <td>
         {{ entry.get_full_name }}
-    </div>
-    <div class="col-3">
+    </td>
+    <td>
         {{ entry.email }}
-    </div>
-    {# Todo: credit #}
+    </td>
     {% with entry.usercredit.balance as credit %}
-        <div class="col-2">
+        <td>
             {{ credit }}
-        </div>
-        <div class="col-2">
+        </td>
+        <td>
             {% if credit < 0 %}
                 {% if entry.usercredit.balance_fixed >= 0 %}
                     Currently pending
@@ -23,6 +22,6 @@
                     {{ entry.usercredit.negative_since|naturalday }}
                 {% endif %}
             {% endif %}
-        </div>
+        </td>
     {% endwith %}
-</div>
+</tr>

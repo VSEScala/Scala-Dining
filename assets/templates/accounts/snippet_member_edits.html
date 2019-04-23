@@ -1,31 +1,33 @@
-<div class="row mb-1">
-    <div class="col-2">{{ entry.related_user.get_username }}</div>
-    <div class="col-2">{{ entry.related_user.get_full_name }}</div>
-    <div class="col-3">{{ entry.related_user.email }}</div>
-    <div class="col-3">
+{% load humanize %}
+
+<tr>
+    <td>{{ entry.related_user.get_username }}</td>
+    <td>{{ entry.related_user.get_full_name }}</td>
+    <td>{{ entry.related_user.email }}</td>
+    <td>
         {% if entry.is_verified %}
-            Verified on {{ entry.verified_on }}
+            Verified: {{ entry.verified_on|naturalday }}
         {% elif entry.verified_on %}
-            Denied on {{ entry.verified_on }}
+            Denied: {{ entry.verified_on|naturalday }}
         {% else %}
-            Requested on {{ entry.created_on }}
+            Requested: {{ entry.created_on|naturalday }}
         {% endif %}
-    </div>
+    </td>
     {# Verify button #}
-    <div class="col-1">
+    <td>
         {% if not entry.is_verified %}
             <button type="submit" name="validate-yes-{{ entry.id }}" class="btn btn-block btn-outline-success">
                 {# Only icon because the button is not wide enough for text. #}
                 <i class="fa fa-check-circle"></i>
             </button>
         {% endif %}
-    </div>
+    </td>
     {# Deny button #}
-    <div class="col-1">
+    <td>
         {% if entry.is_verified or not entry.verified_on %}
             <button type="submit" name="validate-no-{{ entry.id }}" class="btn btn-block btn-outline-danger">
                 <i class="fa fa-times-circle"></i>
             </button>
         {% endif %}
-    </div>
+    </td>
 </div>
