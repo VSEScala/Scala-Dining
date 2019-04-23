@@ -21,10 +21,14 @@
                 Password
             </a>
         </li>
+        <li class="nav-item">
+            <a class="nav-link {% block tab_linked_accounts %}{% endblock %}"
+               href="{% url 'socialaccount_connections' %}">
+                Linked accounts
+            </a>
+        </li>
     </ul>
 
-    <div class="pt-4">
-        {% block details %} {% endblock details %}
-    </div>
+    <div class="pt-3">{% block details %}{% endblock details %}</div>
 
 {% endblock content %}
