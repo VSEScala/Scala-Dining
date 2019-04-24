@@ -30,8 +30,13 @@ class QuadriviumAccount(ProviderAccount):
 
 
     def to_str(self):
-        dflt = super().to_str()
-        return self.account.extra_data.get('first_name', dflt)
+        data = self.account.extra_data
+        first_name = data.get('given_name')
+        last_name = data.get('family_name')
+        username = data.get('preferred_username')
+        if not first_name or not last_name or not username:
+            return super().to_str()
+        return "{} {} ({})".format(first_name, last_name, username)
 
 
 class QuadriviumProvider(OAuth2Provider):
@@ -39,7 +44,7 @@ class QuadriviumProvider(OAuth2Provider):
     name = 'ESMG Quadrivium'
     account_class = QuadriviumAccount
     # Custom property not included in library
-    # logo = static('images/allauthproviders/quadrivium.png')
+    logo = static('images/allauthproviders/quadrivium.svg')
 
     def get_scope(self, request):
         scope = set(super().get_scope(request))

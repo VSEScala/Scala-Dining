@@ -21,15 +21,12 @@
                         <input id="id_account_{{ base_account.id }}" type="radio" name="account"
                                value="{{ base_account.id }}" class="custom-control-input">
                         <label for="id_account_{{ base_account.id }}" class="custom-control-label">
-                            {{ account.get_brand.name }}<br>
-                            {{ account }}
+                            {{ account.get_brand.name }}: {{ account }}
                         </label>
                     </div>
                 {% endwith %}
             {% endfor %}
-            <div>
-                <button type="submit" class="btn btn-warning">Unlink</button>
-            </div>
+            <p><button type="submit" class="btn btn-warning">Unlink</button></p>
         </form>
 
     {% else %}
@@ -38,20 +35,5 @@
 
     <h2>Link your association account</h2>
 
-
-    {% load socialaccount %}
-<ul>
-{% get_providers as socialaccount_providers %}
-{% for provider in socialaccount_providers %}
-<li>
-  <a title="{{provider.name}}" class="socialaccount_provider {{provider.id}}"
-     href="{% provider_login_url provider.id process=process scope=scope auth_params=auth_params %}">{{provider.name}}</a>
-</li>
-{% endfor %}
-</ul>
-
-    {% with logo= %}
-    <a href="{% provider_login_url "quadrivium" process="connect" %}">ESMG Quadrivium
-        {% if  %}<img src=""
-    </a>
+    <p>{% include "socialaccount/snippets/provider_list.html" with process="connect" %}</p>
 {% endblock %}
