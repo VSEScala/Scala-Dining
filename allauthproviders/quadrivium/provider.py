@@ -1,8 +1,9 @@
 from allauth.account.models import EmailAddress
 from allauth.socialaccount import app_settings
 from allauth.socialaccount.providers.base import AuthAction, ProviderAccount
-from allauth.socialaccount.providers.oauth2.provider import OAuth2Provider
 from django.templatetags.static import static
+
+from allauthproviders.base import AssociationProvider
 
 
 class Scope:
@@ -22,14 +23,8 @@ class Scope:
 
 
 class QuadriviumAccount(ProviderAccount):
-    # def get_profile_url(self):
-    #     return self.account.extra_data.get('profile')
-    #
-    # def get_avatar_url(self):
-    #     return self.account.extra_data.get('picture')
-
-
     def to_str(self):
+        # String that is displayed e.g. on the linked accounts page
         data = self.account.extra_data
         first_name = data.get('given_name')
         last_name = data.get('family_name')
@@ -39,12 +34,15 @@ class QuadriviumAccount(ProviderAccount):
         return "{} {} ({})".format(first_name, last_name, username)
 
 
-class QuadriviumProvider(OAuth2Provider):
+class QuadriviumProvider(AssociationProvider):
     id = 'quadrivium'
     name = 'ESMG Quadrivium'
     account_class = QuadriviumAccount
-    # Custom property not included in library
+
     logo = static('images/allauthproviders/quadrivium.svg')
+    association_slug = 'quadrivium'
+
+    # Todo: strip unnecessary statements from the methods below
 
     def get_scope(self, request):
         scope = set(super().get_scope(request))
@@ -87,12 +85,12 @@ class QuadriviumProvider(OAuth2Provider):
     # def extract_extra_data(self, data):
     #     return {k: v for k, v in data.items() if k in IDENTITY_CLAIMS}
 
-    def extract_email_addresses(self, data):
-        ret = []
-        email = data.get('email')
-        if email and data.get('email_verified'):
-            ret.append(EmailAddress(email=email, verified=True, primary=True))
-        return ret
+    # def extract_email_addresses(self, data):
+    #     ret = []
+    #     email = data.get('email')
+    #     if email and data.get('email_verified'):
+    #         ret.append(EmailAddress(email=email, verified=True, primary=True))
+    #     return ret
 
 
 provider_classes = [QuadriviumProvider]
