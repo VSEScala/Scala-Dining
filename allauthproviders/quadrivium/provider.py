@@ -2,6 +2,7 @@ from allauth.account.models import EmailAddress
 from allauth.socialaccount import app_settings
 from allauth.socialaccount.providers.base import AuthAction, ProviderAccount
 from allauth.socialaccount.providers.oauth2.provider import OAuth2Provider
+from django.templatetags.static import static
 
 
 class Scope:
@@ -21,21 +22,24 @@ class Scope:
 
 
 class QuadriviumAccount(ProviderAccount):
-    def get_profile_url(self):
-        return self.account.extra_data.get('profile')
+    # def get_profile_url(self):
+    #     return self.account.extra_data.get('profile')
+    #
+    # def get_avatar_url(self):
+    #     return self.account.extra_data.get('picture')
 
-    def get_avatar_url(self):
-        return self.account.extra_data.get('picture')
 
     def to_str(self):
         dflt = super().to_str()
-        return self.account.extra_data.get('name', dflt)
+        return self.account.extra_data.get('first_name', dflt)
 
 
 class QuadriviumProvider(OAuth2Provider):
     id = 'quadrivium'
     name = 'ESMG Quadrivium'
     account_class = QuadriviumAccount
+    # Custom property not included in library
+    # logo = static('images/allauthproviders/quadrivium.png')
 
     def get_scope(self, request):
         scope = set(super().get_scope(request))
@@ -71,7 +75,6 @@ class QuadriviumProvider(OAuth2Provider):
         return dict(
             username=data.get('preferred_username', data.get('given_name')),
             email=data.get('email'),
-            name=data.get('name'),
             first_name=data.get('given_name'),
             last_name=data.get('family_name')
         )
