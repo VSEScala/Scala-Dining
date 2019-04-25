@@ -189,8 +189,9 @@ ACCOUNT_FORMS = {
     'change_password': 'UserDetails.forms_allauth.CustomChangePasswordForm',
     'reset_password_from_key': 'UserDetails.forms_allauth.CustomResetPasswordKeyForm',
 }
-# ACCOUNT_EMAIL_VERIFICATION = "mandatory"
+ACCOUNT_EMAIL_VERIFICATION = "none"
 ACCOUNT_LOGIN_ON_PASSWORD_RESET = True
 # Set to None to ask the user ("Remember me?")
 ACCOUNT_SESSION_REMEMBER = True
 ACCOUNT_UNIQUE_EMAIL = True
+SOCIALACCOUNT_ADAPTER = "UserDetails.externalaccounts.SocialAccountAdapter"

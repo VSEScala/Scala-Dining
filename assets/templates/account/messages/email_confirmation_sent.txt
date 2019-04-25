@@ -1,0 +1,1 @@
+Confirmation e-mail sent to {{email}}
