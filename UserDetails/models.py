@@ -74,6 +74,21 @@ class User(AbstractUser):
     def has_admin_site_access(self):
         return self.is_active and (self.has_any_perm() or self.is_superuser)
 
+    def is_board_of(self, associationId):
+        '''
+        Return if user is a board member of association identified by id
+        '''
+        return self.groups.filter(id=associationId).count() > 0
+
+    def is_member_of(self, associationName):
+        '''
+        Return if the user is a member of the association identified by its name
+        '''
+        for m in UserMembership.objects.filter(related_user=self):
+            if (m.association.name == associationName and m.is_verified):
+                return True
+        return False
+
 
 class Association(Group):
     slug = models.SlugField(max_length=10)
