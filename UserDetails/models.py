@@ -80,12 +80,12 @@ class User(AbstractUser):
         '''
         return self.groups.filter(id=associationId).count() > 0
 
-    def is_member_of(self, associationName):
+    def is_member_of(self, associationId):
         '''
-        Return if the user is a member of the association identified by its name
+        Return if the user is a member of the association identified by its id
         '''
         for m in UserMembership.objects.filter(related_user=self):
-            if (m.association.name == associationName and m.is_verified):
+            if (m.association.id == associationId and m.is_verified):
                 return True
         return False
 
