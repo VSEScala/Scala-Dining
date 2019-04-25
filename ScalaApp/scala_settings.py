@@ -23,7 +23,7 @@ MINIMUM_BALANCE_FOR_DINING_SIGN_UP = Decimal('-2.00') - KITCHEN_COST
 MINIMUM_BALANCE_FOR_DINING_SLOT_CLAIM = Decimal('-2.00') - KITCHEN_COST
 MINIMUM_BALANCE_FOR_USER_TRANSACTION = Decimal('0.00')
 
-# Except associations from bottom limit by association id
+# Except associations from bottom limit by association name
 MINIMUM_ASSOCIATION_EXCEPTIONS = []
 
 # The duration that pending transactions should last
