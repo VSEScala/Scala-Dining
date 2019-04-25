@@ -1,0 +1,3 @@
+{% load account %}
+{% user_display user as name %}
+Successfully logged in as {{name}}

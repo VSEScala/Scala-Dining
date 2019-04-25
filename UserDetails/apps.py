@@ -5,4 +5,5 @@ class UserDetailsConfig(AppConfig):
     name = 'UserDetails'
 
     def ready(self):
-        pass
+        # Import to register the receiver in this module
+        import UserDetails.externalaccounts

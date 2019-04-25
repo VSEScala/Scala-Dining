@@ -29,12 +29,12 @@ class SettingsProfileView(LoginRequiredMixin, TemplateView):
         })
 
         if context['user_form'].is_valid() and \
-            context['dining_form'].is_valid() and \
-            context['association_links_form'].is_valid():
+                context['dining_form'].is_valid() and \
+                context['association_links_form'].is_valid():
             context['user_form'].save()
             context['dining_form'].save()
             context['association_links_form'].save()
-            messages.success(request, _("Profile saved."))
+            messages.success(request, _("Account saved"))
 
             return redirect('settings_account')
 

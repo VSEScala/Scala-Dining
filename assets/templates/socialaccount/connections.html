@@ -1,0 +1,43 @@
+{% extends "account/settings/settings_linked_accounts.html" %}
+
+{% load socialaccount %}
+
+{% block details %}
+
+    {% if form.accounts %}
+        {% if form.non_field_errors %}
+            {% for error in form.non_field_errors %}
+                <div class="alert alert-danger" role="alert">{{ error }}</div>
+            {% endfor %}
+        {% endif %}
+
+        <p>The following association accounts are linked to this account:</p>
+
+        <form method="post" action="{% url 'socialaccount_connections' %}">
+            {% csrf_token %}
+            <p>
+                {% for base_account in form.accounts %}
+                    {% with base_account.get_provider_account as account %}
+                        <div class="custom-control custom-radio">
+                            <input id="id_account_{{ base_account.id }}" type="radio" name="account"
+                                   value="{{ base_account.id }}" class="custom-control-input">
+                            <label for="id_account_{{ base_account.id }}" class="custom-control-label">
+                                {{ account.get_brand.name }}: {{ account }}
+                            </label>
+                        </div>
+                    {% endwith %}
+                {% endfor %}
+            </p>
+            <p>
+                <button type="submit" class="btn btn-warning">Unlink</button>
+            </p>
+        </form>
+
+    {% else %}
+        <p>You currently don't have an association account linked to this account.</p>
+    {% endif %}
+
+    <h2>Link your association account</h2>
+
+    <p>{% include "socialaccount/snippets/provider_list.html" with process="connect" %}</p>
+{% endblock %}
