@@ -39,11 +39,7 @@ class DayMixin(ContextMixin):
         context['date'] = self.date
         context['next_date'] = self.date + timedelta(days=3 if self.date.weekday() == 4 else 1)
         context['previous_date'] = self.date - timedelta(days=3 if self.date.weekday() == 0 else 1)
-        if context['next_date'] - timezone.now().date() > timedelta(days=7):
-            context['next_date'] = None
-        if (context['previous_date'] - timezone.now().date()).days < -2:
-            context['previous_date'] = None
-        context['is_today'] = (self.date - timezone.now().date()).days == 0
+        context['week_ahead'] = self.date >= date.today() + timedelta(days=7)
         return context
 
     def init_date(self):
@@ -53,7 +49,10 @@ class DayMixin(ContextMixin):
         if self.date:
             # Already initialized
             return
-        self.date = date(self.kwargs['year'], self.kwargs['month'], self.kwargs['day'])
+        try:
+            self.date = date(self.kwargs['year'], self.kwargs['month'], self.kwargs['day'])
+        except ValueError:
+            raise Http404('Invalid date')
         if self.date.weekday() >= 5:
             raise Http404('Weekends are not available')
 

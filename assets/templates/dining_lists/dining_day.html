@@ -1,35 +1,51 @@
-
 {% extends 'base.html' %}
 {% load staticfiles %}
 {% load humanize %}
 
-{% block title %}Scala Dining {{ date }} {% endblock %}
+{% block title %}Scala Dining {{ date }}{% endblock %}
 
 {% block head %}
     <link rel="stylesheet" href="{% static 'css/dining_v2.css' %}">
 {% endblock %}
 
 {% block content %}
-    <div class="col-12 row p-0 m-0">
-
-        {% if previous_date %}
-            <a href="{% url 'day_view' day=previous_date.day month=previous_date.month year=previous_date.year %}"
-               class="col-2 btn btn-outline-primary">Back</a>
-        {% else %}
-            <a class="col-2"></a>
-        {% endif %}
-
-        <div class="text-center col-8 py-1 h5
-            {% if is_today %} font-bold {% endif %}">
-            <span class="align-middle">{{ date|date|capfirst }}</span>
+    <div class="row">
+        {# Button toolbar #}
+        <div class="col-12 col-md-4">
+            <div class="row">
+                <div class="col-5">
+                    <a href="{% url 'day_view' day=date.today.day month=date.today.month year=date.today.year %}"
+                       class="btn btn-block btn-outline-primary">
+                        Today
+                    </a>
+                </div>
+                <div class="col-7">
+                    <div class="btn-group btn-block">
+                        <a href="{% url 'day_view' day=previous_date.day month=previous_date.month year=previous_date.year %}"
+                           class="btn btn-outline-primary">
+                            <i class="fas fa-chevron-left"></i>
+                            <span class="sr-only">Previous</span>
+                        </a>
+                        <a href="{% url 'day_view' year=next_date.year month=next_date.month day=next_date.day %}"
+                           class="btn btn-outline-primary">
+                            <i class="fas fa-chevron-right"></i>
+                            <span class="sr-only">Next</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
         </div>
-
-        {% if next_date %}
-            <a href="{% url 'day_view' year=next_date.year month=next_date.month day=next_date.day %}"
-               class="col-2 btn btn-outline-primary">Next</a>
-        {% else %}
-            <a class="col-2"></a>
-        {% endif %}
+        {# Date display #}
+        <div class="col-md-8 mt-3 mt-md-0 d-flex justify-content-between align-items-center">
+            <h4 class="my-0 {% if date.today == date %}font-weight-bold{% endif %}">
+                {{ date|date|capfirst }}
+            </h4>
+            {% if week_ahead %}
+                <small class="text-warning text-right">
+                    <i class="fas fa-exclamation-triangle"></i> This date is more than a week in the future
+                </small>
+            {% endif %}
+        </div>
     </div>
 
     {% if Announcements %}
