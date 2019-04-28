@@ -47,6 +47,15 @@
                         {% endif %}
                     </div>
                 </div>
+            {% elif dining_list.payment_link %}
+                <div class="row mt-3">
+                    <div class="col-3">
+                        Meal payment:
+                    </div>
+                    <div class="col-9">
+                        <a href="{{ dining_list.payment_link }}">{{ dining_list.payment_link }}</a>
+                    </div>
+                </div>
             {% endif %}
         </div>
 
