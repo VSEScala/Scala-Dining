@@ -4,18 +4,18 @@
 
 {% block details %}
     {% if user.emailaddress_set.all %}
-        <p>{% trans 'The following e-mail addresses are associated with your account:' %}</p>
+        <p>The following e-mail addresses are associated with your account:</p>
 
         <form action="{% url 'account_email' %}" method="post">
             {% csrf_token %}
-            <div class="form-group">
+            <p>
                 {% for emailaddress in user.emailaddress_set.all %}
-                    <div class="form-check">
+                    <div class="custom-control custom-radio">
                         <input id="email_radio_{{ forloop.counter }}" type="radio" name="email"
-                               {% if emailaddress.primary or user.emailaddress_set.count == 1 %}checked="checked"{% endif %}
+                               {% if emailaddress.primary or user.emailaddress_set.count == 1 %}checked{% endif %}
                                value="{{ emailaddress.email }}"
-                               class="form-check-input">
-                        <label for="email_radio_{{ forloop.counter }}" class="form-check-label">
+                               class="custom-control-input">
+                        <label for="email_radio_{{ forloop.counter }}" class="custom-control-label">
                             {{ emailaddress.email }}
                             {% if emailaddress.verified %}
                                 <span class="badge badge-secondary">{% trans "Verified" %}</span>
@@ -28,7 +28,7 @@
                         </label>
                     </div>
                 {% endfor %}
-            </div>
+            </p>
             <p>
                 <button class="btn btn-secondary" type="submit"
                         name="action_primary">{% trans 'Make primary' %}</button>

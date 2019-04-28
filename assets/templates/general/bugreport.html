@@ -1,8 +1,15 @@
 {% extends 'base.html' %}
-{% load form_extras %}
+{% load static %}
 
 {% block content %}
-    Found a bug? Please tell us with as much information on how/when it occured by sending a mail to:<br>
-    <a href="mailto:diningapp@studentencultuur.nl">diningapp@studentencultuur.nl</a>
-
+    <h1>Report Bug</h1>
+    <p>
+        Found a bug? Please tell us how and when it occurred by sending a mail to
+        <a href="mailto:diningapp@studentencultuur.nl">diningapp@studentencultuur.nl</a>.
+    </p>
+    <p class="text-center">
+        <a href="https://github.com/DutcherNL/Scala-Dining-WebApp">
+            <img src="{% static "images/github_mark.svg" %}" alt="GitHub">
+        </a>
+    </p>
 {% endblock %}

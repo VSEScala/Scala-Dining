@@ -1,0 +1,13 @@
+{% load socialaccount %}
+
+{% get_providers as socialaccount_providers %}
+{% for provider in socialaccount_providers %}
+    <a title="{{ provider.name }}" class="btn btn-secondary"
+       href="{% provider_login_url provider.id process=process scope=scope auth_params=auth_params %}">
+        {% if provider.logo %}
+            <img src="{{ provider.logo }}" alt="{{ provider.name }}">
+        {% else %}
+            {{ provider.name }}
+        {% endif %}
+    </a>
+{% endfor %}

@@ -1,24 +1,10 @@
 {% extends 'account/base.html' %}
-{% load static %}
-
 
 {% block content %}
     <div class="row">
-        {# Create account. Uses flex classes to put the button at the bottom #}
-        <div class="col-sm text-center d-flex flex-column justify-content-between">
-            <div class="my-auto">
-                <p>Are you hungry?</p>
-                <p>Sign up now and join dinner with the other culture associations.</p>
-            </div>
-            <a class="btn btn-block btn-primary" href="{% url 'account_signup' %}">Create account</a>
-{#                <div class="login-horline d-sm-none d-block"></div>#}
-        </div>
-        <div class="col-sm text-center d-sm-none flex-column mt-5">
-            Or login:
-        </div>
-        <div class="col-sm order-sm-first border-sm-right mt-3">
-{#            <div class="login-verline d-none d-sm-block"></div>#}
-            <p class="d-none d-sm-block text-center">Already have an account? Log in!</p>
+        <div class="col-sm border-sm-right mt-3">
+            <h4>Log in</h4>
+            <p>Already have an account? Log in!</p>
 
             <form method="post" action="{% url 'account_login' %}">
                 {% csrf_token %}
@@ -27,10 +13,21 @@
                     <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}">
                 {% endif %}
                 {% include "snippets/bootstrap_form.html" %}
-                <p><a href="{% url 'oidc_authentication_init' %}">Quadrivium member? Click here.</a></p>
                 <p><a href="{% url 'account_reset_password' %}">Forgot password?</a></p>
                 <button type="submit" class="btn btn-block btn-primary">Log in</button>
             </form>
+        </div>
+        <div class="col-sm d-flex flex-column justify-content-between mt-3">
+            <div>
+                <h4>Log in using your association account</h4>
+                <p>{% include "socialaccount/snippets/provider_list.html" with process="login" %}</p>
+            </div>
+
+            <div>
+                <h4>Create new account</h4>
+                <p>Sign up now and join dinner with the other culture associations.</p>
+                <a class="btn btn-block btn-primary" href="{% url 'account_signup' %}">Create account</a>
+            </div>
         </div>
     </div>
 {% endblock %}
