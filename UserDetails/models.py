@@ -1,5 +1,3 @@
-from decimal import Decimal, Context, Inexact
-
 from django.contrib.auth.models import AbstractUser, Group
 from django.db import models
 from django.utils import timezone
