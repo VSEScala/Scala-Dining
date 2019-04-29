@@ -46,6 +46,17 @@ hr {
     border-radius: 10px 10px 0 0 ;
 }
 
+.membership_icon {
+    display: inline-block;
+    height: 2em;
+}
+
+.membership_icon > img {
+    height: 100%;
+    filter: grayscale(100%);
+    padding: 0 0.1em;
+}
+
 .collapser{
     height:0;
     overflow: hidden;
