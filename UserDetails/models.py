@@ -8,10 +8,6 @@ from django.utils.translation import gettext_lazy as _
 
 
 class User(AbstractUser):
-    # Field that can be used to link a user account to a user account in an external system such as OpenID Connect.
-    # Should contain something like a UUID.
-    external_link = models.CharField(max_length=150, editable=False, default="",
-                                     help_text="When this is set, the account is linked to an external system.")
     email = models.EmailField(_('email address'), unique=True)
 
     def __str__(self):
