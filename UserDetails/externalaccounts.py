@@ -14,10 +14,14 @@ def _create_membership(socialaccount):
     association = Association.objects.get(slug=association_slug)
     membership = UserMembership.objects.filter(related_user=user, association=association).first()
     if membership:
-        # There exists a membership already (although it might not be verified)
-        return
-    UserMembership.objects.create(related_user=user, association=association, is_verified=True,
-                                  verified_on=timezone.now())
+        # There exists a membership already, verify it if needed
+        if not membership.is_verified:
+            membership.is_verified = True
+            membership.verified_on = timezone.now()
+            membership.save()
+    else:
+        UserMembership.objects.create(related_user=user, association=association, is_verified=True,
+                                      verified_on=timezone.now())
 
 
 @receiver(user_signed_up)
