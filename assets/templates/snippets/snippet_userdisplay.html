@@ -1,0 +1,18 @@
+{% load static %}
+
+<span class="d-flex justify-content-between align-items-center">
+    <span>{{ entry.name }}</span>
+
+    <span>
+        {% for membership in entry.user.usermembership_set.all %}
+            {% if membership.association.icon_image %}
+                <i class="fas fa-fw mx-1" style=" height: 2em;">
+                    <img src="{{ membership.association.icon_image.url }}" class="h-100"
+                         style="filter: grayscale(100%) brightness(100%);">
+                </i>
+            {% else %}
+                <i>{{ membership.association.slug|slice:":1" }}</i>
+            {% endif %}
+        {% endfor %}
+    </span>
+</span>

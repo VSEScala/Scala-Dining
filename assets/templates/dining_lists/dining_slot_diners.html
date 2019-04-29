@@ -27,9 +27,11 @@
                         {% for entry in entries %}
                             <tr>
                                 <td>
-                                    {{ entry.name }}
                                     {% if entry.get_external %}
+                                        {{ entry.name }}
                                         <small class="font-italic">added by {{ entry.user }}</small>
+                                    {% else %}
+                                        {% include 'snippets/snippet_userdisplay.html' %}
                                     {% endif %}
                                 </td>
                                 <td>

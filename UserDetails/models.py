@@ -77,7 +77,8 @@ class User(AbstractUser):
 
 class Association(Group):
     slug = models.SlugField(max_length=10)
-    image = models.ImageField(blank=True)
+    image = models.ImageField(blank=True, null=True)
+    icon_image = models.ImageField(blank=True, null=True)
     is_choosable = models.BooleanField(default=True, verbose_name="Whether this association can be chosen as membership by users")
 
     @cached_property
