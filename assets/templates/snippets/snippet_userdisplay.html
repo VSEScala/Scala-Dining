@@ -6,9 +6,8 @@
     <span>
         {% for membership in entry.user.usermembership_set.all %}
             {% if membership.association.icon_image %}
-                <i class="fas" style="height: 2em;">
-                    <img src="{{ membership.association.icon_image.url }}" class="h-100"
-                         style="filter: grayscale(100%) brightness(100%);">
+                <i class="membership_icon" style="height: 2em;">
+                    <img src="{{ membership.association.icon_image.url }}">
                 </i>
             {% else %}
                 <i>{{ membership.association.slug|slice:":1" }}</i>
