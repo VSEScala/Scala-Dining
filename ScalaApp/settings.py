@@ -51,9 +51,6 @@ INSTALLED_APPS = [
     'allauth.socialaccount',
     'allauthproviders.quadrivium',
 
-    # Quadrivium OpenID Connect
-    'mozilla_django_oidc',
-
     'UserDetails.apps.UserDetailsConfig',
     'Dining.apps.DiningConfig',
     'CreditManagement.apps.CreditManagementConfig',
@@ -170,12 +167,9 @@ INTERNAL_IPS = ['127.0.0.1']
 # Include Scala settings
 from .scala_settings import *
 
-# Quadrivium OpenID Connect
-from .settings_q_oidc import *
 AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
     'allauth.account.auth_backends.AuthenticationBackend',
-    'UserDetails.oidc.QuadriviumOIDCAB',
 ]
 
 SITE_ID = 1
