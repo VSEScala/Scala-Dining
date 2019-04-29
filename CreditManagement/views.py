@@ -28,7 +28,7 @@ class TransactionAddView(LoginRequiredMixin, View):
         if association_name:
             association = Association.objects.get(slug=association_name)
             # If an association is given as the source, check user credentials
-            if not self.check_association_permission(request.user, association):
+            if not request.user.is_board_of(association.id):
                 return HttpResponseForbidden()
             # Create the form
             self.context['slot_form'] = AssociationTransactionForm(association)
@@ -41,7 +41,7 @@ class TransactionAddView(LoginRequiredMixin, View):
         if association_name:
             association = Association.objects.get(slug=association_name)
             # If an association is given as the source, check user credentials
-            if not self.check_association_permission(request.user, association):
+            if not request.user.is_board_of(association.id):
                 return HttpResponseForbidden()
             # Create the form
             form = AssociationTransactionForm(association, request.POST)
@@ -55,13 +55,6 @@ class TransactionAddView(LoginRequiredMixin, View):
 
         self.context['slot_form'] = form
         return render(request, self.template_name, self.context)
-
-    def check_association_permission(self, user, association):
-        if user.groups.filter(id=association.id).count() > 0:
-            return True
-        else:
-            return False
-
 
 class AssociationTransactionListView:
     pass

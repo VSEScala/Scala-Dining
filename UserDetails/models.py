@@ -74,11 +74,27 @@ class User(AbstractUser):
     def has_admin_site_access(self):
         return self.is_active and (self.has_any_perm() or self.is_superuser)
 
+    def is_board_of(self, associationId):
+        '''
+        Return if user is a board member of association identified by id
+        '''
+        return self.groups.filter(id=associationId).count() > 0
+
+    def is_member_of(self, association):
+        '''
+        Return if the user is a member of the association
+        '''
+        for m in UserMembership.objects.filter(related_user=self):
+            if (m.association == association and m.is_verified):
+                return True
+        return False
+
 
 class Association(Group):
     slug = models.SlugField(max_length=10)
     image = models.ImageField(blank=True)
     is_choosable = models.BooleanField(default=True, verbose_name="Whether this association can be chosen as membership by users")
+    has_min_exception = models.BooleanField(default=False, verbose_name="Whether this association has an exception to the minimum balance")
 
     @cached_property
     def requires_action(self):
