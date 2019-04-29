@@ -4,7 +4,7 @@
     <span>{{ entry.name }}</span>
 
     <span class="d-flex align-items-right">
-        {% for membership in entry.user.usermembership_set.all %}
+        {% for membership in entry.user.get_memberships %}
             {% if membership.association.icon_image %}
                 <i class="membership_icon">
                     <img src="{{ membership.association.icon_image.url }}">

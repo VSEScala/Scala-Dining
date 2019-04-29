@@ -89,6 +89,9 @@ class User(AbstractUser):
                 return True
         return False
 
+    def get_memberships(self):
+        return self.usermembership_set.filter(is_verified=True)
+
 
 class Association(Group):
     slug = models.SlugField(max_length=10)
