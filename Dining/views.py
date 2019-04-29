@@ -361,8 +361,8 @@ class SlotListView(LoginRequiredMixin, SlotMixin, TemplateView):
         context['tab'] = "list"
 
         # Select related eliminates the extra queries during rendering of the template
-        context['entries'] = self.dining_list.dining_entries.select_related('user', 'diningentryuser',
-                                                                            'diningentryexternal')
+        context['entries'] = self.dining_list.dining_entries\
+            .select_related('user', 'diningentryuser','diningentryexternal').order_by('user__first_name')
 
         # determine whether the user has external entries added that he/she can remove until closing time
         context['can_delete_some'] = \
