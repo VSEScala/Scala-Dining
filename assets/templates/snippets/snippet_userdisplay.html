@@ -6,7 +6,7 @@
     <span>
         {% for membership in entry.user.usermembership_set.all %}
             {% if membership.association.icon_image %}
-                <i class="membership_icon" style="height: 2em;">
+                <i class="membership_icon">
                     <img src="{{ membership.association.icon_image.url }}">
                 </i>
             {% else %}
