@@ -39,7 +39,8 @@ class DayMixin(ContextMixin):
         context['date'] = self.date
         context['next_date'] = self.date + timedelta(days=3 if self.date.weekday() == 4 else 1)
         context['previous_date'] = self.date - timedelta(days=3 if self.date.weekday() == 0 else 1)
-        context['week_ahead'] = self.date >= date.today() + timedelta(days=7)
+        # Nr of days between date and today
+        context['date_diff'] = (self.date - date.today()).days
         return context
 
     def init_date(self):

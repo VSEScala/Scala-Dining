@@ -40,7 +40,7 @@
             <h4 class="my-0 {% if date.today == date %}font-weight-bold{% endif %}">
                 {{ date|date|capfirst }}
             </h4>
-            {% if week_ahead %}
+            {% if date_diff >= 7 %}
                 <small class="text-warning text-right">
                     <i class="fas fa-exclamation-triangle"></i> This date is more than a week in the future
                 </small>
