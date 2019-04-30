@@ -1,4 +1,4 @@
-from datetime import date, timedelta
+from datetime import date
 
 from django.contrib import messages
 from django.contrib.auth import get_user_model
@@ -7,24 +7,20 @@ from django.db.models import Q
 from django.http import Http404, HttpResponseRedirect, HttpResponseForbidden
 from django.shortcuts import redirect, get_object_or_404
 from django.urls import reverse
-from django.utils import timezone
 from django.utils.http import is_safe_url
 from django.utils.translation import gettext as _
 from django.views.generic import TemplateView, View
 from django.views.generic.base import ContextMixin
 from django.views.generic.edit import DeleteView
-from django.conf import settings
 
+from Dining.datesequence import sequenced_date
 from .forms import *
 from .models import *
 
 
 def index(request):
-    upcoming = timezone.now().date()
-    # If weekend, redirect to Monday after
-    if upcoming.weekday() >= 5:
-        upcoming = upcoming + timedelta(days=7 - upcoming.weekday())
-    return redirect('day_view', year=upcoming.year, month=upcoming.month, day=upcoming.day)
+    d = sequenced_date.upcoming(timezone.now().date())
+    return redirect('day_view', year=d.year, month=d.month, day=d.day)
 
 
 class DayMixin(ContextMixin):
@@ -37,8 +33,6 @@ class DayMixin(ContextMixin):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['date'] = self.date
-        context['next_date'] = self.date + timedelta(days=3 if self.date.weekday() == 4 else 1)
-        context['previous_date'] = self.date - timedelta(days=3 if self.date.weekday() == 0 else 1)
         # Nr of days between date and today
         context['date_diff'] = (self.date - date.today()).days
         return context
@@ -51,11 +45,9 @@ class DayMixin(ContextMixin):
             # Already initialized
             return
         try:
-            self.date = date(self.kwargs['year'], self.kwargs['month'], self.kwargs['day'])
+            self.date = sequenced_date.fromdate(date(self.kwargs['year'], self.kwargs['month'], self.kwargs['day']))
         except ValueError:
             raise Http404('Invalid date')
-        if self.date.weekday() >= 5:
-            raise Http404('Weekends are not available')
 
     def dispatch(self, request, *args, **kwargs):
         """
