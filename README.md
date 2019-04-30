@@ -62,4 +62,4 @@ ALTER SEQUENCE "CreditManagement_fixedtransaction_id_seq" OWNER TO postgres;
 GRANT USAGE ON SEQUENCE "CreditManagement_fixedtransaction_id_seq" TO scala;
 ```
 
-Static and media files are served with a cache directive of 1 day.
+Static and media files are served with a cache directive of 10 minutes.
