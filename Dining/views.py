@@ -19,7 +19,7 @@ from .models import *
 
 
 def index(request):
-    d = sequenced_date.upcoming(timezone.now().date())
+    d = sequenced_date.upcoming()
     return redirect('day_view', year=d.year, month=d.month, day=d.day)
 
 
