@@ -11,7 +11,7 @@
 {% block content %}
     <div class="row">
         {# Button toolbar #}
-        <div class="col-12 col-md-4">
+        <div class="col-md-4">
             <div class="row">
                 <div class="col-5">
                     <a href="{% url 'day_view' day=date.today.day month=date.today.month year=date.today.year %}"
@@ -35,18 +35,22 @@
                 </div>
             </div>
         </div>
-        {# Date display #}
-        <div class="col-md-8 mt-3 mt-md-0 d-flex justify-content-between align-items-center">
+        {# Date display (vertically+horizontally centered) #}
+        <div class="col-md-4 mt-3 mt-md-0 d-flex flex-column justify-content-center align-items-center">
             <h4 class="my-0 {% if date.today == date %}font-weight-bold{% endif %}">
                 {{ date|date|capfirst }}
             </h4>
-            {% if date_diff >= 7 %}
-                <small class="text-warning text-right">
-                    <i class="fas fa-exclamation-triangle"></i> This date is more than a week in the future
-                </small>
-            {% endif %}
         </div>
     </div>
+
+    {# In the future warning #}
+    {% if date_diff >= 7 %}
+        <div class="text-center">
+            <small class="text-warning">
+                <i class="fas fa-exclamation-triangle"></i> This date is more than a week in the future
+            </small>
+        </div>
+    {% endif %}
 
     {% if Announcements %}
         {% for Announcement in Announcements %}
