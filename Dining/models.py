@@ -7,7 +7,7 @@ from django.core.validators import MinValueValidator, MaxValueValidator
 from django.utils import timezone
 from django.utils.translation import gettext, gettext_lazy as _
 
-from datetime import datetime, timedelta, time
+from datetime import datetime, time
 from decimal import Decimal
 from UserDetails.models import User, Association
 from General.models import AbstractVisitTracker
@@ -119,7 +119,7 @@ class DiningList(models.Model):
         Whether the dining list has not expired it's adjustable date and can therefore not be modified anymore
         """
         days_since_date = (self.date + self.adjustable_duration)
-        return True# days_since_date >= timezone.now().date()
+        return days_since_date >= timezone.now().date()
 
     def clean(self):
         # Validate dining list can be changed
