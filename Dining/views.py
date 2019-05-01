@@ -1,10 +1,11 @@
+import csv
 from datetime import date
 
 from django.contrib import messages
 from django.contrib.auth import get_user_model
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.db.models import Q
-from django.http import Http404, HttpResponseRedirect, HttpResponseForbidden
+from django.db.models import Q, Count
+from django.http import Http404, HttpResponseRedirect, HttpResponseForbidden, HttpResponse
 from django.shortcuts import redirect, get_object_or_404
 from django.urls import reverse
 from django.utils.http import is_safe_url
@@ -132,6 +133,79 @@ class DayView(LoginRequiredMixin, DayMixin, TemplateView):
         context['interactive'] = True
 
         return context
+
+
+class DailyDinersCSVView(LoginRequiredMixin, View):
+    """Returns a CSV file with all diners of that day."""
+
+    def get(self, request, *args, **kwargs):
+
+        # Only superusers can access this page
+        if not request.user.is_superuser:
+            return HttpResponseForbidden
+        # Todo: allow access by permission
+        # Todo: linkin in interface
+
+
+        # Get the end date
+        date_end = request.GET.get('to', None)
+        if date_end:
+            date_end = datetime.strptime(date_end, '%d/%m/%y')
+        else:
+            date_end = timezone.now()
+
+        # Filter on a start date
+        date_start = request.GET.get('from', None)
+        if date_start:
+            date_start = datetime.strptime(date_start, '%d/%m/%y')
+        else:
+            date_start = date_end
+
+
+        # Count all dining entries in the given period
+        entry_count = Count('diningentry',
+                             filter=(Q(diningentry__dining_list__date__lte=date_end) &
+                                     Q(diningentry__dining_list__date__gte=date_start)))
+
+        # Annotate the counts to the user
+        users = User.objects.annotate(diningentry_count=entry_count)
+        users = users.filter(diningentry_count__gt=0)
+
+        # Get the related membership objects for speed optimisation
+        users.select_related('usermembership')
+
+        # Get all associations
+        associations = Association.objects.all()
+
+        ### CREATE THE CSV FILE ###
+        # Set up
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = 'attachment; filename="association_members.csv"'
+        csv_writer = csv.writer(response)
+
+        # Write header
+        header = ['Name', 'Joined']
+        for association in associations:
+            header += [association.name]
+
+        csv_writer.writerow(header)
+
+        # Write content
+        for user in users:
+            user_info = [user.get_full_name(), user.diningentry_count]
+
+            # Get all associated memberships
+            memberships = []
+            for association in associations:
+                if user.is_member_of(association):
+                    memberships.append(1)
+                else:
+                    memberships.append(0)
+
+            csv_writer.writerow(user_info + memberships)
+
+        # Return the CSV file
+        return response
 
 
 class NewSlotView(LoginRequiredMixin, DayMixin, TemplateView):
