@@ -147,9 +147,9 @@ class DiningList(models.Model):
         Determines whether this dining list can have more entries
         :return: Whether this list can get more entries
         """
-        return self.is_open() and self.diners.count() < self.max_diners
+        return self.diners.count() < self.max_diners
 
-    def can_join(self, user, check_for_self=True):
+    def can_add_diners(self, user, check_for_self=False):
         """
         Determines if a user can join a dining list by checking the status of the list and the status of
         other dining list subscriptions.
@@ -158,9 +158,12 @@ class DiningList(models.Model):
         :param user: The user intending to join
         :return: If the user can join the list
         """
+        # If the dining list no longer adjustable
+        if not self.is_adjustable():
+            return False
+
         if check_for_self:
             # if user is already on list
-
             if self.internal_dining_entries().filter(user=user).count() > 0:
                 return False
             # if user is signed up to other closed dinging lists
@@ -170,11 +173,12 @@ class DiningList(models.Model):
                 return False
 
         # if user is owner, he can do anything he can set his mind to. Don't let his dreams be dreams!
-        if user == self.claimed_by:
+        # Also, the purchaser can also add people
+        if user == self.claimed_by or user == self.purchaser:
             return True
 
         # if dining list is closed
-        if not self.has_room():
+        if not (self.is_open() or self.has_room()):
             return False
 
         if self.limit_signups_to_association_only:
@@ -221,12 +225,6 @@ class DiningEntry(models.Model):
         a mutex lock for the time between validation and saving.
         """
         if not self.pk:
-            # Validate room available in dining list
-            if self.dining_list.dining_entries.count() >= self.dining_list.max_diners:
-                raise ValidationError({
-                    'dining_list': ValidationError(gettext("Dining list is full."), code='full'),
-                })
-
             # Validate user is not already subscribed for the dining list
             if self.get_internal() and self.dining_list.internal_dining_entries().filter(user=self.user).exists():
                 raise ValidationError(gettext('This user is already subscribed to the dining list.'))

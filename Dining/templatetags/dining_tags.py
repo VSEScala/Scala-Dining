@@ -4,14 +4,11 @@ from Dining.models import DiningEntry
 
 register = template.Library()
 
+
 @register.filter(name='can_join_slot')
 def can_join_slot(slot, user):
     # Try creating an entry
-    return slot.can_add_diners(user)
-    # ToDo: fix this code and anything else which is processed with the form
-    from Dining.forms import DiningEntryUserCreateForm
-    form = DiningEntryUserCreateForm(user, slot, data={})
-    return form.is_valid()
+    return slot.can_add_diners(user, check_for_self=True)
 
 
 @register.filter(name='is_on_slot')

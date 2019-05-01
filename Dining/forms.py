@@ -159,14 +159,6 @@ class DiningPaymentForm(forms.ModelForm):
         self.instance.save(update_fields=DiningPaymentForm.Meta.save_fields)
 
 
-def _can_add_diner(user, dining_list):
-    """User can add diner when the dining list is open, owner can also add when dining list is still adjustable."""
-    if user == dining_list.claimed_by:
-        return dining_list.is_adjustable()
-    else:
-        return dining_list.is_open()
-
-
 class DiningEntryUserCreateForm(forms.ModelForm):
     user = forms.ModelChoiceField(queryset=None)
 
@@ -211,7 +203,7 @@ class DiningEntryUserCreateForm(forms.ModelForm):
             raise ValidationError("The balance of this user is too low to add.")
         # Check dining list open (written naively)
         dining_list = cleaned_data.get('dining_list')
-        if not _can_add_diner(self.added_by, dining_list):
+        if not dining_list.can_add_diners(self.added_by):
             raise ValidationError(_("Dining list is closed or can't be changed."), code='closed')
         return cleaned_data
 
@@ -258,7 +250,7 @@ class DiningEntryExternalCreateForm(forms.ModelForm):
             raise ValidationError("Your balance is too low to add any external people.")
         # Check dining list open (written naively)
         dining_list = cleaned_data.get('dining_list')
-        if not _can_add_diner(user, dining_list):
+        if not dining_list.can_add_diners(user):
             raise ValidationError(_("Dining list is closed or can't be changed."), code='closed')
         return cleaned_data
 
@@ -278,23 +270,20 @@ class DiningEntryDeleteForm(forms.ModelForm):
     def clean(self):
         cleaned_data = super().clean()
 
-        list = self.instance.dining_list
+        dining_list = self.instance.dining_list
 
-        # Dining list adjustable will have been checked in DiningList.clean()
-
-        # Check permission
-        if self.deleted_by != self.instance.user and self.deleted_by != list.claimed_by:
+        # If it is deleted by one of the authorised owners of the list
+        if self.deleted_by == dining_list.claimed_by or self.deleted_by == dining_list.purchaser:
+            if not dining_list.is_adjustable:
+                raise PermissionDenied('Dining list entries can no longer be adjusted')
+        # If it is owned by the person who added it, and the dining list is still open
+        elif self.deleted_by == self.instance.user:
+            if not dining_list.is_open():
+                if self.deleted_by != dining_list.claimed_by or self.deleted_by != dining_list.purchaser:
+                    raise ValidationError(_('The dining list is closed, ask the chef to remove this entry instead'),
+                                          code='closed')
+        else:
             raise PermissionDenied('Can only delete own entries')
-
-        # Validate dining list is still open (except for claimant)
-        if not list.is_open():
-            if self.deleted_by != list.claimed_by:
-                raise ValidationError(_('The dining list is closed, ask the chef to remove this entry instead'),
-                                      code='closed')
-
-        # (Optionally) block removal when the entry is the owner of the list
-        # if self.instance.user == list.claimed_by:
-        #     raise ValidationError(_("The claimant can't be removed from the dining list."), code='invalid')
 
         return cleaned_data
 
