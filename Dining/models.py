@@ -107,6 +107,9 @@ class DiningList(models.Model):
         else:
             return self.purchaser
 
+    def is_authorised_user(self, user):
+        return user == self.claimed_by or self.purchaser
+
     def get_number_paid(self):
         """
         Returns the number of people who have paid

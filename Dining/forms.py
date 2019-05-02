@@ -200,6 +200,7 @@ class DiningEntryCreateForm(forms.ModelForm):
 
         return dining_list
 
+
 class DiningEntryUserCreateForm(DiningEntryCreateForm):
 
     class Meta:
@@ -281,12 +282,12 @@ class DiningEntryDeleteForm(forms.ModelForm):
         # Dining list adjustable will have been checked in DiningList.clean()
 
         # Check permission
-        if self.deleted_by != self.instance.user and self.deleted_by != list.claimed_by:
+        if self.deleted_by != self.instance.user and not list.is_authorised_user(self.deleted_by):
             raise PermissionDenied('Can only delete own entries')
 
         # Validate dining list is still open (except for claimant)
         if not list.is_open():
-            if self.deleted_by != list.claimed_by:
+            if list.is_authorised_user(self.deleted_by):
                 raise ValidationError(_('The dining list is closed, ask the chef to remove this entry instead'),
                                       code='closed')
 
