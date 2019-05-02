@@ -436,10 +436,9 @@ class SlotListView(LoginRequiredMixin, SlotMixin, TemplateView):
         context['can_delete_some'] = context['can_delete_some'] * context['is_open']
 
         context['can_edit_stats'] = (self.request.user == self.dining_list.claimed_by)
-        context['can_delete_all'] = (self.request.user == self.dining_list.claimed_by)
+        context['can_delete_all'] = (self.dining_list.is_authorised_user(self.request.user))
         purchaser = self.dining_list.purchaser
-        context['can_edit_pay'] = (self.request.user == purchaser or
-                                   (purchaser is None and self.request.user == self.dining_list.claimed_by))
+        context['can_edit_pay'] = self.request.user == self.dining_list.get_purchaser()
         context['show_delete_column'] = context['can_delete_all'] or context['can_delete_some']
         return context
 
