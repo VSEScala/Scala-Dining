@@ -4,6 +4,7 @@ from Dining.models import DiningEntry
 
 register = template.Library()
 
+
 @register.filter(name='can_join_slot')
 def can_join_slot(slot, user):
     # Try creating an entry
