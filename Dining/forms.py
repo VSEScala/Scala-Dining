@@ -3,7 +3,8 @@ from django.conf import settings
 from django.db.models import OuterRef, Exists
 from django.db import transaction
 from django.utils.translation import gettext as _
-from django.core.exceptions import ValidationError, PermissionDenied
+from django.core.exceptions import PermissionDenied
+from django.forms import ValidationError
 
 from UserDetails.models import Association, User
 from .models import DiningList, DiningEntry, DiningEntryUser, DiningEntryExternal, DiningComment
@@ -202,6 +203,11 @@ class DiningEntryUserCreateForm(forms.ModelForm):
 
         self.fields['user'].queryset = users
 
+    def clean_dining_list(self):
+        dining_list = self.cleaned_data['dining_list']
+        return dining_list
+
+
     def clean(self):
         cleaned_data = super().clean()
         user = cleaned_data.get('user')
@@ -213,6 +219,9 @@ class DiningEntryUserCreateForm(forms.ModelForm):
         dining_list = cleaned_data.get('dining_list')
         if not _can_add_diner(self.added_by, dining_list):
             raise ValidationError(_("Dining list is closed or can't be changed."), code='closed')
+
+
+
         return cleaned_data
 
 
