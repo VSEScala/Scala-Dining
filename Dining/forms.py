@@ -160,20 +160,8 @@ class DiningPaymentForm(forms.ModelForm):
         self.instance.save(update_fields=DiningPaymentForm.Meta.save_fields)
 
 
-def _can_add_diner(user, dining_list):
-    """User can add diner when the dining list is open, owner can also add when dining list is still adjustable."""
-    if user == dining_list.claimed_by:
-        return dining_list.is_adjustable()
-    else:
-        return dining_list.is_open()
-
-
-class DiningEntryUserCreateForm(forms.ModelForm):
+class DiningEntryCreateForm(forms.ModelForm):
     user = forms.ModelChoiceField(queryset=None)
-
-    class Meta:
-        model = DiningEntryUser
-        fields = ['dining_list', 'user']
 
     def __init__(self, added_by, dining_list, data=None, **kwargs):
         """
@@ -187,19 +175,11 @@ class DiningEntryUserCreateForm(forms.ModelForm):
 
         super().__init__(**kwargs, data=data)
 
-        # Set the added_by to the user who added it
-        self.added_by = added_by
-        self.instance.added_by = self.added_by
-
         # Find available users for this dining entry
         users = User.objects.all()
         # First filter by association if the dining list is limited
         if dining_list.limit_signups_to_association_only:
             users.filter(usermembership__association=dining_list.association)
-
-        # Filter by the added_by if he is not the owner, since then he only may add himself, not others
-        if added_by != dining_list.claimed_by:
-            users.filter(pk=added_by.pk)
 
         self.fields['user'].queryset = users
 
@@ -219,6 +199,22 @@ class DiningEntryUserCreateForm(forms.ModelForm):
                 raise ValidationError(_("Dining list can no longer be adjusted."), code='full')
 
         return dining_list
+
+class DiningEntryUserCreateForm(DiningEntryCreateForm):
+
+    class Meta:
+        model = DiningEntryUser
+        fields = ['dining_list', 'user']
+
+    def __init__(self, added_by, dining_list, data=None, **kwargs):
+        """
+        The adder and dining_list parameters are used to find the users that can be used for this entry.
+        """
+        super().__init__(added_by, dining_list, data=data, **kwargs)
+
+        # Set the added_by to the user who added it
+        self.added_by = added_by
+        self.instance.added_by = self.added_by
 
     def clean(self):
         cleaned_data = super().clean()
@@ -245,24 +241,15 @@ class DiningEntryExternalCreateForm(forms.ModelForm):
         """
         if data is not None:
             # User defaults to adder if not set
-            data = data.copy()
-            data.setdefault('user', adder.pk)
-            data.setdefault('dining_list', dining_list.pk)
             data.setdefault('name', name)
 
-        super().__init__(**kwargs, data=data)
-
-        # Find available users for this dining entry
-        users = User.objects.all()
-        # First filter by association if the dining list is limited
-        if dining_list.limit_signups_to_association_only:
-            users.filter(usermembership__association=dining_list.association)
+        super().__init__(adder, dining_list, name, data=data, **kwargs)
 
         # Limit the user to the adder person
         self.instance.user = adder
-        users.filter(pk=adder.pk)
 
-        self.fields['user'].queryset = users
+        # Limit the options for the person who added the diner to solely the person who added the diner
+        self.fields['user'].queryset = self.fields['user'].queryset.filter(pk=adder.pk)
 
     def clean(self):
         cleaned_data = super().clean()
@@ -271,10 +258,6 @@ class DiningEntryExternalCreateForm(forms.ModelForm):
                 not reduce(lambda a,b: a or (user.is_member_of(b) and b.has_min_exception),
                     Association.objects.all(), False)):
             raise ValidationError("Your balance is too low to add any external people.")
-        # Check dining list open (written naively)
-        dining_list = cleaned_data.get('dining_list')
-        if not _can_add_diner(user, dining_list):
-            raise ValidationError(_("Dining list is closed or can't be changed."), code='closed')
         return cleaned_data
 
 
