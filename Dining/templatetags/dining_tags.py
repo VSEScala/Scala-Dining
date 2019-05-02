@@ -9,10 +9,6 @@ register = template.Library()
 def can_join_slot(slot, user):
     # Try creating an entry
     return slot.can_join(user)
-    # ToDo: fix this code and anything else which is processed with the form
-    from Dining.forms import DiningEntryUserCreateForm
-    form = DiningEntryUserCreateForm(user, slot, data={})
-    return form.is_valid()
 
 
 @register.filter(name='is_on_slot')
