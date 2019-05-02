@@ -218,6 +218,7 @@ class DiningEntry(models.Model):
 
     has_paid = models.BooleanField(default=False)
 
+
     def clean(self):
         """
         This actually has a race condition problem which makes it possible to create more entries than max_diners, and
@@ -225,12 +226,6 @@ class DiningEntry(models.Model):
         a mutex lock for the time between validation and saving.
         """
         if not self.pk:
-            # Validate room available in dining list
-            if self.dining_list.dining_entries.count() >= self.dining_list.max_diners:
-                raise ValidationError({
-                    'dining_list': ValidationError(gettext("Dining list is full."), code='full'),
-                })
-
             # Validate user is not already subscribed for the dining list
             if self.get_internal() and self.dining_list.internal_dining_entries().filter(user=self.user).exists():
                 raise ValidationError(gettext('This user is already subscribed to the dining list.'))
@@ -275,8 +270,11 @@ class DiningEntryUser(DiningEntry, DiningWork):
     def clean(self):
         super().clean()
         if not self.pk:
-            if DiningEntryUser.objects.filter(dining_list=self.dining_list, user=self.user):
-                raise ValidationError(_("User is already on this dining list."))
+            try:
+                if DiningEntryUser.objects.filter(dining_list=self.dining_list, user=self.user):
+                    raise ValidationError(_("User is already on this dining list."))
+            except ObjectDoesNotExist:
+                raise ValidationError("Dining list is not present in the database")
 
     def __str__(self):
         return "{}: {}".format(self.dining_list.date, self.user)

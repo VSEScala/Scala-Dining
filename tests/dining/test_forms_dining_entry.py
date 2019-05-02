@@ -1,6 +1,4 @@
 from datetime import date
-
-from django.core.exceptions import NON_FIELD_ERRORS
 from django.test import TestCase
 
 from Dining.forms import DiningEntryUserCreateForm
@@ -19,7 +17,7 @@ class DiningEntryCreateFormTestCase(TestCase):
         dl = create_dining_list(date=date(2018, 1, 1))
         form = DiningEntryUserCreateForm(user, dl, {})
         self.assertFalse(form.is_valid())
-        self.assertTrue(form.has_error(NON_FIELD_ERRORS, 'closed'))
+        self.assertTrue(form.has_error('dining_list', 'closed'))
 
     def test_dining_list_no_room(self):
         user = User.objects.create_user('noortje')
@@ -29,6 +27,13 @@ class DiningEntryCreateFormTestCase(TestCase):
         form = DiningEntryUserCreateForm(user, dl, {})
         self.assertFalse(form.is_valid())
         self.assertTrue(form.has_error('dining_list', 'full'))
+
+        # Make the claimer the owner
+        dl.claimed_by = user
+        dl.save()
+        # Test if owner can now add someone
+        form = DiningEntryUserCreateForm(user, dl, {})
+        self.assertTrue(form.is_valid())
 
     def test_race_condition_max_diners(self):
         """Note! As long as this test passes, the race condition is present! Ideally therefore you'd want this test case

@@ -204,9 +204,21 @@ class DiningEntryUserCreateForm(forms.ModelForm):
         self.fields['user'].queryset = users
 
     def clean_dining_list(self):
+        # Clean the dining list relation
         dining_list = self.cleaned_data['dining_list']
-        return dining_list
 
+        if not dining_list.can_add_diners(self.added_by):
+            if dining_list.is_adjustable():
+                # If it blocked, but the list is adjustable. The user has no special permissions
+                if not dining_list.is_open():
+                    raise ValidationError(_("Dining list is closed or can't be changed."), code='closed')
+                elif not dining_list.has_room():
+                    raise ValidationError(_("Dining list is full."), code='full')
+            else:
+                # The user had authorisation, but the dining list is to old to be adjusted
+                raise ValidationError(_("Dining list can no longer be adjusted."), code='full')
+
+        return dining_list
 
     def clean(self):
         cleaned_data = super().clean()
@@ -215,12 +227,6 @@ class DiningEntryUserCreateForm(forms.ModelForm):
                 not reduce(lambda a,b: a or (user.is_member_of(b) and b.has_min_exception),
                     Association.objects.all(), False)):
             raise ValidationError("The balance of this user is too low to add.")
-        # Check dining list open (written naively)
-        dining_list = cleaned_data.get('dining_list')
-        if not _can_add_diner(self.added_by, dining_list):
-            raise ValidationError(_("Dining list is closed or can't be changed."), code='closed')
-
-
 
         return cleaned_data
 
