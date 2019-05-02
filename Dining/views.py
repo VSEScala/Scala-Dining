@@ -404,8 +404,8 @@ class SlotMixin(DiningListMixin):
 
         context['is_open'] = self.dining_list.is_open()
         context['user_is_on_list'] = self.dining_list.internal_dining_entries().filter(user=self.request.user).exists()
-        context['user_can_add_self'] = self.dining_list.can_join(self.request.user)
-        context['user_can_add_others'] = self.dining_list.can_join(self.request.user, check_for_self=False)
+        context['user_can_add_self'] = self.dining_list.can_add_diners(self.request.user, check_for_self=True)
+        context['user_can_add_others'] = self.dining_list.can_add_diners(self.request.user)
 
         # Get the amount of messages
         context['comments_total'] = self.dining_list.diningcomment_set.count()
