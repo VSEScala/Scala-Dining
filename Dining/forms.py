@@ -196,7 +196,7 @@ class DiningEntryCreateForm(forms.ModelForm):
                     raise ValidationError(_("Dining list is full."), code='full')
             else:
                 # The user had authorisation, but the dining list is to old to be adjusted
-                raise ValidationError(_("Dining list can no longer be adjusted."), code='full')
+                raise ValidationError(_("Dining list can no longer be adjusted."), code='closed')
 
         return dining_list
 
@@ -277,17 +277,17 @@ class DiningEntryDeleteForm(forms.ModelForm):
     def clean(self):
         cleaned_data = super().clean()
 
-        list = self.instance.dining_list
+        dining_list = self.instance.dining_list
 
         # Dining list adjustable will have been checked in DiningList.clean()
 
         # Check permission
-        if self.deleted_by != self.instance.user and not list.is_authorised_user(self.deleted_by):
+        if self.deleted_by != self.instance.user and not dining_list.is_authorised_user(self.deleted_by):
             raise PermissionDenied('Can only delete own entries')
 
         # Validate dining list is still open (except for claimant)
-        if not list.is_open():
-            if list.is_authorised_user(self.deleted_by):
+        if not dining_list.is_open():
+            if dining_list.is_authorised_user(self.deleted_by):
                 raise ValidationError(_('The dining list is closed, ask the chef to remove this entry instead'),
                                       code='closed')
 

@@ -177,7 +177,7 @@ class DiningList(models.Model):
                 return False
 
         # if user is owner, he can do anything he can set his mind to. Don't let his dreams be dreams!
-        if user == self.claimed_by or user == self.purchaser:
+        if self.is_authorised_user(user):
             return True
 
         # if dining list is closed
