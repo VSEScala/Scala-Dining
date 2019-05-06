@@ -177,9 +177,6 @@ class DiningEntryCreateForm(forms.ModelForm):
 
         # Find available users for this dining entry
         users = User.objects.all()
-        # First filter by association if the dining list is limited
-        if dining_list.limit_signups_to_association_only:
-            users.filter(usermembership__association=dining_list.association)
 
         self.fields['user'].queryset = users
 
@@ -194,6 +191,11 @@ class DiningEntryCreateForm(forms.ModelForm):
                     raise ValidationError(_("Dining list is closed or can't be changed."), code='closed')
                 elif not dining_list.has_room():
                     raise ValidationError(_("Dining list is full."), code='full')
+                elif self.added_by.usermembership_set.filter(association=self.association).count() == 0:
+                    # The list is open and has room, so it must be members only
+                    raise ValidationError(_("Dining list is limited for members only."), code='members_only')
+                else:
+                    raise RuntimeError(_("Access blocked for undetermined reason"))
             else:
                 # The user had authorisation, but the dining list is to old to be adjusted
                 raise ValidationError(_("Dining list can no longer be adjusted."), code='closed')
@@ -228,8 +230,7 @@ class DiningEntryUserCreateForm(DiningEntryCreateForm):
         return cleaned_data
 
 
-class DiningEntryExternalCreateForm(forms.ModelForm):
-    """Code smell: this is an almost exact duplicate of DiningEntryUserCreateForm."""
+class DiningEntryExternalCreateForm(DiningEntryCreateForm):
     user = forms.ModelChoiceField(queryset=None)
 
     class Meta:
@@ -283,13 +284,17 @@ class DiningEntryDeleteForm(forms.ModelForm):
 
         # Check permission
         if self.deleted_by != self.instance.user and not dining_list.is_authorised_user(self.deleted_by):
-            raise PermissionDenied('Can only delete own entries')
+            raise ValidationError('Can only delete own entries')
 
         # Validate dining list is still open (except for claimant)
         if not dining_list.is_open():
-            if dining_list.is_authorised_user(self.deleted_by):
+            if not dining_list.is_authorised_user(self.deleted_by):
                 raise ValidationError(_('The dining list is closed, ask the chef to remove this entry instead'),
                                       code='closed')
+            elif not dining_list.is_adjustable():
+                # If user is authorised, but dining list is no longer allowed to be adjusted
+                raise ValidationError(_('The dining list is locked, changes can no longer be made'),
+                                      code='locked')
 
         # (Optionally) block removal when the entry is the owner of the list
         # if self.instance.user == list.claimed_by:
