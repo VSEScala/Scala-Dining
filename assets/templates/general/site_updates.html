@@ -9,7 +9,11 @@
                 <div class="row">
                     <div class="col-12">
                         <h3><b>{{ entry.title }}</b>
-                            <p class="h6">{{ entry.date|date:"SHORT_DATE_FORMAT" }}</p>
+                            <p class="h6">{{ entry.date|date:"SHORT_DATE_FORMAT" }}
+                                {% if entry.date > latest_visit %}
+                                    <span class="badge badge-warning">New</span>
+                                {% endif %}
+                            </p>
                         </h3>
                         <p>{{ entry.message|linebreaksbr }}</p>
                     </div>
