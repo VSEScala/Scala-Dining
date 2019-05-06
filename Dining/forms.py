@@ -191,7 +191,7 @@ class DiningEntryCreateForm(forms.ModelForm):
                     raise ValidationError(_("Dining list is closed or can't be changed."), code='closed')
                 elif not dining_list.has_room():
                     raise ValidationError(_("Dining list is full."), code='full')
-                elif self.added_by.usermembership_set.filter(association=self.association).count() == 0:
+                elif not self.added_by.usermembership_set.filter(association=dining_list.association).exists():
                     # The list is open and has room, so it must be members only
                     raise ValidationError(_("Dining list is limited for members only."), code='members_only')
                 else:
@@ -230,12 +230,11 @@ class DiningEntryUserCreateForm(DiningEntryCreateForm):
         return cleaned_data
 
 
-class DiningEntryExternalCreateForm(DiningEntryCreateForm):
+class DiningEntryExternalCreateForm(forms.ModelForm):
     class Meta:
         model = DiningEntryExternal
         fields = ['name']
 
-        self.fields['user'].queryset = self.fields['user'].queryset.filter(pk=adder.pk)
     def clean(self):
         cleaned_data = super().clean()
         user = self.instance.user
@@ -243,6 +242,26 @@ class DiningEntryExternalCreateForm(DiningEntryCreateForm):
                 not reduce(lambda a,b: a or (user.is_member_of(b) and b.has_min_exception),
                     Association.objects.all(), False)):
             raise ValidationError("Your balance is too low to add any external people", code='nomoneyzz')
+
+        # Clean the dining list
+        # Duplicate of DiningEntryCreateForm.clean_dining_list, I know it, but needs to be rewritten anyway
+        dining_list = self.instance.dining_list
+        if not dining_list.can_add_diners(user):
+            if dining_list.is_adjustable():
+                # If it blocked, but the list is adjustable. The user has no special permissions
+                if not dining_list.is_open():
+                    raise ValidationError(_("Dining list is closed or can't be changed"), code='closed')
+                elif not dining_list.has_room():
+                    raise ValidationError(_("Dining list is full"), code='full')
+                elif not user.usermembership_set.filter(association=dining_list.association).exists():
+                    # The list is open and has room, so it must be members only
+                    raise ValidationError(_("Dining list is limited for members only"), code='members_only')
+                else:
+                    raise RuntimeError(_("Access blocked for undetermined reason"))
+            else:
+                # The user had authorisation, but the dining list is to old to be adjusted
+                raise ValidationError(_("Dining list can no longer be adjusted"), code='closed')
+
         return cleaned_data
 
 
