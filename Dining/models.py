@@ -108,7 +108,7 @@ class DiningList(models.Model):
             return self.purchaser
 
     def is_authorised_user(self, user):
-        return user == self.claimed_by or self.purchaser
+        return user == self.claimed_by or user == self.purchaser
 
     def get_number_paid(self):
         """
@@ -154,13 +154,11 @@ class DiningList(models.Model):
 
     def can_add_diners(self, user, check_for_self=False):
         """
-            Determines if a user can join a dining list by checking the status of the list and the status of
-            other dining list subscriptions.
-            check_for_self determines whether a full check for self should take place. Default=True
-            :param check_for_self: whether this user should be double checked for entries on this or other lists
-            :param user: The user intending to join
-            :return: If the user can join the list
-            """
+        Determines if a user can add diners to a certain dining list
+        :param check_for_self: whether this user wants to add himself
+        :param user: The user intending to join
+        :return: If the user can join the list
+        """
         # If the dining list no longer adjustable
         if not self.is_adjustable():
             return False
@@ -274,10 +272,10 @@ class DiningEntryUser(DiningEntry, DiningWork):
         super().clean()
         if not self.pk:
             try:
-                if DiningEntryUser.objects.filter(dining_list=self.dining_list, user=self.user):
+                if DiningEntryUser.objects.filter(dining_list=self.dining_list, user=self.user).exists():
                     raise ValidationError(_("User is already on this dining list."))
             except ObjectDoesNotExist:
-                raise ValidationError("Dining list is not present in the database")
+                raise ValidationError("Dining entry object has no dining list")
 
     def __str__(self):
         return "{}: {}".format(self.dining_list.date, self.user)
