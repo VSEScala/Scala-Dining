@@ -100,7 +100,7 @@ class DiningListCommentsAdmin(admin.ModelAdmin):
 admin.site.register(UserDiningSettings, DiningSettingAdmin)
 admin.site.register(DiningList, DiningListAdmin)
 #admin.site.register(DiningListComment, DiningListCommentsAdmin)
-admin.site.register(DiningDayAnnouncements)
+admin.site.register(DiningDayAnnouncement)
 admin.site.register(DiningComment)
 admin.site.register(DiningEntryUser, DiningEntryAdmin)
 admin.site.register(DiningEntryExternal, DiningEntryAdmin)
