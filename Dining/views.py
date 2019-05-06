@@ -116,7 +116,7 @@ class DayView(LoginRequiredMixin, DayMixin, TemplateView):
         context = super().get_context_data(**kwargs)
 
         context['dining_lists'] = DiningList.objects.filter(date=self.date)
-        context['Announcements'] = DiningDayAnnouncements.objects.filter(date=self.date)
+        context['Announcements'] = DiningDayAnnouncement.objects.filter(date=self.date)
 
         # Check if create slot button must be shown
         # (but I prefer to only check when claiming to reduce code)

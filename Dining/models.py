@@ -28,7 +28,7 @@ class DiningListManager(models.Manager):
         Returns the number of available slots on the given date.
         """
         # Get slots occupied by announcements
-        announce_slots = DiningDayAnnouncements.objects.filter(date=date).aggregate(Sum('slots_occupy'))
+        announce_slots = DiningDayAnnouncement.objects.filter(date=date).aggregate(Sum('slots_occupy'))
         announce_slots = 0 if announce_slots['slots_occupy__sum'] is None else announce_slots['slots_occupy__sum']
         return settings.MAX_SLOT_NUMBER - len(self.filter(date=date)) - announce_slots
 
@@ -132,7 +132,7 @@ class DiningList(models.Model):
 
         if self.sign_up_deadline and self.sign_up_deadline.date() > self.date:
             raise ValidationError(
-                {'sign_up_deadline': ["Sign up deadline can not be later than the day dinner is served."]})
+                {'sign_up_deadline': ["Sign up deadline can not be later than the day dinner is served"]})
 
         # Check if purchaser is present when using auto pay
         if self.auto_pay and not self.get_purchaser():
@@ -203,6 +203,15 @@ class DiningList(models.Model):
     def external_dining_entries(self):
         """All dining entries that are not for external people."""
         return DiningEntryExternal.objects.filter(dining_list=self)
+
+    def clean_fields(self, exclude=None):
+        super().clean_fields(exclude=exclude)
+        # Serve time
+        if not exclude or 'serve_time' not in exclude:
+            if self.serve_time < settings.KITCHEN_USE_START_TIME:
+                raise ValidationError(_("Kitchen can't be used this early"))
+            if self.serve_time > settings.KITCHEN_USE_END_TIME:
+                raise ValidationError(_("Kitchen can't be used this late"))
 
 
 class DiningEntry(models.Model):
@@ -330,10 +339,10 @@ class DiningCommentVisitTracker(AbstractVisitTracker):
         return timestamp
 
 
-class DiningDayAnnouncements(models.Model):
+class DiningDayAnnouncement(models.Model):
     date = models.DateField()
-    title = models.CharField(max_length=15)
-    text = models.CharField(max_length=240)
+    title = models.CharField(max_length=100)
+    text = models.TextField()
     slots_occupy = models.IntegerField(default=0, help_text="The amount of slots this occupies")
 
     def __str__(self):
