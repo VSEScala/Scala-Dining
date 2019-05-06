@@ -1,4 +1,4 @@
-{% load form_extras %}
+{% load dining_tags %}
 
 <div class="col-12 mx-0 my-2 btn d-inline-flex text-left
         {% if interactive %}py-4
@@ -18,6 +18,7 @@
         <div class="text-size-5">
         {% if slot.claimed_by %}
             {{ slot.claimed_by }}
+            {% if slot.get_purchaser != slot.claimed_by %} and {{ slot.purchaser }}{% endif %}
         {% else %}
             Slot is unclaimed!
         {% endif %}</div>

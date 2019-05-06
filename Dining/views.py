@@ -337,8 +337,8 @@ class SlotMixin(DiningListMixin):
 
         context['is_open'] = self.dining_list.is_open()
         context['user_is_on_list'] = self.dining_list.internal_dining_entries().filter(user=self.request.user).exists()
-        context['user_can_add_self'] = self.dining_list.can_join(self.request.user)
-        context['user_can_add_others'] = self.dining_list.can_join(self.request.user, check_for_self=False)
+        context['user_can_add_self'] = self.dining_list.can_add_diners(self.request.user, check_for_self=True)
+        context['user_can_add_others'] = self.dining_list.can_add_diners(self.request.user)
 
         # Get the amount of messages
         context['comments_total'] = self.dining_list.diningcomment_set.count()
@@ -369,10 +369,9 @@ class SlotListView(LoginRequiredMixin, SlotMixin, TemplateView):
         context['can_delete_some'] = context['can_delete_some'] * context['is_open']
 
         context['can_edit_stats'] = (self.request.user == self.dining_list.claimed_by)
-        context['can_delete_all'] = (self.request.user == self.dining_list.claimed_by)
+        context['can_delete_all'] = (self.dining_list.is_authorised_user(self.request.user))
         purchaser = self.dining_list.purchaser
-        context['can_edit_pay'] = (self.request.user == purchaser or
-                                   (purchaser is None and self.request.user == self.dining_list.claimed_by))
+        context['can_edit_pay'] = self.request.user == self.dining_list.get_purchaser()
         context['show_delete_column'] = context['can_delete_all'] or context['can_delete_some']
         return context
 

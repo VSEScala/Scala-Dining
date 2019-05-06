@@ -107,6 +107,9 @@ class DiningList(models.Model):
         else:
             return self.purchaser
 
+    def is_authorised_user(self, user):
+        return user == self.claimed_by or user == self.purchaser
+
     def get_number_paid(self):
         """
         Returns the number of people who have paid
@@ -119,7 +122,7 @@ class DiningList(models.Model):
         Whether the dining list has not expired it's adjustable date and can therefore not be modified anymore
         """
         days_since_date = (self.date + self.adjustable_duration)
-        return True# days_since_date >= timezone.now().date()
+        return days_since_date >= timezone.now().date()
 
     def clean(self):
         # Validate dining list can be changed
@@ -147,17 +150,19 @@ class DiningList(models.Model):
         Determines whether this dining list can have more entries
         :return: Whether this list can get more entries
         """
-        return self.is_open() and self.diners.count() < self.max_diners
+        return self.diners.count() < self.max_diners
 
-    def can_join(self, user, check_for_self=True):
+    def can_add_diners(self, user, check_for_self=False):
         """
-        Determines if a user can join a dining list by checking the status of the list and the status of
-        other dining list subscriptions.
-        check_for_self determines whether a full check for self should take place. Default=True
-        :param check_for_self: whether this user should be double checked for entries on this or other lists
+        Determines if a user can add diners to a certain dining list
+        :param check_for_self: whether this user wants to add himself
         :param user: The user intending to join
         :return: If the user can join the list
         """
+        # If the dining list no longer adjustable
+        if not self.is_adjustable():
+            return False
+
         if check_for_self:
             # if user is already on list
 
@@ -170,11 +175,11 @@ class DiningList(models.Model):
                 return False
 
         # if user is owner, he can do anything he can set his mind to. Don't let his dreams be dreams!
-        if user == self.claimed_by:
+        if self.is_authorised_user(user):
             return True
 
         # if dining list is closed
-        if not self.has_room():
+        if not (self.is_open() and self.has_room()):
             return False
 
         if self.limit_signups_to_association_only:
@@ -214,6 +219,7 @@ class DiningEntry(models.Model):
 
     has_paid = models.BooleanField(default=False)
 
+
     def clean(self):
         """
         This actually has a race condition problem which makes it possible to create more entries than max_diners, and
@@ -221,11 +227,6 @@ class DiningEntry(models.Model):
         a mutex lock for the time between validation and saving.
         """
         if not self.pk:
-            # Validate room available in dining list
-            if self.dining_list.dining_entries.count() >= self.dining_list.max_diners:
-                # Can't put error on dining_list field as it's not part of all forms
-                raise ValidationError(gettext("Dining list is full"), code='full')
-
             # Validate user is not already subscribed for the dining list
             if self.get_internal() and self.dining_list.internal_dining_entries().filter(user=self.user).exists():
                 raise ValidationError(gettext('This user is already subscribed to the dining list'))
@@ -270,8 +271,11 @@ class DiningEntryUser(DiningEntry, DiningWork):
     def clean(self):
         super().clean()
         if not self.pk:
-            if DiningEntryUser.objects.filter(dining_list=self.dining_list, user=self.user):
-                raise ValidationError(_("User is already on this dining list."))
+            try:
+                if DiningEntryUser.objects.filter(dining_list=self.dining_list, user=self.user).exists():
+                    raise ValidationError(_("User is already on this dining list."))
+            except ObjectDoesNotExist:
+                raise ValidationError("Dining entry object has no dining list")
 
     def __str__(self):
         return "{}: {}".format(self.dining_list.date, self.user)

@@ -1,6 +1,6 @@
 {% extends 'dining_lists/dining_slot.html' %}
 {% load staticfiles %}
-{% load form_extras %}
+{% load dining_tags %}
 
 {% block details %}
     <div class="row">
@@ -17,7 +17,7 @@
                 <div class="col-9">
                     <span class="h4">
                         {{ dining_list.claimed_by }}
-                        {% if dining_list.purchaser != None %} and {{ dining_list.purchaser }}{% endif %}
+                        {% if dining_list.get_purchaser != dining_list.claimed_by %} and {{ dining_list.purchaser }}{% endif %}
                     </span>
                     <br>
                     {{ dining_list.association }}
