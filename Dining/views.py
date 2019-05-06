@@ -4,6 +4,7 @@ from datetime import date
 from django.contrib import messages
 from django.contrib.auth import get_user_model
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.core.exceptions import NON_FIELD_ERRORS
 from django.db.models import Q, Count
 from django.http import Http404, HttpResponseRedirect, HttpResponseForbidden, HttpResponse
 from django.shortcuts import redirect, get_object_or_404
@@ -255,118 +256,50 @@ class NewSlotView(LoginRequiredMixin, DayMixin, TemplateView):
 class EntryAddView(LoginRequiredMixin, DiningListMixin, TemplateView):
     template_name = "dining_lists/dining_entry_add.html"
 
-    def check_user_permission(self, request):
-        # If user is dining list owner or purchaser
-        if request.user == self.dining_list.claimed_by or request.user == self.dining_list.purchaser:
-            return True
-
-        if not self.dining_list.is_open():
-            # Dining list is closed. Go back to the info screen
-            error = _("Dining list is closed, people can no longer join")
-            messages.add_message(request, messages.ERROR, error)
-            return False
-
-        if not self.dining_list.has_room():
-            # dining list is full. Go back to the info screen
-            error = _("Dining list is already full, ask the chef personally if you want to join")
-            messages.add_message(request, messages.ERROR, error)
-            return False
-
-        # No problems, user can add people
-        return True
-
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-
-        # Search processing
-        search = self.request.GET.get('search')
-        if search:
-            users = None
-            # split over all spaces
-            for search_part in search.split(" "):
-                # query the substring if it is part of either the first, last or username
-                search_result = get_user_model().objects.filter(
-                    Q(first_name__icontains=search_part) |
-                    Q(last_name__icontains=search_part) |
-                    Q(username__icontains=search_part)
-                )
-                if users is None:
-                    users = search_result
-                elif search_result.count()>0:
-                    users = users.intersection(search_result)
-
-            # Search all users corresponding with the typed in name
-            context['users'] = users
-            context['search'] = search
-
-            if len(context['users']) == 0:
-                context['error_input'] = "Error: no people with that name found"
-            elif len(context['users']) > 10:
-                context['error_input'] = "Error: search produced too many results"
-                context['users'] = None
-            else:
-                context['error_input'] = None
-        else:
-            context['users'] = None
-            context['search'] = ""
-            context['error_input'] = None
-
+        context.update({
+            'all_users': User.objects.all(),
+        })
         return context
 
-    def get(self, request, *args, **kwargs):
-        # Check permissions, if user has no access to this page, reject it.
-        if not self.check_user_permission(request):
-            return HttpResponseRedirect(self.reverse('slot_details'))
-
-        context = self.get_context_data()
-
-        # Form rendering
-        context['form'] = DiningEntryUserCreateForm(request.user, self.dining_list)
-
-        return self.render_to_response(context)
-
     def post(self, request, *args, **kwargs):
-        context = self.get_context_data()
-
-        # Check permissions, if user has no access to this page, reject it.
-        if not self.check_user_permission(request):
-            return HttpResponseRedirect(self.reverse('slot_details'))
+        """This post method always redirects, does not show the form again on validation errors, so that we don't have
+        to write HTML for displaying these errors (they are already in a Django message)."""
 
         # Do form shenanigans
-        if 'add_external_submit' in request.POST:
-            form = DiningEntryExternalCreateForm(request.user, self.dining_list,
-                                                 request.POST['external_name'], data=request.POST)
-            if form.is_valid():
-                form.save()
-                message = _("You successfully added {} to the dining list.").format(form.cleaned_data.get('name'))
-                messages.success(request, message)
+        if 'add_external' in request.POST:
+            entry = DiningEntryExternal(user=request.user, dining_list=self.dining_list)
+            form = DiningEntryExternalCreateForm(request.POST, instance=entry)
         else:
             form = DiningEntryUserCreateForm(request.user, self.dining_list, data=request.POST)
-            if form.is_valid():
-                form.save()
-                # Notify the user
-                if form.cleaned_data.get('user') == request.user:
-                    message = _("You successfully joined the dining list.")
-                else:
-                    message = _("You successfully added {0} to the dining list.").format(form.cleaned_data.get('user'))
-                messages.success(request, message)
 
-        # If next is provided, put possible error messages on the messages system and redirect
-        next = request.GET.get('next', None)
-        if next and is_safe_url(next, request.get_host()):
+        if form.is_valid():
+            entry = form.save()
+            # Construct success message
+            # Not the best if check but entry.get_internal() didn't work for some reason
+            if isinstance(entry, DiningEntryUser):
+                if entry.user == request.user:
+                    msg = _("You successfully joined the dining list")
+                else:
+                    msg = _("You successfully added {} to the dining list").format(entry.user.get_short_name())
+            else:
+                msg = _("You successfully added {} to the dining list").format(entry.name)
+            messages.success(request, msg)
+        else:
+            # Apply error messages
             for field, errors in form.errors.items():
                 for error in errors:
-                    messages.add_message(request, messages.ERROR, error)
-            return HttpResponseRedirect(next)
+                    messages.error(request, "{}: {}".format(field, error) if field != NON_FIELD_ERRORS else error)
 
-        # If next not provided, but the form was valid, redirect to the slot list
+        # Redirect to next if provided, else to the diner list if successful, else to self
+        next_url = request.GET.get('next', None)
+        if next_url and is_safe_url(next_url, request.get_host()):
+            return HttpResponseRedirect(next_url)
         if form.is_valid():
-            # Todo: Check if user is on multiple dining lists today, then show warning
+            # Todo: Check if user is on multiple dining lists today, then show warning?
             return HttpResponseRedirect(self.reverse('slot_list'))
-
-        # Render form otherwise
-        context['form'] = form
-        return self.render_to_response(context)
+        return HttpResponseRedirect(self.reverse('entry_add'))
 
 
 class EntryRemoveView(LoginRequiredMixin, DiningListMixin, View):

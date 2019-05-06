@@ -208,58 +208,30 @@ class DiningEntryUserCreateForm(forms.ModelForm):
         if (user.usercredit.balance < settings.MINIMUM_BALANCE_FOR_DINING_SIGN_UP and
                 not reduce(lambda a,b: a or (user.is_member_of(b) and b.has_min_exception),
                     Association.objects.all(), False)):
-            raise ValidationError("The balance of this user is too low to add.")
+            raise ValidationError("The balance of this user is too low to add", code='nomoneyzz')
         # Check dining list open (written naively)
         dining_list = cleaned_data.get('dining_list')
         if not _can_add_diner(self.added_by, dining_list):
-            raise ValidationError(_("Dining list is closed or can't be changed."), code='closed')
+            raise ValidationError(_("Dining list is closed or can't be changed"), code='closed')
         return cleaned_data
 
 
 class DiningEntryExternalCreateForm(forms.ModelForm):
-    """Code smell: this is an almost exact duplicate of DiningEntryUserCreateForm."""
-    user = forms.ModelChoiceField(queryset=None)
-
     class Meta:
         model = DiningEntryExternal
-        fields = ['dining_list', 'user', 'name']
-
-    def __init__(self, adder, dining_list, name, data=None, **kwargs):
-        """
-        The adder and dining_list parameters are used to find the users that can be used for this entry.
-        """
-        if data is not None:
-            # User defaults to adder if not set
-            data = data.copy()
-            data.setdefault('user', adder.pk)
-            data.setdefault('dining_list', dining_list.pk)
-            data.setdefault('name', name)
-
-        super().__init__(**kwargs, data=data)
-
-        # Find available users for this dining entry
-        users = User.objects.all()
-        # First filter by association if the dining list is limited
-        if dining_list.limit_signups_to_association_only:
-            users.filter(usermembership__association=dining_list.association)
-
-        # Limit the user to the adder person
-        self.instance.user = adder
-        users.filter(pk=adder.pk)
-
-        self.fields['user'].queryset = users
+        fields = ['name']
 
     def clean(self):
         cleaned_data = super().clean()
-        user = cleaned_data.get('user')
+        user = self.instance.user
         if (user.usercredit.balance < settings.MINIMUM_BALANCE_FOR_DINING_SIGN_UP and
                 not reduce(lambda a,b: a or (user.is_member_of(b) and b.has_min_exception),
                     Association.objects.all(), False)):
-            raise ValidationError("Your balance is too low to add any external people.")
-        # Check dining list open (written naively)
-        dining_list = cleaned_data.get('dining_list')
+            raise ValidationError("Your balance is too low to add any external people", code='nomoneyzz')
+        # Check dining list open
+        dining_list = self.instance.dining_list
         if not _can_add_diner(user, dining_list):
-            raise ValidationError(_("Dining list is closed or can't be changed."), code='closed')
+            raise ValidationError(_("Dining list is closed or can't be changed"), code='closed')
         return cleaned_data
 
 

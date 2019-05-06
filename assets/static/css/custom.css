@@ -22,3 +22,15 @@
 body {
     background-color: #212121;
 }
+
+/* CSS corrections for Awesomplete */
+.awesomplete {
+    color: #000000;
+    width: 100%;
+}
+.awesomplete mark {
+    padding: 0;
+}
+.awesomplete > ul {
+    transition: unset;
+}

@@ -1,84 +1,70 @@
 {% extends 'dining_lists/dining_slot.html' %}
-{% load staticfiles %}
 
+{% block details %}
+    <h2>Add someone else</h2>
 
+    {% url "entry_add" day=date.day month=date.month year=date.year identifier=dining_list.association.slug as url %}
+    <form id="addEntryForm" action="{{ url }}" method="post">
+        {% csrf_token %}
 
-{% block details%}
-
-    {# Display any validation errors that may have occurred #}
-    {{ form.non_field_errors }}
-    {% for field in form.visible_fields %}
-        {% if field.errors %}
-            <div>
-                <p>Field: {{ field.label|lower }}</p>
-                {{ field.errors }}
+        <div class="form-group row">
+            <label for="userSearch" class="col-sm-2 col-form-label">Diner</label>
+            <div class="col-sm-10">
+                <input id="userSearch" class="form-control" placeholder="Diner" name="name">
             </div>
-        {% endif %}
-    {% endfor %}
-
-
-    {% if users %}
-        <div class="mb-5 col-12">
-            <h3>Select the user you want to add</h3>
-
-            <form method="post">
-                {% csrf_token %}
-                {% for user in users %}
-                    <div class="selectors">
-                        <input type="radio" id="radio{{ user }}" name="user" value="{{ user.id }}">
-                        <label for="radio{{ user }}"
-                               class="col-sm-9 offset-sm-3 btn btn-checkbox">{{ user }}</label>
-                    </div>
-                {% endfor %}
-                <div class="col-12 col-sm-9 offset-sm-3 px-0 mt-4">
-                    <button type="submit" class="col-12 btn btn-block btn-primary">Add user</button>
-                </div>
-            </form>
         </div>
-        <h3>Find the user</h3>
-    {% else %}
-        <h3>Find or add user</h3>
-    {% endif %}
+        <input id="userValue" type="hidden" name="user" value="">
 
-
-    <form id="entrySearchForm" method="get" class="col-12">
-        <div class="row m-0">
-            {% if error_input %}
-                <div class="col-12 col-sm-9 offset-sm-3">
-                    {{ error_input }}
-                </div>
-            {% endif %}
-            <div class="col-sm-3 col-10 p-0">
-                User
-            </div>
-            <input type="search" id="searchbox" name="search" class="col-12 col-sm-9" placeholder="Name"
-                   value="{{ search }}">
-        </div>
-
-        <div class="row m-0 mt-4">
-            <button type="submit" class="col-12 col-sm-6 mb-2 mb-sm-0 btn btn-block btn-primary">Search user</button>
-            <div class="col-12 col-sm-6 m-0 p-0 pr-sm-2 order-sm-first">
-                <button type="submit" name="add_external_submit" id="addExternalBtn" class="col-12 btn btn-block btn-outline-primary">
-                    Add as external
+        <div class="row">
+            <div class="col-sm-6">
+                {# No submit buttons, form submit gets entirely handled via JavaScript #}
+                <button type="submit" class="btn btn-block btn-primary" disabled id="addInternalButton"
+                        name="add_internal">
+                    Add diner<br>
+                    <small>Select an existing user</small>
                 </button>
             </div>
-            <i class="col-12 text-size-3 text-muted">* Required credits are subtracted from your account</i>
+            <div class="col-sm-6 mt-1 mt-sm-0">
+                <button type="submit" class="btn btn-block btn-secondary" name="add_external">
+                    Add as external diner<br>
+                    <small>Dining cost is subtracted from your account</small>
+                </button>
+            </div>
         </div>
     </form>
-    <!-- jQuery to implement the add as external button -->
+
     <script>
         document.addEventListener("DOMContentLoaded", function (event) {
-            $("#addExternalBtn").click(function (e) {
-                // Update input name
-                $("#searchbox").attr("name", "external_name");
-                // Update form method
-                $("#entrySearchForm").attr("method", "post");
-                // Add CSRF token
-                $("#entrySearchForm").append('{% csrf_token %}');
-                $("#entrySearchForm").submit()
+            let userSearch = document.getElementById("userSearch");
+            let userValue = document.getElementById("userValue");
+            let addInternalButton = document.getElementById("addInternalButton");
+
+            let notSelectedHTML = addInternalButton.innerHTML;
+            let selectedHTML = "Add {}<br><small>Dining cost is subtracted from {}'s account</small>";
+
+            // Enable autocomplete
+            new Awesomplete(userSearch, {
+                list: [{% for person in all_users %}["{{ person.get_full_name }}","{{ person.id }}"],{% endfor %}],
+                replace: function (text) {
+                    this.input.value = text.label;
+                },
+                autoFirst: true,
+            });
+
+            // Update internal button when user selects someone
+            userSearch.addEventListener('awesomplete-selectcomplete', function (event) {
+                userValue.value = event.text.value;
+                addInternalButton.disabled = false;
+                addInternalButton.innerHTML = selectedHTML.replace(/{}/g, event.text.label);
+            });
+            // Reset internal button when user changes the field value
+            userSearch.addEventListener('input', function (event) {
+                if (userValue.value !== "") {
+                    userValue.value = "";
+                    addInternalButton.disabled = true;
+                    addInternalButton.innerHTML = notSelectedHTML;
+                }
             });
         });
     </script>
-    {{ output }}
-
 {% endblock details %}

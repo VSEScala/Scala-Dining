@@ -126,7 +126,7 @@
         <div class="col-md-6">
             {% if user_can_add_others %}
                 {% url 'entry_add' day=date.day month=date.month year=date.year identifier=dining_list.association.slug as url %}
-                <a href="{{ url }}" class="btn btn-outline-primary btn-block">Add others</a>
+                <a href="{{ url }}" class="btn btn-outline-primary btn-block mt-1 mt-md-0">Add others</a>
             {% endif %}
         </div>
     </div>
