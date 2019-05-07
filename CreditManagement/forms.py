@@ -2,6 +2,7 @@ from django import forms
 from .models import *
 from General.widget import SearchWidget
 
+
 class TransactionForm(forms.ModelForm):
     origin = forms.CharField(disabled=True)
 
@@ -24,7 +25,6 @@ class TransactionForm(forms.ModelForm):
         widgets = {
             'target_user': SearchWidget(queryset=User.objects.all().order_by('first_name')),
         }
-
 
 
 class AssociationTransactionForm(TransactionForm):

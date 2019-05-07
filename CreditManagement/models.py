@@ -9,7 +9,7 @@ from django.utils.translation import gettext as _
 from Dining.models import DiningList
 from UserDetails.models import Association, User
 
-from .querysets import TransactionQuerySet, DiningTransactionQuerySet,\
+from .querysets import TransactionQuerySet, DiningTransactionQuerySet, \
     PendingDiningTrackerQuerySet, PendingTransactionQuerySet
 
 """""""""""""""""""""""""""""""""""""""""""""
@@ -181,12 +181,12 @@ class AbstractTransaction(models.Model):
         return self.source_association if self.source_association else self.source_user
 
     def target(self):
-            return self.target_association if self.target_association else self.target_user
+        return self.target_association if self.target_association else self.target_user
 
 
 class FixedTransaction(AbstractTransaction):
     """
-    Transaction model on an immutable (TODO) Database
+    Transaction model on an immutable
     Contains all final processed transactions
     """
     objects = TransactionQuerySet.as_manager()
@@ -196,8 +196,6 @@ class FixedTransaction(AbstractTransaction):
         if self.id is None:
             self.confirm_moment = timezone.now()
             super(FixedTransaction, self).save(*args, **kwargs)
-
-
 
     @classmethod
     def get_all_transactions(cls, user=None, association=None):
@@ -255,7 +253,6 @@ class AbstractPendingTransaction(AbstractTransaction):
         Moves all pending transactions to the fixed transactions table
         :return: All new entries in the fixed transaction table
         """
-        result = None
         # Get all child classes
         children = cls.get_children()
 
@@ -327,9 +324,9 @@ class PendingTransaction(AbstractPendingTransaction):
         # Get all finalised items
         expired_transactions = cls.objects.get_expired_transactions()
         new_transactions = []
-        for transaction in expired_transactions:
+        for transaction_obj in expired_transactions:
             # finalise transaction
-            new_transactions.append(transaction.finalise())
+            new_transactions.append(transaction_obj.finalise())
 
         return new_transactions
 
@@ -372,13 +369,17 @@ class PendingDiningTransactionManager(models.Manager):
     Manager for the PendingDiningTransaction Model
     Created specially due to the different behaviour of the model (different database and model use)
     """
-    def get_queryset(self, user=None, dining_list=None):
+
+    @staticmethod
+    def get_queryset(user=None, dining_list=None):
         return DiningTransactionQuerySet.generate_queryset(user=user, dining_list=dining_list)
 
-    def annotate_users_balance(self, users, output_name=None):
+    @staticmethod
+    def annotate_users_balance(users, output_name=None):
         return DiningTransactionQuerySet.annotate_user_balance(users=users, output_name=output_name)
 
-    def annotate_association_balance(self, associations, output_name=None):
+    @staticmethod
+    def annotate_association_balance(associations, output_name=None):
         return DiningTransactionQuerySet.annotate_association_balance(associations=associations,
                                                                       output_name=output_name)
 
@@ -398,8 +399,8 @@ class PendingDiningTransaction(AbstractPendingTransaction):
     def finalise_all_expired(cls):
         # Get all finished dining lists
         results = []
-        for list in PendingDiningListTracker.objects.filter_lists_expired():
-            results += list.finalise()
+        for dining_list in PendingDiningListTracker.objects.filter_lists_expired():
+            results += dining_list.finalise()
         return results
 
     @classmethod
@@ -476,8 +477,8 @@ class PendingDiningListTracker(models.Model):
         :param date: The date all tracked dining lists need to be finalised
         """
         query = cls.objects.filter_lists_for_date(date)
-        for pendingdininglist_tracker in query:
-            pendingdininglist_tracker.finalise()
+        for pending_dining_list_tracker in query:
+            pending_dining_list_tracker.finalise()
 
 
 """""""""""""""""""""""""""""""""""""""""""""
@@ -490,7 +491,7 @@ class UserCredit(models.Model):
     User credit model, implemented as Database VIEW (see migrations/usercredit_view.py)
     """
     user = models.OneToOneField(User, primary_key=True,
-                                  db_column='id',
+                                db_column='id',
                                 on_delete=models.DO_NOTHING)
     balance = models.DecimalField(blank=True, null=True,
                                   db_column=AbstractTransaction.balance_annotation_name,
@@ -514,11 +515,11 @@ class UserCredit(models.Model):
 
         # Loop over all transactions from new to old, reverse its balance
         transactions = FixedTransaction.get_all_transactions(user=self.user).order_by('-order_moment')
-        for transaction in transactions:
-            balance += transaction.amount
+        for fixed_transaction in transactions:
+            balance += fixed_transaction.amount
             # If balance is positive now, return the current transaction date
             if balance >= 0:
-                return transaction.order_moment
+                return fixed_transaction.order_moment
 
         # This should not be reached, it would indicate that the starting balance was below 0
         raise RuntimeError("Balance started as negative, negative_since could not be computed")

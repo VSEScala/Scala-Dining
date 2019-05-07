@@ -7,12 +7,15 @@ from CreditManagement.models import PendingDiningListTracker
 """""""""""""""""""""""""""""""""""""""""""""""""""
 Spawn a new associationcredit when a new assocation is created
 """""""""""""""""""""""""""""""""""""""""""""""""""
+
+
 @receiver(post_save, sender=DiningList)
 def create_association_credit(sender, instance=False, created=False,  **kwargs):
     """
     Create a new PendingDiningListTracker when a new dining list is added
     :param sender:
     :param instance: The dining_list instance
+    :param created: whether this save caused the instance to be created
     :param kwargs: not used
     """
     if created:
