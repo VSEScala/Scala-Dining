@@ -1,0 +1,30 @@
+<input id="{{ widget.name }}-display"
+       name="{{ widget.name }}-display"
+        {% if widget.value != None %}
+            value="{{ widget.value|stringformat:'s' }}"
+        {% endif %}
+        {% include "django/forms/widgets/attrs.html" %}
+>
+
+<input id="{{ widget.name }}" type="hidden" name="{{ widget.name }}" value="">
+
+<script>
+    document.addEventListener("DOMContentLoaded", function (event) {
+        let searchfield = document.getElementById("{{ widget.name }}-display");
+        let numberfield = document.getElementById("{{ widget.name }}");
+
+        // Enable autocomplete
+        new Awesomplete(searchfield, {
+            list: [{% for entry in widget.queryset %}["{{ entry }}","{{ entry.id }}"],{% endfor %}],
+            replace: function (text) {
+                this.input.value = text.label;
+            },
+            autoFirst: true,
+        });
+
+        // Update internal button when user selects someone
+        searchfield.addEventListener('awesomplete-selectcomplete', function (event) {
+            numberfield.value = event.text.value;
+        });
+    });
+</script>
