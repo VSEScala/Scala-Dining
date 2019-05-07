@@ -1,4 +1,4 @@
-from datetime import time, date, timedelta
+from datetime import time, date, timedelta, datetime
 from decimal import Decimal
 
 from django.core.exceptions import NON_FIELD_ERRORS
@@ -74,7 +74,7 @@ class DiningEntryExternalCreateFormTestCase(TestCase):
         cls.association = Association.objects.create()
         cls.user = User.objects.create_user('jan')
         cls.dining_list = DiningList.objects.create(date=date(2089, 1, 1), association=cls.association,
-                                                    claimed_by=cls.user)
+                                                    claimed_by=cls.user, sign_up_deadline=datetime(2088, 1, 1))
 
     def test_balance_too_low(self):
         FixedTransaction.objects.create(source_user=self.user, amount=Decimal('99'))
@@ -90,7 +90,7 @@ class DiningEntryUserCreateFormTestCase(TestCase):
         cls.association = Association.objects.create()
         cls.user = User.objects.create_user('jan')
         cls.dining_list = DiningList.objects.create(date=date(2089, 1, 1), association=cls.association,
-                                                    claimed_by=cls.user)
+                                                    claimed_by=cls.user, sign_up_deadline=datetime(2088, 1, 1))
 
     def test_balance_too_low(self):
         FixedTransaction.objects.create(source_user=self.user, amount=Decimal('99'))

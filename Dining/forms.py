@@ -33,9 +33,9 @@ class CreateSlotForm(forms.ModelForm):
         fields = ('dish', 'association', 'max_diners', 'serve_time')
 
     def __init__(self, user, date, *args, **kwargs):
-        super(CreateSlotForm, self).__init__(*args, **kwargs)
-        self.user = user
-        self.date = date
+        # Temporary: apply instance here (needs to be moved to the view)
+        instance = DiningList(claimed_by=user, date=date)
+        super(CreateSlotForm, self).__init__(*args, instance=instance, **kwargs)
 
         # Get associations that the user is a member of
         associations = Association.objects.filter(usermembership__related_user=user)
@@ -62,36 +62,32 @@ class CreateSlotForm(forms.ModelForm):
     def clean(self):
         cleaned_data = super().clean()
 
-        if DiningList.objects.available_slots(self.date) <= 0:
+        if DiningList.objects.available_slots(self.instance.date) <= 0:
             raise ValidationError("All dining slots are already occupied on this day")
 
         # Check if user has enough money to claim a slot
-        if self.user.usercredit.balance < settings.MINIMUM_BALANCE_FOR_DINING_SLOT_CLAIM:
+        if self.instance.claimed_by.usercredit.balance < settings.MINIMUM_BALANCE_FOR_DINING_SLOT_CLAIM:
             raise ValidationError("Your balance is too low to claim a slot")
 
         # Check if user has not already claimed another dining slot this day
-        if DiningList.objects.filter(date=self.date, claimed_by=self.user).count() > 0:
+        if DiningList.objects.filter(date=self.instance.date, claimed_by=self.instance.claimed_by).exists():
             raise ValidationError(_("User has already claimed a dining slot this day"))
 
         # If date is valid
-        if self.date < timezone.now().date():
+        if self.instance.date < timezone.now().date():
             raise ValidationError("This date is in the past")
-        if self.date == timezone.now().date() and timezone.now().time() > settings.DINING_SLOT_CLAIM_CLOSURE_TIME:
+        if self.instance.date == timezone.now().date() and timezone.now().time() > settings.DINING_SLOT_CLAIM_CLOSURE_TIME:
             raise ValidationError("It's too late to claim any dining slots")
-        if self.date > timezone.now().date() + settings.DINING_SLOT_CLAIM_AHEAD:
+        if self.instance.date > timezone.now().date() + settings.DINING_SLOT_CLAIM_AHEAD:
             raise ValidationError("Dining list is too far in the future")
 
         return cleaned_data
 
     def save(self, commit=True):
-        instance = super().save(commit=False)
-        instance.claimed_by = self.user
-        instance.date = self.date
-
+        instance = super().save(commit=commit)
         if commit:
-            instance.save()
-            DiningEntryUser(user=self.user, dining_list=instance).save()
-
+            # Immediately sign up for dining list (should maybe use form instead)
+            DiningEntryUser(user=instance.claimed_by, dining_list=instance).save()
         return instance
 
 
