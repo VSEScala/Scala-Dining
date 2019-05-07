@@ -1,12 +1,12 @@
 <input id="{{ widget.name }}-display"
        name="{{ widget.name }}-display"
         {% if widget.value != None %}
-            value="{{ widget.value|stringformat:'s' }}"
+            value="{{ widget.value_name }}"
         {% endif %}
         {% include "django/forms/widgets/attrs.html" %}
 >
 
-<input id="{{ widget.name }}" type="hidden" name="{{ widget.name }}" value="">
+<input id="{{ widget.name }}" type="hidden" name="{{ widget.name }}" value="{{ widget.value|stringformat:'s' }}">
 
 <script>
     document.addEventListener("DOMContentLoaded", function (event) {

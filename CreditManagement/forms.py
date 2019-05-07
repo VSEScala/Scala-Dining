@@ -35,6 +35,9 @@ class AssociationTransactionForm(TransactionForm):
 
     class Meta(TransactionForm.Meta):
         fields = ['origin', 'amount', 'target_user', 'description']
+        labels = {
+            'target_user': 'User',
+        }
 
 
 class UserTransactionForm(TransactionForm):
