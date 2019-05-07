@@ -26,6 +26,7 @@ class TransactionForm(forms.ModelForm):
         }
 
 
+
 class AssociationTransactionForm(TransactionForm):
 
     def __init__(self, association, *args, **kwargs):
@@ -39,13 +40,6 @@ class AssociationTransactionForm(TransactionForm):
         labels = {
             'target_user': 'User',
         }
-
-    def clean_target_user(self):
-        t_user = self.cleaned_data['target_user']
-        if t_user is not None:
-            return t_user
-        else:
-            raise ValidationError("Please select a user to wire the money to")
 
 
 class UserTransactionForm(TransactionForm):
