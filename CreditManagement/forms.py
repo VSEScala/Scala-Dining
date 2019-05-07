@@ -1,10 +1,9 @@
 from django import forms
 from .models import *
+from General.widget import SearchWidget
 
 class TransactionForm(forms.ModelForm):
     origin = forms.CharField(disabled=True)
-
-    target_user = forms.ModelChoiceField(queryset=User.objects.all().order_by('first_name'))
 
     def __init__(self, *args, user=None, association=None, **kwargs):
         super().__init__(*args, **kwargs)
@@ -22,13 +21,17 @@ class TransactionForm(forms.ModelForm):
     class Meta:
         model = PendingTransaction
         fields = ['origin', 'amount', 'target_user', 'target_association']
+        widgets = {
+            'target_user': SearchWidget(queryset=User.objects.all().order_by('first_name')),
+        }
 
 
 class AssociationTransactionForm(TransactionForm):
 
     def __init__(self, association, *args, **kwargs):
         super().__init__(*args, association=association, **kwargs)
-        self.fields['target_user'].queryset=User.objects.filter(usermembership__association=association).order_by('first_name')
+        self.fields['target_user'].widget.queryset = \
+            User.objects.filter(usermembership__association=association).order_by('first_name')
 
     class Meta(TransactionForm.Meta):
         fields = ['origin', 'amount', 'target_user', 'description']
