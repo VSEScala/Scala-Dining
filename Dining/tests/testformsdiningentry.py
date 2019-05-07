@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime, time
 from django.test import TestCase
 from django.utils import timezone
 from django.core.exceptions import NON_FIELD_ERRORS
@@ -10,12 +10,16 @@ from UserDetails.models import User, Association
 
 def _create_dining_list(**kwargs):
     """
-    Creates a dining list with default date and association if omitted.
+    Creates a dining list with defaults if omitted.
     """
-    if not 'association' in kwargs:
+    if 'association' not in kwargs:
         kwargs['association'] = Association.objects.create()
-    if not 'date' in kwargs:
+    if 'date' not in kwargs:
         kwargs['date'] = date(2018, 1, 4)
+    if 'sign_up_deadline' not in kwargs:
+        kwargs['sign_up_deadline'] = datetime.combine(kwargs['date'], time(17,00))
+    if 'claimed_by' not in kwargs:
+        kwargs['claimed_by'] = User.objects.create_user('tessa', 'tessa@punt.nl')
     return DiningList.objects.create(**kwargs)
 
 

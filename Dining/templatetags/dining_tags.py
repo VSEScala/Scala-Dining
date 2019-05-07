@@ -24,3 +24,9 @@ def has_paid(slot, user):
     except DiningEntry.DoesNotExist:
         pass
     return False
+
+
+@register.filter
+def paid_count(dining_list):
+    """Number of people who have paid for given list"""
+    return DiningEntry.objects.filter(dining_list=dining_list, has_paid=True).count()
