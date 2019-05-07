@@ -1,4 +1,5 @@
 from django.forms.widgets import NumberInput
+from django.db.models import ObjectDoesNotExist
 
 
 class SearchWidget(NumberInput):
@@ -9,8 +10,13 @@ class SearchWidget(NumberInput):
 
     def get_context(self, *args, **kwargs):
         context = super(SearchWidget, self).get_context(*args, **kwargs)
-        print("Context Get")
         context['widget']['queryset'] = self.queryset
+        if context['widget']['value'] is not None:
+            # Get the current value objects name
+            try:
+                context['widget']['value_name'] = self.queryset.get(id=context['widget']['value'])
+            except ObjectDoesNotExist:
+                pass
         return context
 
     def __init__(self, *args, queryset=None, **kwargs):
