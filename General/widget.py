@@ -11,10 +11,12 @@ class SearchWidget(NumberInput):
     def get_context(self, *args, **kwargs):
         context = super(SearchWidget, self).get_context(*args, **kwargs)
         context['widget']['queryset'] = self.queryset
-        if context['widget']['value'] is not None:
+        # Check if the given contents are not empty
+        # (if an error occurs during form submit, the string "None" can be passed)
+        if context['widget']['value'] != "None" and context['widget']['value'] is not None:
             # Get the current value objects name
             try:
-                context['widget']['value_name'] = self.queryset.get(id=context['widget']['value'])
+                context['widget']['value_name'] = self.queryset.get(id=int(context['widget']['value']))
             except ObjectDoesNotExist:
                 pass
         return context

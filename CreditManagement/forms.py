@@ -32,12 +32,20 @@ class AssociationTransactionForm(TransactionForm):
         super().__init__(*args, association=association, **kwargs)
         self.fields['target_user'].widget.queryset = \
             User.objects.filter(usermembership__association=association).order_by('first_name')
+        self.fields['target_user'].required = True
 
     class Meta(TransactionForm.Meta):
         fields = ['origin', 'amount', 'target_user', 'description']
         labels = {
             'target_user': 'User',
         }
+
+    def clean_target_user(self):
+        t_user = self.cleaned_data['target_user']
+        if t_user is not None:
+            return t_user
+        else:
+            raise ValidationError("Please select a user to wire the money to")
 
 
 class UserTransactionForm(TransactionForm):
