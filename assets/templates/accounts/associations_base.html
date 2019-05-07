@@ -1,31 +1,23 @@
 {% extends 'base.html' %}
 
 {% block content %}
-        <div class="row">
-            <h2 class="col-12 pl-0">{{ association }}</h2>
-        </div>
-        <div class="row">
-            <ul class="col-12 nav nav-tabs">
-                <li class="nav-item">
-                    <a class="nav-link{% block tab_overview %}{% endblock %}"
-                       href="{% url 'association_overview' association_name=association.slug %}">Overview
-                        {% if notify_overview %}<span class="badge badge-pill badge-warning">!</span>{% endif %}
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link{% block tab_credits %}{% endblock %}"
-                       href="{% url 'association_credits' association_name=association.slug %}">Credits</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link{% block tab_members %}{% endblock %}"
-                       href="{% url 'association_members' association_name=association.slug %}">Members</a>
-                </li>
-            </ul>
-        </div>
+    <h2>{{ association }}</h2>
+    <ul class="nav nav-tabs">
+        <li class="nav-item">
+            <a class="nav-link{% block tab_overview %}{% endblock %}"
+               href="{% url 'association_overview' association_name=association.slug %}">Overview
+                {% if notify_overview %}<span class="badge badge-pill badge-warning">!</span>{% endif %}
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link{% block tab_credits %}{% endblock %}"
+               href="{% url 'association_credits' association_name=association.slug %}">Credits</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link{% block tab_members %}{% endblock %}"
+               href="{% url 'association_members' association_name=association.slug %}">Members</a>
+        </li>
+    </ul>
 
-        <div class="row">
-            <div class="col-12 pt-3">
-                {% block details %}{% endblock details %}
-            </div>
-        </div>
+    <div class="mt-3">{% block details %}{% endblock details %}</div>
 {% endblock %}

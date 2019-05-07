@@ -2,15 +2,13 @@
 
 {% block content %}
 
-    <h2 class="row">{{ association }}</h2>
+    <h2>Dining history</h2>
 
-    <ul class="row nav nav-tabs">
+    <ul class="nav nav-tabs mb-3">
         <li class="nav-item">
-
             <a class="nav-link{% block tab_joined %}{% endblock %}"
                href="{% url 'history_lists' %}">Joined lists
             </a>
-
         </li>
         <li class="nav-item">
             <a class="nav-link{% block tab_claimed %}{% endblock %}"
@@ -18,9 +16,5 @@
         </li>
     </ul>
 
-    <div class="row">
-        <div class="col-12 p-4">
-            {% block details %}{% endblock details %}
-        </div>
-    </div>
+    {% block details %}{% endblock details %}
 {% endblock %}
