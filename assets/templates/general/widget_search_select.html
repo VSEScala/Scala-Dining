@@ -6,7 +6,14 @@
         {% include "django/forms/widgets/attrs.html" %}
 >
 
-<input id="{{ widget.name }}" type="hidden" name="{{ widget.name }}" value="{{ widget.value|stringformat:'s' }}">
+<input id="{{ widget.name }}"
+       type="hidden"
+       name="{{ widget.name }}"
+        {% if widget.value != None %}
+            value="{{ widget.value|stringformat:'s' }}"
+        {% endif %}
+
+>
 
 <script>
     document.addEventListener("DOMContentLoaded", function (event) {
