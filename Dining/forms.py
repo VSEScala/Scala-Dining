@@ -1,3 +1,5 @@
+import warnings
+
 from django import forms
 from django.conf import settings
 from django.db.models import OuterRef, Exists
@@ -32,16 +34,14 @@ class CreateSlotForm(forms.ModelForm):
         model = DiningList
         fields = ('dish', 'association', 'max_diners', 'serve_time')
 
-    def __init__(self, user, date, *args, **kwargs):
-        # Temporary: apply instance here (needs to be moved to the view)
-        instance = DiningList(claimed_by=user, date=date)
-        super(CreateSlotForm, self).__init__(*args, instance=instance, **kwargs)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
-        # Get associations that the user is a member of
-        associations = Association.objects.filter(usermembership__related_user=user)
+        # Get associations that the user is a member of (not verified)
+        associations = Association.objects.filter(usermembership__related_user=self.instance.claimed_by)
 
         # Filter out unavailable associations (those that have a dining list already on this day)
-        dining_lists = DiningList.objects.filter(date=date, association=OuterRef('pk'))
+        dining_lists = DiningList.objects.filter(date=self.instance.date, association=OuterRef('pk'))
         available = associations.annotate(occupied=Exists(dining_lists)).filter(occupied=False)
         unavailable = associations.annotate(occupied=Exists(dining_lists)).filter(occupied=True)
 
@@ -56,7 +56,7 @@ class CreateSlotForm(forms.ModelForm):
         self.fields['association'] = forms.ModelChoiceField(queryset=available, widget=widget, help_text=help_text)
 
         if len(available) == 1:
-            self.fields['association'].initial = available[0].pk
+            self.initial['association'] = available[0].pk
             self.fields['association'].disabled = True
 
     def clean(self):
@@ -86,8 +86,13 @@ class CreateSlotForm(forms.ModelForm):
     def save(self, commit=True):
         instance = super().save(commit=commit)
         if commit:
-            # Immediately sign up for dining list (should maybe use form instead)
-            DiningEntryUser(user=instance.claimed_by, dining_list=instance).save()
+            user = instance.claimed_by
+            entry_form = DiningEntryUserCreateForm({'user': str(user.pk)},
+                                                   instance=DiningEntryUser(created_by=user, dining_list=instance))
+            if entry_form.is_valid():
+                entry_form.save()
+            else:
+                warnings.warn("Couldn't create dining entry while creating dining list")
         return instance
 
 

@@ -151,8 +151,8 @@ class DiningEntryDeleteFormTestCase(TestCase):
         user1 = User.objects.create_user('noortje', email="noortje@universe.cat")
         user2 = User.objects.create_user('ankie', email="ankie@universe.cat")
         dl = _create_dining_list(date=date(2100, 1, 1), claimed_by=user1)
-        e1 = DiningEntry.objects.create(user=user1, dining_list=dl)
-        e2 = DiningEntry.objects.create(user=user2, dining_list=dl)
+        e1 = DiningEntry.objects.create(user=user1, created_by=user1, dining_list=dl)
+        e2 = DiningEntry.objects.create(user=user2, created_by=user2, dining_list=dl)
 
         # Set the new date in the past
         dl.sign_up_deadline = timezone.now()

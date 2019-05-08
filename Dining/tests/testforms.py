@@ -32,8 +32,9 @@ class CreateSlotFormTestCase(TestCase):
 
     def test_creation(self):
         # Create
-        form_data = {'dish': 'Kwark', 'association': self.association1.pk, 'max_diners': 18, 'serve_time': time(17, 00)}
-        form = CreateSlotForm(self.user1, self.dining_date, form_data)
+        form_data = {'dish': 'Kwark', 'association': str(self.association1.pk), 'max_diners': '18',
+                     'serve_time': '17:00'}
+        form = CreateSlotForm(form_data, instance=DiningList(claimed_by=self.user1, date=self.dining_date))
         self.assertTrue(form.is_valid())
         dining_list = form.save()
 
@@ -50,8 +51,9 @@ class CreateSlotFormTestCase(TestCase):
 
         Association 3 with user 1.
         """
-        form_data = {'dish': 'Boter', 'association': self.association3.pk, 'max_diners': 20, 'serve_time': time(18, 00)}
-        form = CreateSlotForm(self.user1, self.dining_date, form_data)
+        form_data = {'dish': 'Boter', 'association': str(self.association3.pk), 'max_diners': '20',
+                     'serve_time': '18:00'}
+        form = CreateSlotForm(form_data, instance=DiningList(claimed_by=self.user1, date=self.dining_date))
         self.assertFalse(form.is_valid())
         self.assertTrue(form.has_error('association', 'invalid_choice'))
 

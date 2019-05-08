@@ -217,13 +217,13 @@ class NewSlotView(LoginRequiredMixin, DayMixin, TemplateView):
 
     def get(self, request, *args, **kwargs):
         context = self.get_context_data()
-        context['slot_form'] = CreateSlotForm(self.request.user, context['date'])
+        context['slot_form'] = CreateSlotForm(instance=DiningList(claimed_by=request.user, date=self.date))
         return self.render_to_response(context)
 
     def post(self, request, *args, **kwargs):
         context = self.get_context_data()
 
-        form = CreateSlotForm(request.user, self.date, request.POST)
+        form = CreateSlotForm(request.POST, instance=DiningList(claimed_by=request.user, date=self.date))
 
         if form.is_valid():
             dining_list = form.save()
