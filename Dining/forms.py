@@ -243,6 +243,7 @@ class DiningEntryExternalCreateForm(DiningEntryCreateForm):
         """
         if data is not None:
             # User defaults to adder if not set
+            data = data.copy()
             data.setdefault('name', name)
 
         super().__init__(adder, dining_list, name, data=data, **kwargs)
