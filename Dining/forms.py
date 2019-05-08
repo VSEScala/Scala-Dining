@@ -142,109 +142,53 @@ class DiningPaymentForm(forms.ModelForm):
         self.instance.save(update_fields=DiningPaymentForm.Meta.save_fields)
 
 
-class DiningEntryCreateForm(forms.ModelForm):
-    user = forms.ModelChoiceField(queryset=None)
-
-    def __init__(self, added_by, dining_list, data=None, **kwargs):
-        """
-        The adder and dining_list parameters are used to find the users that can be used for this entry.
-        """
-        if data is not None:
-            # User defaults to added_by if not set
-            data = data.copy()
-            data.setdefault('user', added_by.pk)
-            data.setdefault('dining_list', dining_list.pk)
-
-        super().__init__(**kwargs, data=data)
-
-        # Find available users for this dining entry
-        users = User.objects.all()
-
-        self.fields['user'].queryset = users
-
-    def clean_dining_list(self):
-        # Clean the dining list relation
-        dining_list = self.cleaned_data['dining_list']
-
-        if not dining_list.can_add_diners(self.added_by):
-            if dining_list.is_adjustable():
-                # If it blocked, but the list is adjustable. The user has no special permissions
-                if not dining_list.is_open():
-                    raise ValidationError(_("Dining list is closed or can't be changed."), code='closed')
-                elif not dining_list.has_room():
-                    raise ValidationError(_("Dining list is full."), code='full')
-                elif not self.added_by.usermembership_set.filter(association=dining_list.association).exists():
-                    # The list is open and has room, so it must be members only
-                    raise ValidationError(_("Dining list is limited for members only."), code='members_only')
-                else:
-                    raise RuntimeError(_("Access blocked for undetermined reason"))
-            else:
-                # The user had authorisation, but the dining list is to old to be adjusted
-                raise ValidationError(_("Dining list can no longer be adjusted."), code='closed')
-
-        return dining_list
-
-
-class DiningEntryUserCreateForm(DiningEntryCreateForm):
-
+class DiningEntryUserCreateForm(forms.ModelForm):
     class Meta:
         model = DiningEntryUser
-        fields = ['dining_list', 'user']
+        fields = ['user']
 
-    def __init__(self, added_by, dining_list, data=None, **kwargs):
-        """
-        The adder and dining_list parameters are used to find the users that can be used for this entry.
-        """
-        super().__init__(added_by, dining_list, data=data, **kwargs)
-
-        # Set the added_by to the user who added it
-        self.added_by = added_by
-        self.instance.added_by = self.added_by
+    def get_user(self):
+        """Returns the user responsible for the kitchen cost (not necessarily creator)"""
+        return self.cleaned_data.get('user')
 
     def clean(self):
         cleaned_data = super().clean()
-        user = cleaned_data.get('user')
-        if (user.usercredit.balance < settings.MINIMUM_BALANCE_FOR_DINING_SIGN_UP and
-                not reduce(lambda a,b: a or (user.is_member_of(b) and b.has_min_exception),
-                    Association.objects.all(), False)):
-            raise ValidationError("The balance of this user is too low to add", code='nomoneyzz')
+
+        dining_list = self.instance.dining_list
+        user = self.get_user()
+        creator = self.instance.created_by
+
+        # Adjustable
+        if not dining_list.is_adjustable():
+            raise ValidationError(_("Dining list can no longer be adjusted"), code='closed')
+
+        # Closed (exception for owner)
+        if not dining_list.is_authorised_user(creator) and not dining_list.is_open():
+            raise ValidationError(_("Dining list is closed"), code='closed')
+
+        # Full (exception for owner)
+        if not dining_list.is_authorised_user(creator) and not dining_list.has_room():
+            raise ValidationError(_("Dining list is full"), code='full')
+
+        if dining_list.limit_signups_to_association_only:
+            # User should be verified association member, except when the entry creator is owner
+            if not dining_list.is_authorised_user(creator) and not user.is_verified_member_of(dining_list.association):
+                raise ValidationError(_("Dining list is limited for members only"), code='members_only')
+
+        # User balance check
+        if not user.has_min_balance_exception() and user.usercredit.balance < settings.MINIMUM_BALANCE_FOR_DINING_SIGN_UP:
+            raise ValidationError("The balance of the user is too low to add", code='nomoneyzz')
 
         return cleaned_data
 
 
-class DiningEntryExternalCreateForm(forms.ModelForm):
+class DiningEntryExternalCreateForm(DiningEntryUserCreateForm):
     class Meta:
         model = DiningEntryExternal
         fields = ['name']
 
-    def clean(self):
-        cleaned_data = super().clean()
-        user = self.instance.user
-        if (user.usercredit.balance < settings.MINIMUM_BALANCE_FOR_DINING_SIGN_UP and
-                not reduce(lambda a,b: a or (user.is_member_of(b) and b.has_min_exception),
-                    Association.objects.all(), False)):
-            raise ValidationError("Your balance is too low to add any external people", code='nomoneyzz')
-
-        # Clean the dining list
-        # Duplicate of DiningEntryCreateForm.clean_dining_list, I know it, but needs to be rewritten anyway
-        dining_list = self.instance.dining_list
-        if not dining_list.can_add_diners(user):
-            if dining_list.is_adjustable():
-                # If it blocked, but the list is adjustable. The user has no special permissions
-                if not dining_list.is_open():
-                    raise ValidationError(_("Dining list is closed or can't be changed"), code='closed')
-                elif not dining_list.has_room():
-                    raise ValidationError(_("Dining list is full"), code='full')
-                elif not user.usermembership_set.filter(association=dining_list.association).exists():
-                    # The list is open and has room, so it must be members only
-                    raise ValidationError(_("Dining list is limited for members only"), code='members_only')
-                else:
-                    raise RuntimeError(_("Access blocked for undetermined reason"))
-            else:
-                # The user had authorisation, but the dining list is to old to be adjusted
-                raise ValidationError(_("Dining list can no longer be adjusted"), code='closed')
-
-        return cleaned_data
+    def get_user(self):
+        return self.instance.user
 
 
 class DiningEntryDeleteForm(forms.ModelForm):

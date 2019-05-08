@@ -94,9 +94,8 @@ class DiningList(models.Model):
 
     def clean(self):
         # Validate dining list can be changed
-        # This also blocks changes for dining entries!
         if self.pk and not self.is_adjustable():
-            raise ValidationError(gettext('The dining list is not adjustable.'), code='not_adjustable')
+            raise ValidationError(gettext('The dining list is not adjustable'), code='closed')
         # Set sign up deadline if it hasn't been set already
         if not self.sign_up_deadline:
             loc_time = timezone.datetime.combine(self.date, settings.DINING_LIST_CLOSURE_TIME)
@@ -181,29 +180,37 @@ class DiningList(models.Model):
 class DiningEntry(models.Model):
     """Represents an entry on a dining list"""
 
-    dining_list = models.ForeignKey(DiningList, on_delete=models.CASCADE, related_name='dining_entries')
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    dining_list = models.ForeignKey(DiningList, on_delete=models.PROTECT, related_name='dining_entries')
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT,
+                                   related_name='created_dining_entries')
 
     has_paid = models.BooleanField(default=False)
 
-    def get_internal(self):
+    def get_subclass(self):
+        """Return an instance of the correct subclass, either DiningEntryUser or DiningEntryExternal"""
         try:
             return self.diningentryuser
         except DiningEntryUser.DoesNotExist:
-            return None
-
-    def get_external(self):
+            pass
         try:
             return self.diningentryexternal
-        except DiningEntryExternal.DoesNotExist:
-            return None
+        except DiningEntryUser.DoesNotExist:
+            pass
+        raise RuntimeError("Invalid DiningEntry")
 
-    def name(self):
-        external = self.get_external()
-        if external:
-            return external.name
-        else:
-            return str(self.user)
+    def get_name(self):
+        """Return name of diner"""
+        return self.user.get_full_name()
+
+    def is_internal(self):
+        return True
+
+    def is_external(self):
+        return not self.is_internal()
+
+    def __str__(self):
+        return "{}: {}".format(self.dining_list.date, self.get_name())
 
 
 class DiningWork(models.Model):
@@ -217,23 +224,20 @@ class DiningWork(models.Model):
 
 
 class DiningEntryUser(DiningEntry, DiningWork):
-    added_by = models.ForeignKey(User, related_name="added_entry_on_dining", on_delete=models.PROTECT, blank=True,
-                                 default=None, null=True)
-
     def clean(self):
         if not self.pk:
             if DiningEntryUser.objects.filter(user=self.user, dining_list=self.dining_list).exists():
                 raise ValidationError("User is already on the dining list")
 
-    def __str__(self):
-        return "{}: {}".format(self.dining_list.date, self.user)
-
 
 class DiningEntryExternal(DiningEntry):
     name = models.CharField(max_length=100)
 
-    def __str__(self):
-        return "{}: {}".format(self.dining_list.date, self.name)
+    def get_name(self):
+        return self.name
+
+    def is_internal(self):
+        return False
 
 
 class DiningComment(models.Model):

@@ -198,7 +198,7 @@ class DailyDinersCSVView(LoginRequiredMixin, View):
             # Get all associated memberships
             memberships = []
             for association in associations:
-                if user.is_member_of(association):
+                if user.is_verified_member_of(association):
                     memberships.append(1)
                 else:
                     memberships.append(0)
@@ -269,15 +269,15 @@ class EntryAddView(LoginRequiredMixin, DiningListMixin, TemplateView):
 
         # Do form shenanigans
         if 'add_external' in request.POST:
-            entry = DiningEntryExternal(user=request.user, dining_list=self.dining_list)
+            entry = DiningEntryExternal(user=request.user, dining_list=self.dining_list, created_by=request.user)
             form = DiningEntryExternalCreateForm(request.POST, instance=entry)
         else:
-            form = DiningEntryUserCreateForm(request.user, self.dining_list, data=request.POST)
+            entry = DiningEntryUser(dining_list=self.dining_list, created_by=request.user)
+            form = DiningEntryUserCreateForm(request.POST, instance=entry)
 
         if form.is_valid():
             entry = form.save()
             # Construct success message
-            # Not the best if check but entry.get_internal() didn't work for some reason
             if isinstance(entry, DiningEntryUser):
                 if entry.user == request.user:
                     msg = _("You successfully joined the dining list")
@@ -334,12 +334,6 @@ class EntryRemoveView(LoginRequiredMixin, DiningListMixin, View):
 class SlotMixin(DiningListMixin):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-
-        context['is_open'] = self.dining_list.is_open()
-        context['user_is_on_list'] = self.dining_list.internal_dining_entries().filter(user=self.request.user).exists()
-        context['user_can_add_self'] = self.dining_list.can_add_diners(self.request.user, check_for_self=True)
-        context['user_can_add_others'] = self.dining_list.can_add_diners(self.request.user)
-
         # Get the amount of messages
         context['comments_total'] = self.dining_list.diningcomment_set.count()
         # Get the amount of unread messages
@@ -366,7 +360,7 @@ class SlotListView(LoginRequiredMixin, SlotMixin, TemplateView):
         # determine whether the user has external entries added that he/she can remove until closing time
         context['can_delete_some'] = \
             self.dining_list.external_dining_entries().filter(user=self.request.user).count() > 0
-        context['can_delete_some'] = context['can_delete_some'] * context['is_open']
+        context['can_delete_some'] = context['can_delete_some'] * self.dining_list.is_open()
 
         context['can_edit_stats'] = (self.request.user == self.dining_list.claimed_by)
         context['can_delete_all'] = (self.dining_list.is_authorised_user(self.request.user))
