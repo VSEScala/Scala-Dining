@@ -246,10 +246,11 @@ class DiningEntryExternalCreateForm(DiningEntryCreateForm):
             data = data.copy()
             data.setdefault('name', name)
 
-        super().__init__(adder, dining_list, name, data=data, **kwargs)
+        super().__init__(adder, dining_list, data=data, **kwargs)
 
         # Limit the user to the adder person
         self.instance.user = adder
+        self.added_by = adder
 
         # Limit the options for the person who added the diner to solely the person who added the diner
         self.fields['user'].queryset = self.fields['user'].queryset.filter(pk=adder.pk)
