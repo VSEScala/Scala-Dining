@@ -39,7 +39,7 @@ class DiningList(models.Model):
 
     The following fields may not be changed after creation: kitchen_cost, min_diners/max_diners!
     """
-    date = models.DateField(default=timezone.now)
+    date = models.DateField()
     sign_up_deadline = models.DateTimeField(help_text="The time before users need to sign up.")
     serve_time = models.TimeField(default=time(18, 00))
 
@@ -229,7 +229,7 @@ class DiningEntry(models.Model):
         if not self.pk:
             # Validate user is not already subscribed for the dining list
             if self.get_internal() and self.dining_list.internal_dining_entries().filter(user=self.user).exists():
-                raise ValidationError(gettext('This user is already subscribed to the dining list.'))
+                raise ValidationError(gettext('This user is already subscribed to the dining list'))
 
             # (Optionally) validate if user is not already on another dining list
             # if DiningList.objects.filter(date=self.dining_list.date, dining_entries__user=self.user)
@@ -237,13 +237,13 @@ class DiningEntry(models.Model):
     def get_internal(self):
         try:
             return self.diningentryuser
-        except ObjectDoesNotExist:
+        except DiningEntryUser.DoesNotExist:
             return None
 
     def get_external(self):
         try:
             return self.diningentryexternal
-        except ObjectDoesNotExist:
+        except DiningEntryExternal.DoesNotExist:
             return None
 
     def name(self):

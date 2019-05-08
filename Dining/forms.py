@@ -191,7 +191,7 @@ class DiningEntryCreateForm(forms.ModelForm):
                     raise ValidationError(_("Dining list is closed or can't be changed."), code='closed')
                 elif not dining_list.has_room():
                     raise ValidationError(_("Dining list is full."), code='full')
-                elif self.added_by.usermembership_set.filter(association=self.association).count() == 0:
+                elif not self.added_by.usermembership_set.filter(association=dining_list.association).exists():
                     # The list is open and has room, so it must be members only
                     raise ValidationError(_("Dining list is limited for members only."), code='members_only')
                 else:
@@ -225,43 +225,43 @@ class DiningEntryUserCreateForm(DiningEntryCreateForm):
         if (user.usercredit.balance < settings.MINIMUM_BALANCE_FOR_DINING_SIGN_UP and
                 not reduce(lambda a,b: a or (user.is_member_of(b) and b.has_min_exception),
                     Association.objects.all(), False)):
-            raise ValidationError("The balance of this user is too low to add.")
+            raise ValidationError("The balance of this user is too low to add", code='nomoneyzz')
 
         return cleaned_data
 
 
-class DiningEntryExternalCreateForm(DiningEntryCreateForm):
-    user = forms.ModelChoiceField(queryset=None)
-
+class DiningEntryExternalCreateForm(forms.ModelForm):
     class Meta:
         model = DiningEntryExternal
-        fields = ['dining_list', 'user', 'name']
-
-    def __init__(self, adder, dining_list, name, data=None, **kwargs):
-        """
-        The adder and dining_list parameters are used to find the users that can be used for this entry.
-        """
-        if data is not None:
-            # User defaults to adder if not set
-            data = data.copy()
-            data.setdefault('name', name)
-
-        super().__init__(adder, dining_list, data=data, **kwargs)
-
-        # Limit the user to the adder person
-        self.instance.user = adder
-        self.added_by = adder
-
-        # Limit the options for the person who added the diner to solely the person who added the diner
-        self.fields['user'].queryset = self.fields['user'].queryset.filter(pk=adder.pk)
+        fields = ['name']
 
     def clean(self):
         cleaned_data = super().clean()
-        user = cleaned_data.get('user')
+        user = self.instance.user
         if (user.usercredit.balance < settings.MINIMUM_BALANCE_FOR_DINING_SIGN_UP and
                 not reduce(lambda a,b: a or (user.is_member_of(b) and b.has_min_exception),
                     Association.objects.all(), False)):
-            raise ValidationError("Your balance is too low to add any external people.")
+            raise ValidationError("Your balance is too low to add any external people", code='nomoneyzz')
+
+        # Clean the dining list
+        # Duplicate of DiningEntryCreateForm.clean_dining_list, I know it, but needs to be rewritten anyway
+        dining_list = self.instance.dining_list
+        if not dining_list.can_add_diners(user):
+            if dining_list.is_adjustable():
+                # If it blocked, but the list is adjustable. The user has no special permissions
+                if not dining_list.is_open():
+                    raise ValidationError(_("Dining list is closed or can't be changed"), code='closed')
+                elif not dining_list.has_room():
+                    raise ValidationError(_("Dining list is full"), code='full')
+                elif not user.usermembership_set.filter(association=dining_list.association).exists():
+                    # The list is open and has room, so it must be members only
+                    raise ValidationError(_("Dining list is limited for members only"), code='members_only')
+                else:
+                    raise RuntimeError(_("Access blocked for undetermined reason"))
+            else:
+                # The user had authorisation, but the dining list is to old to be adjusted
+                raise ValidationError(_("Dining list can no longer be adjusted"), code='closed')
+
         return cleaned_data
 
 

@@ -4,9 +4,19 @@ from django.utils import timezone
 from django.core.exceptions import NON_FIELD_ERRORS
 
 from Dining.forms import DiningEntryUserCreateForm, DiningEntryDeleteForm
-from Dining.models import DiningEntry
-from UserDetails.models import User
-from tests.dining.helpers import create_dining_list
+from Dining.models import DiningEntry, DiningList
+from UserDetails.models import User, Association
+
+
+def _create_dining_list(**kwargs):
+    """
+    Creates a dining list with default date and association if omitted.
+    """
+    if not 'association' in kwargs:
+        kwargs['association'] = Association.objects.create()
+    if not 'date' in kwargs:
+        kwargs['date'] = date(2018, 1, 4)
+    return DiningList.objects.create(**kwargs)
 
 
 class DiningEntryCreateFormTestCase(TestCase):
@@ -17,7 +27,7 @@ class DiningEntryCreateFormTestCase(TestCase):
 
     def test_dining_list_closed(self):
         user = User.objects.create_user('noortje')
-        dl = create_dining_list(date=date(2018, 1, 1))
+        dl = _create_dining_list(date=date(2018, 1, 1))
         form = DiningEntryUserCreateForm(user, dl, {})
         self.assertFalse(form.is_valid())
         self.assertTrue(form.has_error('dining_list', 'closed'))
@@ -26,11 +36,16 @@ class DiningEntryCreateFormTestCase(TestCase):
         user = User.objects.create_user('noortje')
         # Choosing a date far in the future so that the dining list is open
         # Could also patch timezone.now using unittest.mock
-        dl = create_dining_list(date=date(2100, 1, 1), max_diners=0)
+        dl = _create_dining_list(date=date(2100, 1, 1), max_diners=0)
         form = DiningEntryUserCreateForm(user, dl, {})
         self.assertFalse(form.is_valid())
         self.assertTrue(form.has_error('dining_list', 'full'))
 
+    def test_dining_list_no_room_owner(self):
+        user = User.objects.create_user('noortje')
+        # Choosing a date far in the future so that the dining list is open
+        # Could also patch timezone.now using unittest.mock
+        dl = _create_dining_list(date=date(2100, 1, 1), max_diners=0)
         # Make the claimer the owner
         dl.claimed_by = user
         dl.save()
@@ -45,7 +60,7 @@ class DiningEntryCreateFormTestCase(TestCase):
         user2 = User.objects.create_user('ankie', email="ankie@universe.cat")
         # Choosing a date far in the future so that the dining list is open
         # Could also patch timezone.now using unittest.mock
-        list = create_dining_list(date=date(2100, 1, 1), max_diners=1)
+        list = _create_dining_list(date=date(2100, 1, 1), max_diners=1)
 
         # Create first entry
         entry1form = DiningEntryUserCreateForm(user1, list, {})
@@ -65,7 +80,7 @@ class DiningEntryDeleteFormTestCase(TestCase):
         # Setup
         user1 = User.objects.create_user('noortje', email="noortje@universe.cat")
         user2 = User.objects.create_user('ankie', email="ankie@universe.cat")
-        dl = create_dining_list(date=date(2100, 1, 1), claimed_by=user1)
+        dl = _create_dining_list(date=date(2100, 1, 1), claimed_by=user1)
         e1 = DiningEntry.objects.create(user=user1, dining_list=dl)
         e2 = DiningEntry.objects.create(user=user2, dining_list=dl)
 
