@@ -396,7 +396,11 @@ class SlotListView(LoginRequiredMixin, SlotMixin, TemplateView):
             # Go over all keys in the request containing has_paid, adjust the state on that object
             for key in post_requests:
                 if key[1] == "has_paid":
-                    entries[key[0]].has_paid = True
+                    try:
+                        entries[key[0]].has_paid = True
+                    except KeyError:
+                        # Entry doesn't exist any more
+                        pass
 
             # save all has_paid values
             for entry in entries.values():
@@ -415,12 +419,16 @@ class SlotListView(LoginRequiredMixin, SlotMixin, TemplateView):
 
             # Go over all keys in the request containing has_paid, adjust the state on that object
             for key in post_requests:
-                if key[1] == "has_shopped":
-                    entries[key[0]].has_shopped = True
-                elif key[1] == "has_cooked":
-                    entries[key[0]].has_cooked = True
-                elif key[1] == "has_cleaned":
-                    entries[key[0]].has_cleaned = True
+                try:
+                    if key[1] == "has_shopped":
+                        entries[key[0]].has_shopped = True
+                    elif key[1] == "has_cooked":
+                        entries[key[0]].has_cooked = True
+                    elif key[1] == "has_cleaned":
+                        entries[key[0]].has_cleaned = True
+                except KeyError:
+                    # Entry doesn't exist any more
+                    pass
 
             # save all has_paid values
             for entry in entries.values():
