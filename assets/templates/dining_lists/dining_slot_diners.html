@@ -2,80 +2,95 @@
 {% load staticfiles %}
 
 {% load form_extras %}
+{% load dining_tags %}
 
 
 {% block details%}
 
-    <div class="row">
-        <form method="post" class="col-12">
-            <div class="row">
-                <div class="col-12 table-responsive">
-                    <table class="table table-hover">
-                        {# Table header #}
-                        <thead>
-                        <tr class="">
-                            <td style="min-width: 10rem">Name</td>
-                            <td style="min-width: 15rem;">Help stats</td>
-                            {% if show_delete_column %}
-                                <td>Delete</td>
-                            {% endif %}
-                        </tr>
-                        </thead>
+    <form method="post">
+        <div class="row">
+            <div class="col-12 table-responsive">
+                <table class="table table-hover">
+                    {# Table header #}
+                    <thead>
+                    <tr class="">
+                        <td style="min-width: 10rem">Name</td>
+                        <td style="min-width: 15rem;">Help stats</td>
+                        {% if show_delete_column %}
+                            <td>Delete</td>
+                        {% endif %}
+                    </tr>
+                    </thead>
 
-                        <tbody>
-                        {# Table rows #}
-                        {% for entry in entries %}
+                    <tbody>
+                    {# Table rows #}
+                    {% for entry in entries %}
+                        {% with entry=entry.get_subclass %}
                             <tr>
                                 <td>
-                                    {% if entry.get_external %}
-                                        {{ entry.name }}
-                                        <small class="font-italic">added by {{ entry.user }}</small>
-                                    {% else %}
-                                        {% include 'snippets/snippet_userdisplay.html' %}
-                                    {% endif %}
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span>
+                                            {{ entry.get_name }}
+                                            {% if entry.is_external or entry.created_by != entry.user %}
+                                                <small class="font-italic">added by {{ entry.created_by }}</small>
+                                            {% endif %}
+                                        </span>
+
+                                        {% if entry.is_internal %}
+                                            <span class="d-flex">
+                                                {% for membership in entry.user.get_verified_memberships %}
+                                                    {% if membership.association.icon_image %}
+                                                        <i class="membership_icon">
+                                                            <img src="{{ membership.association.icon_image.url }}">
+                                                        </i>
+                                                    {% else %}
+                                                        <i>{{ membership.association.slug|slice:":1" }}</i>
+                                                    {% endif %}
+                                                {% endfor %}
+                                            </span>
+                                        {% endif %}
+                                    </div>
                                 </td>
                                 <td>
                                     <!-- Todo: Make button ids start with a letter, instead of a number -->
                                     <div class="btn-group btn-group-toggle d-flex" data-toggle="buttons" style="width:100%;">
-                                        {% with entry.get_internal as entry_data %}
-                                            {% if entry_data %}
-                                                {% if can_edit_stats %}
-                                                    <label class="btn btn-outline-primary col-3
-                                                            {% if entry_data.has_shopped %} active {% endif %}">
-                                                        <input type="checkbox" autocomplete="off"
-                                                               id="{{ entry_data.id }}:shop" name="{{ entry_data.id }}:has_shopped"
-                                                                {% if entry_data.has_shopped %} checked {% endif %}>
-                                                        Shop
-                                                    </label>
-                                                    <label class="btn btn-outline-primary col-3
-                                                            {% if entry_data.has_cooked %} active {% endif %}">
-                                                        <input type="checkbox" autocomplete="off"
-                                                               id="{{ entry_data.id }}:cook" name="{{ entry_data.id }}:has_cooked"
-                                                                {% if entry_data.has_cooked %} checked {% endif %}>
-                                                        Cook
-                                                    </label>
-                                                    <label class="btn btn-outline-primary col-3
-                                                            {% if entry_data.has_cleaned %} active {% endif %}">
-                                                        <input type="checkbox" autocomplete="off"
-                                                               id="{{ entry_data.id }}:clean" name="{{ entry_data.id }}:has_cleaned"
-                                                                {% if entry_data.has_cleaned %} checked {% endif %}}>
-                                                        Clean
-                                                    </label>
-                                                {% else %}
-                                                    <div class="col-3">
-                                                        {% if entry_data.has_shopped %} Shop {% endif %}
-                                                    </div>
-                                                    <div class="col-3">
-                                                        {% if entry_data.has_cooked %} Cook {% endif %}
-                                                    </div>
-                                                    <div class="col-3">
-                                                        {% if entry_data.has_cleaned %} Clean {% endif %}
-                                                    </div>
-                                                {% endif %}
+                                        {% if entry.is_internal %}
+                                            {% if can_edit_stats %}
+                                                <label class="btn btn-outline-primary col-3
+                                                        {% if entry_data.has_shopped %} active {% endif %}">
+                                                    <input type="checkbox" autocomplete="off"
+                                                           id="{{ entry_data.id }}:shop" name="{{ entry_data.id }}:has_shopped"
+                                                            {% if entry_data.has_shopped %} checked {% endif %}>
+                                                    Shop
+                                                </label>
+                                                <label class="btn btn-outline-primary col-3
+                                                        {% if entry_data.has_cooked %} active {% endif %}">
+                                                    <input type="checkbox" autocomplete="off"
+                                                           id="{{ entry_data.id }}:cook" name="{{ entry_data.id }}:has_cooked"
+                                                            {% if entry_data.has_cooked %} checked {% endif %}>
+                                                    Cook
+                                                </label>
+                                                <label class="btn btn-outline-primary col-3
+                                                        {% if entry_data.has_cleaned %} active {% endif %}">
+                                                    <input type="checkbox" autocomplete="off"
+                                                           id="{{ entry_data.id }}:clean" name="{{ entry_data.id }}:has_cleaned"
+                                                            {% if entry_data.has_cleaned %} checked {% endif %}}>
+                                                    Clean
+                                                </label>
                                             {% else %}
-                                                <div class="col-9"></div>
+                                                <div class="col-3">
+                                                    {% if entry_data.has_shopped %} Shop {% endif %}
+                                                </div>
+                                                <div class="col-3">
+                                                    {% if entry_data.has_cooked %} Cook {% endif %}
+                                                </div>
+                                                <div class="col-3">
+                                                    {% if entry_data.has_cleaned %} Clean {% endif %}
+                                                </div>
                                             {% endif %}
-                                        {% endwith %}
+                                        {% else %}
+                                            <div class="col-9"></div>
+                                        {% endif %}
                                         {% if can_edit_pay %}
                                             <label class="btn btn-outline-primary col-3
                                          {% if entry.has_paid %} active {% endif %}">
@@ -120,48 +135,47 @@
                                     </td>
                                 {% endif %}
                             </tr>
-                        {% endfor %}
+                        {% endwith %}
+                    {% endfor %}
 
-                        {# Footer buttons #}
-                        <tr class="d-none d-sm-table-row">
-                            <td>
-                                {% if user_can_add_others %}
-                                    <a class="btn btn-primary btn-block" href="
-                                    {% url 'entry_add' day=date.day month=date.month year=date.year identifier=dining_list.association.slug %}">
-                                        + Add Diner</a>
-                                {% endif %}
-                            </td>
-                            <td>
-                                {% if can_edit_stats or can_edit_pay %}
-                                    <input type="submit" class="btn btn-block btn-primary" value="Update User Stats"/>
-                                {% endif %}
-                            </td>
-                            {% if show_delete_column %}
-                            <td> <!-- Empty space --></td>
+                    {# Footer buttons #}
+                    <tr class="d-none d-sm-table-row">
+                        <td>
+                            {% if dining_list|can_add_others:user %}
+                                <a class="btn btn-primary btn-block" href="
+                                {% url 'entry_add' day=date.day month=date.month year=date.year identifier=dining_list.association.slug %}">
+                                    + Add Diner</a>
                             {% endif %}
-                        </tr>
+                        </td>
+                        <td>
+                            {% if can_edit_stats or can_edit_pay %}
+                                <input type="submit" class="btn btn-block btn-primary" value="Update User Stats"/>
+                            {% endif %}
+                        </td>
+                        {% if show_delete_column %}
+                        <td> <!-- Empty space --></td>
+                        {% endif %}
+                    </tr>
 
-                        </tbody>
-                    </table>
-                    {% csrf_token %}
-                </div>
+                    </tbody>
+                </table>
+                {% csrf_token %}
             </div>
-            <div class="row d-sm-none">
-                <div class="col-12">
-                    {% if can_edit_stats or can_edit_pay %}
-                        <input type="submit" class="btn btn-block btn-primary" value="Update User Stats"/>
-                    {% endif %}
-                   {% if user_can_add_others %}
-                       <a class="btn btn-primary btn-block" href="
-                        {% url 'entry_add' day=date.day month=date.month year=date.year identifier=dining_list.association.slug %}">
-                           + Add Diner</a>
-                   {% endif %}
+        </div>
+        <div class="row d-sm-none">
+            <div class="col-12">
+                {% if can_edit_stats or can_edit_pay %}
+                    <input type="submit" class="btn btn-block btn-primary" value="Update User Stats"/>
+                {% endif %}
+               {% if dining_list|can_add_others:user %}
+                   <a class="btn btn-primary btn-block" href="
+                    {% url 'entry_add' day=date.day month=date.month year=date.year identifier=dining_list.association.slug %}">
+                       + Add Diner</a>
+               {% endif %}
 
-                </div>
             </div>
-        </form>
-    </div>
-
+        </div>
+    </form>
 
 {% endblock details %}
 

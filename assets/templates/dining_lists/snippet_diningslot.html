@@ -2,10 +2,10 @@
 
 <div class="col-12 mx-0 my-2 btn d-inline-flex text-left
         {% if interactive %}py-4
-            {% if slot|is_on_slot:request.user %}
+            {% if slot|has_joined:user %}
                 btn-success
             {% else %}
-                {% if slot|can_join_slot:request.user %}
+                {% if slot|can_join:user %}
                     btn-outline-info
                 {% else %}
                     btn-outline-disabled
@@ -28,8 +28,8 @@
     </div>
 
     {% if interactive %}
-        {% with slot|can_join_slot:request.user as can_join %}
-            {% if not slot.is_open and slot|is_on_slot:request.user %}
+        {% with slot|can_join:request.user as can_join %}
+            {% if not slot.is_open and slot|has_joined:request.user %}
                 <div class="col-2 slot-signed"></div>
             {% endif %}
 
@@ -43,9 +43,10 @@
                 {% url 'slot_details' day=date.day month=date.month year=date.year identifier=slot.association.slug as next%}
                 <form method="post" action="{{ url }}?next={{ next }}" class="btn-block col-2 slot-signup d-inline-flex">
                     {% csrf_token %}
+                    <input type="hidden" name="user" value="{{ user.pk }}">
                     <button type="submit" class="btn-block btn btn-primary slot-signup"></button>
                 </form>
-            {% elif slot|is_on_slot:request.user and slot.is_open %}
+            {% elif slot|has_joined:request.user and slot.is_open %}
                 {% url 'entry_remove' day=date.day month=date.month year=date.year identifier=slot.association.slug as url %}
                 {% url 'day_view' day=date.day month=date.month year=date.year as next%}
                 <form method="post" action="{{ url }}?next={{ next }}" class="btn-block col-2 slot-signup d-inline-flex">

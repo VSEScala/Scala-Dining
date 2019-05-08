@@ -72,7 +72,7 @@ class DiningListCleanTestCase(TestCase):
         self.assertRaises(ValidationError, self.dining_list.full_clean)
 
 
-class DiningEntryTestCase(TestCase):
+class DiningEntryUserTestCase(TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.user = User.objects.create_user('piet')
@@ -80,14 +80,28 @@ class DiningEntryTestCase(TestCase):
         cls.dining_list = DiningList.objects.create(date=date(2123, 2, 1), association=cls.association,
                                                     claimed_by=cls.user, sign_up_deadline=datetime(2100, 1, 1))
 
-    def test_get_internal_true(self):
-        entry = DiningEntryUser(dining_list=self.dining_list, user=self.user)
-        entry.save()
-        self.assertEqual(entry, entry.get_internal())  # Direct call
-        self.assertEqual(entry, DiningEntry.objects.get(pk=entry.pk).get_internal())  # Indirect call
-        self.assertEqual(entry, DiningEntryUser.objects.get(pk=entry.pk).get_internal())  # Indirect call 2
+    def test_clean_valid_entry(self):
+        entry = DiningEntryUser(dining_list=self.dining_list, user=self.user, created_by=self.user)
+        entry.full_clean()  # No ValidationError
 
-    def test_get_internal_false(self):
-        entry = DiningEntryExternal.objects.create(dining_list=self.dining_list, user=self.user, name='Jan')
-        self.assertIsNone(entry.get_internal())  # Direct call
-        self.assertIsNone(DiningEntry.objects.get(pk=entry.pk).get_internal())  # Indirect call
+    def test_clean_duplicate_entry(self):
+        DiningEntryUser.objects.create(dining_list=self.dining_list, user=self.user, created_by=self.user)
+        entry = DiningEntryUser(dining_list=self.dining_list, user=self.user, created_by=self.user)
+        self.assertRaises(ValidationError, entry.full_clean)
+
+
+class DiningEntryExternalTestCase(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.user = User.objects.create_user('piet')
+        cls.association = Association.objects.create(slug='assoc')
+        cls.dining_list = DiningList.objects.create(date=date(2123, 2, 1), association=cls.association,
+                                                    claimed_by=cls.user, sign_up_deadline=datetime(2100, 1, 1))
+
+    def test_clean_blank_name(self):
+        entry = DiningEntryExternal(user=self.user, dining_list=self.dining_list, created_by=self.user)
+        self.assertRaises(ValidationError, entry.full_clean)
+
+    def test_clean_valid_name(self):
+        entry = DiningEntryExternal(user=self.user, dining_list=self.dining_list, name='Piet', created_by=self.user)
+        entry.full_clean()  # No ValidationError

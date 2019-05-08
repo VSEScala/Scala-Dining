@@ -67,33 +67,3 @@ class CreateSlotFormTestCase(TestCase):
         # self.assertFalse(form.is_valid())
         # self.assertTrue(form.has_error('association'))
 
-
-class DiningEntryExternalCreateFormTestCase(TestCase):
-    @classmethod
-    def setUpTestData(cls):
-        cls.association = Association.objects.create()
-        cls.user = User.objects.create_user('jan')
-        cls.dining_list = DiningList.objects.create(date=date(2089, 1, 1), association=cls.association,
-                                                    claimed_by=cls.user, sign_up_deadline=datetime(2088, 1, 1))
-
-    def test_balance_too_low(self):
-        FixedTransaction.objects.create(source_user=self.user, amount=Decimal('99'))
-        form = DiningEntryExternalCreateForm({'name': 'Piet'},
-                                             instance=DiningEntryExternal(user=self.user, dining_list=self.dining_list))
-        self.assertFalse(form.is_valid())
-        self.assertTrue(form.has_error(NON_FIELD_ERRORS, 'nomoneyzz'))
-
-
-class DiningEntryUserCreateFormTestCase(TestCase):
-    @classmethod
-    def setUpTestData(cls):
-        cls.association = Association.objects.create()
-        cls.user = User.objects.create_user('jan')
-        cls.dining_list = DiningList.objects.create(date=date(2089, 1, 1), association=cls.association,
-                                                    claimed_by=cls.user, sign_up_deadline=datetime(2088, 1, 1))
-
-    def test_balance_too_low(self):
-        FixedTransaction.objects.create(source_user=self.user, amount=Decimal('99'))
-        form = DiningEntryUserCreateForm(self.user, self.dining_list, {})
-        self.assertFalse(form.is_valid())
-        self.assertTrue(form.has_error(NON_FIELD_ERRORS, 'nomoneyzz'))
