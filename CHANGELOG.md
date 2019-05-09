@@ -1,5 +1,9 @@
 # Changelog
 
+### 2019-05-09
+
+* User selection for transaction creation uses autocomplete
+
 ### 2019-05-08
 
 * New version of the add someone else page
