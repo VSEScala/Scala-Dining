@@ -29,7 +29,18 @@ def _clean_form(form):
         raise ValidationError(validation_errors)
 
 
-class CreateSlotForm(forms.ModelForm):
+class ServeTimeCheckMixin:
+    """Mixin with clean_serve_time which gives errors on the serve_time if it is not within the kitchen opening hours"""
+    def clean_serve_time(self):
+        serve_time = self.cleaned_data['serve_time']
+        if serve_time < settings.KITCHEN_USE_START_TIME:
+            raise ValidationError(_("Kitchen can't be used this early"))
+        if serve_time > settings.KITCHEN_USE_END_TIME:
+            raise ValidationError(_("Kitchen can't be used this late"))
+        return serve_time
+
+
+class CreateSlotForm(ServeTimeCheckMixin, forms.ModelForm):
     class Meta:
         model = DiningList
         fields = ('dish', 'association', 'max_diners', 'serve_time')
@@ -86,6 +97,7 @@ class CreateSlotForm(forms.ModelForm):
     def save(self, commit=True):
         instance = super().save(commit=commit)
         if commit:
+            # Create dining entry for claimant
             user = instance.claimed_by
             entry_form = DiningEntryUserCreateForm({'user': str(user.pk)},
                                                    instance=DiningEntryUser(created_by=user, dining_list=instance))
@@ -96,7 +108,7 @@ class CreateSlotForm(forms.ModelForm):
         return instance
 
 
-class DiningInfoForm(forms.ModelForm):
+class DiningInfoForm(ServeTimeCheckMixin, forms.ModelForm):
     def __init__(self, *args, **kwargs):
         dining_list = kwargs.get("instance")
         super(DiningInfoForm, self).__init__(*args, **kwargs)

@@ -164,12 +164,6 @@ class DiningList(models.Model):
 
     def clean_fields(self, exclude=None):
         super().clean_fields(exclude=exclude)
-        # Valid serve time
-        if not exclude or 'serve_time' not in exclude:
-            if self.serve_time < settings.KITCHEN_USE_START_TIME:
-                raise ValidationError({'serve_time': _("Kitchen can't be used this early")})
-            if self.serve_time > settings.KITCHEN_USE_END_TIME:
-                raise ValidationError({'serve_time': _("Kitchen can't be used this late")})
         # Valid sign up deadline
         if not exclude or 'sign_up_deadline' not in exclude:
             if self.sign_up_deadline and self.sign_up_deadline.date() > self.date:
@@ -195,7 +189,7 @@ class DiningEntry(models.Model):
             pass
         try:
             return self.diningentryexternal
-        except DiningEntryUser.DoesNotExist:
+        except DiningEntryExternal.DoesNotExist:
             pass
         raise RuntimeError("Invalid DiningEntry")
 
