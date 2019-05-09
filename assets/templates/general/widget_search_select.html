@@ -26,10 +26,10 @@
             replace: function (text) {
                 this.input.value = text.label;
             },
-            autoFirst: true,
+            autoFirst: true
         });
 
-        // Update internal button when user selects someone
+        // Update the selected instance-value
         searchfield.addEventListener('awesomplete-selectcomplete', function (event) {
             numberfield.value = event.text.value;
         });
