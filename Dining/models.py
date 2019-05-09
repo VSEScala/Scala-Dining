@@ -110,41 +110,6 @@ class DiningList(models.Model):
         """Determines whether this dining list can have more entries"""
         return self.diners.count() < self.max_diners
 
-    def can_add_diners(self, user, check_for_self=False):
-        """
-        Determines if a user can add diners to a certain dining list
-        :param check_for_self: whether this user wants to add himself
-        :param user: The user intending to join
-        :return: If the user can join the list
-        """
-        # If the dining list no longer adjustable
-        if not self.is_adjustable():
-            return False
-
-        if check_for_self:
-            # if user is already on list
-
-            if self.internal_dining_entries().filter(user=user).count() > 0:
-                return False
-            # if user is signed up to other closed dinging lists
-            if len(DiningEntry.objects.filter(dining_list__date=self.date,
-                                              dining_list__sign_up_deadline__lte=datetime.now(),
-                                              user=user)) > 0:
-                return False
-
-        # if user is owner, he can do anything he can set his mind to. Don't let his dreams be dreams!
-        if self.is_authorised_user(user):
-            return True
-
-        # if dining list is closed
-        if not (self.is_open() and self.has_room()):
-            return False
-
-        if self.limit_signups_to_association_only:
-            if user.usermembership_set.filter(association=self.association).count() == 0:
-                return False
-        return True
-
     def __str__(self):
         return "{} - {} by {}".format(self.date, self.association.slug, self.claimed_by)
 

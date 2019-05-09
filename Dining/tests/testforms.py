@@ -27,16 +27,19 @@ class CreateSlotFormTestCase(TestCase):
                                                          is_verified=True)
         cls.user1_assoc2 = UserMembership.objects.create(related_user=cls.user1, association=cls.association2,
                                                          is_verified=True)
+
+    def setUp(self):
         # Date two days in the future
-        cls.dining_date = timezone.now().date() + timedelta(days=2)
+        self.dining_date = timezone.now().date() + timedelta(days=2)
+        self.form_data = {'dish': 'Kwark', 'association': str(self.association1.pk), 'max_diners': '18',
+                          'serve_time': '17:00'}
+        self.dining_list = DiningList(claimed_by=self.user1, date=self.dining_date)
+        self.form = CreateSlotForm(self.form_data, instance=self.dining_list)
 
     def test_creation(self):
-        # Create
-        form_data = {'dish': 'Kwark', 'association': str(self.association1.pk), 'max_diners': '18',
-                     'serve_time': '17:00'}
-        form = CreateSlotForm(form_data, instance=DiningList(claimed_by=self.user1, date=self.dining_date))
-        self.assertTrue(form.is_valid())
-        dining_list = form.save()
+        self.assertTrue(self.form.is_valid())
+        dining_list = self.form.save()
+        dining_list.refresh_from_db()
 
         # Assert
         self.assertEqual('Kwark', dining_list.dish)
@@ -68,4 +71,15 @@ class CreateSlotFormTestCase(TestCase):
         # form = CreateSlotForm(self.user1, self.dining_date, form_data)
         # self.assertFalse(form.is_valid())
         # self.assertTrue(form.has_error('association'))
+
+
+    def test_serve_time_too_late(self):
+        # Actually tests a different class, but put here for convenience, to test it via the CreateSlotForm class
+        self.form_data['serve_time'] = '23:30'
+        self.assertFalse(self.form.is_valid())
+
+    def test_serve_time_too_early(self):
+        # Actually tests a different class, but put here for convenience, to test it via the CreateSlotForm class
+        self.form_data['serve_time'] = '11:00'
+        self.assertFalse(self.form.is_valid())
 

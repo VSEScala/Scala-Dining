@@ -52,18 +52,6 @@ class DiningListCleanTestCase(TestCase):
         self.dining_list = DiningList(date=date(2123, 1, 2), sign_up_deadline=datetime(2100, 2, 2),
                                       association=self.association, claimed_by=self.user)
 
-    def test_serve_time_valid(self):
-        self.dining_list.serve_time = time(18, 00)
-        self.dining_list.full_clean()  # Shouldn't raise
-
-    def test_serve_time_too_late(self):
-        self.dining_list.serve_time = time(23, 30)
-        self.assertRaises(ValidationError, self.dining_list.full_clean)
-
-    def test_serve_time_too_early(self):
-        self.dining_list.serve_time = time(11, 00)
-        self.assertRaises(ValidationError, self.dining_list.full_clean)
-
     def test_sign_up_deadline_valid(self):
         self.dining_list.full_clean()  # Shouldn't raise
 

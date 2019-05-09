@@ -1,6 +1,7 @@
 from django import template
 
-from Dining.models import DiningEntry
+from Dining.forms import DiningEntryUserCreateForm
+from Dining.models import DiningEntry, DiningEntryUser
 
 register = template.Library()
 
@@ -8,7 +9,9 @@ register = template.Library()
 @register.filter
 def can_join(dining_list, user):
     # Try creating an entry
-    return dining_list.can_add_diners(user, check_for_self=True)
+    entry = DiningEntryUser(dining_list=dining_list, created_by=user)
+    form = DiningEntryUserCreateForm({'user': str(user.pk)}, instance=entry)
+    return form.is_valid()
 
 
 @register.filter
