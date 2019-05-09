@@ -82,17 +82,17 @@ class DiningEntryUserCreateFormTestCase(TestCase):
         to fail."""
         self.dining_list.max_diners = 1
 
-        # Create first entry
-        entry1form = DiningEntryUserCreateForm(self.post_data, instance=self.dining_entry)
-        entry1valid = entry1form.is_valid()
-        # Try creating next entry without saving first entry
-        entry2form = DiningEntryUserCreateForm(self.post_data, instance=self.dining_entry)
-        entry2valid = entry2form.is_valid()
-
-        # Both entries are valid which means that both entries will be created, while max_diners==1
-        # This also means that a duplicate entry is created for the user
-        self.assertTrue(entry1valid)
-        self.assertTrue(entry2valid)
+        # Try creating 2 entries using race condition
+        entry1 = DiningEntryUser(dining_list=self.dining_list, user=self.user2, created_by=self.user2)
+        entry2 = DiningEntryUser(dining_list=self.dining_list, user=self.user2, created_by=self.user2)
+        form1 = DiningEntryUserCreateForm(self.post_data, instance=entry1)
+        form2 = DiningEntryUserCreateForm(self.post_data, instance=entry2)
+        self.assertTrue(form1.is_valid())  # Both forms should be valid
+        self.assertTrue(form2.is_valid())
+        form1.save()  # Since they're both valid, they'll both get saved
+        form2.save()
+        # Now there are 2 entries of the same user and with max_diners being 1
+        self.assertEqual(2, DiningEntryUser.objects.all().count())
 
     def test_limited_to_association_is_member(self):
         self.dining_list.limit_signups_to_association_only = True
