@@ -71,6 +71,7 @@ class CreateSlotForm(ServeTimeCheckMixin, forms.ModelForm):
             self.fields['association'].disabled = True
 
     def clean(self):
+        # Note: uniqueness for date+association is implicitly enforced using the association form field
         cleaned_data = super().clean()
 
         if DiningList.objects.available_slots(self.instance.date) <= 0:
