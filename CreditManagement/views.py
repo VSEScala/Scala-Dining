@@ -4,8 +4,6 @@ from django.views.generic.list import ListView
 from CreditManagement.models import *
 from django.contrib import messages
 from django.utils.translation import gettext as _
-from django.contrib.auth.decorators import login_required
-from django.utils.decorators import method_decorator
 from .forms import UserTransactionForm, AssociationTransactionForm
 from django.views.generic import View
 from django.http import HttpResponseForbidden, HttpResponseRedirect
@@ -24,7 +22,7 @@ class TransactionAddView(LoginRequiredMixin, View):
     template_name = "credit_management/transaction_add.html"
     context = {}
 
-    def get(self, request, association_name=None, *args, **kwargs):
+    def get(self, request, association_name=None):
         if association_name:
             association = Association.objects.get(slug=association_name)
             # If an association is given as the source, check user credentials
@@ -36,7 +34,7 @@ class TransactionAddView(LoginRequiredMixin, View):
             self.context['slot_form'] = UserTransactionForm(request.user)
         return render(request, self.template_name, self.context)
 
-    def post(self, request, association_name=None, *args, **kwargs):
+    def post(self, request, association_name=None):
         # Do form shenanigans
         if association_name:
             association = Association.objects.get(slug=association_name)
@@ -55,6 +53,7 @@ class TransactionAddView(LoginRequiredMixin, View):
 
         self.context['slot_form'] = form
         return render(request, self.template_name, self.context)
+
 
 class AssociationTransactionListView:
     pass
