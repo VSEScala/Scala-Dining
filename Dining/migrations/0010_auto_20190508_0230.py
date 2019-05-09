@@ -16,11 +16,20 @@ def move_added_by(apps, schema_editor):
         entry.save()
 
 
+def reverse_added_by(apps, schema_editor):
+    DiningEntryUser = apps.get_model('Dining', 'DiningEntryUser')
+
+    for entry in DiningEntryUser.objects.all():
+        entry.added_by = entry.created_by
+        entry.save()
+
+
 class Migration(migrations.Migration):
     dependencies = [
         ('Dining', '0009_auto_20190508_0230'),
+        ('UserDetails', '0014_remove_user_external_link'),
     ]
 
     operations = [
-        migrations.RunPython(move_added_by),
+        migrations.RunPython(move_added_by, reverse_added_by, elidable=True),
     ]
