@@ -65,13 +65,14 @@ class DiningList(models.Model):
                                        default=settings.KITCHEN_COST, validators=[MinValueValidator(Decimal('0.00'))])
 
     dining_cost = models.DecimalField(decimal_places=2, verbose_name="dinner cost per person", max_digits=5,
-                                             blank=True, null=True, default=0,
-                                             validators=[MinValueValidator(Decimal('0.00'))])
+                                      blank=True, null=True, default=None,
+                                      validators=[MinValueValidator(Decimal('0.00'))])
 
     auto_pay = models.BooleanField(default=False)
 
     payment_link = models.CharField(blank=True, max_length=100, help_text=_('Link for payment, e.g. a Tikkie link.'))
 
+    # min_diners can be set to a negative value. Is not really problematic though
     min_diners = models.IntegerField(default=4, validators=[MaxValueValidator(settings.MAX_SLOT_DINER_MINIMUM)])
     max_diners = models.IntegerField(default=20, validators=[MinValueValidator(settings.MIN_SLOT_DINER_MAXIMUM)])
 
