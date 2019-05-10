@@ -22,7 +22,6 @@ class QuadriviumProvider(AssociationProvider):
     account_class = QuadriviumAccount
 
     logo = static('images/allauthproviders/quadrivium.svg')
-    association_slug = 'quadrivium'
 
     def get_scope(self, request):
         return ['openid', 'email']
