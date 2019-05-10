@@ -110,54 +110,50 @@ class CreateSlotForm(ServeTimeCheckMixin, forms.ModelForm):
 
 
 class DiningInfoForm(ServeTimeCheckMixin, forms.ModelForm):
-    def __init__(self, *args, **kwargs):
-        dining_list = kwargs.get("instance")
-        super(DiningInfoForm, self).__init__(*args, **kwargs)
-
-        query = dining_list.diners.distinct()
-        self.fields['purchaser'].queryset = query
-
     class Meta:
         model = DiningList
         fields = ['serve_time', 'min_diners', 'max_diners', 'sign_up_deadline', 'purchaser']
 
-    def save(self):
-        self.instance.save(update_fields=self.Meta.fields)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['purchaser'].queryset = self.instance.diners.distinct()
 
 
 class DiningPaymentForm(forms.ModelForm):
-    dinner_cost_total = forms.DecimalField(decimal_places=2, max_digits=5, initial=Decimal(0.00),
-                                           validators=[MinValueValidator(Decimal('0.00'))])
+    dinner_cost_total = forms.DecimalField(decimal_places=2, max_digits=5, required=False,
+                                           validators=[MinValueValidator(Decimal('0'))],
+                                           help_text='Only one of dinner cost total or dinner cost per person should be provided')
 
     class Meta:
         model = DiningList
         fields = ['dish', 'dinner_cost_total', 'dining_cost', 'payment_link']
-        save_fields = ['dish', 'dining_cost', 'payment_link']
-        help_texts = {
-            'dinner_cost_total': 'Either adjust total dinner cost or single dinner cost',
-            'dinner_cost_single': 'Either adjust total dinner cost or single dinner cost',
-        }
 
-    def __init__(self, *args, **kwargs):
-        super(DiningPaymentForm, self).__init__(*args, **kwargs)
+    def clean(self):
+        """This cleaning calculates the person dining cost from the total dining cost"""
+        cleaned_data = super().clean()
+        dinner_cost_total = cleaned_data.get('dinner_cost_total')
+        dining_cost = cleaned_data.get('dining_cost')
 
-    def save(self):
-        # If the single value has been added, recompute the total amount
-        # also check if it has changed from earlier status
-        old_list = DiningList.objects.get(id=self.instance.id)
-
-        total_dinner_cost = self.cleaned_data['dinner_cost_total']
-
-        if total_dinner_cost > 0:
+        # Sanity check: do not allow both dinner cost total and dinner cost per person
+        if dinner_cost_total and dining_cost:
+            msg = "Please only provide either dinner cost total or dinner cost per person"
+            self.add_error('dinner_cost_total', msg)
+            self.add_error('dining_cost', msg)
+        elif dinner_cost_total:
+            # Total dinner cost provided: calculate dining cost per person and apply
             if self.instance.diners.count() > 0:
-                s_cost = total_dinner_cost / self.instance.diners.count()
+                cost = dinner_cost_total / self.instance.diners.count()
             else:
-                s_cost = total_dinner_cost
-            # round up slightly, to remove missing cents
-            s_cost = Decimal(s_cost).quantize(Decimal('.01'), rounding=ROUND_UP)
-            self.instance.dining_cost = s_cost
+                raise ValidationError({
+                    'dinner_cost_total': "Can't calculate dinner cost per person as there are no diners"})
 
-        self.instance.save(update_fields=DiningPaymentForm.Meta.save_fields)
+            # Round up to remove missing cents
+            cost = Decimal(cost).quantize(Decimal('.01'), rounding=ROUND_UP)
+            cleaned_data.update({
+                'dinner_cost_total': None,
+                'dining_cost': cost,
+            })
+        return cleaned_data
 
 
 class DiningEntryUserCreateForm(forms.ModelForm):
@@ -209,50 +205,34 @@ class DiningEntryExternalCreateForm(DiningEntryUserCreateForm):
         return self.instance.user
 
 
-class DiningEntryDeleteForm(forms.ModelForm):
-    class Meta:
-        model = DiningEntry
-        fields = []
-
-    def __init__(self, deleted_by, instance, **kwargs):
-        """
-        Automatically binds on creation.
-        """
-        super().__init__(instance=instance, data={}, **kwargs)
-        self.deleted_by = deleted_by
+class DiningEntryDeleteForm(forms.Form):
+    def __init__(self, entry, deleter, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.entry = entry
+        self.deleter = deleter
 
     def clean(self):
         cleaned_data = super().clean()
 
-        dining_list = self.instance.dining_list
+        dining_list = self.entry.dining_list
+        is_owner = dining_list.is_authorised_user(self.deleter)
 
-        # Dining list adjustable will have been checked in DiningList.clean()
-
-        # Check permission
-        if self.deleted_by != self.instance.user and not dining_list.is_authorised_user(self.deleted_by):
-            raise ValidationError('Can only delete own entries')
+        if not dining_list.is_adjustable():
+            raise ValidationError(_('The dining list is locked, changes can no longer be made'), code='locked')
 
         # Validate dining list is still open (except for claimant)
-        if not dining_list.is_open():
-            if not dining_list.is_authorised_user(self.deleted_by):
-                raise ValidationError(_('The dining list is closed, ask the chef to remove this entry instead'),
-                                      code='closed')
-            elif not dining_list.is_adjustable():
-                # If user is authorised, but dining list is no longer allowed to be adjusted
-                raise ValidationError(_('The dining list is locked, changes can no longer be made'),
-                                      code='locked')
+        if not is_owner and not dining_list.is_open():
+            raise ValidationError(_('The dining list is closed, ask the chef to remove this entry instead'),
+                                  code='closed')
 
-        # (Optionally) block removal when the entry is the owner of the list
-        # if self.instance.user == list.claimed_by:
-        #     raise ValidationError(_("The claimant can't be removed from the dining list."), code='invalid')
+        # Check permission: either she's owner, or the entry is about herself, or she created the entry
+        if not is_owner and self.entry.user != self.deleter and self.entry.created_by != self.deleter:
+            raise ValidationError('Can only delete own entries')
 
         return cleaned_data
 
     def execute(self):
-        # Try saving to check if form is validated (raises ValueError if not)
-        self.save(commit=False)
-
-        self.instance.delete()
+        self.entry.delete()
 
 
 class DiningListDeleteForm(forms.ModelForm):
@@ -268,7 +248,7 @@ class DiningListDeleteForm(forms.ModelForm):
         super().__init__(instance=instance, data={}, **kwargs)
         self.deleted_by = deleted_by
         # Create entry delete forms
-        self.entry_delete_forms = [DiningEntryDeleteForm(deleted_by, entry) for entry in instance.dining_entries.all()]
+        self.entry_delete_forms = [DiningEntryDeleteForm(entry, deleted_by, {}) for entry in instance.dining_entries.all()]
 
     def clean(self):
         cleaned_data = super().clean()
