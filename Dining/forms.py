@@ -71,18 +71,21 @@ class CreateSlotForm(ServeTimeCheckMixin, forms.ModelForm):
             self.fields['association'].disabled = True
 
     def clean(self):
-        # Note: uniqueness for date+association is implicitly enforced using the association form field
+        """Note: uniqueness for date+association is implicitly enforced using the association form field"""
+
         cleaned_data = super().clean()
+
+        creator = self.instance.claimed_by
 
         if DiningList.objects.available_slots(self.instance.date) <= 0:
             raise ValidationError("All dining slots are already occupied on this day")
 
         # Check if user has enough money to claim a slot
-        if self.instance.claimed_by.usercredit.balance < settings.MINIMUM_BALANCE_FOR_DINING_SLOT_CLAIM:
+        if not creator.has_min_balance_exception() and creator.usercredit.balance < settings.MINIMUM_BALANCE_FOR_DINING_SLOT_CLAIM:
             raise ValidationError("Your balance is too low to claim a slot")
 
         # Check if user has not already claimed another dining slot this day
-        if DiningList.objects.filter(date=self.instance.date, claimed_by=self.instance.claimed_by).exists():
+        if DiningList.objects.filter(date=self.instance.date, claimed_by=creator).exists():
             raise ValidationError(_("User has already claimed a dining slot this day"))
 
         # If date is valid
