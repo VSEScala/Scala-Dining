@@ -83,20 +83,6 @@ class NegativeCreditDateFilter(admin.SimpleListFilter):
         return queryset.filter(pk__in=results)
 
 
-class UserCreditAdmin(admin.ModelAdmin):
-    """
-    Set up limited view of the user page
-    """
-
-    list_display = ('user', 'credit', 'is_verified')
-    list_filter = [MemberOfFilter, NegativeCreditDateFilter]
-    readonly_fields = ('credit','negative_since')
-
-    def is_verified(self, obj):
-        return obj.user.is_verified()
-    is_verified.short_description = 'User verified?'
-
-
 class FixedTransactionAdmin(admin.ModelAdmin):
     list_display = ('order_moment', 'source_user', 'source_association',
                     'amount', 'target_user', 'target_association')
@@ -108,7 +94,8 @@ class PendingTransactionAdmin(admin.ModelAdmin):
 
     actions = ['finalise']
 
-    def finalise(self, request, queryset):
+    @staticmethod
+    def finalise(request, queryset):
         for obj in queryset:
             obj.finalise()
 
@@ -118,7 +105,8 @@ class PendingDiningListTrackerAdmin(admin.ModelAdmin):
 
     actions = ['finalise']
 
-    def finalise(self, request, queryset):
+    @staticmethod
+    def finalise(request, queryset):
         for obj in queryset:
             obj.finalise()
 
@@ -137,7 +125,13 @@ class PendingDiningTransactionAdmin(admin.ModelAdmin):
 
 
 class UserCreditAdmin(admin.ModelAdmin):
-    list_display = ('user', 'balance', 'balance_fixed')
+    list_display = ('user', 'balance', 'balance_fixed', 'is_verified', 'negative_since')
+    list_filter = [MemberOfFilter, NegativeCreditDateFilter]
+    readonly_fields = ('negative_since',)
+
+    def is_verified(self, obj):
+        return obj.user.is_verified()
+    is_verified.short_description = 'User verified?'
 
     def has_add_permission(self, request):
         return False
