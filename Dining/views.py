@@ -317,7 +317,7 @@ class EntryDeleteView(LoginRequiredMixin, SingleObjectMixin, View):
             success_msg = "The user is removed from the dining list"
 
         # Process deletion
-        form = DiningEntryDeleteForm(self.get_object(), request.user, {})
+        form = DiningEntryDeleteForm(entry, request.user, {})
         if form.is_valid():
             form.execute()
             messages.success(request, success_msg)
