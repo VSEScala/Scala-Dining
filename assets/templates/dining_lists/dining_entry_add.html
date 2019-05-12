@@ -3,66 +3,27 @@
 {% block details %}
     <h2>Add someone else</h2>
 
-    {% url "entry_add" day=date.day month=date.month year=date.year identifier=dining_list.association.slug as url %}
-    <form id="addEntryForm" action="{{ url }}" method="post">
-        {% csrf_token %}
-
-        <div class="form-group row">
-            <label for="userSearch" class="col-sm-2 col-form-label">Diner</label>
-            <div class="col-sm-10">
-                <input id="userSearch" class="form-control" placeholder="Diner" name="name">
-            </div>
+    <div class="row">
+        <div class="col-sm mb-3">
+            <h4>Existing user</h4>
+            <p>Dining cost is subtracted from the other user's account</p>
+            {% url "entry_add" day=date.day month=date.month year=date.year identifier=dining_list.association.slug as url %}
+            <form action="{{ url }}" method="post">
+                {% csrf_token %}
+                {% include "snippets/bootstrap_form.html" with form=user_form %}
+                <button type="submit" class="btn btn-block btn-primary">Add user</button>
+            </form>
         </div>
-        <input id="userValue" type="hidden" name="user" value="">
 
-        <div class="row">
-            <div class="col-sm-6">
-                <button type="submit" class="btn btn-block btn-primary" disabled id="addInternalButton">
-                    Add diner<br>
-                    <small>Select an existing user</small>
-                </button>
-            </div>
-            <div class="col-sm-6 mt-1 mt-sm-0">
-                <button type="submit" class="btn btn-block btn-secondary" name="add_external">
-                    Add as external diner<br>
-                    <small>Dining cost is subtracted from your account</small>
-                </button>
-            </div>
+        <div class="col-sm">
+            <h4>External diner</h4>
+            <p>Dining cost is subtracted from your own account</p>
+            {% url "entry_add" day=date.day month=date.month year=date.year identifier=dining_list.association.slug as url %}
+            <form action="{{ url }}" method="post">
+                {% csrf_token %}
+                {% include "snippets/bootstrap_form.html" with form=external_form %}
+                <button type="submit" class="btn btn-block btn-primary" name="add_external">Add external diner</button>
+            </form>
         </div>
-    </form>
-
-    <script>
-        document.addEventListener("DOMContentLoaded", function (event) {
-            let userSearch = document.getElementById("userSearch");
-            let userValue = document.getElementById("userValue");
-            let addInternalButton = document.getElementById("addInternalButton");
-
-            let notSelectedHTML = addInternalButton.innerHTML;
-            let selectedHTML = "Add {}<br><small>Dining cost is subtracted from {}'s account</small>";
-
-            // Enable autocomplete
-            new Awesomplete(userSearch, {
-                list: [{% for person in all_users %}["{{ person.get_full_name }}","{{ person.id }}"],{% endfor %}],
-                replace: function (text) {
-                    this.input.value = text.label;
-                },
-                autoFirst: true,
-            });
-
-            // Update internal button when user selects someone
-            userSearch.addEventListener('awesomplete-selectcomplete', function (event) {
-                userValue.value = event.text.value;
-                addInternalButton.disabled = false;
-                addInternalButton.innerHTML = selectedHTML.replace(/{}/g, event.text.label);
-            });
-            // Reset internal button when user changes the field value
-            userSearch.addEventListener('input', function (event) {
-                if (userValue.value !== "") {
-                    userValue.value = "";
-                    addInternalButton.disabled = true;
-                    addInternalButton.innerHTML = notSelectedHTML;
-                }
-            });
-        });
-    </script>
+    </div>
 {% endblock details %}
