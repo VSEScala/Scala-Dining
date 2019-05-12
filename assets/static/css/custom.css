@@ -34,3 +34,8 @@ body {
 .awesomplete > ul {
     transition: unset;
 }
+
+.awesomplete ~ .invalid-feedback{
+    /* Make sure that awesomplete doesn't hide any error message*/
+    display: block;
+}

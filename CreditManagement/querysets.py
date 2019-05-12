@@ -1,8 +1,8 @@
 from django.db import models
-from django.db.models import Q, F, Value, Sum, OuterRef, Subquery, ExpressionWrapper, Count
+from django.db.models import Q, F, Value, Sum, OuterRef, Subquery, ExpressionWrapper
 from django.db.models.functions import Coalesce, Cast
 
-from Dining.models import DiningEntry, DiningList
+from Dining.models import DiningEntry
 from UserDetails.models import User, Association
 from django.utils import timezone
 
@@ -153,6 +153,7 @@ class DiningTransactionQuerySet(AbstractTransactionQuerySet):
         """
         Annotates the user balance behind all the users
         :param users: The users which need their balance calculated
+        :param output_name: The name of the column for the balance
         :return: The users with 'balance' annotated
         """
         # Select all entries in the pending dininglists, filter on the intended user in that dining list
