@@ -171,7 +171,10 @@ class DiningEntryUserCreateForm(forms.ModelForm):
 
     def get_user(self):
         """Returns the user responsible for the kitchen cost (not necessarily creator)"""
-        return self.cleaned_data.get('user')
+        user = self.cleaned_data.get('user')
+        if not user:
+            raise ValidationError("User not provided")
+        return user
 
     def clean(self):
         cleaned_data = super().clean()

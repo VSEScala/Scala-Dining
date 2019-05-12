@@ -33,7 +33,7 @@
                 {% render_field field data-theme="bootstrap4" data-placeholder=field.label style="width:100%;" %}
                 {% if form.is_bound and field.errors %}
                     {% for error in field.errors %}
-                        <div class="invalid-feedback">
+                        <div class="invalid-feedback" style="display: block;">
                             {{ error }}
                         </div>
                     {% endfor %}
