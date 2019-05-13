@@ -353,23 +353,14 @@ class SlotListView(LoginRequiredMixin, SlotMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['tab'] = "list"
-
         # Select related eliminates the extra queries during rendering of the template
         context['entries'] = self.dining_list.dining_entries\
             .select_related('user', 'diningentryuser','diningentryexternal').order_by('user__first_name')
-
-        context['can_edit_stats'] = (self.request.user == self.dining_list.claimed_by)
-        context['can_edit_pay'] = self.request.user == self.dining_list.get_purchaser()
         return context
 
     def post(self, request, *args, **kwargs):
-        can_adjust_stats = request.user == self.dining_list.claimed_by
-        can_adjust_paid = request.user == self.dining_list.get_purchaser()
-
-        if not (can_adjust_stats or can_adjust_paid):
-            messages.add_message(request, messages.ERROR, "You did not have the rights to adjust anything")
-            return HttpResponseRedirect(self.reverse('slot_list'))
+        if not self.dining_list.is_owner(request.user):
+            raise PermissionDenied
 
         # Get all the keys in the post and put all relevant ones in a list
         post_requests = []
@@ -378,55 +369,53 @@ class SlotListView(LoginRequiredMixin, SlotMixin, TemplateView):
             if len(key) == 2:
                 post_requests.append(key)
 
-        if can_adjust_paid:
-            # Process payment for all entries
-            entries = {}
+        # Process payment for all entries
+        entries = {}
 
-            # For all entries in the dining list, set the paid value to false
-            for entry in self.dining_list.dining_entries.all():
-                entry.has_paid = False
-                entries[str(entry.id)] = entry
+        # For all entries in the dining list, set the paid value to false
+        for entry in self.dining_list.dining_entries.all():
+            entry.has_paid = False
+            entries[str(entry.id)] = entry
 
-            # Go over all keys in the request containing has_paid, adjust the state on that object
-            for key in post_requests:
-                if key[1] == "has_paid":
-                    try:
-                        entries[key[0]].has_paid = True
-                    except KeyError:
-                        # Entry doesn't exist any more
-                        pass
-
-            # save all has_paid values
-            for entry in entries.values():
-                entry.save()
-
-        if can_adjust_stats:
-            # Adjust the help stats
-            entries = {}
-
-            # For all entries in the dining list, set the values to false
-            for entry in self.dining_list.internal_dining_entries():
-                entry.has_shopped = False
-                entry.has_cooked = False
-                entry.has_cleaned = False
-                entries[str(entry.id)] = entry
-
-            # Go over all keys in the request containing has_paid, adjust the state on that object
-            for key in post_requests:
+        # Go over all keys in the request containing has_paid, adjust the state on that object
+        for key in post_requests:
+            if key[1] == "has_paid":
                 try:
-                    if key[1] == "has_shopped":
-                        entries[key[0]].has_shopped = True
-                    elif key[1] == "has_cooked":
-                        entries[key[0]].has_cooked = True
-                    elif key[1] == "has_cleaned":
-                        entries[key[0]].has_cleaned = True
+                    entries[key[0]].has_paid = True
                 except KeyError:
                     # Entry doesn't exist any more
                     pass
 
-            # save all has_paid values
-            for entry in entries.values():
-                entry.save()
+        # save all has_paid values
+        for entry in entries.values():
+            entry.save()
+
+        # Adjust the help stats
+        entries = {}
+
+        # For all entries in the dining list, set the values to false
+        for entry in self.dining_list.internal_dining_entries():
+            entry.has_shopped = False
+            entry.has_cooked = False
+            entry.has_cleaned = False
+            entries[str(entry.id)] = entry
+
+        # Go over all keys in the request containing has_paid, adjust the state on that object
+        for key in post_requests:
+            try:
+                if key[1] == "has_shopped":
+                    entries[key[0]].has_shopped = True
+                elif key[1] == "has_cooked":
+                    entries[key[0]].has_cooked = True
+                elif key[1] == "has_cleaned":
+                    entries[key[0]].has_cleaned = True
+            except KeyError:
+                # Entry doesn't exist any more
+                pass
+
+        # save all has_paid values
+        for entry in entries.values():
+            entry.save()
 
         return HttpResponseRedirect(self.reverse('slot_list'))
 
@@ -436,8 +425,6 @@ class SlotInfoView(LoginRequiredMixin, SlotMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['tab'] = "info"
-
         context['comments'] = self.dining_list.diningcomment_set.order_by('-pinned_to_top', 'timestamp').all()
 
         # Last visit
@@ -452,12 +439,6 @@ class SlotInfoView(LoginRequiredMixin, SlotMixin, TemplateView):
         context['number_of_allergies'] = self.dining_list.internal_dining_entries().filter(
             user__userdiningsettings__allergies__length__gte=1).count()
 
-        if self.dining_list.claimed_by == self.request.user or self.dining_list.purchaser == self.request.user:
-            context['can_change_settings'] = True
-        if self.dining_list.claimed_by == self.request.user and self.dining_list.diners.count() < self.dining_list.min_diners:
-            context['can_remove_list'] = True
-        else:
-            context['can_remove_list'] = False
         return context
 
     def post(self, request, *args, **kwargs):
@@ -481,23 +462,18 @@ class SlotInfoChangeView(LoginRequiredMixin, SlotMixin, TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
 
-        if self.dining_list.claimed_by == self.request.user:
-            context['info_form'] = DiningInfoForm(instance=self.dining_list, prefix='info')
-
-        if self.dining_list.get_purchaser() == self.request.user:
-            context['payment_form'] = DiningPaymentForm(instance=self.dining_list, prefix='payment')
-
-        if not context.get('info_form') and not context.get('payment_form'):
-            # User is not allowed on this page
+        # Deny non owners
+        if not self.dining_list.is_owner(self.request.user):
             raise PermissionDenied
+
+        context.update({
+            'info_form': DiningInfoForm(instance=self.dining_list, prefix='info'),
+            'payment_form': DiningPaymentForm(instance=self.dining_list, prefix='payment'),
+        })
         return context
 
     def post(self, request, *args, **kwargs):
         context = self.get_context_data(**kwargs)
-
-        # Check if the active user is the current user, if checked after the general info, the local object could have
-        # it's information changed causing usage errors
-        is_purchaser = self.dining_list.get_purchaser() == request.user
 
         """
         ## Story time
@@ -512,21 +488,13 @@ class SlotInfoChangeView(LoginRequiredMixin, SlotMixin, TemplateView):
         (perhaps it was meant that way?).
         """
 
-        info_form = None
-        payment_form = None
-
-        if self.dining_list.claimed_by == request.user:
-            info_form = DiningInfoForm(request.POST, instance=self.dining_list, prefix='info')
-
-        if is_purchaser:
-            payment_form = DiningPaymentForm(request.POST, instance=self.dining_list, prefix='payment')
+        info_form = DiningInfoForm(request.POST, instance=self.dining_list, prefix='info')
+        payment_form = DiningPaymentForm(request.POST, instance=self.dining_list, prefix='payment')
 
         # Save and redirect if forms are valid, stay otherwise
-        if (not info_form or info_form.is_valid()) and (not payment_form or payment_form.is_valid()):
-            if info_form:
-                info_form.save()
-            if payment_form:
-                payment_form.save()
+        if info_form.is_valid() and payment_form.is_valid():
+            info_form.save()
+            payment_form.save()
             messages.success(request, "Changes successfully saved")
             return HttpResponseRedirect(self.reverse('slot_details'))
 
@@ -543,8 +511,6 @@ class SlotAllergyView(LoginRequiredMixin, SlotMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['tab'] = "allergy"
-
         from django.db.models import CharField
         from django.db.models.functions import Length
         CharField.register_lookup(Length)

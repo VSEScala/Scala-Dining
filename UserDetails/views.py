@@ -58,13 +58,11 @@ class DiningJoinHistoryView(LoginRequiredMixin, ListView):
 
 
 class DiningClaimHistoryView(LoginRequiredMixin, ListView):
-    context = {}
     template_name = "accounts/user_history_claimed.html"
     paginate_by = 20
 
     def get_queryset(self):
-        user = self.request.user
-        return DiningList.objects.filter(Q(claimed_by=user) | Q(purchaser=user)).order_by('-date')
+        return DiningList.objects.filter(owners=self.request.user).order_by('-date')
 
 
 class PeopleAutocompleteView(LoginRequiredMixin, Select2QuerySetView):

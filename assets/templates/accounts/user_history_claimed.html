@@ -6,61 +6,51 @@
 {% block tab_claimed %} active{% endblock %}
 
 {% block details %}
-    <div class="row">
-        <p class="col-12">
-            Below all lists where you are either owner or purchaser
-        </p>
-    </div>
-    <div class="row">
-        <div class="col-12 table-responsive">
-            <table class="table table-hover">
-                {# Table header #}
-                <thead>
-                <tr class="">
-                    <td class="">Date</td>
-                    <td class="">Dish</td>
-                    <td class="">Association</td>
-                    <td class="">Purchaser</td>
-                    <td class=""># Diners</td>
-                    <td class=""># Paid</td>
-                    <td class="">Link</td>
-                </tr>
-                </thead>
+    <p>This table shows all dining lists where you are an owner</p>
+    <div class="table-responsive">
+        <table class="table table-hover">
+            {# Table header #}
+            <thead>
+            <tr class="">
+                <td class="">Date</td>
+                <td class="">Dish</td>
+                <td class="">Association</td>
+                <td class=""># Diners</td>
+                <td class=""># Paid</td>
+                <td class="">Link</td>
+            </tr>
+            </thead>
 
-                <tbody>
-                {# Table rows #}
-                {% for entry in object_list %}
-                    <tr>
-                        <td>
-                            {{ entry.date }}
-                        </td>
-                        <td>
-                            {{ entry.dish }}
-                        </td>
-                        <td>
-                            {{ entry.association.slug }}
-                        </td>
-                        <td>
-                            {{ entry.get_purchaser }}
-                        </td>
-                        <td>
-                            {{ entry.diners.count }}
-                        </td>
-                        <td>
-                            {% with paid=entry|paid_count %}
-                                <span class="{% if paid < entry.diners.count %}text-warning{% endif %}">
-                                    {{ paid }}
-                                </span>
-                            {% endwith %}
-                        </td>
-                        <td class="py-2">
-                            <a class="btn btn-outline-primary" href="{{ entry.get_absolute_url }}"><i class="fas fa-arrow-right"></i></a>
-                        </td>
-                    </tr>
-                {% endfor %}
-                </tbody>
-            </table>
-        </div>
+            <tbody>
+            {# Table rows #}
+            {% for entry in object_list %}
+                <tr>
+                    <td>
+                        {{ entry.date }}
+                    </td>
+                    <td>
+                        {{ entry.dish }}
+                    </td>
+                    <td>
+                        {{ entry.association.slug }}
+                    </td>
+                    <td>
+                        {{ entry.diners.count }}
+                    </td>
+                    <td>
+                        {% with paid=entry|paid_count %}
+                            <span class="{% if paid < entry.diners.count %}text-warning{% endif %}">
+                                {{ paid }}
+                            </span>
+                        {% endwith %}
+                    </td>
+                    <td class="py-2">
+                        <a class="btn btn-outline-primary" href="{{ entry.get_absolute_url }}"><i class="fas fa-arrow-right"></i></a>
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
     </div>
     {% include 'snippets/paginator.html' %}
 {% endblock %}

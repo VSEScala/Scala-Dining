@@ -2,6 +2,8 @@
 {% load staticfiles %}
 {% load dining_tags %}
 
+{% block tab_info %}active{% endblock %}
+
 {% block details %}
     <div class="row">
         {# Primary information #}
@@ -9,19 +11,31 @@
             {# Dish #}
             <h3>{{ dining_list.dish }}</h3>
 
-            {# Owner and association #}
+            {# Main contact #}
+            {% if dining_list.main_contact %}
+                {# TODO: show contact information (telephone/email) #}
+                <div class="row">
+                    <div class="col-3">Main contact:</div>
+                    <div class="col-9">{{ dining_list.main_contact }}</div>
+                </div>
+            {% endif %}
+
+            {# Owners #}
             <div class="row">
-                <div class="col-3">
-                    By:
-                </div>
+                <div class="col-3">Owners:</div>
                 <div class="col-9">
-                    <span class="h4">
-                        {{ dining_list.claimed_by }}
-                        {% if dining_list.get_purchaser != dining_list.claimed_by %} and {{ dining_list.purchaser }}{% endif %}
-                    </span>
-                    <br>
-                    {{ dining_list.association }}
+                    {% if not dining_list.owners.exists %}
+                        There are no owners
+                    {% else %}
+                        {{ dining_list.owners.all|join:", " }}
+                    {% endif %}
                 </div>
+            </div>
+
+            {# Association #}
+            <div class="row">
+                <div class="col-3">Association:</div>
+                <div class="col-9">{{ dining_list.association }}</div>
             </div>
 
             {# Serve time #}
@@ -40,7 +54,8 @@
                         Meal cost:
                     </div>
                     <div class="col-9">
-                        &euro; {{ dining_list.dining_cost }} to be paid to {{ dining_list.get_purchaser }}
+                        {# Purchaser could be None #}
+                        &euro; {{ dining_list.dining_cost }} to be paid to {{ dining_list.purchaser }}
                         {% if dining_list.payment_link %}
                             <br>
                             <a href="{{ dining_list.payment_link }}">{{ dining_list.payment_link }}</a>
@@ -70,7 +85,7 @@
     </div>
 
     {# Change buttons #}
-    {% if can_change_settings %}
+    {% if dining_list|is_owner:user %}
         <div class="row mt-3">
             <div class="col-md">
                 {% url 'slot_change' day=date.day month=date.month year=date.year identifier=dining_list.association.slug as url %}
@@ -78,7 +93,9 @@
                     <i class="fas fa-tools"></i> Change information
                 </a>
             </div>
-            {% if can_remove_list %}
+            {% if dining_list|is_owner:user and dining_list.diners.count < dining_list.min_diners %}
+                {# The min_diners check is only performed here and not while a list is actually deleted, so it's #}
+                {# possible to delete a list even if there are more diners than min_diners XD #}
                 <div class="col-md">
                     {% url "slot_delete" year=date.year month=date.month day=date.day identifier=dining_list.association.slug as url %}
                     <a href="{{ url }}" class="btn btn-outline-danger btn-block">

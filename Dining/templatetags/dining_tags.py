@@ -26,7 +26,7 @@ def cant_join_reason(dining_list, user):
 def can_add_others(dining_list, user):
     """Exhaustive test (for correctness) is not needed since it's only for view usage"""
     is_adjustable = dining_list.is_adjustable()
-    is_owner = dining_list.is_authorised_user(user)
+    is_owner = dining_list.is_owner(user)
     has_room = dining_list.is_open() and dining_list.has_room()
     limited = dining_list.limit_signups_to_association_only and not user.usermembership_set.filter(
         association=dining_list.association).exists()
@@ -64,3 +64,8 @@ def has_paid(dining_list, user):
 def paid_count(dining_list):
     """Number of people who have paid for given list"""
     return DiningEntry.objects.filter(dining_list=dining_list, has_paid=True).count()
+
+
+@register.filter
+def is_owner(dining_list, user):
+    return dining_list.is_owner(user)

@@ -40,6 +40,10 @@ class DiningList(models.Model):
     The following fields may not be changed after creation: kitchen_cost, min_diners/max_diners!
     """
     date = models.DateField()
+    owners = models.ManyToManyField(settings.AUTH_USER_MODEL, related_name='owned_dining_lists',
+                                    help_text='Owners can manage the dining list. Board members can always manage the '
+                                              'dining list even if they are not an owner.')
+
     sign_up_deadline = models.DateTimeField(help_text="The time before users need to sign up.")
     serve_time = models.TimeField(default=time(18, 00))
 
@@ -56,10 +60,6 @@ class DiningList(models.Model):
     # Todo: implement limit in the views.
     limit_signups_to_association_only = models.BooleanField(
         default=False, help_text="Whether only members of the given association can sign up")
-    # The person who paid can be someone else
-    #  this is displayed in the dining list and this user can update payment status.
-    purchaser = models.ForeignKey(settings.AUTH_USER_MODEL, related_name="dininglist_purchaser", blank=True, null=True,
-                                  on_delete=models.SET_NULL)
 
     kitchen_cost = models.DecimalField(decimal_places=2, verbose_name="kitchen cost per person", max_digits=10,
                                        default=settings.KITCHEN_COST, validators=[MinValueValidator(Decimal('0.00'))])
@@ -79,14 +79,27 @@ class DiningList(models.Model):
     diners = models.ManyToManyField(settings.AUTH_USER_MODEL, through='DiningEntry',
                                     through_fields=('dining_list', 'user'))
 
+    # Metadata for display only
+    main_contact = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+                                     help_text='If specified, is shown on the dining list as the main contact. '
+                                               'The owners are always shown.',
+                                     related_name='main_contact_dining_lists')
+    purchaser = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, blank=True, null=True,
+                                  related_name="purchaser_dining_lists",
+                                  help_text='If specified, is shown on the dining list as the user who should receive '
+                                            'the grocery shopping payments.')
+
     objects = DiningListManager()
 
-    def get_purchaser(self):
-        """Returns the user who purchased for the dining list"""
-        return self.purchaser if self.purchaser else self.claimed_by
+    def is_owner(self, user):
+        """Owner is used to denote that someone has all rights. This method is used to specify if someone has all
+        rights. If we for instance would want to give board members all rights, we could have this method return true if
+        the user is a board member of the same association."""
 
-    def is_authorised_user(self, user):
-        return user == self.claimed_by or user == self.purchaser
+        # Give board members always all rights (is probably not really necessary and can probably be removed)
+        if user.groups.filter(pk=self.association.pk).exists():
+            return True
+        return self.owners.filter(pk=user.pk).exists()
 
     def is_adjustable(self):
         """Whether the dining list has not expired it's adjustable date and can therefore not be modified anymore"""

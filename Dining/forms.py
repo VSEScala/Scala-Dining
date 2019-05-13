@@ -1,6 +1,6 @@
 import warnings
 
-from dal_select2.widgets import ModelSelect2
+from dal_select2.widgets import ModelSelect2, ModelSelect2Multiple
 from django import forms
 from django.conf import settings
 from django.db.models import OuterRef, Exists
@@ -116,11 +116,16 @@ class CreateSlotForm(ServeTimeCheckMixin, forms.ModelForm):
 class DiningInfoForm(ServeTimeCheckMixin, forms.ModelForm):
     class Meta:
         model = DiningList
-        fields = ['serve_time', 'min_diners', 'max_diners', 'sign_up_deadline', 'purchaser']
+        fields = ['owners', 'main_contact', 'purchaser', 'dish', 'serve_time', 'min_diners', 'max_diners',
+                  'sign_up_deadline']
+        widgets = {
+            'owners': ModelSelect2Multiple(url='people_autocomplete', attrs={'data-minimum-input-length': '1'})
+        }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['purchaser'].queryset = self.instance.diners.distinct()
+        self.fields['main_contact'].queryset = self.instance.owners.all()
+        self.fields['purchaser'].queryset = self.instance.owners.all()
 
 
 class DiningPaymentForm(forms.ModelForm):
@@ -130,7 +135,7 @@ class DiningPaymentForm(forms.ModelForm):
 
     class Meta:
         model = DiningList
-        fields = ['dish', 'dinner_cost_total', 'dining_cost', 'payment_link']
+        fields = ['dinner_cost_total', 'dining_cost', 'payment_link']
 
     def clean(self):
         """This cleaning calculates the person dining cost from the total dining cost"""
@@ -188,16 +193,16 @@ class DiningEntryUserCreateForm(forms.ModelForm):
             raise ValidationError(_("Dining list can no longer be adjusted"), code='closed')
 
         # Closed (exception for owner)
-        if not dining_list.is_authorised_user(creator) and not dining_list.is_open():
+        if not dining_list.is_owner(creator) and not dining_list.is_open():
             raise ValidationError(_("Dining list is closed"), code='closed')
 
         # Full (exception for owner)
-        if not dining_list.is_authorised_user(creator) and not dining_list.has_room():
+        if not dining_list.is_owner(creator) and not dining_list.has_room():
             raise ValidationError(_("Dining list is full"), code='full')
 
         if dining_list.limit_signups_to_association_only:
             # User should be verified association member, except when the entry creator is owner
-            if not dining_list.is_authorised_user(creator) and not user.is_verified_member_of(dining_list.association):
+            if not dining_list.is_owner(creator) and not user.is_verified_member_of(dining_list.association):
                 raise ValidationError(_("Dining list is limited for members only"), code='members_only')
 
         # User balance check
@@ -226,7 +231,7 @@ class DiningEntryDeleteForm(forms.Form):
         cleaned_data = super().clean()
 
         dining_list = self.entry.dining_list
-        is_owner = dining_list.is_authorised_user(self.deleter)
+        is_owner = dining_list.is_owner(self.deleter)
 
         if not dining_list.is_adjustable():
             raise ValidationError(_('The dining list is locked, changes can no longer be made'), code='locked')

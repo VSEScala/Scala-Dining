@@ -4,6 +4,7 @@
 {% load form_extras %}
 {% load dining_tags %}
 
+{% block tab_list %}active{% endblock %}
 
 {% block details%}
     {# HTML 5 only solution where the form is outside the table, should change it sometime probably #}
@@ -58,7 +59,7 @@
                                 <!-- Todo: Make button ids start with a letter, instead of a number -->
                                 <div class="btn-group btn-group-toggle d-flex" data-toggle="buttons" style="width:100%;">
                                     {% if entry.is_internal %}
-                                        {% if can_edit_stats %}
+                                        {% if dining_list|is_owner:user %}
                                             <label class="btn btn-outline-primary col-3
                                                     {% if entry.has_shopped %} active {% endif %}">
                                                 <input type="checkbox" form="statsForm" autocomplete="off"
@@ -92,11 +93,12 @@
                                             </div>
                                         {% endif %}
                                     {% else %}
+                                        {# External entries have no shop/cook/clean stats #}
                                         <div class="col-9"></div>
                                     {% endif %}
-                                    {% if can_edit_pay %}
+                                    {% if dining_list|is_owner:user %}
                                         <label class="btn btn-outline-primary col-3
-                                     {% if entry.has_paid %} active {% endif %}">
+                                                      {% if entry.has_paid %}active{% endif %}">
                                             <input type="checkbox" autocomplete="off" form="statsForm"
                                                    id="{{ entry.id }}:paid" name="{{ entry.id }}:has_paid"
                                                     {% if entry.has_paid %} checked {% endif %}>
@@ -104,7 +106,7 @@
                                         </label>
                                     {% else %}
                                         <div class="col-3">
-                                            {% if entry.has_paid %} Paid {% endif %}
+                                            {% if entry.has_paid %}Paid{% endif %}
                                         </div>
                                     {% endif %}
                                 </div>
@@ -135,7 +137,7 @@
                         {% endif %}
                     </td>
                     <td>
-                        {% if can_edit_stats or can_edit_pay %}
+                        {% if dining_list|is_owner:user %}
                             <button type="submit" class="btn btn-block btn-primary" form="statsForm">
                                 Update User Stats
                             </button>
@@ -150,7 +152,7 @@
     </div>
     <div class="row d-sm-none">
         <div class="col-12">
-            {% if can_edit_stats or can_edit_pay %}
+            {% if dining_list|is_owner:user %}
                 <button type="submit" class="btn btn-block btn-primary" form="statsForm">
                     Update User Stats
                 </button>

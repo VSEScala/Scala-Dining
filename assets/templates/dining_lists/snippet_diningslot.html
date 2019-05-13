@@ -16,12 +16,12 @@
          {% if slot.association and slot.association.image %}style="background-image: url({{ slot.association.image.url }});"{% endif %}></div>
     <div class="col-8">
         <div class="text-size-5">
-        {% if slot.claimed_by %}
-            {{ slot.claimed_by }}
-            {% if slot.get_purchaser != slot.claimed_by %} and {{ slot.purchaser }}{% endif %}
-        {% else %}
-            Slot is unclaimed!
-        {% endif %}</div>
+            {% if slot.main_contact %}
+                {{ slot.main_contact }}
+            {% else %}
+                {{ slot.owners.all|join:', ' }}
+            {% endif %}
+        </div>
         <div class="text-size-4">{{ slot.dish }}</div>
         <br>
         <div class="text-size-3">{{ slot.diners.count }}/{{ slot.max_diners }} diners - Serve time: {{ slot.serve_time }}</div>

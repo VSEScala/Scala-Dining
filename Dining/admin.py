@@ -46,6 +46,7 @@ class DiningListExternalEntryLink(admin.StackedInline):
     extra = 0
 
 
+# This class is not used and not updated for the new situation (don't really want to use it)
 class DiningListAdmin(admin.ModelAdmin):
     """
     Set up limited view of the user page
@@ -58,10 +59,13 @@ class DiningListAdmin(admin.ModelAdmin):
     inlines = [DiningListEntryLink, DiningListExternalEntryLink]
     fields = (('date', 'sign_up_deadline', 'adjustable_duration'),
               ('dish'),
-              ('claimed_by', 'association', 'purchaser', 'limit_signups_to_association_only'),
+              ('association', 'limit_signups_to_association_only'),
               ('min_diners', 'max_diners'),
               ('kitchen_cost', 'dining_cost', 'auto_pay'),
               'payment_link')
+
+
+admin.site.register(DiningList)
 
 
 class DininglistCommentsLink(admin.StackedInline):
@@ -98,7 +102,6 @@ class DiningListCommentsAdmin(admin.ModelAdmin):
 
 
 admin.site.register(UserDiningSettings, DiningSettingAdmin)
-admin.site.register(DiningList, DiningListAdmin)
 #admin.site.register(DiningListComment, DiningListCommentsAdmin)
 admin.site.register(DiningDayAnnouncement)
 admin.site.register(DiningComment)
