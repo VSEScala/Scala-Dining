@@ -3,7 +3,7 @@
 {% load form_extras %}
 
 {% block details %}
-    <form method="post">
+    <form method="post" id="infoForm">
         {% csrf_token %}
         {# Display the info form #}
         <h1>General info</h1>
@@ -14,10 +14,30 @@
 
         {# The save and cancel buttons #}
         <div class="row">
-            <div class="col"><button type="submit" class="btn btn-block btn-primary">Save</button></div>
+            <div class="col">
+                <button type="submit" class="btn btn-block btn-primary" id="submitBtn">Save</button>
+            </div>
             <div class="col">
                 <a href="{{ dining_list.get_absolute_url }}" class="btn btn-block btn-secondary">Cancel</a>
             </div>
         </div>
     </form>
+    {# Check if current user is owner, else show warning message #}
+    <script>
+        document.getElementById('infoForm').addEventListener('submit', function (event) {
+            let selectedOptions = document.getElementById('id_info-owners').selectedOptions;
+            for (let i = 0; i < selectedOptions.length; i++) {
+                if (selectedOptions[i].value === '{{ user.pk }}') {
+                    // Current user is owner
+                    return;
+                }
+            }
+            // Current user is not owner
+            let result = window.confirm("You are not in the list of owners, which means you might lose the rights to " +
+                "edit the dining list. Are you sure to continue saving?");
+            if (!result) {
+                event.preventDefault();
+            }
+        });
+    </script>
 {% endblock %}

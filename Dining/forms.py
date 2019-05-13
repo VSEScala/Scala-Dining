@@ -9,6 +9,7 @@ from django.utils.translation import gettext as _
 from django.core.exceptions import PermissionDenied
 from django.forms import ValidationError
 
+from General.forms import ConcurrenflictFormMixin
 from UserDetails.models import Association, User
 from .models import DiningList, DiningEntry, DiningEntryUser, DiningEntryExternal, DiningComment
 from General.util import SelectWithDisabled
@@ -113,10 +114,10 @@ class CreateSlotForm(ServeTimeCheckMixin, forms.ModelForm):
         return instance
 
 
-class DiningInfoForm(ServeTimeCheckMixin, forms.ModelForm):
+class DiningInfoForm(ConcurrenflictFormMixin, ServeTimeCheckMixin, forms.ModelForm):
     class Meta:
         model = DiningList
-        fields = ['owners', 'main_contact', 'purchaser', 'dish', 'serve_time', 'min_diners', 'max_diners',
+        fields = ['owners', 'main_contact', 'dish', 'serve_time', 'min_diners', 'max_diners',
                   'sign_up_deadline']
         widgets = {
             'owners': ModelSelect2Multiple(url='people_autocomplete', attrs={'data-minimum-input-length': '1'})
@@ -125,17 +126,21 @@ class DiningInfoForm(ServeTimeCheckMixin, forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['main_contact'].queryset = self.instance.owners.all()
-        self.fields['purchaser'].queryset = self.instance.owners.all()
 
 
-class DiningPaymentForm(forms.ModelForm):
+class DiningPaymentForm(ConcurrenflictFormMixin, forms.ModelForm):
     dinner_cost_total = forms.DecimalField(decimal_places=2, max_digits=5, required=False,
                                            validators=[MinValueValidator(Decimal('0'))],
-                                           help_text='Only one of dinner cost total or dinner cost per person should be provided')
+                                           help_text='Only one of dinner cost total or dinner cost per person should '
+                                                     'be provided')
 
     class Meta:
         model = DiningList
-        fields = ['dinner_cost_total', 'dining_cost', 'payment_link']
+        fields = ['purchaser', 'dinner_cost_total', 'dining_cost', 'payment_link']
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['purchaser'].queryset = self.instance.owners.all()
 
     def clean(self):
         """This cleaning calculates the person dining cost from the total dining cost"""

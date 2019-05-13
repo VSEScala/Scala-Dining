@@ -40,9 +40,8 @@ class DiningList(models.Model):
     The following fields may not be changed after creation: kitchen_cost, min_diners/max_diners!
     """
     date = models.DateField()
-    owners = models.ManyToManyField(settings.AUTH_USER_MODEL, related_name='owned_dining_lists',
-                                    help_text='Owners can manage the dining list. Board members can always manage the '
-                                              'dining list even if they are not an owner.')
+    owners = models.ManyToManyField(settings.AUTH_USER_MODEL, related_name='owned_dining_lists', blank=True,
+                                    help_text='Owners can manage the dining list.')
 
     sign_up_deadline = models.DateTimeField(help_text="The time before users need to sign up.")
     serve_time = models.TimeField(default=time(18, 00))
