@@ -332,6 +332,32 @@ class SlotListView(LoginRequiredMixin, SlotMixin, TemplateView):
         if not self.dining_list.is_owner(request.user):
             raise PermissionDenied
 
+        # Check for edit conflict, not very elegant but this post method needs to be rewritten anyway
+        conflict = False
+        for entry in self.dining_list.dining_entries.all():
+            entry = entry.get_subclass()
+            if entry.is_internal():
+                initial_shop = request.POST.get('initial_entry{}_shop'.format(entry.pk))
+                if initial_shop and initial_shop != str(entry.has_shopped):
+                        conflict = True
+                        break
+                initial_cook = request.POST.get('initial_entry{}_cook'.format(entry.pk))
+                if initial_cook and initial_cook != str(entry.has_cooked):
+                        conflict = True
+                        break
+                initial_clean = request.POST.get('initial_entry{}_clean'.format(entry.pk))
+                if initial_clean and initial_clean != str(entry.has_cleaned):
+                        conflict = True
+                        break
+            initial_paid = request.POST.get('initial_entry{}_paid'.format(entry.pk))
+            if initial_paid and initial_paid != str(entry.has_paid):
+                    conflict = True
+                    break
+        if conflict:
+            messages.error(request, 'Someone else modified the stats while you were changing them, your changes have '
+                                    'not been saved. We apologize for the inconvenience')
+            return HttpResponseRedirect(self.reverse('slot_list'))
+
         # Get all the keys in the post and put all relevant ones in a list
         post_requests = []
         for key in request.POST:

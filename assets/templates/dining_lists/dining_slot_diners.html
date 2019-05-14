@@ -12,6 +12,17 @@
           action="{% url 'slot_list' day=date.day month=date.month year=date.year identifier=dining_list.association.slug %}"
           id="statsForm">
         {% csrf_token %}
+        {# Store initial values hidden for conflict check #}
+        {% for entry in entries %}
+            {% with entry=entry.get_subclass %}
+                {% if entry.is_internal %}
+                    <input type="hidden" name="initial_entry{{ entry.pk }}_shop" value="{{ entry.has_shopped }}">
+                    <input type="hidden" name="initial_entry{{ entry.pk }}_cook" value="{{ entry.has_cooked }}">
+                    <input type="hidden" name="initial_entry{{ entry.pk }}_clean" value="{{ entry.has_cleaned }}">
+                {% endif %}
+                <input type="hidden" name="initial_entry{{ entry.pk }}_paid" value="{{ entry.has_paid }}">
+            {% endwith %}
+        {% endfor %}
     </form>
 
     <div class="row">
@@ -83,13 +94,13 @@
                                             </label>
                                         {% else %}
                                             <div class="col-3">
-                                                {% if entry.has_shopped %} Shop {% endif %}
+                                                {% if entry.has_shopped %}Shop{% endif %}
                                             </div>
                                             <div class="col-3">
-                                                {% if entry.has_cooked %} Cook {% endif %}
+                                                {% if entry.has_cooked %}Cook{% endif %}
                                             </div>
                                             <div class="col-3">
-                                                {% if entry.has_cleaned %} Clean {% endif %}
+                                                {% if entry.has_cleaned %}Clean{% endif %}
                                             </div>
                                         {% endif %}
                                     {% else %}
