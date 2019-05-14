@@ -4,6 +4,8 @@ from django.utils import timezone
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
 
+from functools import reduce
+
 
 class User(AbstractUser):
     email = models.EmailField(_('email address'), unique=True)
@@ -67,6 +69,13 @@ class User(AbstractUser):
 
     def has_admin_site_access(self):
         return self.is_active and (self.has_any_perm() or self.is_superuser)
+
+    def has_balance_exception(self):
+        '''
+        Return if user has an exception to the minimum balance
+        '''
+        return reduce(lambda a,b: a or (self.is_member_of(b) and b.has_min_exception),
+                Association.objects.all(), False)
 
     def is_board_of(self, associationId):
         '''

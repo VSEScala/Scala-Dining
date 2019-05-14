@@ -223,8 +223,7 @@ class DiningEntryUserCreateForm(DiningEntryCreateForm):
         cleaned_data = super().clean()
         user = cleaned_data.get('user')
         if (user.usercredit.balance < settings.MINIMUM_BALANCE_FOR_DINING_SIGN_UP and
-                not reduce(lambda a,b: a or (user.is_member_of(b) and b.has_min_exception),
-                    Association.objects.all(), False)):
+                not user.has_balance_exception()):
             raise ValidationError("The balance of this user is too low to add", code='nomoneyzz')
 
         return cleaned_data
@@ -239,8 +238,7 @@ class DiningEntryExternalCreateForm(forms.ModelForm):
         cleaned_data = super().clean()
         user = self.instance.user
         if (user.usercredit.balance < settings.MINIMUM_BALANCE_FOR_DINING_SIGN_UP and
-                not reduce(lambda a,b: a or (user.is_member_of(b) and b.has_min_exception),
-                    Association.objects.all(), False)):
+                not user.has_balance_exception()):
             raise ValidationError("Your balance is too low to add any external people", code='nomoneyzz')
 
         # Clean the dining list
