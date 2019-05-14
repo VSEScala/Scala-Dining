@@ -80,7 +80,8 @@ class CreateSlotForm(ServeTimeCheckMixin, forms.ModelForm):
             raise ValidationError("All dining slots are already occupied on this day")
 
         # Check if user has enough money to claim a slot
-        if self.user.usercredit.balance < settings.MINIMUM_BALANCE_FOR_DINING_SLOT_CLAIM:
+        if (self.user.usercredit.balance < settings.MINIMUM_BALANCE_FOR_DINING_SLOT_CLAIM and
+                not self.user.has_balance_exception()):
             raise ValidationError("Your balance is too low to claim a slot")
 
         # Check if user has not already claimed another dining slot this day
