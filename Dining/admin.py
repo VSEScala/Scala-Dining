@@ -88,21 +88,7 @@ class DiningListComment(DiningList):
         proxy = True
 
 
-class DiningListCommentsAdmin(admin.ModelAdmin):
-    """
-    Set up limited view of the user page
-    """
-
-    list_display = ('__str__', 'association')
-    list_filter = ['association', 'date']
-
-    readonly_fields = ('date', 'claimed_by', 'association')
-    inlines = [DininglistCommentsLink]
-    fields = ('date', ('claimed_by', 'association'),)
-
-
 admin.site.register(UserDiningSettings, DiningSettingAdmin)
-#admin.site.register(DiningListComment, DiningListCommentsAdmin)
 admin.site.register(DiningDayAnnouncement)
 admin.site.register(DiningComment)
 admin.site.register(DiningEntryUser, DiningEntryAdmin)

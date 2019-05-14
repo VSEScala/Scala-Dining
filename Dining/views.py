@@ -118,18 +118,6 @@ class DayView(LoginRequiredMixin, DayMixin, TemplateView):
         context['dining_lists'] = DiningList.objects.filter(date=self.date)
         context['Announcements'] = DiningDayAnnouncement.objects.filter(date=self.date)
 
-        # Check if create slot button must be shown
-        # (but I prefer to only check when claiming to reduce code)
-        in_future = self.date >= timezone.now().date()
-        if in_future and self.date == timezone.now().date():
-            # If date is today, check if the dining slot claim time has not passed
-            if settings.DINING_SLOT_CLAIM_CLOSURE_TIME < timezone.now().time():
-                in_future = False
-
-        has_no_claimed_slots = len(context['dining_lists'].filter(claimed_by=self.request.user)) == 0
-        context['can_create_slot'] = DiningList.objects.available_slots(self.date) >= 0 and\
-                                     in_future and has_no_claimed_slots
-
         # Make the view clickable
         context['interactive'] = True
 
@@ -215,42 +203,24 @@ class NewSlotView(LoginRequiredMixin, DayMixin, TemplateView):
     """
     template_name = "dining_lists/dining_add.html"
 
-    def get(self, request, *args, **kwargs):
-        context = self.get_context_data()
-        context['slot_form'] = CreateSlotForm(instance=DiningList(claimed_by=request.user, date=self.date))
-        return self.render_to_response(context)
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data()
+        context.update({
+            'slot_form': CreateSlotForm(self.request.user, instance=DiningList(date=self.date))
+        })
+        return context
 
     def post(self, request, *args, **kwargs):
         context = self.get_context_data()
 
-        form = CreateSlotForm(request.POST, instance=DiningList(claimed_by=request.user, date=self.date))
+        context['slot_form'] = CreateSlotForm(request.user, request.POST, instance=DiningList(date=self.date))
 
-        if form.is_valid():
-            dining_list = form.save()
+        if context['slot_form'].is_valid():
+            dining_list = context['slot_form'].save()
             messages.success(request, _("You successfully created a new dining list"))
             return redirect(dining_list)
 
-        context['slot_form'] = form
         return self.render_to_response(context)
-
-    def dispatch(self, request, *args, **kwargs):
-        """
-        Disable page when no slots are available.
-        """
-        # Check available slots
-        # Todo: possibly also disable page when date is in the past or later than closure time!
-        self.init_date()
-        available_slots = DiningList.objects.available_slots(self.date)
-        if available_slots <= 0:
-            error = _("No free slots available.")
-            messages.add_message(request, messages.ERROR, error)
-            return HttpResponseRedirect(self.reverse('day_view', kwargs={}))
-
-        if len(DiningList.objects.filter(date=self.date).filter(claimed_by=self.request.user)) > 0:
-            error = _("You already have a dining slot claimed today.")
-            messages.add_message(request, messages.ERROR, error)
-            return HttpResponseRedirect(self.reverse('day_view', kwargs={}))
-        return super().dispatch(request, *args, **kwargs)
 
 
 class EntryAddView(LoginRequiredMixin, DiningListMixin, TemplateView):
@@ -528,7 +498,7 @@ class SlotDeleteView(LoginRequiredMixin, SlotMixin, DeleteView):
     context_object_name = "dining_list"
 
     def get_object(self, queryset=None):
-        if self.request.user != self.dining_list.claimed_by:
+        if not self.dining_list.is_owner(self.request.user):
             # Block page for non slot owners
             raise PermissionDenied("Deletion not available")
         return self.dining_list

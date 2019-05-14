@@ -1,7 +1,9 @@
 from django import template
+from django.conf import settings
+from django.utils import timezone
 
-from Dining.forms import DiningEntryUserCreateForm, DiningEntryDeleteForm
-from Dining.models import DiningEntry, DiningEntryUser
+from Dining.forms import DiningEntryUserCreateForm, DiningEntryDeleteForm, CreateSlotForm
+from Dining.models import DiningEntry, DiningEntryUser, DiningList
 
 register = template.Library()
 
@@ -69,3 +71,25 @@ def paid_count(dining_list):
 @register.filter
 def is_owner(dining_list, user):
     return dining_list.is_owner(user)
+
+
+@register.filter
+def cant_create_dining_list_reason(user, date):
+    """Returns None if the user can create a dining list, else it returns the reason why not"""
+
+    # Copied from the view, could also do a fake form is_valid check and return the error message when not valid
+    # In the past
+    if date < timezone.now().date():
+        return "date is in the past"
+    if date == timezone.now().date() and settings.DINING_SLOT_CLAIM_CLOSURE_TIME < timezone.now().time():
+        return "too late to create a dining list today"
+
+    # Slots available
+    if DiningList.objects.available_slots(date) <= 0:
+        return "no slots available"
+
+    # User owns a dining list
+    if DiningList.objects.filter(date=date, owners=user).exists():
+        return "you already have a dining list for this day"
+
+    return None

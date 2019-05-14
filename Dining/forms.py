@@ -47,11 +47,14 @@ class CreateSlotForm(ServeTimeCheckMixin, forms.ModelForm):
         model = DiningList
         fields = ('dish', 'association', 'max_diners', 'serve_time')
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, creator, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
+        # Should find a way that does not need an extra form argument (creator), maybe using created_by model field
+        self.creator = creator
+
         # Get associations that the user is a member of (not verified)
-        associations = Association.objects.filter(usermembership__related_user=self.instance.claimed_by)
+        associations = Association.objects.filter(usermembership__related_user=creator)
 
         # Filter out unavailable associations (those that have a dining list already on this day)
         dining_lists = DiningList.objects.filter(date=self.instance.date, association=OuterRef('pk'))
@@ -77,7 +80,7 @@ class CreateSlotForm(ServeTimeCheckMixin, forms.ModelForm):
 
         cleaned_data = super().clean()
 
-        creator = self.instance.claimed_by
+        creator = self.creator
 
         if DiningList.objects.available_slots(self.instance.date) <= 0:
             raise ValidationError("All dining slots are already occupied on this day")
@@ -86,9 +89,9 @@ class CreateSlotForm(ServeTimeCheckMixin, forms.ModelForm):
         if not creator.has_min_balance_exception() and creator.usercredit.balance < settings.MINIMUM_BALANCE_FOR_DINING_SLOT_CLAIM:
             raise ValidationError("Your balance is too low to claim a slot")
 
-        # Check if user has not already claimed another dining slot this day
-        if DiningList.objects.filter(date=self.instance.date, claimed_by=creator).exists():
-            raise ValidationError(_("User has already claimed a dining slot this day"))
+        # Check if user does not already own another dining list this day
+        if DiningList.objects.filter(date=self.instance.date, owners=creator).exists():
+            raise ValidationError(_("User already owns a dining list on this day"))
 
         # If date is valid
         if self.instance.date < timezone.now().date():
@@ -103,8 +106,11 @@ class CreateSlotForm(ServeTimeCheckMixin, forms.ModelForm):
     def save(self, commit=True):
         instance = super().save(commit=commit)
         if commit:
-            # Create dining entry for claimant
-            user = instance.claimed_by
+            # Make creator owner
+            instance.owners.add(self.creator)
+
+            # Create dining entry for creator
+            user = self.creator
             entry_form = DiningEntryUserCreateForm({'user': str(user.pk)},
                                                    instance=DiningEntryUser(created_by=user, dining_list=instance))
             if entry_form.is_valid():

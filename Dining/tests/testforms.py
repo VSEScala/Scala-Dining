@@ -20,8 +20,8 @@ class CreateSlotFormTestCase(TestCase):
         self.dining_date = timezone.now().date() + timedelta(days=2)
         self.form_data = {'dish': 'Kwark', 'association': str(self.association1.pk), 'max_diners': '18',
                           'serve_time': '17:00'}
-        self.dining_list = DiningList(claimed_by=self.user1, date=self.dining_date)
-        self.form = CreateSlotForm(self.form_data, instance=self.dining_list)
+        self.dining_list = DiningList(date=self.dining_date)
+        self.form = CreateSlotForm(self.user1, self.form_data, instance=self.dining_list)
 
     def test_creation(self):
         self.assertTrue(self.form.is_valid())
@@ -48,7 +48,7 @@ class CreateSlotFormTestCase(TestCase):
         association = Association.objects.create(name='Knights')
         form_data = {'dish': 'Boter', 'association': str(association.pk), 'max_diners': '20',
                      'serve_time': '18:00'}
-        form = CreateSlotForm(form_data, instance=DiningList(claimed_by=self.user1, date=self.dining_date))
+        form = CreateSlotForm(self.user1, form_data, instance=DiningList(date=self.dining_date))
         self.assertTrue(form.is_valid())
         # Check that the actual association is not Knights but Quadrivium
         self.assertEqual(self.association1, form.instance.association)
@@ -59,10 +59,10 @@ class CreateSlotFormTestCase(TestCase):
         self.form.save()
 
         # Try creating another one with same association
-        dl = DiningList(claimed_by=self.user1, date=self.dining_date)
+        dl = DiningList(date=self.dining_date)
         data = {'dish': 'Kwark', 'association': str(self.association1.pk), 'max_diners': '18',
                 'serve_time': '17:00'}
-        form = CreateSlotForm(data, instance=dl)
+        form = CreateSlotForm(self.user1, data, instance=dl)
         self.assertFalse(form.is_valid())
         self.assertTrue(form.has_error('association'))
 

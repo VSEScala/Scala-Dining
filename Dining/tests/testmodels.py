@@ -18,12 +18,11 @@ class DiningListTestCase(TestCase):
 
     def setUp(self):
         self.dining_list = DiningList(date=date(2123, 1, 2), sign_up_deadline=datetime(2100, 2, 2),
-                                      association=self.association, claimed_by=self.user)
+                                      association=self.association)
 
     def test_is_open(self):
         list = DiningList.objects.create(date=date(2015, 1, 1), association=self.association,
-                                         sign_up_deadline=datetime(2015, 1, 1, 17, 00, tzinfo=timezone.utc),
-                                         claimed_by=self.user)
+                                         sign_up_deadline=datetime(2015, 1, 1, 17, 00, tzinfo=timezone.utc))
 
         with patch.object(timezone, 'now', return_value=datetime(2015, 1, 1, 16, 59, tzinfo=timezone.utc)) as mock_now:
             self.assertTrue(list.is_open())
@@ -56,7 +55,7 @@ class DiningListCleanTestCase(TestCase):
 
     def setUp(self):
         self.dining_list = DiningList(date=date(2123, 1, 2), sign_up_deadline=datetime(2100, 2, 2),
-                                      association=self.association, claimed_by=self.user)
+                                      association=self.association)
 
     def test_sign_up_deadline_valid(self):
         self.dining_list.full_clean()  # Shouldn't raise
@@ -72,7 +71,7 @@ class DiningEntryUserTestCase(TestCase):
         cls.user = User.objects.create_user('piet')
         cls.association = Association.objects.create(slug='assoc')
         cls.dining_list = DiningList.objects.create(date=date(2123, 2, 1), association=cls.association,
-                                                    claimed_by=cls.user, sign_up_deadline=datetime(2100, 1, 1))
+                                                    sign_up_deadline=datetime(2100, 1, 1))
 
     def test_clean_valid_entry(self):
         entry = DiningEntryUser(dining_list=self.dining_list, user=self.user, created_by=self.user)
@@ -90,7 +89,7 @@ class DiningEntryExternalTestCase(TestCase):
         cls.user = User.objects.create_user('piet')
         cls.association = Association.objects.create(slug='assoc')
         cls.dining_list = DiningList.objects.create(date=date(2123, 2, 1), association=cls.association,
-                                                    claimed_by=cls.user, sign_up_deadline=datetime(2100, 1, 1))
+                                                    sign_up_deadline=datetime(2100, 1, 1))
 
     def test_clean_blank_name(self):
         entry = DiningEntryExternal(user=self.user, dining_list=self.dining_list, created_by=self.user)

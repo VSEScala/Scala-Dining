@@ -40,6 +40,10 @@ class DiningList(models.Model):
     The following fields may not be changed after creation: kitchen_cost, min_diners/max_diners!
     """
     date = models.DateField()
+
+    """Todo: the date+association combination determines the URL. This makes it impossible to have multiple dining lists
+    of the same association on the same day. Probably need to change that"""
+    association = models.ForeignKey(Association, on_delete=models.PROTECT)
     owners = models.ManyToManyField(settings.AUTH_USER_MODEL, related_name='owned_dining_lists', blank=True,
                                     help_text='Owners can manage the dining list.')
 
@@ -51,11 +55,6 @@ class DiningList(models.Model):
     adjustable_duration = models.DurationField(
         default=settings.TRANSACTION_PENDING_DURATION,
         help_text="The amount of time the dining list can be adjusted after its date")
-    claimed_by = models.ForeignKey(settings.AUTH_USER_MODEL, related_name="dininglist_claimer",
-                                   on_delete=models.PROTECT)
-    # Association is needed for kitchen cost transactions and url calculation and is therefore required and may not be
-    # changed.
-    association = models.ForeignKey(Association, on_delete=models.PROTECT)
     # Todo: implement limit in the views.
     limit_signups_to_association_only = models.BooleanField(
         default=False, help_text="Whether only members of the given association can sign up")
@@ -124,7 +123,7 @@ class DiningList(models.Model):
         return self.diners.count() < self.max_diners
 
     def __str__(self):
-        return "{} - {} by {}".format(self.date, self.association.slug, self.claimed_by)
+        return "{} {}".format(self.date, self.association)
 
     def get_absolute_url(self):
         from django.shortcuts import reverse

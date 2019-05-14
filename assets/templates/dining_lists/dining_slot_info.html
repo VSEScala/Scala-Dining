@@ -171,9 +171,13 @@
                             {% endif %}
                         </span>
                     </div>
-                {% else %}
+                {% elif dining_list.is_adjustable %}
                     <div class="col-9 offset-3">
-                        Dining list is closed, contact {{ dining_list.claimed_by }} if you want to join.
+                        {% if dining_list.main_contact %}
+                            Dining list is closed, contact {{ dining_list.main_contact }} if you want to join
+                        {% else %}
+                            Dining list is closed, contact one of the owners if you want to join
+                        {% endif %}
                     </div>
                 {% endif %}
             </div>
