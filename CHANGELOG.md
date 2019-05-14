@@ -3,6 +3,8 @@
 ### Current
 
 * New autocomplete widget
+* Dining lists have 0 or more owners instead of a claimer and purchaser
+* Can delete all dining entries that you created, also of other diners
 
 ### 2019-05-09
 
