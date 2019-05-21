@@ -54,8 +54,8 @@
                         Meal cost:
                     </div>
                     <div class="col-9">
-                        {# Purchaser could be None #}
-                        &euro; {{ dining_list.dining_cost }} to be paid to {{ dining_list.purchaser }}
+                        &euro; {{ dining_list.dining_cost }}
+                        {% if dining_list.purchaser %}to be paid to {{ dining_list.purchaser }}{% endif %}
                         {% if dining_list.payment_link %}
                             <br>
                             <a href="{{ dining_list.payment_link }}">{{ dining_list.payment_link }}</a>
