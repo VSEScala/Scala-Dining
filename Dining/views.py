@@ -259,7 +259,8 @@ class EntryAddView(LoginRequiredMixin, DiningListMixin, TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context.update({
-            'all_users': User.objects.all(),
+            'user_form': DiningEntryUserCreateForm(),
+            'external_form': DiningEntryExternalCreateForm(),
         })
         return context
 

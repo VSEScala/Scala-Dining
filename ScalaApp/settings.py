@@ -31,11 +31,8 @@ ALLOWED_HOSTS = []
 
 AUTH_USER_MODEL = 'UserDetails.User'
 
-# Application definition
-
+# django.contrib.admin is replaced by ScalaApp.apps.MyAdminConfig
 INSTALLED_APPS = [
-    # 'django.contrib.admin', # replaced by ScalaApp.apps.MyAdminConfig
-    'ScalaApp.apps.MyAdminConfig',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
@@ -43,7 +40,9 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'django.contrib.humanize',
     'django.contrib.sites',
-    'django.forms',
+    'dal',
+    'dal_select2',
+    'ScalaApp.apps.MyAdminConfig',
 
     'widget_tweaks',
 
@@ -86,8 +85,6 @@ TEMPLATES = [
         },
     },
 ]
-
-FORM_RENDERER = 'django.forms.renderers.TemplatesSetting'
 
 WSGI_APPLICATION = 'ScalaApp.wsgi.application'
 
