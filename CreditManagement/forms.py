@@ -1,6 +1,7 @@
+from dal_select2.widgets import ModelSelect2
 from django import forms
+
 from .models import *
-from General.widget import SearchWidget
 
 
 class TransactionForm(forms.ModelForm):
@@ -23,7 +24,7 @@ class TransactionForm(forms.ModelForm):
         model = PendingTransaction
         fields = ['origin', 'amount', 'target_user', 'target_association']
         widgets = {
-            'target_user': SearchWidget(queryset=User.objects.all().order_by('first_name')),
+            'target_user': ModelSelect2(url='people_autocomplete', attrs={'data-minimum-input-length': '1'}),
         }
 
 
@@ -31,8 +32,6 @@ class AssociationTransactionForm(TransactionForm):
 
     def __init__(self, association, *args, **kwargs):
         super().__init__(*args, association=association, **kwargs)
-        self.fields['target_user'].widget.queryset = \
-            User.objects.filter(usermembership__association=association).order_by('first_name')
         self.fields['target_user'].required = True
 
     class Meta(TransactionForm.Meta):

@@ -38,44 +38,39 @@ class DiningEntryUserCreateFormTestCase(TestCase):
         self.dining_list = DiningList.objects.create(date=date(2089, 1, 1), association=self.association,
                                                      claimed_by=self.user,
                                                      sign_up_deadline=datetime(2088, 1, 1, tzinfo=timezone.utc))
-        self.dining_entry = DiningEntryUser(dining_list=self.dining_list, user=self.user2, created_by=self.user2)
+        self.dining_entry = DiningEntryUser(dining_list=self.dining_list, created_by=self.user2)
         self.post_data = {'user': str(self.user2.pk)}
+        self.form = DiningEntryUserCreateForm(self.post_data, instance=self.dining_entry)
 
     def test_form(self):
-        form = DiningEntryUserCreateForm(self.post_data, instance=self.dining_entry)
-        self.assertTrue(form.is_valid())
+        self.assertTrue(self.form.is_valid())
 
     def test_dining_list_not_adjustable(self):
         self.dining_list.date = date(2000, 1, 2)
         self.dining_list.sign_up_deadline = datetime(2000, 1, 1, tzinfo=timezone.utc)
-        form = DiningEntryUserCreateForm(self.post_data, instance=self.dining_entry)
-        self.assertFalse(form.is_valid())
-        self.assertTrue(form.has_error(NON_FIELD_ERRORS, 'closed'))
+        self.assertFalse(self.form.is_valid())
+        self.assertTrue(self.form.has_error(NON_FIELD_ERRORS, 'closed'))
 
     def test_dining_list_closed(self):
         self.dining_list.sign_up_deadline = datetime(2000, 1, 1, tzinfo=timezone.utc)  # Close list
-        form = DiningEntryUserCreateForm(self.post_data, instance=self.dining_entry)
-        self.assertFalse(form.is_valid())
-        self.assertTrue(form.has_error(NON_FIELD_ERRORS, 'closed'))
+        self.assertFalse(self.form.is_valid())
+        self.assertTrue(self.form.has_error(NON_FIELD_ERRORS, 'closed'))
 
     def test_dining_list_closed_owner(self):
         """Closed exception for list owner"""
         self.dining_list.sign_up_deadline = datetime(2000, 1, 1, tzinfo=timezone.utc)  # Close list
         self.dining_entry.created_by = self.user  # Entry creator is dining list owner
-        form = DiningEntryUserCreateForm(self.post_data, instance=self.dining_entry)
-        self.assertTrue(form.is_valid())
+        self.assertTrue(self.form.is_valid())
 
     def test_dining_list_no_room(self):
         self.dining_list.max_diners = 0
-        form = DiningEntryUserCreateForm(self.post_data, instance=self.dining_entry)
-        self.assertFalse(form.is_valid())
-        self.assertTrue(form.has_error(NON_FIELD_ERRORS, 'full'))
+        self.assertFalse(self.form.is_valid())
+        self.assertTrue(self.form.has_error(NON_FIELD_ERRORS, 'full'))
 
     def test_dining_list_no_room_owner(self):
         self.dining_list.max_diners = 0
         self.dining_entry.created_by = self.user  # Entry creator is dining list owner
-        form = DiningEntryUserCreateForm(self.post_data, instance=self.dining_entry)
-        self.assertTrue(form.is_valid())
+        self.assertTrue(self.form.is_valid())
 
     def test_race_condition_max_diners(self):
         """Note! As long as this test passes, the race condition is present! Ideally therefore you'd want this test case
@@ -98,19 +93,17 @@ class DiningEntryUserCreateFormTestCase(TestCase):
         self.dining_list.limit_signups_to_association_only = True
         UserMembership.objects.create(related_user=self.user2, association=self.association,
                                       is_verified=True, verified_on=timezone.now())
-        self.assertTrue(DiningEntryUserCreateForm(self.post_data, instance=self.dining_entry).is_valid())
+        self.assertTrue(self.form.is_valid())
 
     def test_limited_to_association_is_not_member(self):
         self.dining_list.limit_signups_to_association_only = True
-        form = DiningEntryUserCreateForm(self.post_data, instance=self.dining_entry)
-        self.assertFalse(form.is_valid())
-        self.assertTrue(form.has_error(NON_FIELD_ERRORS, 'members_only'))
+        self.assertFalse(self.form.is_valid())
+        self.assertTrue(self.form.has_error(NON_FIELD_ERRORS, 'members_only'))
 
     def test_balance_too_low(self):
         FixedTransaction.objects.create(source_user=self.user2, amount=Decimal('99'))
-        form = DiningEntryUserCreateForm(self.post_data, instance=self.dining_entry)
-        self.assertFalse(form.is_valid())
-        self.assertTrue(form.has_error(NON_FIELD_ERRORS, 'nomoneyzz'))
+        self.assertFalse(self.form.is_valid())
+        self.assertTrue(self.form.has_error(NON_FIELD_ERRORS, 'nomoneyzz'))
 
     def test_balance_too_low_exception(self):
         # Make user member of association with exception
@@ -118,8 +111,11 @@ class DiningEntryUserCreateFormTestCase(TestCase):
         UserMembership.objects.create(related_user=self.user2, association=assoc, is_verified=True,
                                       verified_on=timezone.now())
         FixedTransaction.objects.create(source_user=self.user2, amount=Decimal('99'))
-        form = DiningEntryUserCreateForm(self.post_data, instance=self.dining_entry)
-        self.assertTrue(form.is_valid())
+        self.assertTrue(self.form.is_valid())
+
+    def test_invalid_user(self):
+        self.post_data['user'] = '100'
+        self.assertFalse(self.form.is_valid())
 
 
 class DiningEntryExternalCreateFormTestCase(TestCase):

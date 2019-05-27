@@ -23,19 +23,10 @@ body {
     background-color: #212121;
 }
 
-/* CSS corrections for Awesomplete */
-.awesomplete {
-    color: #000000;
-    width: 100%;
+/* CSS corrections for Select2 */
+.select2-container {
+    color: #495057;
 }
-.awesomplete mark {
-    padding: 0;
-}
-.awesomplete > ul {
-    transition: unset;
-}
-
-.awesomplete ~ .invalid-feedback{
-    /* Make sure that awesomplete doesn't hide any error message*/
-    display: block;
+.select2-selection {
+    background-color: #fff;
 }

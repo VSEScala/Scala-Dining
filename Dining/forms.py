@@ -1,5 +1,6 @@
 import warnings
 
+from dal_select2.widgets import ModelSelect2
 from django import forms
 from django.conf import settings
 from django.db.models import OuterRef, Exists
@@ -163,10 +164,17 @@ class DiningEntryUserCreateForm(forms.ModelForm):
     class Meta:
         model = DiningEntryUser
         fields = ['user']
+        widgets = {
+            # User needs to type at least 1 character, could change it to 2
+            'user': ModelSelect2(url='people_autocomplete', attrs={'data-minimum-input-length': '1'})
+        }
 
     def get_user(self):
         """Returns the user responsible for the kitchen cost (not necessarily creator)"""
-        return self.cleaned_data.get('user')
+        user = self.cleaned_data.get('user')
+        if not user:
+            raise ValidationError("User not provided")
+        return user
 
     def clean(self):
         cleaned_data = super().clean()

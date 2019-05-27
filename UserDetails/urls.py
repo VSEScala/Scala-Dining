@@ -2,7 +2,7 @@ from django.urls import path, include
 from allauth.account.views import LoginView
 
 from CreditManagement.views import TransactionAddView
-from .views import RegisterView, DiningJoinHistoryView, DiningClaimHistoryView
+from .views import RegisterView, DiningJoinHistoryView, DiningClaimHistoryView, PeopleAutocompleteView
 from .views_user_settings import SettingsProfileView
 from .views_association import CreditsOverview, TransactionsCsvView, MembersOverview, MembersEditView, \
     AssociationOverview
@@ -30,5 +30,7 @@ urlpatterns = [
     # Override allauth login and sign up page with our registration page
     path('login/', LoginView.as_view(), name='account_login'),
     path('signup/', RegisterView.as_view(), name='account_signup'),
+
+    path('people-autocomplete/', PeopleAutocompleteView.as_view(), name='people_autocomplete'),
 
 ]
