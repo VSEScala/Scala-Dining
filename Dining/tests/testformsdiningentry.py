@@ -145,24 +145,41 @@ class DiningEntryExternalCreateFormTestCase(TestCase):
 
 
 class DiningEntryDeleteFormTestCase(TestCase):
+    def setUp(self):
+        self.user1 = User.objects.create_user('ankie', email='ankie@universe.cat')
+        self.user2 = User.objects.create_user('noortje', email='noortje@universe.cat')
+        self.dining_list = DiningList(claimed_by=self.user1, date=date(2100, 1, 1),
+                                      sign_up_deadline=datetime(2100, 1, 1, tzinfo=timezone.utc))
+        self.entry = DiningEntryUser(user=self.user2, created_by=self.user2, dining_list=self.dining_list)
+        self.form = DiningEntryDeleteForm(self.entry, self.user2, {})
 
-    def test_remove_on_close(self):
-        # Setup
-        user1 = User.objects.create_user('noortje', email="noortje@universe.cat")
-        user2 = User.objects.create_user('ankie', email="ankie@universe.cat")
-        dl = _create_dining_list(date=date(2100, 1, 1), claimed_by=user1)
-        e1 = DiningEntry.objects.create(user=user1, created_by=user1, dining_list=dl)
-        e2 = DiningEntry.objects.create(user=user2, created_by=user2, dining_list=dl)
+    def test_valid(self):
+        self.assertTrue(self.form.is_valid())
 
-        # Set the new date in the past
-        dl.sign_up_deadline = timezone.now()
-        dl.save()
+    def test_no_permission_invalid_user(self):
+        self.entry.user = self.user1
+        self.entry.created_by = self.user1
+        self.assertFalse(self.form.is_valid())
 
-        # Check user deletion forms
-        # Claimer can delete user
-        form = DiningEntryDeleteForm(user1, e1)
+    def test_no_permission_owner_exception(self):
+        # User 1 is owner so should be able to remove user 2
+        form = DiningEntryDeleteForm(self.entry, self.user1, {})
         self.assertTrue(form.is_valid())
-        # Others can not delete themselves
-        form = DiningEntryDeleteForm(user2, e2)
-        self.assertFalse(form.is_valid())
-        self.assertTrue(form.has_error(NON_FIELD_ERRORS, 'closed'))
+
+    def test_no_permission_created_by_exception(self):
+        # User is not equal to deleter but the deleter did create the entry
+        self.entry.user = self.user1
+        self.assertTrue(self.form.is_valid())
+
+    def test_dining_list_closed(self):
+        self.dining_list.sign_up_deadline = datetime(2001, 1, 1, tzinfo=timezone.utc)
+        self.assertFalse(self.form.is_valid())
+
+    def test_dining_list_closed_exception(self):
+        self.dining_list.sign_up_deadline = datetime(2001, 1, 1, tzinfo=timezone.utc)
+        form = DiningEntryDeleteForm(self.entry, self.user1, {})
+        self.assertTrue(form.is_valid())
+
+    def test_dining_list_not_adjustable(self):
+        self.dining_list.date = date(2001, 1, 1)
+        self.assertFalse(self.form.is_valid())

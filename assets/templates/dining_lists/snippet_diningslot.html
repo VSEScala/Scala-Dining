@@ -28,32 +28,30 @@
     </div>
 
     {% if interactive %}
-        {% with slot|can_join:request.user as can_join %}
-            {% if not slot.is_open and slot|has_joined:request.user %}
-                <div class="col-2 slot-signed"></div>
-            {% endif %}
-
-            {# Create the clickable frame overlay #}
-            {% url 'slot_details' day=date.day month=date.month year=date.year identifier=slot.association.slug as url %}
-            <a class="slot-back" href={{ url }}></a>
+        {# Create the clickable frame overlay #}
+        {% url 'slot_details' day=date.day month=date.month year=date.year identifier=slot.association.slug as url %}
+        <a class="slot-back" href={{ url }}></a>
 
 
-            {% if can_join %}
-                {% url 'entry_add' day=date.day month=date.month year=date.year identifier=slot.association.slug as url%}
-                {% url 'slot_details' day=date.day month=date.month year=date.year identifier=slot.association.slug as next%}
-                <form method="post" action="{{ url }}?next={{ next }}" class="btn-block col-2 slot-signup d-inline-flex">
-                    {% csrf_token %}
-                    <input type="hidden" name="user" value="{{ user.pk }}">
-                    <button type="submit" class="btn-block btn btn-primary slot-signup"></button>
-                </form>
-            {% elif slot|has_joined:request.user and slot.is_open %}
-                {% url 'entry_remove' day=date.day month=date.month year=date.year identifier=slot.association.slug as url %}
-                {% url 'day_view' day=date.day month=date.month year=date.year as next%}
-                <form method="post" action="{{ url }}?next={{ next }}" class="btn-block col-2 slot-signup d-inline-flex">
-                    {% csrf_token %}
-                    <button type="submit" class="btn-block btn btn-primary slot-unlist"></button>
-                </form>
-            {% endif %}
-        {% endwith %}
+        {% if slot|can_join:user %}
+            {% url 'entry_add' day=date.day month=date.month year=date.year identifier=slot.association.slug as url%}
+            {% url 'slot_details' day=date.day month=date.month year=date.year identifier=slot.association.slug as next%}
+            <form method="post" action="{{ url }}?next={{ next }}" class="btn-block col-2 slot-signup d-inline-flex">
+                {% csrf_token %}
+                <input type="hidden" name="user" value="{{ user.pk }}">
+                <button type="submit" class="btn-block btn btn-primary slot-signup"></button>
+            </form>
+        {% else %}
+            {% with entry=slot|get_entry:user %}
+                {% if entry and entry|can_delete_entry:user %}
+                    {% url 'entry_delete' pk=entry.pk as url %}
+                    {% url 'day_view' day=date.day month=date.month year=date.year as next %}
+                    <form method="post" action="{{ url }}?next={{ next }}" class="btn-block col-2 slot-signup d-inline-flex">
+                        {% csrf_token %}
+                        <button type="submit" class="btn-block btn btn-primary slot-unlist"></button>
+                    </form>
+                {% endif %}
+            {% endwith %}
+        {% endif %}
     {% endif %}
 </div>

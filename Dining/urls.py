@@ -13,11 +13,10 @@ urlpatterns = [
             path('', views.SlotInfoView.as_view(), name='slot_details'),
             path('list/', views.SlotListView.as_view(), name='slot_list'),
             path('allergy/', views.SlotAllergyView.as_view(), name='slot_allergy'),
-            path('entry/remove/', views.EntryRemoveView.as_view(), name='entry_remove'),
-            path('entry/remove/<int:entry_id>/', views.EntryRemoveView.as_view(), name='entry_remove'),
             path('entry/add/', views.EntryAddView.as_view(), name='entry_add'),
             path('change/', views.SlotInfoChangeView.as_view(), name='slot_change'),
-            path('remove/', views.SlotDeleteView.as_view(), name='slot_delete'),
+            path('delete/', views.SlotDeleteView.as_view(), name='slot_delete'),
         ])),
     ])),
+    path('entries/<int:pk>/delete/', views.EntryDeleteView.as_view(), name='entry_delete'),
 ]
