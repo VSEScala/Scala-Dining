@@ -6,6 +6,3 @@ class AssociationProvider(OAuth2Provider):
 
     # Url for association logo for display
     logo = None
-
-    # Slug for association that's used for creating an automatic verified membership
-    association_slug = None
