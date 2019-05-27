@@ -1,3 +1,4 @@
+from allauth.socialaccount.models import SocialApp
 from django.contrib.auth.models import AbstractUser, Group
 from django.db import models
 from django.utils import timezone
@@ -93,6 +94,8 @@ class Association(Group):
                                        help_text="If checked, this association can be chosen as membership by users")
     has_min_exception = models.BooleanField(default=False,
                                             help_text="If checked, this association has an exception to the minimum balance")
+    social_app = models.ForeignKey(SocialApp, on_delete=models.PROTECT, null=True, blank=True,
+                                   help_text='A user automatically becomes member of the association if she signs up using this social app')
 
     @cached_property
     def requires_action(self):
