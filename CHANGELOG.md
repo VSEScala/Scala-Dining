@@ -1,6 +1,6 @@
 # Changelog
 
-### Current
+### 2019-05-27
 
 * New autocomplete widget
 
