@@ -28,7 +28,7 @@ class DiningListManager(models.Manager):
         Returns the number of available slots on the given date.
         """
         # Get slots occupied by announcements
-        announce_slots = DiningDayAnnouncements.objects.filter(date=date).aggregate(Sum('slots_occupy'))
+        announce_slots = DiningDayAnnouncement.objects.filter(date=date).aggregate(Sum('slots_occupy'))
         announce_slots = 0 if announce_slots['slots_occupy__sum'] is None else announce_slots['slots_occupy__sum']
         return settings.MAX_SLOT_NUMBER - len(self.filter(date=date)) - announce_slots
 
@@ -48,11 +48,11 @@ class DiningList(models.Model):
     adjustable_duration = models.DurationField(
         default=settings.TRANSACTION_PENDING_DURATION,
         help_text="The amount of time the dining list can be adjusted after its date")
-    claimed_by = models.ForeignKey(settings.AUTH_USER_MODEL, blank=True, related_name="dininglist_claimer", null=True,
-                                   on_delete=models.SET_NULL)
+    claimed_by = models.ForeignKey(settings.AUTH_USER_MODEL, related_name="dininglist_claimer",
+                                   on_delete=models.PROTECT)
     # Association is needed for kitchen cost transactions and url calculation and is therefore required and may not be
     # changed.
-    association = models.ForeignKey(Association, on_delete=models.CASCADE, unique_for_date="date")
+    association = models.ForeignKey(Association, on_delete=models.PROTECT)
     # Todo: implement limit in the views.
     limit_signups_to_association_only = models.BooleanField(
         default=False, help_text="Whether only members of the given association can sign up")
@@ -61,18 +61,18 @@ class DiningList(models.Model):
     purchaser = models.ForeignKey(settings.AUTH_USER_MODEL, related_name="dininglist_purchaser", blank=True, null=True,
                                   on_delete=models.SET_NULL)
 
-    # Kitchen cost may not be changed after creation
     kitchen_cost = models.DecimalField(decimal_places=2, verbose_name="kitchen cost per person", max_digits=10,
                                        default=settings.KITCHEN_COST, validators=[MinValueValidator(Decimal('0.00'))])
 
     dining_cost = models.DecimalField(decimal_places=2, verbose_name="dinner cost per person", max_digits=5,
-                                             blank=True, null=True, default=0,
-                                             validators=[MinValueValidator(Decimal('0.00'))])
+                                      blank=True, null=True, default=None,
+                                      validators=[MinValueValidator(Decimal('0.00'))])
 
     auto_pay = models.BooleanField(default=False)
 
     payment_link = models.CharField(blank=True, max_length=100, help_text=_('Link for payment, e.g. a Tikkie link.'))
 
+    # min_diners can be set to a negative value. Is not really problematic though
     min_diners = models.IntegerField(default=4, validators=[MaxValueValidator(settings.MAX_SLOT_DINER_MINIMUM)])
     max_diners = models.IntegerField(default=20, validators=[MinValueValidator(settings.MIN_SLOT_DINER_MAXIMUM)])
 
@@ -81,111 +81,35 @@ class DiningList(models.Model):
 
     objects = DiningListManager()
 
-    def save(self, *args, **kwargs):
-        # Set the sign-up deadline to it's default value if none was provided.
-        if not self.pk and not self.sign_up_deadline:
-            loc_time = timezone.datetime.combine(self.date, settings.DINING_LIST_CLOSURE_TIME)
-            loc_time = timezone.get_default_timezone().localize(loc_time)
-            self.sign_up_deadline = loc_time
-
-        # Safety check for kitchen cost
-        if self.pk and self.kitchen_cost != DiningList.objects.get(pk=self.pk).kitchen_cost:
-            raise ValueError("Kitchen cost can't be changed after creation.")
-
-        super().save(*args, **kwargs)
-
     def get_purchaser(self):
-        """
-        Returns the user who purchased for the dining list
-        :return: The purchaser
-        """
-        if self.purchaser is None:
-            if self.claimed_by is None:
-                return self.association
-            else:
-                return self.claimed_by
-        else:
-            return self.purchaser
+        """Returns the user who purchased for the dining list"""
+        return self.purchaser if self.purchaser else self.claimed_by
 
     def is_authorised_user(self, user):
         return user == self.claimed_by or user == self.purchaser
 
-    def get_number_paid(self):
-        """
-        Returns the number of people who have paid
-        :return:
-        """
-        return DiningEntry.objects.filter(dining_list=self, has_paid=True).count()
-
     def is_adjustable(self):
-        """
-        Whether the dining list has not expired it's adjustable date and can therefore not be modified anymore
-        """
+        """Whether the dining list has not expired it's adjustable date and can therefore not be modified anymore"""
         days_since_date = (self.date + self.adjustable_duration)
         return days_since_date >= timezone.now().date()
 
     def clean(self):
         # Validate dining list can be changed
-        # This also blocks changes for dining entries!
         if self.pk and not self.is_adjustable():
-            raise ValidationError(gettext('The dining list is not adjustable.'), code='not_adjustable')
-
-        if self.sign_up_deadline and self.sign_up_deadline.date() > self.date:
-            raise ValidationError(
-                {'sign_up_deadline': ["Sign up deadline can not be later than the day dinner is served."]})
-
-        # Check if purchaser is present when using auto pay
-        if self.auto_pay and not self.get_purchaser():
-            raise ValidationError(
-                {'purchaser': ValidationError('When autopay is enabled, a purchaser must be defined.', code='invalid')})
+            raise ValidationError(gettext('The dining list is not adjustable'), code='closed')
+        # Set sign up deadline if it hasn't been set already
+        if not self.sign_up_deadline:
+            loc_time = timezone.datetime.combine(self.date, settings.DINING_LIST_CLOSURE_TIME)
+            loc_time = timezone.get_default_timezone().localize(loc_time)
+            self.sign_up_deadline = loc_time
 
     def is_open(self):
-        """
-        Whether normal users can sign in/out for the dining list (i.e. the deadline has not expired)
-        """
+        """Whether normal users can sign in/out for the dining list (i.e. the deadline has not expired)"""
         return timezone.now() < self.sign_up_deadline
 
     def has_room(self):
-        """
-        Determines whether this dining list can have more entries
-        :return: Whether this list can get more entries
-        """
+        """Determines whether this dining list can have more entries"""
         return self.diners.count() < self.max_diners
-
-    def can_add_diners(self, user, check_for_self=False):
-        """
-        Determines if a user can add diners to a certain dining list
-        :param check_for_self: whether this user wants to add himself
-        :param user: The user intending to join
-        :return: If the user can join the list
-        """
-        # If the dining list no longer adjustable
-        if not self.is_adjustable():
-            return False
-
-        if check_for_self:
-            # if user is already on list
-
-            if self.internal_dining_entries().filter(user=user).count() > 0:
-                return False
-            # if user is signed up to other closed dinging lists
-            if len(DiningEntry.objects.filter(dining_list__date=self.date,
-                                              dining_list__sign_up_deadline__lte=datetime.now(),
-                                              user=user)) > 0:
-                return False
-
-        # if user is owner, he can do anything he can set his mind to. Don't let his dreams be dreams!
-        if self.is_authorised_user(user):
-            return True
-
-        # if dining list is closed
-        if not (self.is_open() and self.has_room()):
-            return False
-
-        if self.limit_signups_to_association_only:
-            if user.usermembership_set.filter(association=self.association).count() == 0:
-                return False
-        return True
 
     def __str__(self):
         return "{} - {} by {}".format(self.date, self.association.slug, self.claimed_by)
@@ -204,54 +128,49 @@ class DiningList(models.Model):
         """All dining entries that are not for external people."""
         return DiningEntryExternal.objects.filter(dining_list=self)
 
+    def clean_fields(self, exclude=None):
+        super().clean_fields(exclude=exclude)
+        # Valid sign up deadline
+        if not exclude or 'sign_up_deadline' not in exclude:
+            if self.sign_up_deadline and self.sign_up_deadline.date() > self.date:
+                raise ValidationError(
+                    {'sign_up_deadline': ["Sign up deadline can't be later than the day dinner is served"]})
+
 
 class DiningEntry(models.Model):
-    """
-    Represents an entry on a dining list.
+    """Represents an entry on a dining list"""
 
-    Do not change dining_list, user and added_by after creation!
-    """
-
-    # Dining list value should never be changed
-    dining_list = models.ForeignKey(DiningList, on_delete=models.CASCADE, related_name='dining_entries')
-    # User value should never be changed, is responsible for the money required
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    dining_list = models.ForeignKey(DiningList, on_delete=models.PROTECT, related_name='dining_entries')
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT,
+                                   related_name='created_dining_entries')
 
     has_paid = models.BooleanField(default=False)
 
-
-    def clean(self):
-        """
-        This actually has a race condition problem which makes it possible to create more entries than max_diners, and
-        it is also possible to add yourself multiple times! This is however very hard to prevent, although we could use
-        a mutex lock for the time between validation and saving.
-        """
-        if not self.pk:
-            # Validate user is not already subscribed for the dining list
-            if self.get_internal() and self.dining_list.internal_dining_entries().filter(user=self.user).exists():
-                raise ValidationError(gettext('This user is already subscribed to the dining list'))
-
-            # (Optionally) validate if user is not already on another dining list
-            # if DiningList.objects.filter(date=self.dining_list.date, dining_entries__user=self.user)
-
-    def get_internal(self):
+    def get_subclass(self):
+        """Return an instance of the correct subclass, either DiningEntryUser or DiningEntryExternal"""
         try:
             return self.diningentryuser
         except DiningEntryUser.DoesNotExist:
-            return None
-
-    def get_external(self):
+            pass
         try:
             return self.diningentryexternal
         except DiningEntryExternal.DoesNotExist:
-            return None
+            pass
+        raise RuntimeError("Invalid DiningEntry")
 
-    def name(self):
-        external = self.get_external()
-        if external:
-            return external.name
-        else:
-            return self.user
+    def get_name(self):
+        """Return name of diner"""
+        return self.user.get_full_name()
+
+    def is_internal(self):
+        return True
+
+    def is_external(self):
+        return not self.is_internal()
+
+    def __str__(self):
+        return "{}: {}".format(self.dining_list.date, self.get_name())
 
 
 class DiningWork(models.Model):
@@ -265,27 +184,20 @@ class DiningWork(models.Model):
 
 
 class DiningEntryUser(DiningEntry, DiningWork):
-    added_by = models.ForeignKey(User, related_name="added_entry_on_dining", on_delete=models.SET_DEFAULT, blank=True,
-                                 default=None, null=True)
-
     def clean(self):
-        super().clean()
-        if not self.pk:
-            try:
-                if DiningEntryUser.objects.filter(dining_list=self.dining_list, user=self.user).exists():
-                    raise ValidationError(_("User is already on this dining list."))
-            except ObjectDoesNotExist:
-                raise ValidationError("Dining entry object has no dining list")
-
-    def __str__(self):
-        return "{}: {}".format(self.dining_list.date, self.user)
+        if not self.pk and hasattr(self, 'user') and hasattr(self, 'dining_list'):
+            if DiningEntryUser.objects.filter(user=self.user, dining_list=self.dining_list).exists():
+                raise ValidationError("User is already on the dining list")
 
 
 class DiningEntryExternal(DiningEntry):
-    name = models.CharField(max_length=40)
+    name = models.CharField(max_length=100)
 
-    def __str__(self):
-        return "{}: {}".format(self.dining_list, self.name)
+    def get_name(self):
+        return self.name
+
+    def is_internal(self):
+        return False
 
 
 class DiningComment(models.Model):
@@ -330,10 +242,10 @@ class DiningCommentVisitTracker(AbstractVisitTracker):
         return timestamp
 
 
-class DiningDayAnnouncements(models.Model):
+class DiningDayAnnouncement(models.Model):
     date = models.DateField()
-    title = models.CharField(max_length=15)
-    text = models.CharField(max_length=240)
+    title = models.CharField(max_length=100)
+    text = models.TextField()
     slots_occupy = models.IntegerField(default=0, help_text="The amount of slots this occupies")
 
     def __str__(self):

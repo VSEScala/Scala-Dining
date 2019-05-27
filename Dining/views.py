@@ -2,7 +2,6 @@ import csv
 from datetime import date
 
 from django.contrib import messages
-from django.contrib.auth import get_user_model
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import NON_FIELD_ERRORS
 from django.db.models import Q, Count
@@ -13,6 +12,7 @@ from django.utils.http import is_safe_url
 from django.utils.translation import gettext as _
 from django.views.generic import TemplateView, View
 from django.views.generic.base import ContextMixin
+from django.views.generic.detail import SingleObjectMixin
 from django.views.generic.edit import DeleteView
 
 from Dining.datesequence import sequenced_date
@@ -116,7 +116,7 @@ class DayView(LoginRequiredMixin, DayMixin, TemplateView):
         context = super().get_context_data(**kwargs)
 
         context['dining_lists'] = DiningList.objects.filter(date=self.date)
-        context['Announcements'] = DiningDayAnnouncements.objects.filter(date=self.date)
+        context['Announcements'] = DiningDayAnnouncement.objects.filter(date=self.date)
 
         # Check if create slot button must be shown
         # (but I prefer to only check when claiming to reduce code)
@@ -198,7 +198,7 @@ class DailyDinersCSVView(LoginRequiredMixin, View):
             # Get all associated memberships
             memberships = []
             for association in associations:
-                if user.is_member_of(association):
+                if user.is_verified_member_of(association):
                     memberships.append(1)
                 else:
                     memberships.append(0)
@@ -217,13 +217,13 @@ class NewSlotView(LoginRequiredMixin, DayMixin, TemplateView):
 
     def get(self, request, *args, **kwargs):
         context = self.get_context_data()
-        context['slot_form'] = CreateSlotForm(self.request.user, context['date'])
+        context['slot_form'] = CreateSlotForm(instance=DiningList(claimed_by=request.user, date=self.date))
         return self.render_to_response(context)
 
     def post(self, request, *args, **kwargs):
         context = self.get_context_data()
 
-        form = CreateSlotForm(request.user, self.date, request.POST)
+        form = CreateSlotForm(request.POST, instance=DiningList(claimed_by=request.user, date=self.date))
 
         if form.is_valid():
             dining_list = form.save()
@@ -259,7 +259,8 @@ class EntryAddView(LoginRequiredMixin, DiningListMixin, TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context.update({
-            'all_users': User.objects.all(),
+            'user_form': DiningEntryUserCreateForm(),
+            'external_form': DiningEntryExternalCreateForm(),
         })
         return context
 
@@ -269,15 +270,15 @@ class EntryAddView(LoginRequiredMixin, DiningListMixin, TemplateView):
 
         # Do form shenanigans
         if 'add_external' in request.POST:
-            entry = DiningEntryExternal(user=request.user, dining_list=self.dining_list)
+            entry = DiningEntryExternal(user=request.user, dining_list=self.dining_list, created_by=request.user)
             form = DiningEntryExternalCreateForm(request.POST, instance=entry)
         else:
-            form = DiningEntryUserCreateForm(request.user, self.dining_list, data=request.POST)
+            entry = DiningEntryUser(dining_list=self.dining_list, created_by=request.user)
+            form = DiningEntryUserCreateForm(request.POST, instance=entry)
 
         if form.is_valid():
             entry = form.save()
             # Construct success message
-            # Not the best if check but entry.get_internal() didn't work for some reason
             if isinstance(entry, DiningEntryUser):
                 if entry.user == request.user:
                     msg = _("You successfully joined the dining list")
@@ -293,7 +294,7 @@ class EntryAddView(LoginRequiredMixin, DiningListMixin, TemplateView):
                     messages.error(request, "{}: {}".format(field, error) if field != NON_FIELD_ERRORS else error)
 
         # Redirect to next if provided, else to the diner list if successful, else to self
-        next_url = request.GET.get('next', None)
+        next_url = request.GET.get('next')
         if next_url and is_safe_url(next_url, request.get_host()):
             return HttpResponseRedirect(next_url)
         if form.is_valid():
@@ -302,44 +303,39 @@ class EntryAddView(LoginRequiredMixin, DiningListMixin, TemplateView):
         return HttpResponseRedirect(self.reverse('entry_add'))
 
 
-class EntryRemoveView(LoginRequiredMixin, DiningListMixin, View):
-    def post(self, request, *args, entry_id=None, **kwargs):
-        if entry_id:
-            entry = get_object_or_404(DiningEntry, id=entry_id)
+class EntryDeleteView(LoginRequiredMixin, SingleObjectMixin, View):
+    model = DiningEntry
+
+    def post(self, request, *args,**kwargs):
+        # Determine success message before it's actually deleted
+        entry = self.get_object().get_subclass()
+        if entry.is_internal() and entry.user == request.user:
+            success_msg = "You are removed from the dining list"
+        elif entry.is_external():
+            success_msg = "The external diner is removed from the dining list"
         else:
-            entry = get_object_or_404(DiningEntryUser, dining_list=self.dining_list, user=request.user)
+            success_msg = "The user is removed from the dining list"
 
         # Process deletion
-        form = DiningEntryDeleteForm(request.user, entry)
+        form = DiningEntryDeleteForm(entry, request.user, {})
         if form.is_valid():
             form.execute()
-            if entry_id:
-                message = _('The user is removed from the dining list')
-            else:
-                message = _('You are removed from the dining list')
-            messages.success(request, message)
+            messages.success(request, success_msg)
         else:
-            for field, errors in form.errors.items():
-                for error in errors:
-                    messages.error(request, error)
+            for error in form.non_field_errors():
+                messages.error(request, error)
 
         # Go to next
-        next = request.GET.get('next')
-        if not is_safe_url(next, request.get_host()):
-            next = self.reverse('slot_list')
+        next_url = request.GET.get('next')
+        if not next_url or not is_safe_url(next_url, request.get_host()):
+            next_url = entry.dining_list.get_absolute_url()
 
-        return HttpResponseRedirect(next)
+        return HttpResponseRedirect(next_url)
 
 
 class SlotMixin(DiningListMixin):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-
-        context['is_open'] = self.dining_list.is_open()
-        context['user_is_on_list'] = self.dining_list.internal_dining_entries().filter(user=self.request.user).exists()
-        context['user_can_add_self'] = self.dining_list.can_add_diners(self.request.user, check_for_self=True)
-        context['user_can_add_others'] = self.dining_list.can_add_diners(self.request.user)
-
         # Get the amount of messages
         context['comments_total'] = self.dining_list.diningcomment_set.count()
         # Get the amount of unread messages
@@ -363,16 +359,8 @@ class SlotListView(LoginRequiredMixin, SlotMixin, TemplateView):
         context['entries'] = self.dining_list.dining_entries\
             .select_related('user', 'diningentryuser','diningentryexternal').order_by('user__first_name')
 
-        # determine whether the user has external entries added that he/she can remove until closing time
-        context['can_delete_some'] = \
-            self.dining_list.external_dining_entries().filter(user=self.request.user).count() > 0
-        context['can_delete_some'] = context['can_delete_some'] * context['is_open']
-
         context['can_edit_stats'] = (self.request.user == self.dining_list.claimed_by)
-        context['can_delete_all'] = (self.dining_list.is_authorised_user(self.request.user))
-        purchaser = self.dining_list.purchaser
         context['can_edit_pay'] = self.request.user == self.dining_list.get_purchaser()
-        context['show_delete_column'] = context['can_delete_all'] or context['can_delete_some']
         return context
 
     def post(self, request, *args, **kwargs):
@@ -490,56 +478,62 @@ class SlotInfoView(LoginRequiredMixin, SlotMixin, TemplateView):
 class SlotInfoChangeView(LoginRequiredMixin, SlotMixin, TemplateView):
     template_name = "dining_lists/dining_slot_info_alter.html"
 
-    def get(self, request, *args, **kwargs):
-        context = self.get_context_data()
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
 
-        if self.dining_list.claimed_by == request.user:
-            context['info_form'] = DiningInfoForm(instance=self.dining_list)
+        if self.dining_list.claimed_by == self.request.user:
+            context['info_form'] = DiningInfoForm(instance=self.dining_list, prefix='info')
 
-        if self.dining_list.get_purchaser() == request.user:
-            context['payment_form'] = DiningPaymentForm(instance=self.dining_list)
+        if self.dining_list.get_purchaser() == self.request.user:
+            context['payment_form'] = DiningPaymentForm(instance=self.dining_list, prefix='payment')
 
-        if context.get('info_form') is None and context.get('payment_form') is None:
+        if not context.get('info_form') and not context.get('payment_form'):
             # User is not allowed on this page
-            return HttpResponseForbidden()
-
-        return self.render_to_response(context)
+            raise PermissionDenied
+        return context
 
     def post(self, request, *args, **kwargs):
-        context = self.get_context_data()
-
-        is_valid = True
-        can_change = False
-
-        context['payment_form'] = None
+        context = self.get_context_data(**kwargs)
 
         # Check if the active user is the current user, if checked after the general info, the local object could have
         # it's information changed causing usage errors
         is_purchaser = self.dining_list.get_purchaser() == request.user
 
-        # Check general info
+        """
+        ## Story time
+        This suffered from the most awesome bug. Earlier, one form would be saved if it was valid, even when the other
+        form wasn't valid. E.g. when the info form was not valid while the payment form is actually valid, the payment
+        form would get saved. However the payment form uses the same dining list instance as for the info form, and
+        invalid field values of the info form do get applied to the dining list instance, they are just normally not
+        saved in the database because the form would be invalid. However the payment form is valid and therefore saves
+        the dining list anyway, with the invalid field values.
+        
+        An explicit include of only fields that were part of the form during saving prevented the bug from manifesting
+        (perhaps it was meant that way?).
+        """
+
+        info_form = None
+        payment_form = None
+
         if self.dining_list.claimed_by == request.user:
-            can_change = True
-            context['info_form'] = DiningInfoForm(request.POST, instance=self.dining_list)
-            if context['info_form'].is_valid():
-                context['info_form'].save()
-            else:
-                is_valid = False
+            info_form = DiningInfoForm(request.POST, instance=self.dining_list, prefix='info')
 
         if is_purchaser:
-            can_change = True
-            context['payment_form'] = DiningPaymentForm(request.POST, instance=self.dining_list)
-            if context['payment_form'].is_valid():
-                context['payment_form'].save()
-            else:
-                is_valid = False
+            payment_form = DiningPaymentForm(request.POST, instance=self.dining_list, prefix='payment')
 
-        # Redirect if forms were all valid, stay otherwise
-        if not can_change:
-            return HttpResponseForbidden()
-        elif is_valid:
-            messages.add_message(request, messages.SUCCESS, "Changes successfully saved")
+        # Save and redirect if forms are valid, stay otherwise
+        if (not info_form or info_form.is_valid()) and (not payment_form or payment_form.is_valid()):
+            if info_form:
+                info_form.save()
+            if payment_form:
+                payment_form.save()
+            messages.success(request, "Changes successfully saved")
             return HttpResponseRedirect(self.reverse('slot_details'))
+
+        context.update({
+            'info_form': info_form,
+            'payment_form': payment_form,
+        })
 
         return self.render_to_response(context)
 

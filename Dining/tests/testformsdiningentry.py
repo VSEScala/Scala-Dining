@@ -1,98 +1,181 @@
-from datetime import date
+from datetime import date, datetime, time
+from decimal import Decimal
+
 from django.test import TestCase
 from django.utils import timezone
 from django.core.exceptions import NON_FIELD_ERRORS
 
-from Dining.forms import DiningEntryUserCreateForm, DiningEntryDeleteForm
-from Dining.models import DiningEntry, DiningList
-from UserDetails.models import User, Association
+from CreditManagement.models import FixedTransaction
+from Dining.forms import DiningEntryUserCreateForm, DiningEntryDeleteForm, DiningEntryExternalCreateForm
+from Dining.models import DiningEntry, DiningList, DiningEntryUser, DiningEntryExternal
+from UserDetails.models import User, Association, UserMembership
 
 
 def _create_dining_list(**kwargs):
     """
-    Creates a dining list with default date and association if omitted.
+    Creates a dining list with defaults if omitted.
     """
-    if not 'association' in kwargs:
+    if 'association' not in kwargs:
         kwargs['association'] = Association.objects.create()
-    if not 'date' in kwargs:
+    if 'date' not in kwargs:
         kwargs['date'] = date(2018, 1, 4)
+    if 'sign_up_deadline' not in kwargs:
+        kwargs['sign_up_deadline'] = datetime.combine(kwargs['date'], time(17, 00))
+    if 'claimed_by' not in kwargs:
+        kwargs['claimed_by'] = User.objects.create_user('tessa', 'tessa@punt.nl')
     return DiningList.objects.create(**kwargs)
 
 
-class DiningEntryCreateFormTestCase(TestCase):
+class DiningEntryUserCreateFormTestCase(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.association = Association.objects.create()
+        cls.user = User.objects.create_user('jan')
+        cls.user2 = User.objects.create_user('noortje', email='noortje@cat.cat')
+
+    def setUp(self):
+        # Not in setUpTestData to ensure that it is fresh for every test case
+        self.dining_list = DiningList.objects.create(date=date(2089, 1, 1), association=self.association,
+                                                     claimed_by=self.user,
+                                                     sign_up_deadline=datetime(2088, 1, 1, tzinfo=timezone.utc))
+        self.dining_entry = DiningEntryUser(dining_list=self.dining_list, created_by=self.user2)
+        self.post_data = {'user': str(self.user2.pk)}
+        self.form = DiningEntryUserCreateForm(self.post_data, instance=self.dining_entry)
 
     def test_form(self):
-        # Todo: test creation
-        pass
+        self.assertTrue(self.form.is_valid())
+
+    def test_dining_list_not_adjustable(self):
+        self.dining_list.date = date(2000, 1, 2)
+        self.dining_list.sign_up_deadline = datetime(2000, 1, 1, tzinfo=timezone.utc)
+        self.assertFalse(self.form.is_valid())
+        self.assertTrue(self.form.has_error(NON_FIELD_ERRORS, 'closed'))
 
     def test_dining_list_closed(self):
-        user = User.objects.create_user('noortje')
-        dl = _create_dining_list(date=date(2018, 1, 1))
-        form = DiningEntryUserCreateForm(user, dl, {})
-        self.assertFalse(form.is_valid())
-        self.assertTrue(form.has_error('dining_list', 'closed'))
+        self.dining_list.sign_up_deadline = datetime(2000, 1, 1, tzinfo=timezone.utc)  # Close list
+        self.assertFalse(self.form.is_valid())
+        self.assertTrue(self.form.has_error(NON_FIELD_ERRORS, 'closed'))
+
+    def test_dining_list_closed_owner(self):
+        """Closed exception for list owner"""
+        self.dining_list.sign_up_deadline = datetime(2000, 1, 1, tzinfo=timezone.utc)  # Close list
+        self.dining_entry.created_by = self.user  # Entry creator is dining list owner
+        self.assertTrue(self.form.is_valid())
 
     def test_dining_list_no_room(self):
-        user = User.objects.create_user('noortje')
-        # Choosing a date far in the future so that the dining list is open
-        # Could also patch timezone.now using unittest.mock
-        dl = _create_dining_list(date=date(2100, 1, 1), max_diners=0)
-        form = DiningEntryUserCreateForm(user, dl, {})
-        self.assertFalse(form.is_valid())
-        self.assertTrue(form.has_error('dining_list', 'full'))
+        self.dining_list.max_diners = 0
+        self.assertFalse(self.form.is_valid())
+        self.assertTrue(self.form.has_error(NON_FIELD_ERRORS, 'full'))
 
     def test_dining_list_no_room_owner(self):
-        user = User.objects.create_user('noortje')
-        # Choosing a date far in the future so that the dining list is open
-        # Could also patch timezone.now using unittest.mock
-        dl = _create_dining_list(date=date(2100, 1, 1), max_diners=0)
-        # Make the claimer the owner
-        dl.claimed_by = user
-        dl.save()
-        # Test if owner can now add someone
-        form = DiningEntryUserCreateForm(user, dl, {})
-        self.assertTrue(form.is_valid())
+        self.dining_list.max_diners = 0
+        self.dining_entry.created_by = self.user  # Entry creator is dining list owner
+        self.assertTrue(self.form.is_valid())
 
     def test_race_condition_max_diners(self):
         """Note! As long as this test passes, the race condition is present! Ideally therefore you'd want this test case
         to fail."""
-        user1 = User.objects.create_user('noortje', email="noortje@universe.cat")
-        user2 = User.objects.create_user('ankie', email="ankie@universe.cat")
-        # Choosing a date far in the future so that the dining list is open
-        # Could also patch timezone.now using unittest.mock
-        list = _create_dining_list(date=date(2100, 1, 1), max_diners=1)
+        self.dining_list.max_diners = 1
 
-        # Create first entry
-        entry1form = DiningEntryUserCreateForm(user1, list, {})
-        entry1valid = entry1form.is_valid()
-        # Try creating next entry without saving first entry
-        entry2form = DiningEntryUserCreateForm(user2, list, {})
-        entry2valid = entry2form.is_valid()
+        # Try creating 2 entries using race condition
+        entry1 = DiningEntryUser(dining_list=self.dining_list, user=self.user2, created_by=self.user2)
+        entry2 = DiningEntryUser(dining_list=self.dining_list, user=self.user2, created_by=self.user2)
+        form1 = DiningEntryUserCreateForm(self.post_data, instance=entry1)
+        form2 = DiningEntryUserCreateForm(self.post_data, instance=entry2)
+        self.assertTrue(form1.is_valid())  # Both forms should be valid
+        self.assertTrue(form2.is_valid())
+        form1.save()  # Since they're both valid, they'll both get saved
+        form2.save()
+        # Now there are 2 entries of the same user and with max_diners being 1
+        self.assertEqual(2, DiningEntryUser.objects.all().count())
 
-        # Both entries are valid which means that both entries will be created, while max_diners==1
-        self.assertTrue(entry1valid)
-        self.assertTrue(entry2valid)
+    def test_limited_to_association_is_member(self):
+        self.dining_list.limit_signups_to_association_only = True
+        UserMembership.objects.create(related_user=self.user2, association=self.association,
+                                      is_verified=True, verified_on=timezone.now())
+        self.assertTrue(self.form.is_valid())
+
+    def test_limited_to_association_is_not_member(self):
+        self.dining_list.limit_signups_to_association_only = True
+        self.assertFalse(self.form.is_valid())
+        self.assertTrue(self.form.has_error(NON_FIELD_ERRORS, 'members_only'))
+
+    def test_balance_too_low(self):
+        FixedTransaction.objects.create(source_user=self.user2, amount=Decimal('99'))
+        self.assertFalse(self.form.is_valid())
+        self.assertTrue(self.form.has_error(NON_FIELD_ERRORS, 'nomoneyzz'))
+
+    def test_balance_too_low_exception(self):
+        # Make user member of association with exception
+        assoc = Association.objects.create(slug='ankie4president', name='PvdD', has_min_exception=True)
+        UserMembership.objects.create(related_user=self.user2, association=assoc, is_verified=True,
+                                      verified_on=timezone.now())
+        FixedTransaction.objects.create(source_user=self.user2, amount=Decimal('99'))
+        self.assertTrue(self.form.is_valid())
+
+    def test_invalid_user(self):
+        self.post_data['user'] = '100'
+        self.assertFalse(self.form.is_valid())
+
+
+class DiningEntryExternalCreateFormTestCase(TestCase):
+    """Only test a valid form instance since the clean method has been tested above already"""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.association = Association.objects.create()
+        cls.user = User.objects.create_user('jan')
+        cls.user2 = User.objects.create_user('noortje', email='noortje@cat.cat')
+
+    def setUp(self):
+        # Not in setUpTestData to ensure that it is fresh for every test case
+        self.dining_list = DiningList.objects.create(date=date(2089, 1, 1), association=self.association,
+                                                     claimed_by=self.user,
+                                                     sign_up_deadline=datetime(2088, 1, 1, tzinfo=timezone.utc))
+        self.dining_entry = DiningEntryExternal(dining_list=self.dining_list, user=self.user2, created_by=self.user2)
+        self.post_data = {'name': 'Ankie'}
+
+    def test_form(self):
+        form = DiningEntryExternalCreateForm(self.post_data, instance=self.dining_entry)
+        self.assertTrue(form.is_valid())
 
 
 class DiningEntryDeleteFormTestCase(TestCase):
+    def setUp(self):
+        self.user1 = User.objects.create_user('ankie', email='ankie@universe.cat')
+        self.user2 = User.objects.create_user('noortje', email='noortje@universe.cat')
+        self.dining_list = DiningList(claimed_by=self.user1, date=date(2100, 1, 1),
+                                      sign_up_deadline=datetime(2100, 1, 1, tzinfo=timezone.utc))
+        self.entry = DiningEntryUser(user=self.user2, created_by=self.user2, dining_list=self.dining_list)
+        self.form = DiningEntryDeleteForm(self.entry, self.user2, {})
 
-    def test_remove_on_close(self):
-        # Setup
-        user1 = User.objects.create_user('noortje', email="noortje@universe.cat")
-        user2 = User.objects.create_user('ankie', email="ankie@universe.cat")
-        dl = _create_dining_list(date=date(2100, 1, 1), claimed_by=user1)
-        e1 = DiningEntry.objects.create(user=user1, dining_list=dl)
-        e2 = DiningEntry.objects.create(user=user2, dining_list=dl)
+    def test_valid(self):
+        self.assertTrue(self.form.is_valid())
 
-        # Set the new date in the past
-        dl.sign_up_deadline = timezone.now()
-        dl.save()
+    def test_no_permission_invalid_user(self):
+        self.entry.user = self.user1
+        self.entry.created_by = self.user1
+        self.assertFalse(self.form.is_valid())
 
-        # Check user deletion forms
-        # Claimer can delete user
-        form = DiningEntryDeleteForm(user1, e1)
+    def test_no_permission_owner_exception(self):
+        # User 1 is owner so should be able to remove user 2
+        form = DiningEntryDeleteForm(self.entry, self.user1, {})
         self.assertTrue(form.is_valid())
-        # Others can not delete themselves
-        form = DiningEntryDeleteForm(user2, e2)
-        self.assertFalse(form.is_valid())
-        self.assertTrue(form.has_error(NON_FIELD_ERRORS, 'closed'))
+
+    def test_no_permission_created_by_exception(self):
+        # User is not equal to deleter but the deleter did create the entry
+        self.entry.user = self.user1
+        self.assertTrue(self.form.is_valid())
+
+    def test_dining_list_closed(self):
+        self.dining_list.sign_up_deadline = datetime(2001, 1, 1, tzinfo=timezone.utc)
+        self.assertFalse(self.form.is_valid())
+
+    def test_dining_list_closed_exception(self):
+        self.dining_list.sign_up_deadline = datetime(2001, 1, 1, tzinfo=timezone.utc)
+        form = DiningEntryDeleteForm(self.entry, self.user1, {})
+        self.assertTrue(form.is_valid())
+
+    def test_dining_list_not_adjustable(self):
+        self.dining_list.date = date(2001, 1, 1)
+        self.assertFalse(self.form.is_valid())

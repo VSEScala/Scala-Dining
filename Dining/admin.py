@@ -31,7 +31,7 @@ class DiningListEntryLink(admin.StackedInline):
     Create the entries in the dininglist (taken from a new table)
     """
     model = DiningEntryUser
-    fields = (('user', 'has_shopped', 'has_cooked', 'has_cleaned', 'has_paid'),)
+    fields = (('user', 'created_by', 'has_shopped', 'has_cooked', 'has_cleaned', 'has_paid'),)
     verbose_name = ""
     verbose_name_plural = "Dining Entries"
     extra = 1
@@ -100,7 +100,7 @@ class DiningListCommentsAdmin(admin.ModelAdmin):
 admin.site.register(UserDiningSettings, DiningSettingAdmin)
 admin.site.register(DiningList, DiningListAdmin)
 #admin.site.register(DiningListComment, DiningListCommentsAdmin)
-admin.site.register(DiningDayAnnouncements)
+admin.site.register(DiningDayAnnouncement)
 admin.site.register(DiningComment)
 admin.site.register(DiningEntryUser, DiningEntryAdmin)
 admin.site.register(DiningEntryExternal, DiningEntryAdmin)

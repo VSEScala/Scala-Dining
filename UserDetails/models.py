@@ -1,3 +1,4 @@
+from allauth.socialaccount.models import SocialApp
 from django.contrib.auth.models import AbstractUser, Group
 from django.db import models
 from django.utils import timezone
@@ -69,44 +70,40 @@ class User(AbstractUser):
         return self.is_active and (self.has_any_perm() or self.is_superuser)
 
     def is_board_of(self, associationId):
-        '''
-        Return if user is a board member of association identified by id
-        '''
+        """Return if user is a board member of association identified by id"""
         return self.groups.filter(id=associationId).count() > 0
 
-    def is_member_of(self, association):
-        '''
-        Return if the user is a member of the association
-        '''
-        for m in UserMembership.objects.filter(related_user=self):
-            if (m.association == association and m.is_verified):
-                return True
-        return False
+    def is_verified_member_of(self, association):
+        """Return if the user is a verified member of the association"""
+        return self.get_verified_memberships().filter(association=association).exists()
 
-    def get_memberships(self):
+    def get_verified_memberships(self):
         return self.usermembership_set.filter(is_verified=True)
+
+    def has_min_balance_exception(self):
+        """Whether this user is allowed unlimited debt. For this, the association membership must be verified"""
+        exceptions = [membership.association.has_min_exception for membership in self.get_verified_memberships()]
+        return True in exceptions
 
 
 class Association(Group):
     slug = models.SlugField(max_length=10)
     image = models.ImageField(blank=True, null=True)
     icon_image = models.ImageField(blank=True, null=True)
-    is_choosable = models.BooleanField(default=True, verbose_name="Whether this association can be chosen as membership by users")
-    has_min_exception = models.BooleanField(default=False, verbose_name="Whether this association has an exception to the minimum balance")
+    is_choosable = models.BooleanField(default=True,
+                                       help_text="If checked, this association can be chosen as membership by users")
+    has_min_exception = models.BooleanField(default=False,
+                                            help_text="If checked, this association has an exception to the minimum balance")
+    social_app = models.ForeignKey(SocialApp, on_delete=models.PROTECT, null=True, blank=True,
+                                   help_text='A user automatically becomes member of the association if she signs up using this social app')
 
     @cached_property
     def requires_action(self):
-        """
-        Whether some action needs to be done by the board. Used for display of notifications on the site
-        :return: True or false
-        """
-        return self.has_new_member_requests
+        """Whether some action needs to be done by the board. Used for display of notifications on the site"""
+        return self.has_new_member_requests()
 
-    @cached_property
     def has_new_member_requests(self):
-        return UserMembership.objects.filter(
-            association=self.association,
-            verified_on__isnull=True).count() > 0
+        return UserMembership.objects.filter(association=self, verified_on__isnull=True).exists()
 
 
 class UserMembership(models.Model):
@@ -134,3 +131,9 @@ class UserMembership(models.Model):
 
     def __str__(self):
         return "{user} - {association}".format(user=self.related_user, association=self.association)
+
+    def set_verified(self, verified):
+        """Set the verified state to the value of verified (True or False) and set verified_on to now and save"""
+        self.is_verified = verified
+        self.verified_on = timezone.now()
+        self.save()

@@ -1,5 +1,5 @@
 {% extends 'accounts/user_history_base.html' %}
-{% load staticfiles %}
+{% load dining_tags %}
 
 {% block title %}{{ request.user }} - Dining history {% endblock %}
 
@@ -47,13 +47,11 @@
                             {{ entry.diners.count }}
                         </td>
                         <td>
-                            {% if entry.get_number_paid < entry.diners.count %}
-                                <span class="text-warning">
-                                    {{ entry.get_number_paid }}
+                            {% with paid=entry|paid_count %}
+                                <span class="{% if paid < entry.diners.count %}text-warning{% endif %}">
+                                    {{ paid }}
                                 </span>
-                            {% else %}
-                                {{ entry.get_number_paid }}
-                            {% endif %}
+                            {% endwith %}
                         </td>
                         <td class="py-2">
                             <a class="btn btn-outline-primary" href="{{ entry.get_absolute_url }}"><i class="fas fa-arrow-right"></i></a>

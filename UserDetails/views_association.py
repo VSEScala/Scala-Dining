@@ -23,7 +23,7 @@ class AssociationBoardMixin:
         context = super().get_context_data(**kwargs)
         context['association'] = self.association
 
-        context['notify_overview'] = self.association.has_new_member_requests
+        context['notify_overview'] = self.association.has_new_member_requests()
 
         return context
 
@@ -123,15 +123,11 @@ class MembersEditView(LoginRequiredMixin, AssociationBoardMixin, ListView):
         if verified == "yes":
             if membership.is_verified:
                 return
-            membership.is_verified = True
-            membership.verified_on = datetime.datetime.now().date()
-            membership.save()
+            membership.set_verified(True)
         elif verified == "no":
             if not membership.is_verified and membership.verified_on is not None:
                 return
-            membership.is_verified = False
-            membership.verified_on = datetime.datetime.now().date()
-            membership.save()
+            membership.set_verified(False)
 
     def post(self, request, *args, **kwargs):
         # Todo: there is no check on ID, i.e. any passed ID will work. I suggest switching to FormSets.

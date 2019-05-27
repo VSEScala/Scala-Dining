@@ -92,39 +92,41 @@
     <hr>
 
     {# Current user status #}
-    {% if user_is_on_list %}
+    {% if dining_list|has_joined:user %}
         <div class="alert alert-success">You are on this list</div>
-    {% elif user_can_add_self %}
+    {% elif dining_list|can_join:user %}
         <div class="alert alert-warning">You are not on the dining list</div>
     {% else %}
-        <div class="alert alert-danger">You are not on this list and can no longer join</div>
+        <div class="alert alert-danger">
+            You are not on this list and can't join: {{ dining_list|cant_join_reason:user }}
+        </div>
     {% endif %}
 
     {# Join/leave/add others buttons #}
     <div class="row mt-3">
         {# Join/leave #}
         <div class="col-md-6">
-            {% if dining_list.is_open %}
-                {% if user_is_on_list %}
-                    {% url 'entry_remove' day=date.day month=date.month year=date.year identifier=dining_list.association.slug as url %}
-                    <form method="post" action="{{ url }}?next={{ request.path_info }}">
-                        {% csrf_token %}
-                        <button type="submit" class="btn btn-block btn-outline-warning">Sign out</button>
-                    </form>
-                {% elif user_can_add_self %}
+            {% with entry=dining_list|get_entry:user %}
+                {% if entry %}
+                    {% if entry|can_delete_entry:user %}
+                        <form method="post" action="{% url 'entry_delete' pk=entry.pk %}?next={{ request.path_info }}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-block btn-outline-warning">Sign out</button>
+                        </form>
+                    {% endif %}
+                {% elif dining_list|can_join:user %}
                     {% url 'entry_add' day=date.day month=date.month year=date.year identifier=dining_list.association.slug as url%}
                     <form method="post" action="{{ url }}?next={{ request.path_info }}">
                         {% csrf_token %}
+                        <input type="hidden" name="user" value="{{ user.pk }}">
                         <button type="submit" class="btn btn-block btn-primary">Sign up</button>
                     </form>
-                {% else %}
-                    <div class="btn btn-disabled">You can not join this list.</div>
                 {% endif %}
-            {% endif %}
+            {% endwith %}
         </div>
         {# Add others #}
         <div class="col-md-6">
-            {% if user_can_add_others %}
+            {% if dining_list|can_add_others:user %}
                 {% url 'entry_add' day=date.day month=date.month year=date.year identifier=dining_list.association.slug as url %}
                 <a href="{{ url }}" class="btn btn-outline-primary btn-block mt-1 mt-md-0">Add others</a>
             {% endif %}
