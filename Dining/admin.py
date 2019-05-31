@@ -31,7 +31,7 @@ class DiningListEntryLink(admin.StackedInline):
     Create the entries in the dininglist (taken from a new table)
     """
     model = DiningEntryUser
-    fields = (('user', 'has_shopped', 'has_cooked', 'has_cleaned', 'has_paid'),)
+    fields = (('user', 'created_by', 'has_shopped', 'has_cooked', 'has_cleaned', 'has_paid'),)
     verbose_name = ""
     verbose_name_plural = "Dining Entries"
     extra = 1

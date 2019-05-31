@@ -1,6 +1,6 @@
 # Changelog
 
-### Current
+### 2019-05-27
 
 * New autocomplete widget
 * Dining lists have 0 or more owners instead of a claimer and purchaser
