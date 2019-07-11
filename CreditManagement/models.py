@@ -293,8 +293,10 @@ class PendingTransaction(AbstractPendingTransaction):
                 raise ValidationError(_("Balance becomes too low"))
 
         # Associations cannot transfer money between each other
-        if self.source_association and self.target_association:
-            raise ValidationError(_("Associations cannot transfer money between each other"))
+        # This works counterintuitive. There is no reason why this should be forbidden.
+        # It's weird that Scala can not transfer money to associations.
+        # if self.source_association and self.target_association:
+        #    raise ValidationError(_("Associations cannot transfer money between each other"))
 
     def finalise(self):
         """
