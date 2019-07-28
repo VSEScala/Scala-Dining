@@ -27,10 +27,22 @@
         </div>
     </div>
 
-        <br><br>
+    {% include 'snippets/paginator.html' %}
 
-        {% url 'transaction_list' as url %}
-        {% include 'snippets/snippet_pagination.html' %}
+    <div class="row">
+        <div class="col-md-8 mt-1">
+            <a class="btn btn-block btn-primary" href="{% url 'credits:transaction_add' %}?amount=0.5">
+                Contribute to kitchen use
+            </a>
+        </div>
+        <div class="col-md-4 mt-1">
+            <a class="btn btn-secondary btn-block" href="{% url 'credits:transaction_donate' %}">
+                Transfer money
+            </a>
+        </div>
+
+
     </div>
+
 
 {% endblock %}
