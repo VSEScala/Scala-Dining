@@ -87,10 +87,11 @@ class AbstractTransaction(models.Model):
 
         # Loop over all children, get their respective transaction queries, union the transaction queries
         for child in children:
+            transactions = child.get_all_transactions(user, association)
             if result is None:
-                result = child.get_all_transactions(user, association)
+                result = transactions
             else:
-                result = result.union(child.get_all_transactions(user, association))
+                result = result.union(transactions)
 
         return result
 
@@ -184,6 +185,15 @@ class AbstractTransaction(models.Model):
     def target(self):
         return self.target_association if self.target_association else self.target_user
 
+    def get_class_type(self):
+        if self.type == FixedTransaction.type_code:
+            return FixedTransaction
+        if self.type == PendingTransaction.type_code:
+            return PendingTransaction
+        if self.type == PendingDiningTransaction.type_code:
+            return PendingDiningTransaction
+        raise KeyError("Stored key does not match set keys")
+
 
 class FixedTransaction(AbstractTransaction):
     """
@@ -192,6 +202,7 @@ class FixedTransaction(AbstractTransaction):
     """
     objects = TransactionQuerySet.as_manager()
     balance_annotation_name = "balance_fixed"
+    type_code = 1
 
     def save(self, *args, **kwargs):
         if self.id is None:
@@ -209,7 +220,7 @@ class FixedTransaction(AbstractTransaction):
         :return: A queryset of all credit instances
         """
         # Get all objects
-        return cls.objects.filter_user(user).filter_association(association)
+        return cls.objects.filter_user(user).filter_association(association).define_as_type(cls.type_code)
 
     @classmethod
     def get_user_balance(cls, user):
@@ -272,6 +283,7 @@ class PendingTransaction(AbstractPendingTransaction):
 
     objects = PendingTransactionQuerySet.as_manager()
     balance_annotation_name = "balance_pending_normal"
+    type_code = 2
 
     def clean(self):
         """
@@ -338,7 +350,8 @@ class PendingTransaction(AbstractPendingTransaction):
         :return: A queryset of all credit instances
         """
         # Get all objects
-        return cls.objects.filter_user(user).filter_association(association)
+        return cls.objects.filter_user(user).filter_association(association).define_as_type(cls.type_code)
+
 
     @classmethod
     def get_user_balance(cls, user):
@@ -369,7 +382,8 @@ class PendingDiningTransactionManager(models.Manager):
 
     @staticmethod
     def get_queryset(user=None, dining_list=None):
-        return DiningTransactionQuerySet.generate_queryset(user=user, dining_list=dining_list)
+        return DiningTransactionQuerySet.generate_queryset(PendingDiningTransaction.type_code,
+                                                           user=user, dining_list=dining_list)
 
     @staticmethod
     def annotate_users_balance(users, output_name=None):
@@ -388,6 +402,7 @@ class PendingDiningTransaction(AbstractPendingTransaction):
     """
     balance_annotation_name = "balance_pending_dining"
     objects = PendingDiningTransactionManager()
+    type_code = 3
 
     class Meta:
         managed = False

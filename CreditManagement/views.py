@@ -15,7 +15,7 @@ class TransactionListView(ListView):
     context_object_name = 'transactions'
 
     def get_queryset(self):
-        return AbstractTransaction.get_all_transactions(user=self.request.user).order_by('-pk')
+        return AbstractTransaction.get_all_transactions(user=self.request.user).order_by('-order_moment')
 
 
 class TransactionAddView(LoginRequiredMixin, TemplateView):

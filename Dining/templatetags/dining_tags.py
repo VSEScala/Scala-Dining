@@ -1,9 +1,13 @@
 from django import template
 
 from Dining.forms import DiningEntryUserCreateForm, DiningEntryDeleteForm
-from Dining.models import DiningEntry, DiningEntryUser
+from Dining.models import DiningEntry, DiningEntryUser, DiningList
 
 register = template.Library()
+
+@register.filter
+def get_dining_slot(id):
+    return DiningList.objects.get(id=id)
 
 
 @register.filter

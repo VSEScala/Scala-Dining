@@ -119,6 +119,8 @@ class TransactionQuerySet(AbstractTransactionQuerySet):
     def compute_association_balance(self, association):
         return self._compute_balance(association, self.source_association_column, self.target_association_column)
 
+    def define_as_type(self, type_value):
+        return self.annotate(type=Value(type_value, output_field=models.IntegerField()))
 
 class PendingTransactionQuerySet(TransactionQuerySet):
     def get_expired_transactions(self):
@@ -206,10 +208,11 @@ class DiningTransactionQuerySet(AbstractTransactionQuerySet):
         return entries
 
     @classmethod
-    def generate_queryset(cls, user=None, dining_list=None):
+    def generate_queryset(cls, type_value, user=None, dining_list=None):
         """
         Generates a query for all the Pending Dining Transactions, these can not be taken directly from the Database
         as storing it has been done elsewhere (indirectly through DiningEntry)
+        :param type_value: the number that identifies the type of the object
         :param user: The user(s) that needs to be part of the set. Can be single instance or Query of instances
         :param dining_list: The dining list(s) that needs to be part of the set. Can be single instance or Query of instances
         :return: The queryset of PendingDiningTransactions
@@ -234,6 +237,7 @@ class DiningTransactionQuerySet(AbstractTransactionQuerySet):
         entries = entries.annotate(order_moment=F('dining_list__sign_up_deadline'))
         entries = entries.annotate(confirm_moment=F('dining_list__sign_up_deadline'))
         entries = entries.annotate(description=Value(cls.dining_identifier, output_field=models.CharField()))
+        entries = entries.annotate(type=Value(type_value, output_field=models.IntegerField()))
 
         # Treat the queryset as a queryset  from the given class
         from CreditManagement.models import PendingDiningTransaction
