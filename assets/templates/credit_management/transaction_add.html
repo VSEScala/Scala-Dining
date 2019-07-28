@@ -5,7 +5,7 @@
         <h3>Create new transaction</h3>
         <form method="post">
             {% csrf_token %}
-            {% include "snippets/bootstrap_form.html" with form=slot_form horizontal=True %}
+            {% include "snippets/bootstrap_form.html" with horizontal=True %}
             <input type="submit" value="Create transaction" class="btn btn-block btn-primary"/>
         </form>
     </div>

@@ -40,6 +40,16 @@ class AssociationTransactionForm(TransactionForm):
             'target_user': 'User',
         }
 
+    def clean(self):
+        cleaned_data = super().clean()
+
+        # Do not allow associations to make evaporating money transactons
+        # (not restircted on database level, but it doesn't make sense to order it)
+        if not cleaned_data.get('target_user') and not cleaned_data.get('target_association'):
+            raise ValidationError("Select a target to transfer the money to.")
+
+        return cleaned_data
+
 
 class UserTransactionForm(TransactionForm):
 
@@ -54,9 +64,21 @@ class UserTransactionForm(TransactionForm):
     def clean(self):
         cleaned_data = super().clean()
 
-        # Do not allow associations to make evaporating money transactons
+        # Do not allow users to make evaporating money transactons
         # (not restircted on database level, but it doesn't make sense to order it)
         if not cleaned_data.get('target_user') and not cleaned_data.get('target_association'):
             raise ValidationError("Select a target to transfer the money to.")
 
         return cleaned_data
+
+
+class UserDonationForm(TransactionForm):
+    """
+    A transactionform that allows donations to the kitchen cost
+    Ideal if someone uses the kitchen without making a dining list.
+    """
+    def __init__(self, user, *args, **kwargs):
+        super().__init__(*args, user=user, **kwargs)
+
+    class Meta(TransactionForm.Meta):
+        fields = ['origin', 'amount', 'description']

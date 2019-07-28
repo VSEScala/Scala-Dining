@@ -4,7 +4,7 @@ from django.views.generic.list import ListView
 from CreditManagement.models import *
 from django.contrib import messages
 from django.utils.translation import gettext as _
-from .forms import UserTransactionForm, AssociationTransactionForm
+from .forms import UserTransactionForm, AssociationTransactionForm, UserDonationForm
 from django.views.generic import View
 from django.http import HttpResponseForbidden, HttpResponseRedirect, HttpResponse
 
@@ -31,7 +31,7 @@ class TransactionAddView(LoginRequiredMixin, View):
             # Create the form
             self.context['slot_form'] = AssociationTransactionForm(association)
         else:
-            self.context['slot_form'] = UserTransactionForm(request.user)
+            self.context['form'] = UserTransactionForm(request.user)
         return render(request, self.template_name, self.context)
 
     def post(self, request, association_name=None):
@@ -45,6 +45,26 @@ class TransactionAddView(LoginRequiredMixin, View):
             form = AssociationTransactionForm(association, request.POST)
         else:
             form = UserTransactionForm(request.user, request.POST)
+
+        if form.is_valid():
+            form.save()
+            messages.add_message(request, messages.SUCCESS, _("Transaction has been succesfully added."))
+            return HttpResponseRedirect(request.path_info)
+
+        self.context['form'] = form
+        return render(request, self.template_name, self.context)
+
+
+class DonationView(LoginRequiredMixin, View):
+    template_name = "credit_management/transaction_add.html"
+    context = {}
+
+    def get(self, request):
+        self.context['form'] = UserDonationForm(request.user)
+        return render(request, self.template_name, self.context)
+
+    def post(self, request):
+        form = UserDonationForm(request.user, request.POST)
 
         if form.is_valid():
             form.save()
