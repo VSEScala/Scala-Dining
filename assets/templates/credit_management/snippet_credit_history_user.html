@@ -32,8 +32,12 @@
     </td>
     <td class="py-2">
         {% if transaction.type == 2 %}
-        <a class="btn btn-outline-primary"
-           href="{% url 'credits:transaction_add' %}?redirect={{ request.path }}">
+            <a class="btn btn-outline-primary"
+            {% if transaction.target_user or transaction.target_association %}
+               href="{% url 'credits:transaction_transfer' %}?redirect={{ request.path }}&id={{ transaction.id }}">
+            {% else %}
+                href="{% url 'credits:transaction_donate' %}?redirect={{ request.path }}&id={{ transaction.id }}">
+            {% endif %}
             <i class="fas fa-pen"></i>
         </a>
         {% elif transaction.type == 3 %}

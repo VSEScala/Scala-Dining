@@ -1,6 +1,7 @@
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
 from django.views.generic.list import ListView
+from django.core.exceptions import PermissionDenied
 from CreditManagement.models import *
 from django.contrib import messages
 from django.utils.translation import gettext as _
@@ -18,69 +19,102 @@ class TransactionListView(ListView):
         return AbstractTransaction.get_all_transactions(user=self.request.user).order_by('-order_moment')
 
 
-class TransactionAddView(LoginRequiredMixin, TemplateView):
-    template_name = "credit_management/transaction_add.html"
+class TransactionAccessMixin:
+    template_name = None
+    template_add_name = "credit_management/transaction_add.html"
+    template_edit_name = "credit_management/transaction_edit.html"
 
-    def get_context_data(self, **kwargs):
-        context = super(TransactionAddView, self).get_context_data(**kwargs)
-        association_name = self.kwargs.get('association_name')
+    def dispatch(self, request, *args, **kwargs):
+        """ If a specific instance is given, check the access rights."""
+        id = request.GET.get('id', None)
+        if id is not None:
+            # get the instance
+            t_order = get_object_or_404(PendingTransaction, pk=id)
+            if t_order.source_user != request.user:
+                raise PermissionDenied("You do not have access to this transaction")
+            if t_order.confirm_moment <= timezone.now():
+                raise PermissionDenied("This transaction can no longer be altered")
 
-        if association_name:
-            association = Association.objects.get(slug=association_name)
-            # If an association is given as the source, check user credentials
-            if not self.request.user.is_board_of(association.id):
-                return HttpResponseForbidden()
-            # Create the form
-            context['form'] = AssociationTransactionForm(association, initial_from_get=self.request.GET)
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_transaction(self):
+        transaction_id = self.request.GET.get('id', None)
+        try:
+            return PendingTransaction.objects.get(pk=transaction_id)
+        except PendingTransaction.DoesNotExist:
+            return None
+
+    def get_form(self, transaction=None, data=None):
+        raise NotImplementedError()
+
+    def get_context_data(self, *args, **kwargs):
+        context = super(TransactionAccessMixin, self).get_context_data(*args, **kwargs)
+
+        transaction = self.get_transaction()
+        # get the form
+        context['form'] = self.get_form(transaction=transaction)
+
+        # Set the correct template
+        if transaction is None:
+            self.template_name = self.template_add_name
         else:
-            context['form'] = UserTransactionForm(self.request.user, initial_from_get=self.request.GET)
+            context['redirect'] = self.request.GET.get('redirect')
+            self.template_name = self.template_edit_name
 
-        return context
-
-    def post(self, request, association_name=None):
-        if association_name:
-            association = Association.objects.get(slug=association_name)
-            # If an association is given as the source, check user credentials
-            if not request.user.is_board_of(association.id):
-                return HttpResponseForbidden()
-            # Create the form
-            form = AssociationTransactionForm(association, data=request.POST)
-        else:
-            form = UserTransactionForm(request.user, data=request.POST)
-
-        if form.is_valid():
-            form.save()
-            messages.add_message(request, messages.SUCCESS, _("Transaction has been succesfully added."))
-            return HttpResponseRedirect(request.GET.get('redirect', request.path_info))
-
-        context = self.get_context_data()
-        context['form'] = form
-        return render(request, self.template_name, context)
-
-
-class DonationView(LoginRequiredMixin, TemplateView):
-    template_name = "credit_management/transaction_add.html"
-    context = {}
-
-    def get_context_data(self, **kwargs):
-        context = super(DonationView, self).get_context_data(**kwargs)
-        context['form'] = UserDonationForm(self.request.user,
-                                           initial_from_get=self.request.GET,
-                                           initial={'amount': 0.5})
         return context
 
     def post(self, request):
-        form = UserDonationForm(request.user, request.POST)
+        transaction = self.get_transaction()
+        form = self.get_form(transaction=transaction, data=request.POST)
 
         if form.is_valid():
             form.save()
-            messages.add_message(request, messages.SUCCESS, _("Transaction has been succesfully added."))
+            if transaction is None:
+                messages.add_message(request, messages.SUCCESS, _("Transaction has been added successfully."))
+            else:
+                messages.add_message(request, messages.SUCCESS, _("Transaction has been changed successfully."))
+
             return HttpResponseRedirect(request.GET.get('redirect', request.path_info))
 
         context = self.get_context_data()
         context['form'] = form
         return render(request, self.template_name, context)
 
+
+class DonationView(LoginRequiredMixin, TransactionAccessMixin, TemplateView):
+    def get_form(self, transaction=None, data=None):
+        if transaction is None:
+            initial = {'amount': 0.5}
+        else:
+            initial = {}
+
+        return UserDonationForm(self.request.user,
+                                initial_from_get=self.request.GET,
+                                initial=initial,
+                                data=data,
+                                instance=transaction)
+
+
+class TransactionUserView(LoginRequiredMixin, TransactionAccessMixin, TemplateView):
+    def get_form(self, transaction=None, data=None):
+        return UserTransactionForm(self.request.user,
+                                   initial_from_get=self.request.GET,
+                                   data=data,
+                                   instance=transaction)
+
+
+class TransactionAssociationView(LoginRequiredMixin, TransactionAccessMixin, TemplateView):
+    def get_form(self, transaction=None, data=None):
+        association_name = self.kwargs.get('association_name')
+        association = Association.objects.get(slug=association_name)
+        # If an association is given as the source, check user credentials
+        if not self.request.user.is_board_of(association.id):
+            return HttpResponseForbidden()
+        # Create the form
+        return AssociationTransactionForm(association,
+                                          initial_from_get=self.request.GET,
+                                          data=data,
+                                          instance=transaction)
 
 class AssociationTransactionListView:
     pass

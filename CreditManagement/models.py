@@ -298,7 +298,7 @@ class PendingTransaction(AbstractPendingTransaction):
             balance = AbstractTransaction.get_user_balance(self.source_user)
             # If the object is being altered instead of created, take difference into account
             if self.pk:
-                change = self.amount - self.objects.get(id=self.id).amount
+                change = self.amount - PendingTransaction.objects.get(id=self.id).amount
             else:
                 change = self.amount
             new_balance = balance - change

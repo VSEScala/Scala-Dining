@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    <div>
+        <h3>Change transaction</h3>
+        <form method="post">
+            {% csrf_token %}
+            {% include "snippets/bootstrap_form.html" with horizontal=True %}
+
+            <div class="row">
+                <div class="col-md-4 mt-1">
+                    <a class="btn btn-secondary btn-block"
+                       href="{{ redirect }}">
+                        Cancel
+                    </a>
+                </div>
+                <div class="col-md-6 mt-1">
+                    <input type="submit" value="Save" class="btn btn-block btn-primary"/>
+                </div>
+                <div class="col-md-2 mt-1">
+                    <input type="submit" value="Delete" class="btn btn-block btn-danger"/>
+                </div>
+            </div>
+        </form>
+    </div>
+{% endblock %}
