@@ -5,7 +5,7 @@ from CreditManagement.models import *
 from django.contrib import messages
 from django.utils.translation import gettext as _
 from .forms import UserTransactionForm, AssociationTransactionForm, UserDonationForm
-from django.views.generic import View
+from django.views.generic import View, TemplateView
 from django.http import HttpResponseForbidden, HttpResponseRedirect, HttpResponse
 
 
@@ -18,41 +18,47 @@ class TransactionListView(ListView):
         return AbstractTransaction.get_all_transactions(user=self.request.user).order_by('-pk')
 
 
-class TransactionAddView(LoginRequiredMixin, View):
+class TransactionAddView(LoginRequiredMixin, TemplateView):
     template_name = "credit_management/transaction_add.html"
-    context = {}
 
-    def get(self, request, association_name=None):
+    def get_context_data(self, **kwargs):
+        context = super(TransactionAddView, self).get_context_data(**kwargs)
+        association_name = self.kwargs.get('association_name')
+
         if association_name:
             association = Association.objects.get(slug=association_name)
             # If an association is given as the source, check user credentials
-            if not request.user.is_board_of(association.id):
+            if not self.request.user.is_board_of(association.id):
                 return HttpResponseForbidden()
             # Create the form
-            self.context['slot_form'] = AssociationTransactionForm(association)
+            print(self.request.GET)
+            context['form'] = AssociationTransactionForm(association, initial=self.request.GET, initial_from_get=True)
         else:
-            self.context['form'] = UserTransactionForm(request.user)
-        return render(request, self.template_name, self.context)
+            context['form'] = UserTransactionForm(self.request.user, initial=self.request.GET, initial_from_get=True)
+
+        return context
 
     def post(self, request, association_name=None):
         # Do form shenanigans
+        print(request.POST)
         if association_name:
             association = Association.objects.get(slug=association_name)
             # If an association is given as the source, check user credentials
             if not request.user.is_board_of(association.id):
                 return HttpResponseForbidden()
             # Create the form
-            form = AssociationTransactionForm(association, request.POST)
+            form = AssociationTransactionForm(association, data=request.POST)
         else:
-            form = UserTransactionForm(request.user, request.POST)
+            form = UserTransactionForm(request.user, data=request.POST)
 
         if form.is_valid():
             form.save()
             messages.add_message(request, messages.SUCCESS, _("Transaction has been succesfully added."))
             return HttpResponseRedirect(request.path_info)
 
-        self.context['form'] = form
-        return render(request, self.template_name, self.context)
+        context = self.get_context_data()
+        context['form'] = form
+        return render(request, self.template_name, context)
 
 
 class DonationView(LoginRequiredMixin, View):

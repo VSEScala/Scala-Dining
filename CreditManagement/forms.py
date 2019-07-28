@@ -4,7 +4,26 @@ from django import forms
 from .models import *
 
 
-class TransactionForm(forms.ModelForm):
+class InitialFromGETMixin:
+    def __init__(self, *args, initial_from_get=False, **kwargs):
+        super(InitialFromGETMixin, self).__init__(*args, **kwargs)
+        # If initial_from_get is set, adjust the stored initial values
+        self.initial_from_get = initial_from_get
+
+    def get_initial_for_field(self, field, field_name):
+        """
+        Special implementation of initial gathering if initial values are given through request GET object
+        """
+        if self.initial_from_get:
+            value = self.initial.get(field_name)
+            if value is not None:
+                return value[0] if len(value) == 1 else value
+            else:
+                return field.initial
+        return super(InitialFromGETMixin, self).get_initial_for_field(field, field_name)
+
+
+class TransactionForm(InitialFromGETMixin, forms.ModelForm):
     origin = forms.CharField(disabled=True)
 
     def __init__(self, *args, user=None, association=None, **kwargs):
