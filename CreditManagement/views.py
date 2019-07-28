@@ -31,7 +31,6 @@ class TransactionAddView(LoginRequiredMixin, TemplateView):
             if not self.request.user.is_board_of(association.id):
                 return HttpResponseForbidden()
             # Create the form
-            print(self.request.GET)
             context['form'] = AssociationTransactionForm(association, initial_from_get=self.request.GET)
         else:
             context['form'] = UserTransactionForm(self.request.user, initial_from_get=self.request.GET)
@@ -39,8 +38,6 @@ class TransactionAddView(LoginRequiredMixin, TemplateView):
         return context
 
     def post(self, request, association_name=None):
-        # Do form shenanigans
-        print(request.POST)
         if association_name:
             association = Association.objects.get(slug=association_name)
             # If an association is given as the source, check user credentials
