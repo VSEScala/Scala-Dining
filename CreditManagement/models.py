@@ -292,12 +292,6 @@ class PendingTransaction(AbstractPendingTransaction):
             if new_balance < settings.MINIMUM_BALANCE_FOR_USER_TRANSACTION:
                 raise ValidationError(_("Balance becomes too low"))
 
-        # Associations cannot transfer money between each other
-        # This works counterintuitive. There is no reason why this should be forbidden.
-        # It's weird that Scala can not transfer money to associations.
-        # if self.source_association and self.target_association:
-        #    raise ValidationError(_("Associations cannot transfer money between each other"))
-
     def finalise(self):
         """
         Moves the pending transaction over as a fixed transaction
