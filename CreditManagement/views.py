@@ -51,7 +51,7 @@ class TransactionAddView(LoginRequiredMixin, TemplateView):
         if form.is_valid():
             form.save()
             messages.add_message(request, messages.SUCCESS, _("Transaction has been succesfully added."))
-            return HttpResponseRedirect(request.path_info)
+            return HttpResponseRedirect(request.GET.get('redirect', request.path_info))
 
         context = self.get_context_data()
         context['form'] = form
@@ -75,7 +75,7 @@ class DonationView(LoginRequiredMixin, TemplateView):
         if form.is_valid():
             form.save()
             messages.add_message(request, messages.SUCCESS, _("Transaction has been succesfully added."))
-            return HttpResponseRedirect(request.path_info)
+            return HttpResponseRedirect(request.GET.get('redirect', request.path_info))
 
         context = self.get_context_data()
         context['form'] = form
