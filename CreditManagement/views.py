@@ -61,13 +61,14 @@ class TransactionAddView(LoginRequiredMixin, TemplateView):
         return render(request, self.template_name, context)
 
 
-class DonationView(LoginRequiredMixin, View):
+class DonationView(LoginRequiredMixin, TemplateView):
     template_name = "credit_management/transaction_add.html"
     context = {}
 
-    def get(self, request):
-        self.context['form'] = UserDonationForm(request.user)
-        return render(request, self.template_name, self.context)
+    def get_context_data(self, **kwargs):
+        context = super(DonationView, self).get_context_data(**kwargs)
+        context['form'] = UserDonationForm(self.request.user, initial=self.request.GET, initial_from_get=True)
+        return context
 
     def post(self, request):
         form = UserDonationForm(request.user, request.POST)
@@ -77,8 +78,9 @@ class DonationView(LoginRequiredMixin, View):
             messages.add_message(request, messages.SUCCESS, _("Transaction has been succesfully added."))
             return HttpResponseRedirect(request.path_info)
 
-        self.context['slot_form'] = form
-        return render(request, self.template_name, self.context)
+        context = self.get_context_data()
+        context['form'] = form
+        return render(request, self.template_name, context)
 
 
 class AssociationTransactionListView:
