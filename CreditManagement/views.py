@@ -32,9 +32,9 @@ class TransactionAddView(LoginRequiredMixin, TemplateView):
                 return HttpResponseForbidden()
             # Create the form
             print(self.request.GET)
-            context['form'] = AssociationTransactionForm(association, initial=self.request.GET, initial_from_get=True)
+            context['form'] = AssociationTransactionForm(association, initial_from_get=self.request.GET)
         else:
-            context['form'] = UserTransactionForm(self.request.user, initial=self.request.GET, initial_from_get=True)
+            context['form'] = UserTransactionForm(self.request.user, initial_from_get=self.request.GET)
 
         return context
 
@@ -67,7 +67,9 @@ class DonationView(LoginRequiredMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super(DonationView, self).get_context_data(**kwargs)
-        context['form'] = UserDonationForm(self.request.user, initial=self.request.GET, initial_from_get=True)
+        context['form'] = UserDonationForm(self.request.user,
+                                           initial_from_get=self.request.GET,
+                                           initial={'amount': 0.5})
         return context
 
     def post(self, request):

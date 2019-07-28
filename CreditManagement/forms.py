@@ -5,21 +5,19 @@ from .models import *
 
 
 class InitialFromGETMixin:
-    def __init__(self, *args, initial_from_get=False, **kwargs):
+    def __init__(self, *args, initial_from_get=None, **kwargs):
         super(InitialFromGETMixin, self).__init__(*args, **kwargs)
         # If initial_from_get is set, adjust the stored initial values
-        self.initial_from_get = initial_from_get
+        self.initial_from_get = initial_from_get or {}
 
     def get_initial_for_field(self, field, field_name):
         """
         Special implementation of initial gathering if initial values are given through request GET object
         """
-        if self.initial_from_get:
-            value = self.initial.get(field_name)
-            if value is not None:
-                return value[0] if len(value) == 1 else value
-            else:
-                return field.initial
+        value = self.initial_from_get.get(field_name)
+        if value is not None:
+            return value[0] if len(value) == 1 else value
+
         return super(InitialFromGETMixin, self).get_initial_for_field(field, field_name)
 
 
