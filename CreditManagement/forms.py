@@ -1,5 +1,6 @@
 from dal_select2.widgets import ModelSelect2
 from django import forms
+from django.utils.translation import gettext as _
 
 from .models import *
 
@@ -101,3 +102,31 @@ class UserDonationForm(TransactionForm):
 
     class Meta(TransactionForm.Meta):
         fields = ['origin', 'amount', 'description', 'target']
+
+
+class TransactionDeleteForm(forms.Form):
+    def __init__(self, transaction_obj, deleter, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.transaction = transaction_obj
+        self.deleter = deleter
+
+    def clean(self):
+        cleaned_data = super().clean()
+
+        if self.transaction.confirm_moment <= timezone.now():
+            raise ValidationError(_('This transaction can no longer be altered'), code='locked')
+
+        # Validate dining list is still open (except for claimant)
+        if self.transaction.source_user is not None:
+            if not self.transaction.source_user == self.deleter:
+                raise ValidationError(_('You are not the source for this transaction'), code='locked')
+        elif self.transaction.source_association is not None:
+            if not self.request.user.is_board_of(self.transaction.source_association.id):
+                raise ValidationError(_('You are not the source for this transaction'), code='locked')
+        else:
+            RuntimeError("No source is defined, this is not possible")
+
+        return cleaned_data
+
+    def execute(self):
+        self.transaction.delete()

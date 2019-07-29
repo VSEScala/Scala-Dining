@@ -90,11 +90,10 @@
                 <a href="{% url 'new_slot' year=date.year month=date.month day=date.day %}"
                    class="btn btn-primary col-12">Create and claim a new slot</a>
             {% endif %}
-            <a class="btn btn-secondary col-5"
+            <a class="btn btn-secondary col-5 mt-2"
                href="{% url 'credits:transaction_donate' %}?redirect={{ request.path }}">
                 <i class="fas fa-coins"></i> Single use
             </a>
-
         </div>
 
 

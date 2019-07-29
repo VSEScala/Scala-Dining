@@ -5,7 +5,7 @@ from django.core.exceptions import PermissionDenied
 from CreditManagement.models import *
 from django.contrib import messages
 from django.utils.translation import gettext as _
-from .forms import UserTransactionForm, AssociationTransactionForm, UserDonationForm
+from .forms import UserTransactionForm, AssociationTransactionForm, UserDonationForm, TransactionDeleteForm
 from django.views.generic import View, TemplateView
 from django.http import HttpResponseForbidden, HttpResponseRedirect, HttpResponse
 
@@ -157,6 +157,52 @@ class TransactionAssociationView(TransactionAlterView):
 
     def post(self, request, association_name=None):
         return super(TransactionAssociationView, self).post(request)
+
+
+class TransactionDeleteView(CustomAccessMixin, TemplateView):
+    template_name = "credit_management/transaction_delete.html"
+
+    def get_context_data(self, **kwargs):
+        context = super(TransactionDeleteView, self).get_context_data(**kwargs)
+        tr_obj = self.get_transaction()
+
+        target = tr_obj.target()
+        target = target if target is not None else "Scala Kitchen"
+        context['transaction_text'] = "€{amount} to {target}".format(amount=tr_obj.amount, target=target)
+
+        return context
+
+    def post(self, request):
+        form = TransactionDeleteForm(self.get_transaction(), self.request.user, data={})
+
+        if form.is_valid():
+            form.execute()
+            messages.success(request, "Transaction has successfully been deleted")
+        else:
+            for error in form.non_field_errors():
+                messages.error(request, error)
+
+        return HttpResponseRedirect(request.GET.get('redirect'))
+
+    def get_transaction(self):
+        transaction_id = self.request.GET.get('id', None)
+        try:
+            return PendingTransaction.objects.get(pk=transaction_id)
+        except PendingTransaction.DoesNotExist:
+            return None
+
+    def check_access_permission(self, request):
+        transaction_id = request.GET.get('id', None)
+
+        if transaction_id is not None:
+            # get the instance
+            t_order = get_object_or_404(PendingTransaction, pk=transaction_id)
+            if t_order.source_user != request.user:
+                return HttpResponseForbidden("You do not have access to this transaction")
+            if t_order.confirm_moment <= timezone.now():
+                return HttpResponseForbidden("This transaction can no longer be altered")
+
+        return super(TransactionDeleteView, self).check_access_permission(request)
 
 
 class AssociationTransactionListView:

@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    <div>
+        <h3>Detele transaction</h3>
+        <form method="post">
+            {% csrf_token %}
+            <p>
+                Are you sure you want to undo the following transaction?
+            </p>
+            <p class="py-4">{{ transaction_text }}</p>
+            <p class="py-2"></p>
+
+            <div class="row">
+                <div class="col-6">
+                    <a class="btn btn-secondary btn-block"
+                       href="{{ redirect }}">
+                        No, go back
+                    </a>
+                </div>
+                <div class="col-6">
+                    <input type="submit" value="Yes, delete it" class="btn btn-block btn-danger"/>
+                </div>
+            </div>
+        </form>
+    </div>
+{% endblock %}
