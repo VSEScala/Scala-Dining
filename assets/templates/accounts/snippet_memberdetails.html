@@ -16,7 +16,7 @@
         </td>
         <td class="py-1 px-0">
             <a class="btn btn-block btn-outline-primary"
-               href="{% url 'transaction_add' association_name=association.slug %}?target_user={{ entry.id }}&redirect={{ request.path }}">
+               href="{% url 'association_transaction' association_name=association.slug %}?target_user={{ entry.id }}&redirect={{ request.path }}">
                 <i class="fas fa-plus"></i>
             </a>
         </td>

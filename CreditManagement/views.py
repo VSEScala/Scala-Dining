@@ -197,8 +197,16 @@ class TransactionDeleteView(CustomAccessMixin, TemplateView):
         if transaction_id is not None:
             # get the instance
             t_order = get_object_or_404(PendingTransaction, pk=transaction_id)
-            if t_order.source_user != request.user:
-                return HttpResponseForbidden("You do not have access to this transaction")
+            if t_order.source_user is not None:
+                if t_order.source_user != request.user:
+                    return HttpResponseForbidden("You do not have access to this transaction")
+            elif t_order.source_association is not None:
+                if not self.request.user.is_board_of(t_order.source_association.id):
+                    return HttpResponseForbidden("You do not have access to this transaction")
+            else:
+                # Transaction has no source
+                HttpResponseForbidden("You do not have access to this transaction")
+
             if t_order.confirm_moment <= timezone.now():
                 return HttpResponseForbidden("This transaction can no longer be altered")
 

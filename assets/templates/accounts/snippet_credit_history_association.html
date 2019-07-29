@@ -35,7 +35,7 @@
             {% if transaction.source_association == association %}
                 <a class="btn btn-outline-primary"
                         {% if transaction.target_user or transaction.target_association %}
-                   href="{% url 'credits:transaction_transfer' %}?redirect={{ request.path }}&id={{ transaction.id }}">
+                   href="{% url 'association_transaction' association_name=association.slug %}?redirect={{ request.path }}&id={{ transaction.id }}">
                         {% else %}
                             href="{% url 'credits:transaction_donate' %}?redirect={{ request.path }}&id={{ transaction.id }}">
                         {% endif %}

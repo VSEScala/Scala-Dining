@@ -41,7 +41,7 @@
     {% include 'snippets/paginator.html' %}
 
     <a class="btn btn-block btn-primary"
-       href="{% url 'transaction_add' association_name=association.slug %}?chain=True&redirect={{ request.path }}">
+       href="{% url 'association_transaction' association_name=association.slug %}?chain=True&redirect={{ request.path }}">
         Transfer credits
     </a>
 {% endblock %}

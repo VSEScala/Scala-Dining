@@ -37,7 +37,7 @@
         </div>
     </div>
     <a class="btn btn-block btn-primary"
-       href="{% url 'transaction_add' association_name=association.slug %}?chain=True&redirect={% url 'association_credits' association_name=association.slug %}">
+       href="{% url 'association_transaction' association_name=association.slug %}?chain=True&redirect={% url 'association_credits' association_name=association.slug %}">
         Transfer credits
     </a>
 

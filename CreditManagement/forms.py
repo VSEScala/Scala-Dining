@@ -121,7 +121,7 @@ class TransactionDeleteForm(forms.Form):
             if not self.transaction.source_user == self.deleter:
                 raise ValidationError(_('You are not the source for this transaction'), code='locked')
         elif self.transaction.source_association is not None:
-            if not self.request.user.is_board_of(self.transaction.source_association.id):
+            if not self.deleter.is_board_of(self.transaction.source_association.id):
                 raise ValidationError(_('You are not the source for this transaction'), code='locked')
         else:
             RuntimeError("No source is defined, this is not possible")
