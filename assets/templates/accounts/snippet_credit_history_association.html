@@ -1,4 +1,5 @@
 {% load credit_tags %}
+{% load dining_tags %}
 {% load humanize %}
 
 <tr class="">
@@ -28,5 +29,26 @@
     </td>
     <td class="">
         {% if transaction.description %}{{ transaction.description }}{% else %}-{% endif %}
+    </td>
+    <td class="py-1">
+        {% if transaction.type == 2 %}
+            {% if transaction.source_association == association %}
+                <a class="btn btn-outline-primary"
+                        {% if transaction.target_user or transaction.target_association %}
+                   href="{% url 'credits:transaction_transfer' %}?redirect={{ request.path }}&id={{ transaction.id }}">
+                        {% else %}
+                            href="{% url 'credits:transaction_donate' %}?redirect={{ request.path }}&id={{ transaction.id }}">
+                        {% endif %}
+                <i class="fas fa-pen"></i>
+                </a>
+            {% endif %}
+        {% elif transaction.type == 3 %}
+            {% with transaction.id|get_dining_slot as slot %}
+                <a class="btn btn-outline-primary"
+                   href="{{ slot.get_absolute_url }}">
+                    <i class="fas fa-search"></i>
+                </a>
+            {% endwith %}
+        {% endif %}
     </td>
 </tr>
