@@ -14,6 +14,12 @@
         <td>
             {{ credit }}
         </td>
+        <td class="py-1 px-0">
+            <a class="btn btn-block btn-outline-primary"
+               href="{% url 'transaction_add' association_name=association.slug %}?target_user={{ entry.id }}&redirect={{ request.path }}">
+                <i class="fas fa-plus"></i>
+            </a>
+        </td>
         <td>
             {% if credit < 0 %}
                 {% if entry.usercredit.balance_fixed >= 0 %}
