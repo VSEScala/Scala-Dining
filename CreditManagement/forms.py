@@ -94,8 +94,10 @@ class UserDonationForm(TransactionForm):
     A transactionform that allows donations to the kitchen cost
     Ideal if someone uses the kitchen without making a dining list.
     """
+    target = forms.CharField(disabled=True, initial="Scala kitchen use")
+
     def __init__(self, user, *args, **kwargs):
         super().__init__(*args, user=user, **kwargs)
 
     class Meta(TransactionForm.Meta):
-        fields = ['origin', 'amount', 'description']
+        fields = ['origin', 'amount', 'description', 'target']
