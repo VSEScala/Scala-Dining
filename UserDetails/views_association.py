@@ -48,6 +48,9 @@ class CreditsOverview(LoginRequiredMixin, AssociationBoardMixin, ListView):
         return context
 
 
+
+
+
 class TransactionsCsvView(LoginRequiredMixin, AssociationBoardMixin, View):
     """Returns a CSV file with all transactions."""
 

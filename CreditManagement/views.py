@@ -19,23 +19,21 @@ class TransactionListView(ListView):
         return AbstractTransaction.get_all_transactions(user=self.request.user).order_by('-order_moment')
 
 
-class TransactionAccessMixin:
+class CustomAccessMixin:
+    def dispatch(self, request, *args, **kwargs):
+        permission_check = self.check_access_permission(request)
+        if permission_check is not None:
+            return permission_check
+        return super(CustomAccessMixin, self).dispatch(request, *args, **kwargs)
+
+    def check_access_permission(self, request):
+        return None
+
+
+class TransactionAlterView(LoginRequiredMixin, CustomAccessMixin, TemplateView):
     template_name = None
     template_add_name = "credit_management/transaction_add.html"
     template_edit_name = "credit_management/transaction_edit.html"
-
-    def dispatch(self, request, *args, **kwargs):
-        """ If a specific instance is given, check the access rights."""
-        id = request.GET.get('id', None)
-        if id is not None:
-            # get the instance
-            t_order = get_object_or_404(PendingTransaction, pk=id)
-            if t_order.source_user != request.user:
-                raise PermissionDenied("You do not have access to this transaction")
-            if t_order.confirm_moment <= timezone.now():
-                raise PermissionDenied("This transaction can no longer be altered")
-
-        return super().dispatch(request, *args, **kwargs)
 
     def get_transaction(self):
         transaction_id = self.request.GET.get('id', None)
@@ -48,31 +46,40 @@ class TransactionAccessMixin:
         raise NotImplementedError()
 
     def get_context_data(self, *args, **kwargs):
-        context = super(TransactionAccessMixin, self).get_context_data(*args, **kwargs)
+        context = super(TransactionAlterView, self).get_context_data(*args, **kwargs)
 
-        transaction = self.get_transaction()
+        transaction_obj = self.get_transaction()
         # get the form
-        context['form'] = self.get_form(transaction=transaction)
+        context['form'] = self.get_form(transaction=transaction_obj)
+
+        context['redirect'] = self.request.GET.get('redirect')
+        context['chain'] = self.request.GET.get('chain', False)
 
         # Set the correct template
-        if transaction is None:
+        if transaction_obj is None:
             self.template_name = self.template_add_name
         else:
-            context['redirect'] = self.request.GET.get('redirect')
             self.template_name = self.template_edit_name
-
         return context
 
     def post(self, request):
-        transaction = self.get_transaction()
-        form = self.get_form(transaction=transaction, data=request.POST)
+        transaction_obj = self.get_transaction()
+        form = self.get_form(transaction=transaction_obj, data=request.POST)
 
         if form.is_valid():
             form.save()
-            if transaction is None:
+            if transaction_obj is None:
                 messages.add_message(request, messages.SUCCESS, _("Transaction has been added successfully."))
             else:
                 messages.add_message(request, messages.SUCCESS, _("Transaction has been changed successfully."))
+
+            if 'add_another' in request.POST:
+                url = request.path_info + "?chain=True"
+                if request.GET.get('redirect'):
+                    url += "&redirect=" + request.GET.get('redirect')
+                if request.GET.get('amount'):
+                    url += "&amount=" + request.GET.get('amount')
+                return HttpResponseRedirect(url)
 
             return HttpResponseRedirect(request.GET.get('redirect', request.path_info))
 
@@ -81,7 +88,28 @@ class TransactionAccessMixin:
         return render(request, self.template_name, context)
 
 
-class DonationView(LoginRequiredMixin, TransactionAccessMixin, TemplateView):
+class TransactionUserView(TransactionAlterView):
+    def get_form(self, transaction=None, data=None):
+        return UserTransactionForm(self.request.user,
+                                   initial_from_get=self.request.GET,
+                                   data=data,
+                                   instance=transaction)
+
+    def check_access_permission(self, request):
+        transaction_id = request.GET.get('id', None)
+
+        if transaction_id is not None:
+            # get the instance
+            t_order = get_object_or_404(PendingTransaction, pk=transaction_id)
+            if t_order.source_user != request.user:
+                return HttpResponseForbidden("You do not have access to this transaction")
+            if t_order.confirm_moment <= timezone.now():
+                return HttpResponseForbidden("This transaction can no longer be altered")
+
+        return super(TransactionUserView, self).check_access_permission(request)
+
+
+class DonationView(TransactionUserView):
     def get_form(self, transaction=None, data=None):
         if transaction is None:
             initial = {'amount': 0.5}
@@ -95,15 +123,26 @@ class DonationView(LoginRequiredMixin, TransactionAccessMixin, TemplateView):
                                 instance=transaction)
 
 
-class TransactionUserView(LoginRequiredMixin, TransactionAccessMixin, TemplateView):
-    def get_form(self, transaction=None, data=None):
-        return UserTransactionForm(self.request.user,
-                                   initial_from_get=self.request.GET,
-                                   data=data,
-                                   instance=transaction)
+class TransactionAssociationView(TransactionAlterView):
+    def check_access_permission(self, request):
+        association_name = self.kwargs.get('association_name')
+        association = get_object_or_404(Association, slug=association_name)
 
+        transaction_id = request.GET.get('id', None)
 
-class TransactionAssociationView(LoginRequiredMixin, TransactionAccessMixin, TemplateView):
+        if transaction_id is not None:
+            # If an association is given as the source, check user credentials
+            if not self.request.user.is_board_of(association.id):
+                return HttpResponseForbidden("You do not have access to this transaction")
+            t_order = get_object_or_404(PendingTransaction, pk=transaction_id)
+            if t_order.confirm_moment <= timezone.now():
+                return HttpResponseForbidden("This transaction can no longer be altered")
+        else:
+            if not self.request.user.is_board_of(association.id):
+                return HttpResponseForbidden("You can not make transactions for this association")
+
+        return super(TransactionAssociationView, self).check_access_permission(request)
+
     def get_form(self, transaction=None, data=None):
         association_name = self.kwargs.get('association_name')
         association = Association.objects.get(slug=association_name)
@@ -115,6 +154,10 @@ class TransactionAssociationView(LoginRequiredMixin, TransactionAccessMixin, Tem
                                           initial_from_get=self.request.GET,
                                           data=data,
                                           instance=transaction)
+
+    def post(self, request, association_name=None):
+        return super(TransactionAssociationView, self).post(request)
+
 
 class AssociationTransactionListView:
     pass

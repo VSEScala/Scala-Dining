@@ -6,7 +6,28 @@
         <form method="post">
             {% csrf_token %}
             {% include "snippets/bootstrap_form.html" with horizontal=True %}
-            <input type="submit" value="Create transaction" class="btn btn-block btn-primary"/>
+
+            <div class="row">
+                <div class="col-md-4 mt-1">
+                    <a class="btn btn-outline-primary btn-block"
+                       href="{{ redirect }}">
+                        Cancel
+                    </a>
+                </div>
+                {% if not chain %}
+                    <div class="col-md-8 mt-1">
+                        <input type="submit" value="Create" class="btn btn-block btn-primary"/>
+                    </div>
+                {% else %}
+                    <div class="col-md-5 mt-1">
+                        <input type="submit" value="Create" class="btn btn-block btn-primary"/>
+                    </div>
+                    <div class="col-md-3 mt-1">
+                        <input type="submit" value="Create More" name="add_another" class="btn btn-block btn-secondary"/>
+                    </div>
+                {% endif %}
+            </div>
+
         </form>
     </div>
 {% endblock %}
