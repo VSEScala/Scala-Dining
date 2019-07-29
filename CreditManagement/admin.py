@@ -5,11 +5,6 @@ from UserDetails.models import Association, UserMembership
 
 
 class MemberOfFilter(admin.SimpleListFilter):
-    """
-    Creates a filter that filters users on the association they are part of (unvalidated)
-    """
-    # Human-readable title which will be displayed in the
-    # right admin sidebar just above the filter options.
     title = 'Member of association'
 
     # Parameter for the filter that will be used in the URL query.
@@ -39,22 +34,60 @@ class MemberOfFilter(admin.SimpleListFilter):
         return queryset.filter(user__pk__in=a)
 
 
+class HasMemberSelected(admin.SimpleListFilter):
+    def lookups(self, request, model_admin):
+        """
+        Returns a list of tuples representing all the associations
+        as displayed in the table
+        """
+
+        return [(1, "User"), (2, "Association"), (3, "None")]
+
+    def queryset(self, request, queryset):
+        """
+        Returns the filtered querysets containing all members of the selected associations
+        """
+
+        if self.value() == "1":
+            return queryset.filter(**{self.column_name+"_user__isnull": False})
+        if self.value() == "2":
+            return queryset.filter(**{self.column_name+"_association__isnull": False})
+        if self.value() == "3":
+            return queryset.filter(**{self.column_name+"_user__isnull": True,
+                                      self.column_name+"_association__isnull": True})
+
+        return queryset
+
+
+class SelectedSource(HasMemberSelected):
+    title = 'Selected source type'
+
+    # Parameter for the filter that will be used in the URL query.
+    parameter_name = 'source_type'
+    column_name = 'source'
+
+
+class SelectedTarget(HasMemberSelected):
+    title = 'Selected target type'
+
+    # Parameter for the filter that will be used in the URL query.
+    parameter_name = 'target_type'
+    column_name = 'target'
+
+
 class NegativeCreditDateFilter(admin.SimpleListFilter):
     """
     A filter that filters users on the time they've had a negative balance.
     """
     # Human-readable title which will be displayed in the
     # right admin sidebar just above the filter options.
-    title = 'Negative credits since'
+    title = 'Balance score'
 
     # Parameter for the filter that will be used in the URL query.
     parameter_name = 'neg_credits_since'
 
-    neg_since_list = ((0, "Any date"),
-                      (3, "Three days"),
-                      (7, "One week"),
-                      (30, "One month"),
-                      (90, "Three months"),)
+    neg_since_list = ((1, "Positive"),
+                      (2, "Negative"))
 
     def lookups(self, request, model_admin):
         """
@@ -69,28 +102,30 @@ class NegativeCreditDateFilter(admin.SimpleListFilter):
         Returns the filtered querysets containing all members of the selected associations
         """
 
-        # If no selection is made, return the entire query
         if self.value() is None:
             return queryset
 
-        # Todo: disabled due to switch to transactions
-        return queryset
-        # Find all usercredits object that adhere the given date criteria
-        # start_date = (datetime.now() - timedelta(days=int(self.value()))).date()
-        # results = UserCredit.objects.filter(negative_since__lte=start_date).values_list('pk')
+        try:
+            value = int(self.value())
+        except ValueError:
+            value = None
 
-        # Crosslink the given user identities with the given query
-        return queryset.filter(pk__in=results)
+        if value == 1:
+            return queryset.filter(balance__gte=0)
+        if value == 2:
+            return queryset.filter(balance__lt=0)
+
+        return queryset
 
 
 class FixedTransactionAdmin(admin.ModelAdmin):
-    list_display = ('order_moment', 'source_user', 'source_association',
-                    'amount', 'target_user', 'target_association')
+    list_display = ('order_moment', 'source', 'amount', 'target', 'description')
+    list_filter = [SelectedSource, 'source_association', SelectedTarget]
 
 
 class PendingTransactionAdmin(admin.ModelAdmin):
-    list_display = ('order_moment', 'source_user', 'source_association',
-                    'amount', 'target_user', 'target_association')
+    list_display = ('order_moment', 'source', 'amount', 'target', 'description')
+    list_filter = [SelectedSource, 'source_association', SelectedTarget]
 
     actions = ['finalise']
 
