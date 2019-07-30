@@ -19,7 +19,7 @@
         <div class="col-12">
             {% for association in user_associations %}
                     <div class="row">
-                        <hr class="col-12">
+                        <hr class="col-12 p-0">
                         {# Association image #}
                         <div class="col-md-2 d-none d-md-flex">
                             {# (Image is in separate div so that it is inside of the column padding) #}
@@ -36,15 +36,15 @@
                     </div>
             {% endfor %}
             <div class="row">
-                <hr class="col-12">
-                <div class="col-12">
+                <hr class="col-12 p-0">
+                <div class="col-12 mt-4">
                     You can also try to contact any of the other associations if necessary, but please do this as little as possible.
                 </div>
             </div>
 
             {% for association in other_associations %}
                 <div class="row">
-                    <hr class="col-12" style="border-top-color: #444">
+                    <hr class="col-12 p-0" style="border-top-color: #444">
                     {# Association image #}
                     <div class="col-md-2 d-none d-md-flex">
                         {# (Image is in separate div so that it is inside of the column padding) #}
@@ -60,7 +60,9 @@
                     </div>
                 </div>
             {% endfor %}
-            <hr class="col-12 pb-4" style="border-top-color: #444">
+            <div class="row  pb-4">
+                <hr class="col-12 p-0" style="border-top-color: #444">
+            </div>
         </div>
     </div>
 
