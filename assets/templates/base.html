@@ -13,11 +13,11 @@
         </a>
         {% with justify="d-flex justify-content-between align-items-center" %}
             {% if user.is_authenticated %}
-            <span class="navbar-text small text-right px-2">
-                {{ user }}<br>
-                {{ user.usercredit.balance|euro }}
-            </span>
-            <div class="navbar-nav">
+                <span class="navbar-text small text-right px-2">
+                    {{ user }}<br>
+                    {{ user.usercredit.balance|euro }}
+                </span>
+                <div class="navbar-nav">
                     <div class="nav-item dropdown">
                         {# (mb-0 is needed to cancel the margin that gets added by h4) #}
                         <a class="nav-link dropdown-toggle h4 mb-0" href="#" data-toggle="dropdown">
@@ -105,8 +105,7 @@
                             </a>
                         </div>
                     </div>
-
-            </div>
+                </div>
             {% else %}
                 <div class="navbar-nav">
                     <div class="nav-item text-right px-2">
@@ -130,6 +129,22 @@
             {% endif %}
         {% endwith %}
     </nav>
+
+    <div class="container mt-3">
+        {% include 'snippets/negative_balance_alert.html' %}
+    </div>
+
+    <div class="container mt-3">
+        {% for message in messages %}
+            <div class="alert alert-{% if message.tags == "error" %}danger{% else %}{{ message.tags }}{% endif %} alert-dismissible"
+                 role="alert">
+                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+                {{ message }}
+            </div>
+        {% endfor %}
+    </div>
 
     {% if messages %}
         <div class="container mt-3">
