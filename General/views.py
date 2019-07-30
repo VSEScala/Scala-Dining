@@ -1,9 +1,11 @@
 from django.views.generic import View, ListView
 from django.shortcuts import render
 from django.db.models import ObjectDoesNotExist
-from .models import SiteUpdate, PageVisitTracker
 from django.utils import timezone
 from datetime import datetime
+
+from .models import SiteUpdate, PageVisitTracker
+from UserDetails.models import Association
 
 
 class SiteUpdateView(ListView):
@@ -80,3 +82,21 @@ class RulesPageView(View):
             return False
 
         return RulesPageView.change_date > visit_timestamp
+
+
+class UpgradeBalanceInstructionsView(View):
+    template = "credit_management/balance_upgrade_instructions.html"
+    context = {}
+    change_date = timezone.make_aware(datetime(2019, 4, 14, 22, 20))
+
+    def get(self, request):
+        if request.user.is_authenticated:
+            # Seperated for a possible prefilter to be implemented later (e.g. if active in kitchen)
+            associations = Association.objects.all()
+            self.context['user_associations'] = associations.filter(usermembership__related_user=request.user)
+            self.context['other_associations'] = associations.\
+                exclude(id__in=self.context['user_associations'].values_list('id', flat=True))
+        else:
+            self.context['associations'] = Association.objects.all()
+
+        return render(request, self.template, self.context)

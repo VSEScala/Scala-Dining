@@ -7,7 +7,7 @@
                     Your balance is to low to join dining lists, upgrade your balance now!
                 </div>
                 <div class="float-right btn btn-info">
-                    <a href="{% url 'credits:transaction_list' %}">Learn how</a>
+                    <a href="{% url 'upgrade_instructions' %}">Learn how</a>
                 </div>
             </div>
         {% else %}
@@ -15,9 +15,12 @@
                 <div class="col py-md-2">
                     Your balance is currently below zero, please upgrade your balance.
                 </div>
-                <div class="float-right btn btn-info">
-                    <a href="{% url 'credits:transaction_list' %}">Learn how</a>
-                </div>
+                {% url 'upgrade_instructions' as help_url %}
+                {% if request.path != help_url %}
+                    <div class="float-right btn btn-info">
+                        <a href="{% url 'upgrade_instructions' %}">Learn how</a>
+                    </div>
+                {% endif %}
             </div>
         {% endif %}
     {% endif %}
