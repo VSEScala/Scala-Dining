@@ -92,11 +92,11 @@ class UpgradeBalanceInstructionsView(View):
     def get(self, request):
         if request.user.is_authenticated:
             # Seperated for a possible prefilter to be implemented later (e.g. if active in kitchen)
-            associations = Association.objects.all()
+            associations = Association.objects.order_by('slug')
             self.context['user_associations'] = associations.filter(usermembership__related_user=request.user)
             self.context['other_associations'] = associations.\
                 exclude(id__in=self.context['user_associations'].values_list('id', flat=True))
         else:
-            self.context['associations'] = Association.objects.all()
+            self.context['other_associations'] = Association.objects.all()
 
         return render(request, self.template, self.context)

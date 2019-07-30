@@ -17,30 +17,32 @@
     </div>
     <div class="row">
         <div class="col-12">
-            {% for association in user_associations %}
-                    <div class="row">
-                        <hr class="col-12 p-0">
-                        {# Association image #}
-                        <div class="col-md-2 d-none d-md-flex">
-                            {# (Image is in separate div so that it is inside of the column padding) #}
-                            {% if association.image %}
-                                <div class="slot_image w-100" style="background-image: url({{ association.image.url }});">
-                                </div>
-                            {% endif %}
-                        </div>
+            {% if user_associations %}
+                {% for association in user_associations %}
+                        <div class="row">
+                            <hr class="col-12 p-0">
+                            {# Association image #}
+                            <div class="col-md-2 d-none d-md-flex">
+                                {# (Image is in separate div so that it is inside of the column padding) #}
+                                {% if association.image %}
+                                    <div class="slot_image w-100" style="background-image: url({{ association.image.url }});">
+                                    </div>
+                                {% endif %}
+                            </div>
 
-                        <div class="col-10 mb-4">
-                            <p class="h4">{{ association.name }}</p>
-                            {{ association.balance_update_instructions|linebreaksbr }}
+                            <div class="col-10 mb-4">
+                                <p class="h4">{{ association.name }}</p>
+                                {{ association.balance_update_instructions|linebreaksbr }}
+                            </div>
                         </div>
+                {% endfor %}
+                <div class="row">
+                    <hr class="col-12 p-0">
+                    <div class="col-12 mt-4">
+                        You can also try to contact any of the other associations if necessary, but please do this as little as possible.
                     </div>
-            {% endfor %}
-            <div class="row">
-                <hr class="col-12 p-0">
-                <div class="col-12 mt-4">
-                    You can also try to contact any of the other associations if necessary, but please do this as little as possible.
                 </div>
-            </div>
+            {% endif %}
 
             {% for association in other_associations %}
                 <div class="row">
