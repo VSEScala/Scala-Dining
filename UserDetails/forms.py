@@ -177,3 +177,9 @@ class AssociationLinkForm(forms.Form):
             else:
                 if link and link.get_verified_state() != False:
                     link.delete()
+
+
+class AssociationSettingsForm(forms.ModelForm):
+    class Meta:
+        model = Association
+        fields = ['name', 'balance_update_instructions']

@@ -17,6 +17,10 @@
             <a class="nav-link{% block tab_members %}{% endblock %}"
                href="{% url 'association_members' association_name=association.slug %}">Members</a>
         </li>
+        <li class="nav-item">
+            <a class="nav-link{% block tab_settings %}{% endblock %}"
+               href="{% url 'association_settings' association_name=association.slug %}">Settings</a>
+        </li>
     </ul>
 
     <div class="mt-3">{% block details %}{% endblock details %}</div>
