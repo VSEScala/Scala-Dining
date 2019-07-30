@@ -182,4 +182,4 @@ class AssociationLinkForm(forms.Form):
 class AssociationSettingsForm(forms.ModelForm):
     class Meta:
         model = Association
-        fields = ['name', 'balance_update_instructions']
+        fields = ['balance_update_instructions']
