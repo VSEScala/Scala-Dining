@@ -96,6 +96,7 @@ class Association(Group):
                                             help_text="If checked, this association has an exception to the minimum balance")
     social_app = models.ForeignKey(SocialApp, on_delete=models.PROTECT, null=True, blank=True,
                                    help_text='A user automatically becomes member of the association if she signs up using this social app')
+    balance_update_instructions = models.TextField(max_length=512, default="to be defined")
 
     @cached_property
     def requires_action(self):
