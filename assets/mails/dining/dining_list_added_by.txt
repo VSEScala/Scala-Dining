@@ -1,0 +1,8 @@
+Hey {{user.first_name}}
+
+{{entry.created_by}} has just added you to the following dining list:
+Date: {{dining_list.date}}
+By: {{dining_list.claimed_by}}
+On behalf of: {{dining_list.association}}
+
+Enjoy your dinner!

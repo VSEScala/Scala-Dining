@@ -16,6 +16,7 @@ from django.views.generic.detail import SingleObjectMixin
 from django.views.generic.edit import DeleteView
 
 from Dining.datesequence import sequenced_date
+from General.mail_control import send_mass_mail, send_mail
 from .forms import *
 from .models import *
 
@@ -283,6 +284,13 @@ class EntryAddView(LoginRequiredMixin, DiningListMixin, TemplateView):
                 if entry.user == request.user:
                     msg = _("You successfully joined the dining list")
                 else:
+                    # Set up the mail
+                    subject = "You've been added to the dining list of {date}".format(date=entry.dining_list.date)
+                    template = "dining/dining_list_added_by"
+                    context = {'entry': entry, 'dining_list': entry.dining_list}
+
+                    # Send mail to the people on the dining list
+                    send_mail(subject=subject, template_name=template, context_data=context, recipient=entry.user)
                     msg = _("You successfully added {} to the dining list").format(entry.user.get_short_name())
             else:
                 msg = _("You successfully added {} to the dining list").format(entry.name)
@@ -571,8 +579,23 @@ class SlotDeleteView(LoginRequiredMixin, SlotMixin, DeleteView):
         instance = self.get_object()
         form = DiningListDeleteForm(request.user, instance)
         if form.is_valid():
+            # Set up the mail
+            subject = "Dining list {date} cancelled".format(date=instance.date)
+            template = "dining/dining_list_deleted"
+            context = {'dining_list': instance}
+            diners = instance.diners.exclude(request.user)
+
+            # Delete the dining list
             form.execute()
+
+            # Send mail to the people on the dining list
+            send_mass_mail(template_name=template,
+                           subject=subject,
+                           context_data=context,
+                           recipients=diners)
+
             messages.success(request, _("Dining list is deleted"))
+
             # Need to use reverse from the DiningListMixin superclass
             return HttpResponseRedirect(super(DiningListMixin, self).reverse("day_view"))
 
