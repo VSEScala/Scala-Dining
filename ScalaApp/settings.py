@@ -73,7 +73,7 @@ ROOT_URLCONF = 'ScalaApp.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [os.path.join(BASE_DIR, 'assets/templates')],
+        'DIRS': [os.path.join(BASE_DIR, 'assets/templates'), os.path.join(BASE_DIR, 'assets/mails')],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
