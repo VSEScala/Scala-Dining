@@ -73,7 +73,6 @@ def send_mass_mail(subject=None, template_name=None, context_data={}, recipients
     :param recipients: The queryset of users
     :param fail_silently: Whether an error needs to be created when sending fails
     :param kwargs: additional EmailTemplateMessage arguments
-    :return:
     """
 
     # Get the templates
@@ -92,7 +91,8 @@ def send_mass_mail(subject=None, template_name=None, context_data={}, recipients
                              txt_template=txt_template,
                              html_template=html_template,
                              context_data=context_data,
-                             to=to, **kwargs).send(fail_silently=fail_silently)
+                             to=to, **kwargs)\
+            .send(fail_silently=fail_silently)
 
     connection.close()
 

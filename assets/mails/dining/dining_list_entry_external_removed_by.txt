@@ -1,0 +1,7 @@
+Hey {{ entry.user}}
+
+{{ remover }} has removed your guest {{entry.name}} from the following dining list:
+Date: {{dining_list.date}}
+By: {{dining_list.claimed_by}}
+Association: {{dining_list.association}}
+
