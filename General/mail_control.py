@@ -20,7 +20,7 @@ class EmailTemplateMessage(EmailMultiAlternatives):
                 template_name = template_name[:, -len(appendix)]
 
         try:
-            template = get_template(template_name+'.txt')
+            template = get_template(template_name+'.txt', using='EmailTemplates')
             content_plain = template.render(context_data)
         except TemplateDoesNotExist:
             raise KeyError("{template}.txt does not exist, a plain version must exist".format(template=template_name))
@@ -29,7 +29,7 @@ class EmailTemplateMessage(EmailMultiAlternatives):
                                                    body=content_plain,
                                                    from_email=self.mail_source)
         try:
-            content_html = get_template(template_name+'.html').render(context_data)
+            content_html = get_template(template_name+'.html', using='EmailTemplates').render(context_data)
             self.attach_alternative(content_html, "text/html")
         except TemplateDoesNotExist:
             pass

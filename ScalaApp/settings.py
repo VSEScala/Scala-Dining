@@ -73,7 +73,7 @@ ROOT_URLCONF = 'ScalaApp.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [os.path.join(BASE_DIR, 'assets/templates'), os.path.join(BASE_DIR, 'assets/mails')],
+        'DIRS': [os.path.join(BASE_DIR, 'assets/templates')],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -84,6 +84,12 @@ TEMPLATES = [
                 'General.apps.scala_settings_in_template'
             ],
         },
+    },
+    {
+        'NAME': 'EmailTemplates',
+        'BACKEND': 'django.template.backends.django.DjangoTemplates',
+        'DIRS': [os.path.join(BASE_DIR, 'assets/mails')],
+        'APP_DIRS': True,
     },
 ]
 
@@ -177,6 +183,8 @@ SITE_ID = 1
 
 # Show e-mails in console for development
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+
+MAIL_TEMPLATES = [os.path.join(BASE_DIR, 'assets/mails')]
 
 # Allauth configuration
 ACCOUNT_EMAIL_REQUIRED = True
