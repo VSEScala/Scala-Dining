@@ -1,5 +1,5 @@
 Hey {{ user }}
 
-{{cancelled_by}} has cancelled the dining list on {{dining_list.date}}. You have been removed from the dining list.
+
 
 Feel free to start a dining list of your own or join another one if possible.

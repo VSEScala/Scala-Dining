@@ -1,4 +1,14 @@
-There is a new update on the dining list:
-This is the HTML format
+{% extends 'base.html' %}
 
-{{ update }}
+
+{% block content %}
+    <p>
+        Hey {{ user.first_name }}
+    </p>
+    <p>
+        The following update has just been placed on the dining app:
+    </p>
+    <p>
+        {{ update }}
+    </p>
+{% endblock %}

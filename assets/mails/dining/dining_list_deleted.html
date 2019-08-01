@@ -1,1 +1,28 @@
-Dining slot has been deleted
+{% extends 'base.html' %}
+
+
+{% block content %}
+    <p>
+        Hey {{ user.first_name }}
+    </p>
+    <p>
+        Sorry to be the bringer of bad news, but...<br>
+        {{cancelled_by}} has <b>cancelled</b> the {{ dining_list.associatoin.shorthand }}dining list on {{dining_list.date}}. <br>
+        As a result you may need to find
+        a meal elsewhere. Maybe you can join another dining list or start your own. You can check it here:
+    </p>
+    <div>
+        <a href="{{ day_view_url }}"
+           style="background-color: #375a7f;padding: 0.75em; border-radius: 0.25rem; color: white; text-decoration: none;">
+            Go to day view</a>
+    </div>
+
+    <p style="padding-top: 1em">
+        Enjoy your day
+    </p>
+{% endblock %}
+
+{% block mail_footer %}
+    The Scala Dining app will always inform you when you are removed from a dining list by others.<br>
+    Don't want this? Give us feedback by responding to this e-mail.
+{% endblock %}

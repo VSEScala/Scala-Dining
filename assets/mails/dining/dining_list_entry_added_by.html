@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+
+
+{% block content %}
+    <p>
+        Hey {{ user.first_name }}
+    </p>
+    <p>
+        {{entry.created_by}} has just added you to the following dining list:
+    </p>
+    <table>
+        <tr><td>
+                Date
+            </td><td>
+                {{dining_list.date}}
+        </td></tr>
+        <tr><td>
+                By
+            </td><td>
+                {{dining_list.claimed_by}}
+        </td></tr>
+        <tr><td>
+                Association
+            </td><td>
+                {{dining_list.association}}
+        </td></tr>
+        <tr><td>
+                Dish
+            </td><td>
+                {{dining_list.dish}}
+        </td></tr>
+        <tr><td>
+                Served:
+            </td><td>
+                {{dining_list.serve_time}}
+        </td></tr>
+    </table>
+    <p>
+        You can view the dining list here:
+    </p>
+    <div>
+        <a href="{{ dining_list.get_absolute_url }}"
+           style="background-color: #375a7f;padding: 0.75em; border-radius: 0.25rem; color: white; text-decoration: none;">
+            View dining list</a>
+    </div>
+
+    <p style="padding-top: 1em">
+        Enjoy your meal
+    </p>
+{% endblock %}
