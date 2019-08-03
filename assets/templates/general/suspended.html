@@ -1,0 +1,73 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+    <div class="row">
+        <h1 class="col-12">Suspended accounts</h1>
+        {% if user.is_suspended %}
+            <div  class="col-12">
+                <p>
+                    It appears that your account has suspended. This is done for the following reason:
+                </p>
+                <p>{{ user.deactivation_reason }}</p>
+                <p>
+                    Below you can see what this means and how you can reactivate the full functionality of your account.
+                </p>
+            </div>
+        {% endif %}
+        <h3>Causes for suspended accounts</h3>
+        <div  class="col-12">
+            <p>
+                There are generally two reasons why accounts are suspended:
+            </p>
+            <ol>
+                <li>An account has been determined not to be a member of the Scala associations. Either because that user
+                    was never a member or ceized to be a member. This is detected automatically by the system.</li>
+                <li>The user broke the rules in the agreement and/or has done actions related to the use of the app or the
+                    kitchen that resulted in a suspension.</li>
+            </ol>
+        </div>
+        <h3>What has been disabled</h3>
+        <div class="col-12">
+            <p>
+                Suspended accounts can no longer:
+                <ol>
+                    <li>Create dining lists</li>
+                    <li>Add others to dining lists.</li>
+                    <li>Post comments to dining lists.</li>
+                    <li>Transfer money to other members.</li>
+                    <li>Adjust their allergies</li>
+                </ol>
+                Suspended accounts can:
+                <ol>
+                    <li>Join dining lists as longer as their balance <u>remains positive</u></li>
+                    <li>Can be added by others as long as their balance <u>remains positive</u></li>
+                    <li>An exception above is made for members of an association with no negative restrictions.</li>
+                </ol>
+            </p>
+        </div>
+        <h3>How to fix it</h3>
+        <div  class="col-12">
+            <p>
+            Depending on the reason of suspension you can reactivate your account as follows:
+            </p>
+            <p>
+                If your account was suspended due to no longer being a member, your account is re-activated as soon as
+                your association reconfirms your membership.
+                In <a href="{% url 'settings_account' %}">your settings</a>,
+                mark what associations you are part of and wait
+                for those associations to confirm that.
+                If an association is incorrectly marked as rejected, please contact the board of that association.
+            </p>
+            <p>
+                If your account has suspended because of another reason, you are likely to have recieved how long your account
+                will be suspended.<br>
+                If you do not agree with this suspension,
+                contact the Scala board (<a href="mailto:bestuur@studentencultuur.nl">bestuur@studentencultuur.nl</a>)
+                or the dining app admins (<a href="mailto:diningapp@studentencultuur.nl">diningapp@studentencultuur.nl</a>)
+            </p>
+        </div>
+    </div>
+    <div class="row my-3 py-3"></div>
+
+{% endblock %}

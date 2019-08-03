@@ -1,4 +1,4 @@
-from django.views.generic import View, ListView
+from django.views.generic import View, ListView, TemplateView
 from django.shortcuts import render
 from django.db.models import ObjectDoesNotExist
 from django.utils import timezone
@@ -100,3 +100,7 @@ class UpgradeBalanceInstructionsView(View):
             self.context['other_associations'] = Association.objects.all()
 
         return render(request, self.template, self.context)
+
+
+class SuspensionInfoView(TemplateView):
+    template_name = "general/suspended.html"
