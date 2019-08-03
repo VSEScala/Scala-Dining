@@ -71,7 +71,10 @@ class CustomUserAdmin(admin.ModelAdmin):
 
     readonly_fields = ('date_joined', 'last_login')
     inlines = [AssociationLinks]
-    fields = ('username', ('first_name', 'last_name'), 'date_joined', 'email')
+    fields = ('username',
+              ('first_name', 'last_name'),
+              'date_joined', 'email',
+              ('is_suspended', 'is_banned', 'deactivation_reason'))
 
 
 class GroupAdminForm(forms.ModelForm):

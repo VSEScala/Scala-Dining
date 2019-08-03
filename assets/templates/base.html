@@ -141,6 +141,28 @@
 
     <div class="container mt-3">
         {% include 'snippets/negative_balance_alert.html' %}
+        {% if user.is_suspended %}
+        <div class="alert alert-danger row" role="alert">
+            <div class="col py-md-2">
+                <b>Your account has been suspended!</b><br>
+                Some functions have been restricted
+            </div>
+            <div class="float-right btn btn-info">
+                <a href="{% url 'upgrade_instructions' %}">Learn more</a>
+            </div>
+        </div>
+        {% endif %}
+        {% if user.get_verified_memberships is None %}
+            <div class="alert alert-danger row" role="alert">
+                <div class="col py-md-2">
+                    <b>Your account has been suspended!</b><br>
+                    Some functions have been restricted
+                </div>
+                <div class="float-right btn btn-info">
+                    <a href="{% url 'upgrade_instructions' %}">Learn more</a>
+                </div>
+            </div>
+        {% endif %}
     </div>
 
     {% if messages %}

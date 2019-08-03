@@ -8,6 +8,9 @@ from django.utils.translation import gettext_lazy as _
 
 class User(AbstractUser):
     email = models.EmailField(_('email address'), unique=True)
+    is_suspended = models.BooleanField(default=False, verbose_name="Whether this user is suspended from using the site")
+    is_banned = models.BooleanField(default=False, verbose_name="Whether this account is banned")
+    deactivation_reason = models.CharField(default="", blank=True, max_length=256)
 
     def __str__(self):
         name = self.first_name + " " + self.last_name
@@ -16,6 +19,7 @@ class User(AbstractUser):
         else:
             return name
 
+    @cached_property
     def is_verified(self):
         """
         Whether this user is verified as part of a Scala association
@@ -85,6 +89,18 @@ class User(AbstractUser):
         exceptions = [membership.association.has_min_exception for membership in self.get_verified_memberships()]
         return True in exceptions
 
+    def suspend(self, reason="", undo=False):
+        if self.is_banned:
+            return
+        if undo:
+            self.is_suspended = False
+            self.deactivation_reason = ""
+            self.save()
+        else:
+            self.is_suspended = True
+            self.deactivation_reason = reason
+            self.save()
+
 
 class Association(Group):
     slug = models.SlugField(max_length=10)
@@ -138,3 +154,15 @@ class UserMembership(models.Model):
         self.is_verified = verified
         self.verified_on = timezone.now()
         self.save()
+
+        # Check if the user still has access rights
+        suspend_reason = "You do not have any verified memberships"
+        if verified:
+            if self.related_user.deactivation_reason == suspend_reason:
+                self.related_user.suspend(undo=True)
+        else:
+            # If not verified, check if the user has any (open) verifications at other associations
+            open_memberships = self.related_user.usermembership_set.exclude(is_verified=False, verified_on__isnull=False)
+            if not open_memberships.exists():
+                self.related_user.suspend(reason=suspend_reason)
+
