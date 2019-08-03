@@ -239,7 +239,14 @@ class NewSlotView(LoginRequiredMixin, DayMixin, TemplateView):
         """
         # Check available slots
         # Todo: possibly also disable page when date is in the past or later than closure time!
+
         self.init_date()
+
+        if request.user.is_suspended:
+            error = _("You are suspended and not create a dining slot.")
+            messages.add_message(request, messages.ERROR, error)
+            return HttpResponseRedirect(self.reverse('day_view', kwargs={}))
+
         available_slots = DiningList.objects.available_slots(self.date)
         if available_slots <= 0:
             error = _("No free slots available.")
@@ -255,6 +262,16 @@ class NewSlotView(LoginRequiredMixin, DayMixin, TemplateView):
 
 class EntryAddView(LoginRequiredMixin, DiningListMixin, TemplateView):
     template_name = "dining_lists/dining_entry_add.html"
+
+    def dispatch(self, request, *args, **kwargs):
+        result = super().dispatch(request, *args, **kwargs)
+
+        if request.user.is_suspended:
+            error = _("You are suspended and can't add other diners.")
+            messages.add_message(request, messages.ERROR, error)
+            return HttpResponseRedirect(self.reverse('slot_details'))
+
+        return result
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

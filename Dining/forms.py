@@ -82,6 +82,9 @@ class CreateSlotForm(ServeTimeCheckMixin, forms.ModelForm):
             raise ValidationError("All dining slots are already occupied on this day")
 
         # Check if user has enough money to claim a slot
+        if creator.is_suspended:
+            raise ValidationError("You are suspended and can not start dining lists")
+
         if not creator.has_min_balance_exception() and creator.usercredit.balance < settings.MINIMUM_BALANCE_FOR_DINING_SLOT_CLAIM:
             raise ValidationError("Your balance is too low to claim a slot")
 
@@ -200,7 +203,19 @@ class DiningEntryUserCreateForm(forms.ModelForm):
             if not dining_list.is_authorised_user(creator) and not user.is_verified_member_of(dining_list.association):
                 raise ValidationError(_("Dining list is limited for members only"), code='members_only')
 
-        # User balance check
+        # User suspended check
+        if creator.is_suspended:
+            if user != creator:
+                raise ValidationError("You are suspended and can not add others to the dining list")
+
+        if user.is_suspended:
+            if not user.has_min_balance_exception() and user.usercredit.balance < settings.KITCHEN_COST:
+                if user == creator:
+                    raise ValidationError("You are suspsended. Your balance may not become negative.")
+                else:
+                    raise ValidationError("The balance of the user is too low to add", code='nomoneyzz')
+
+        # Non-suspended user balance check
         if not user.has_min_balance_exception() and user.usercredit.balance < settings.MINIMUM_BALANCE_FOR_DINING_SIGN_UP:
             raise ValidationError("The balance of the user is too low to add", code='nomoneyzz')
 
@@ -214,6 +229,11 @@ class DiningEntryExternalCreateForm(DiningEntryUserCreateForm):
 
     def get_user(self):
         return self.instance.user
+
+    def clean(self):
+        if self.instance.created_by.is_suspended:
+            raise ValidationError("You are suspended and can not add externals to the dining list")
+        super(DiningEntryExternalCreateForm, self).clean()
 
 
 class DiningEntryDeleteForm(forms.Form):
@@ -312,6 +332,11 @@ class DiningCommentForm(forms.ModelForm):
         self.dining_list = dining_list
         self.added_by = poster
         self.pinned = pinned
+
+    def clean(self):
+        if self.added_by.is_suspended:
+            raise ValidationError("You can not create comments as a suspended user")
+        return super(DiningCommentForm, self).clean()
 
     def clean_message(self):
         cleaned_data = super().clean()
