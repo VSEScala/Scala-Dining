@@ -39,6 +39,12 @@ class DiningProfileForm(ModelForm):
         model = UserDiningSettings
         fields = ['allergies']
 
+    def __init__(self, *args, **kwargs):
+        super(DiningProfileForm, self).__init__(*args, **kwargs)
+        # If user is suspended, don't allow hem to adjust its allergies information
+        if self.instance.user.is_suspended:
+            self.fields['allergies'].disabled = True
+
 
 class UserForm(ModelForm):
     name = forms.CharField(required=False)
