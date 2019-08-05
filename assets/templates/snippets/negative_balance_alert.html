@@ -1,0 +1,27 @@
+
+{% if not user.has_min_balance_exception %}
+    {% if user.usercredit.balance < 0 %}
+        {% if user.usercredit.balance < settings.MINIMUM_BALANCE_FOR_DINING_SIGN_UP %}
+            <div class="alert alert-danger row" role="alert">
+                <div class="col py-md-2">
+                    Your balance is to low to join dining lists, upgrade your balance now!
+                </div>
+                <div class="float-right btn btn-info">
+                    <a href="{% url 'upgrade_instructions' %}">Learn how</a>
+                </div>
+            </div>
+        {% else %}
+            <div class="alert alert-warning row" role="alert">
+                <div class="col py-md-2">
+                    Your balance is currently below zero, please upgrade your balance.
+                </div>
+                {% url 'upgrade_instructions' as help_url %}
+                {% if request.path != help_url %}
+                    <div class="float-right btn btn-info">
+                        <a href="{% url 'upgrade_instructions' %}">Learn how</a>
+                    </div>
+                {% endif %}
+            </div>
+        {% endif %}
+    {% endif %}
+{% endif %}

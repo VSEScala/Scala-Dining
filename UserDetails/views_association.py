@@ -1,18 +1,19 @@
 import csv
-import datetime
 
+from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import PermissionDenied
 from django.db.models import Q
 from django.http import HttpResponseRedirect, HttpResponse
-from django.shortcuts import get_object_or_404
+from django.shortcuts import get_object_or_404, render
 from django.views import View
+from django.utils.translation import gettext as _
 from django.views.generic import ListView, TemplateView
 from django.utils.http import is_safe_url
-from django.utils import timezone
 
 from CreditManagement.models import AbstractTransaction, FixedTransaction
 from .models import UserMembership, Association, User
+from .forms import AssociationSettingsForm
 
 
 class AssociationBoardMixin:
@@ -145,3 +146,26 @@ class MembersEditView(LoginRequiredMixin, AssociationBoardMixin, ListView):
             return HttpResponseRedirect(next)
 
         return HttpResponseRedirect(request.path_info)
+
+
+class AssociationSettingsView(AssociationBoardMixin, TemplateView):
+    template_name = "accounts/association_settings.html"
+
+    def get_context_data(self, **kwargs):
+        context = super(AssociationSettingsView, self).get_context_data(**kwargs)
+        context['form'] = AssociationSettingsForm(instance=self.association)
+
+        return context
+
+    def post(self, request, association_name=None):
+        # Do form shenanigans
+        form = AssociationSettingsForm(data=request.POST, instance=self.association)
+
+        if form.is_valid():
+            form.save()
+            messages.add_message(request, messages.SUCCESS, _("Changes succesfully saved."))
+            return HttpResponseRedirect(request.path_info)
+
+        context = self.get_context_data()
+        context['form'] = form
+        return render(request, self.template_name, context)
