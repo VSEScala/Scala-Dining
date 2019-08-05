@@ -320,7 +320,6 @@ class DiningCommentForm(forms.ModelForm):
 
     def __init__(self, poster, dining_list, pinned=False, data=None, **kwargs):
         if data is not None:
-            print(dining_list)
             # User defaults to added_by if not set
             data = data.copy()
             data.setdefault('poster', poster.pk)
@@ -351,6 +350,5 @@ class DiningCommentForm(forms.ModelForm):
         self.instance.poster = self.added_by
         self.instance.dining_list = self.dining_list
         self.instance.pinned_to_top = self.pinned
-        print(self.instance.message)
 
         super(DiningCommentForm, self).save(*args, **kwargs)
