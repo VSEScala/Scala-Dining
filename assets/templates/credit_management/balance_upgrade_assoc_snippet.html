@@ -1,0 +1,16 @@
+<hr style="{% if border_color %}border-color: {{ border_color }};{% endif %}">
+<div class="row">
+    {# Association image #}
+    <div class="col-md-2 d-none d-md-flex justify-content-center">
+        {# (Image is in separate div so that it is inside of the column padding) #}
+        {% if association.image %}
+            <div class="slot_image w-100" style="background-image: url({{ association.image.url }});">
+            </div>
+        {% endif %}
+    </div>
+
+    <div class="col-md-10">
+        <h4>{{ association.name }}</h4>
+        <p>{{ association.balance_update_instructions|linebreaksbr }}</p>
+    </div>
+</div>
