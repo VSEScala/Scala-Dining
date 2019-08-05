@@ -27,6 +27,15 @@ class TransactionForm(forms.ModelForm):
             'target_user': ModelSelect2(url='people_autocomplete', attrs={'data-minimum-input-length': '1'}),
         }
 
+    def clean(self):
+        cleaned_data = super(TransactionForm, self).clean()
+
+        if self.instance.source_user is not None:
+            if self.instance.source_user.is_suspended and cleaned_data['target_user'] is not None:
+                raise ValidationError("Suspended users can not transfer money to other users")
+
+        return cleaned_data
+
 
 class AssociationTransactionForm(TransactionForm):
 
