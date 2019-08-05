@@ -1,0 +1,56 @@
+{% extends "account/base.html" %}
+{% load static %}
+
+{% load i18n %}
+
+{% block head_title %}{% trans "Account Inactive" %}{% endblock %}
+
+{% block content %}
+    {% if banned %}
+        <h1>This account has been banned</h1>
+
+        <p>
+            Hey there,
+        </p>
+        <p>
+            It appears this account has been banned for the following reason:
+        </p>
+        <p>
+            {{ banned_reason }}
+        </p>
+        <p>
+            Banned accounts are not allowed to use any aspect of the dining list for the duration of the ban.
+            Users who have been banned are <b>not allowed to create new accounts</b> to circumvent the ban.
+        </p>
+        <p>
+            Appeal can be made to the scala board:
+            <a href="mailto:bestuur@studentencultuur.nl">bestuur@studentencultuur.nl</a>
+        </p>
+        <p>
+            For more information please refer to our user agreement:<br>
+            <a target="_blank" rel="noopener noreferrer"
+               href="{% static "files/Scala Dining App - User Agreement 8-4-17.pdf" %}">
+                User Agreement Scala Dining App</a>
+        </p>
+    {% else %}
+    <h1>{% trans "Account inactive" %}</h1>
+
+    <p>
+        Hey.... you
+    </p>
+    <p>
+        This account appears to be deactivated. Maybe you requested in the past, maybe you just have been gone for a very
+        long time and it has been deactivated by the staff. Who knows, maybe it was a cyberattack by Lichtenstein.
+    </p>
+    <p>
+        Either way, you can no longer log in on this account... at this moment. If you want to restore this account,
+        please send us a mail at <a href="mailto:diningapp@studentencultuur.nl">diningapp@studentencultuur.nl</a>.
+    </p>
+    <p>
+        With kind regards,
+    </p>
+    <p>
+        The Scala Dining app admins
+    </p>
+    {% endif %}
+{% endblock %}

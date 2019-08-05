@@ -2,14 +2,35 @@ from dal_select2.views import Select2QuerySetView
 from django.contrib.auth import login
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models.functions import Concat
-from django.http import HttpResponseRedirect
+from django.http import HttpResponseRedirect, Http404
 from django.urls import reverse
 from django.views.generic import TemplateView, ListView
 from django.db.models import Q, Value as V
+from allauth.account.views import AccountInactiveView
 
 from Dining.models import DiningEntryUser, DiningList
 from .forms import RegisterUserForm, RegisterUserDetails, AssociationLinkForm
 from .models import User
+
+
+class CustomInactiveView(AccountInactiveView):
+    user_pk = None
+
+    def dispatch(self, request, *args, **kwargs):
+        self.user_pk = request.session.pop('inactive_user_pk', None)
+        if self.user_pk is None:
+            raise Http404("Page not found")
+        return super().dispatch(*args, request=request, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        context_data = super().get_context_data(**kwargs)
+        user = User.objects.get(pk=self.user_pk)
+        if user.is_banned:
+            context_data['banned'] = True
+            context_data['banned_reason'] = user.deactivation_reason
+        else:
+            context_data['banned'] = False
+        return context_data
 
 
 class RegisterView(TemplateView):
