@@ -33,7 +33,7 @@ urlpatterns = [
     # Override allauth login and sign up page with our registration page
     path('login/', LoginView.as_view(), name='account_login'),
     path('signup/', RegisterView.as_view(), name='account_signup'),
-    path('inactive/', CustomInactiveView.as_view(), name='account_signup'),
+    path('inactive/', CustomInactiveView.as_view(), name='account_inactive'),
 
     path('people-autocomplete/', PeopleAutocompleteView.as_view(), name='people_autocomplete'),
 
