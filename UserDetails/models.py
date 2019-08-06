@@ -1,6 +1,7 @@
 from allauth.socialaccount.models import SocialApp
 from django.contrib.auth.models import AbstractUser, Group
 from django.db import models
+from django.core.exceptions import ValidationError
 from django.utils import timezone
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
@@ -100,6 +101,11 @@ class User(AbstractUser):
             self.is_suspended = True
             self.deactivation_reason = reason
             self.save()
+
+    def clean(self):
+        super(User, self).clean()
+        if self.is_banned and self.is_active:
+            raise ValidationError("Banned account can not be an active account")
 
 
 class Association(Group):
