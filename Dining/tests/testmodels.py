@@ -41,11 +41,12 @@ class DiningListTestCase(TestCase):
         self.dining_list.save()
         self.assertFalse(self.dining_list.is_owner(self.user))
 
-    def test_is_owner_board_member(self):
-        # Make user board member
-        self.association.user_set.add(self.user)
-        self.dining_list.save()
-        self.assertTrue(self.dining_list.is_owner(self.user))
+    # Disabled as board members do not directly own all dining lists
+    # def test_is_owner_board_member(self):
+    #     # Make user board member
+    #     self.association.user_set.add(self.user)
+    #     self.dining_list.save()
+    #     self.assertTrue(self.dining_list.is_owner(self.user))
 
 
 class DiningListCleanTestCase(TestCase):
