@@ -1,23 +1,20 @@
 import warnings
+from decimal import Decimal, ROUND_UP
 
 from dal_select2.widgets import ModelSelect2, ModelSelect2Multiple
 from django import forms
 from django.conf import settings
-from django.db.models import OuterRef, Exists
+from django.core.validators import MinValueValidator
 from django.db import transaction
-from django.utils.translation import gettext as _
-from django.core.exceptions import PermissionDenied
+from django.db.models import OuterRef, Exists
 from django.forms import ValidationError
+from django.utils import timezone
+from django.utils.translation import gettext as _
 
 from General.forms import ConcurrenflictFormMixin
-from UserDetails.models import Association, User
-from .models import DiningList, DiningEntry, DiningEntryUser, DiningEntryExternal, DiningComment
 from General.util import SelectWithDisabled
-
-from functools import reduce
-from decimal import Decimal, ROUND_UP
-from django.utils import timezone
-from django.core.validators import MinValueValidator
+from UserDetails.models import Association, User
+from .models import DiningList, DiningEntryUser, DiningEntryExternal, DiningComment
 
 
 def _clean_form(form):
@@ -33,6 +30,7 @@ def _clean_form(form):
 
 class ServeTimeCheckMixin:
     """Mixin with clean_serve_time which gives errors on the serve_time if it is not within the kitchen opening hours"""
+
     def clean_serve_time(self):
         serve_time = self.cleaned_data['serve_time']
         if serve_time < settings.KITCHEN_USE_START_TIME:
@@ -126,7 +124,10 @@ class DiningInfoForm(ConcurrenflictFormMixin, ServeTimeCheckMixin, forms.ModelFo
         fields = ['owners', 'main_contact', 'dish', 'serve_time', 'min_diners', 'max_diners',
                   'sign_up_deadline']
         widgets = {
-            'owners': ModelSelect2Multiple(url='people_autocomplete', attrs={'data-minimum-input-length': '1'})
+            'owners': ModelSelect2Multiple(url='people_autocomplete', attrs={'data-minimum-input-length': '1'}),
+        }
+        help_texts = {
+            'owners': 'It is not possible to remove yourself from the list of owners.',
         }
 
     def __init__(self, *args, **kwargs):
@@ -266,6 +267,7 @@ class DiningListDeleteForm(forms.ModelForm):
     """
     Allows deletion of a dining list with it's entries. This will refund all kitchen costs.
     """
+
     class Meta:
         model = DiningList
         fields = []
@@ -275,7 +277,8 @@ class DiningListDeleteForm(forms.ModelForm):
         super().__init__(instance=instance, data={}, **kwargs)
         self.deleted_by = deleted_by
         # Create entry delete forms
-        self.entry_delete_forms = [DiningEntryDeleteForm(entry, deleted_by, {}) for entry in instance.dining_entries.all()]
+        self.entry_delete_forms = [DiningEntryDeleteForm(entry, deleted_by, {}) for entry in
+                                   instance.dining_entries.all()]
 
     def clean(self):
         cleaned_data = super().clean()

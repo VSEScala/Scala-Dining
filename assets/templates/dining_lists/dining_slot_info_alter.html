@@ -22,22 +22,4 @@
             </div>
         </div>
     </form>
-    {# Check if current user is owner, else show warning message #}
-    <script>
-        document.getElementById('infoForm').addEventListener('submit', function (event) {
-            let selectedOptions = document.getElementById('id_info-owners').selectedOptions;
-            for (let i = 0; i < selectedOptions.length; i++) {
-                if (selectedOptions[i].value === '{{ user.pk }}') {
-                    // Current user is owner
-                    return;
-                }
-            }
-            // Current user is not owner
-            let result = window.confirm("You are not in the list of owners, which means you might lose the rights to " +
-                "edit the dining list. Are you sure to continue saving?");
-            if (!result) {
-                event.preventDefault();
-            }
-        });
-    </script>
 {% endblock %}

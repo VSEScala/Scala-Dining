@@ -1,9 +1,13 @@
+import datetime
+from typing import Optional
+
 from django import template
 from django.conf import settings
 from django.utils import timezone
 
-from Dining.forms import DiningEntryUserCreateForm, DiningEntryDeleteForm, CreateSlotForm
+from Dining.forms import DiningEntryUserCreateForm, DiningEntryDeleteForm
 from Dining.models import DiningEntry, DiningEntryUser, DiningList
+from UserDetails.models import User
 
 register = template.Library()
 
@@ -74,16 +78,37 @@ def is_owner(dining_list, user):
 
 
 @register.filter
-def cant_create_dining_list_reason(user, date):
-    """Returns None if the user can create a dining list, else it returns the reason why not"""
+def dining_list_creation_open(date: datetime.date) -> bool:
+    """Returns whether dining list creation is open for given date.
 
-    # Copied from the view, could also do a fake form is_valid check and return the error message when not valid
-    # In the past
+    The date must be in the future or time must be before closure time for
+    dining list creation to be open. Note that this doesn't mean that it's
+    possible to create a dining list, there might be other reasons why that is
+    still not possible.
+    """
     if date < timezone.now().date():
-        return "date is in the past"
+        return False
     if date == timezone.now().date() and settings.DINING_SLOT_CLAIM_CLOSURE_TIME < timezone.now().time():
-        return "too late to create a dining list today"
+        # Too late for today
+        return False
+    return True
 
+
+@register.filter
+def can_create_dining_list(user: User, date: datetime.date) -> bool:
+    """Returns whether the user can create a dining list on the given date."""
+    cant_create = cant_create_dining_list_reason(user, date)
+    return dining_list_creation_open(date) and cant_create is None
+
+
+@register.filter
+def cant_create_dining_list_reason(user: User, date: datetime.date) -> Optional[str]:
+    """Returns why the user can't create a dining list.
+
+    When there is no reason found why a user can't create a dining list, the
+    function will return None. This doesn't check whether dining list creation
+    is open.
+    """
     # Slots available
     if DiningList.objects.available_slots(date) <= 0:
         return "no slots available"

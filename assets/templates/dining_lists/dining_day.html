@@ -74,18 +74,19 @@
         {% endfor %}
     </div>
 
-    {% with cant_create_reason=user|cant_create_dining_list_reason:date %}
-        {% if cant_create_reason %}
-            <a href="{% url 'new_slot' year=date.year month=date.month day=date.day %}"
-               class="btn btn-block btn-primary disabled">
-                Can't create a new dining list: {{ cant_create_reason }}
-            </a>
-        {% else %}
+    {% if date|dining_list_creation_open %}
+        {% if user|can_create_dining_list:date %}
             <a href="{% url 'new_slot' year=date.year month=date.month day=date.day %}"
                class="btn btn-block btn-primary">
                 Create a new dining list
             </a>
+        {% else %}
+            <a href="{% url 'new_slot' year=date.year month=date.month day=date.day %}"
+               class="btn btn-block btn-primary disabled">
+                Can't create a new dining list:
+                {{ user|cant_create_dining_list_reason:date }}
+            </a>
         {% endif %}
-    {% endwith %}
+    {% endif %}
 
 {% endblock %}

@@ -1,11 +1,11 @@
-from datetime import time, timedelta
+from datetime import time, timedelta, date, datetime
 from decimal import Decimal
 
 from django.test import TestCase
 from django.utils import timezone
 
 from CreditManagement.models import FixedTransaction
-from Dining.forms import CreateSlotForm
+from Dining.forms import CreateSlotForm, DiningInfoForm
 from Dining.models import DiningList
 from UserDetails.models import Association, User, UserMembership
 

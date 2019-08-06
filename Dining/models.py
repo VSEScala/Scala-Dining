@@ -44,7 +44,7 @@ class DiningList(models.Model):
     """Todo: the date+association combination determines the URL. This makes it impossible to have multiple dining lists
     of the same association on the same day. Probably need to change that"""
     association = models.ForeignKey(Association, on_delete=models.PROTECT)
-    owners = models.ManyToManyField(settings.AUTH_USER_MODEL, related_name='owned_dining_lists', blank=True,
+    owners = models.ManyToManyField(settings.AUTH_USER_MODEL, related_name='owned_dining_lists',
                                     help_text='Owners can manage the dining list.')
 
     sign_up_deadline = models.DateTimeField(help_text="The time before users need to sign up.")
@@ -89,14 +89,12 @@ class DiningList(models.Model):
 
     objects = DiningListManager()
 
-    def is_owner(self, user):
-        """Owner is used to denote that someone has all rights. This method is used to specify if someone has all
-        rights. If we for instance would want to give board members all rights, we could have this method return true if
-        the user is a board member of the same association."""
+    def is_owner(self, user: User) -> bool:
+        """Returns whether given user has all rights to this dining list.
 
-        # Give board members always all rights (is probably not really necessary and can probably be removed)
-        if user.groups.filter(pk=self.association.pk).exists():
-            return True
+        If we would like to give board members all rights to association dining
+        lists, we could modify this method to implement that.
+        """
         return self.owners.filter(pk=user.pk).exists()
 
     def is_adjustable(self):

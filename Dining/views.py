@@ -3,7 +3,7 @@ from datetime import date
 
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.core.exceptions import NON_FIELD_ERRORS
+from django.core.exceptions import NON_FIELD_ERRORS, PermissionDenied
 from django.db.models import Q, Count
 from django.http import Http404, HttpResponseRedirect, HttpResponseForbidden, HttpResponse
 from django.shortcuts import redirect, get_object_or_404
@@ -492,6 +492,10 @@ class SlotInfoChangeView(LoginRequiredMixin, SlotMixin, TemplateView):
             info_form.save()
             payment_form.save()
             messages.success(request, "Changes successfully saved")
+
+            # Ensure that current user remains owner of the dining list
+            self.dining_list.owners.add(request.user)
+
             return HttpResponseRedirect(self.reverse('slot_details'))
 
         context.update({
