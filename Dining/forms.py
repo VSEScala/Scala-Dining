@@ -1,5 +1,6 @@
 import warnings
 
+from dal import forward
 from dal_select2.widgets import ModelSelect2
 from django import forms
 from django.conf import settings
@@ -169,7 +170,10 @@ class DiningEntryUserCreateForm(forms.ModelForm):
         fields = ['user']
         widgets = {
             # User needs to type at least 1 character, could change it to 2
-            'user': ModelSelect2(url='people_autocomplete', attrs={'data-minimum-input-length': '1'})
+            'user': ModelSelect2(url='people_autocomplete',
+                                 attrs={'data-minimum-input-length': '1'},
+                                 forward=(forward.Const(True, 'active'),)
+                                 )
         }
 
     def get_user(self):
@@ -185,6 +189,10 @@ class DiningEntryUserCreateForm(forms.ModelForm):
         dining_list = self.instance.dining_list
         user = self.get_user()
         creator = self.instance.created_by
+
+        # Check if user is an active account
+        if not user.is_active:
+            raise ValidationError("This account is inactive and can not be added to dining lists")
 
         # Adjustable
         if not dining_list.is_adjustable():

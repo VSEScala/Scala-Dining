@@ -98,6 +98,8 @@ class PeopleAutocompleteView(LoginRequiredMixin, Select2QuerySetView):
         qs = User.objects.all()
         if self.q:
             qs = qs.annotate(full_name=Concat('first_name', V(' '), 'last_name')).filter(full_name__icontains=self.q)
+            if self.active:
+                qs = qs.filter(is_active=self.active)
         return qs
 
     def get_result_label(self, result):
