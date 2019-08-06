@@ -109,7 +109,6 @@ class AssociationAdmin(admin.ModelAdmin):
     """
     Create the model for the groups page.
     """
-    exclude = ['permissions']
     form = GroupAdminForm
 
 

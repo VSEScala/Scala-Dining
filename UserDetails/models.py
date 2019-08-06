@@ -122,6 +122,12 @@ class Association(Group):
     def has_new_member_requests(self):
         return UserMembership.objects.filter(association=self, verified_on__isnull=True).exists()
 
+    class Meta:
+        permissions = [
+            ("has_suspended_user_screen", "Whether this association can see the suspended users"),
+            ("has_system_credit_screen", "Whether this association can watch the system balance screen"),
+        ]
+
 
 class UserMembership(models.Model):
     """

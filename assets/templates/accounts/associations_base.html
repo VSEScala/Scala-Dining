@@ -21,6 +21,12 @@
             <a class="nav-link{% block tab_settings %}{% endblock %}"
                href="{% url 'association_settings' association_name=association.slug %}">Settings</a>
         </li>
+        {% if has_suspended_screen %}
+            <li class="nav-item">
+                <a class="nav-link{% block tab_suspensions %}{% endblock %}"
+                   href="{% url 'system_suspended' association_name=association.slug %}">Suspensions</a>
+            </li>
+        {% endif %}
     </ul>
 
     <div class="mt-3">{% block details %}{% endblock details %}</div>

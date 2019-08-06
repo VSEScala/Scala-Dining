@@ -1,7 +1,7 @@
 import csv
 
 from django.contrib import messages
-from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.core.exceptions import PermissionDenied
 from django.db.models import Q
 from django.http import HttpResponseRedirect, HttpResponse
@@ -23,6 +23,10 @@ class AssociationBoardMixin:
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['association'] = self.association
+        if self.association.permissions.filter(codename='has_suspended_user_screen').exists():
+            context['has_suspended_screen'] = True
+        else:
+            context['has_suspended_screen'] = False
 
         context['notify_overview'] = self.association.has_new_member_requests()
 
@@ -148,7 +152,7 @@ class MembersEditView(LoginRequiredMixin, AssociationBoardMixin, ListView):
         return HttpResponseRedirect(request.path_info)
 
 
-class AssociationSettingsView(AssociationBoardMixin, TemplateView):
+class AssociationSettingsView(LoginRequiredMixin, AssociationBoardMixin, TemplateView):
     template_name = "accounts/association_settings.html"
 
     def get_context_data(self, **kwargs):
@@ -169,3 +173,12 @@ class AssociationSettingsView(AssociationBoardMixin, TemplateView):
         context = self.get_context_data()
         context['form'] = form
         return render(request, self.template_name, context)
+
+
+class SuspendedUsersView(LoginRequiredMixin, AssociationBoardMixin, PermissionRequiredMixin, ListView):
+    permission_required = 'association.has_suspended_user_screen'
+    template_name = "accounts/sytem_suspended_users.html"
+    paginate_by = 10
+
+    def get_queryset(self):
+        return User.objects.filter(Q(is_suspended=True)|Q(is_banned=True))
