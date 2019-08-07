@@ -1,19 +1,19 @@
 {% extends 'base.txt' %}
 
 {% block content %}
-Hey {{ user }}
+Hey {{ user.first_name }}
 
-{{cancelled_by}} has just cancelled the following dining list:
-
-{{entry.created_by}} has just added you to the following dining list:
+We regret to inform you that the following dining list has been cancelled.
 Date: {{dining_list.date}}
+Dish: {{dining_list.dish}}
 By: {{dining_list.claimed_by}}
 On behalf of: {{dining_list.association}}
 
-You have been removed from the dining list.
+As you were subscribed to this dining list, you have been removed from the dining list and your money has been refunded
+Maybe you can join or start another dining list. You can do so here:
+https://dining.studentencultuur.nl/5/5/2019
 
-Feel free to start a dining list of your own or join another one if possible.
-
+We are sorry for the inconvenience,
 With kind regards,
 
 The Scala Dining App
