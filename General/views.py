@@ -106,7 +106,9 @@ class UpgradeBalanceInstructionsView(View):
 
 class EmailTemplateView(View):
     """
-    A view to test mail templates with
+    A view to test mail templates with.
+    The contentfactory class inside ensures that when an object does not reside in the context,
+    it prints the query name instead
     """
 
     class ContentFactory(dict):
