@@ -1,7 +1,7 @@
 from django.db import models
 from django.conf import settings
 from django.utils import timezone
-from django.core.mail import send_mail, send_mass_mail
+from .mail_control import send_templated_mail, send_templated_mass_mail
 
 # Create your models here.
 
@@ -18,21 +18,16 @@ class SiteUpdate(models.Model):
         return "{date}: {title}".format(date=self.date.strftime("%Y-%m-%d"), title=self.title)
 
     def mail_users(self):
-
         subject = "Scala Dining App Update: {title}".format(title=self.title)
-
-        message_start = "Dear {name}, \nI'd like to inform you on a recent update on the Scala Dining App:"
-        message_end = "-----------------\nI hope to have informed you well.\n \nScala Dining Mailbot"
-        full_message = message_start + "\n\n" + self.message + "\n\n" + message_end
-
-        mail_data = []
+        template = "general/update_broadcast"
+        context = {}
+        context['update'] = self.message
 
         from UserDetails.models import User
-        for user in User.objects.all():
-            personal_message = full_message.format(name=user.first_name)
-            mail_data.append((subject, personal_message, settings.SEND_MAIL_FROM, [user.email]))
-
-        send_mass_mail(mail_data)
+        send_templated_mass_mail(subject=subject,
+                                 template_name=template,
+                                 context_data=context,
+                                 recipients=User.objects.all())
 
 
 class AbstractVisitTracker(models.Model):

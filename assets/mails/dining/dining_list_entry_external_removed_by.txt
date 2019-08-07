@@ -1,0 +1,18 @@
+{% extends 'base.txt' %}
+{% block content %}
+Hey {{ entry.user}}
+
+{{ remover }} has removed your guest {{entry.name}} from the following dining list:
+Date: {{dining_list.date}}
+By: {{dining_list.claimed_by}}
+Association: {{dining_list.association}}
+
+{% if dining_list.is_open and dining_list.has_room %}
+If you still want to join, you can do that here:
+{{ dining_list.get_absolute_url }}
+{% endif %}
+
+With kind regards,
+
+The Scala Dining App
+{% endblock %}
