@@ -184,8 +184,6 @@ SITE_ID = 1
 # Show e-mails in console for development
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
-MAIL_TEMPLATES = [os.path.join(BASE_DIR, 'assets/mails')]
-
 # Allauth configuration
 ACCOUNT_EMAIL_REQUIRED = True
 ACCOUNT_FORMS = {
