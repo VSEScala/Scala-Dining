@@ -51,7 +51,7 @@ class EmailTemplateMessage(EmailMultiAlternatives):
             return txt_template, None
 
 
-def send_mail(subject=None, template_name=None, context_data={}, recipient=None, fail_silently=False, **kwargs):
+def send_templated_mail(subject=None, template_name=None, context_data={}, recipient=None, fail_silently=False, **kwargs):
     if recipient is None:
         raise KeyError("No email target given. Please define the recipient")
 
@@ -64,7 +64,7 @@ def send_mail(subject=None, template_name=None, context_data={}, recipient=None,
                          to=to, **kwargs).send(fail_silently=fail_silently)
 
 
-def send_mass_mail(subject=None, template_name=None, context_data={}, recipients=None, fail_silently=False, **kwargs):
+def send_templated_mass_mail(subject=None, template_name=None, context_data={}, recipients=None, fail_silently=False, **kwargs):
     """
     Send a mass mail to all recipients with an EmailTemplateMessage as the message created
     :param subject: The email subject or header

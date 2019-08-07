@@ -1,7 +1,7 @@
 from django import forms
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
-from General.mail_control import send_mass_mail
+from General.mail_control import send_templated_mass_mail
 
 from .models import User, UserMembership, Association
 
@@ -74,10 +74,10 @@ class CustomUserAdmin(admin.ModelAdmin):
     fields = ('username', ('first_name', 'last_name'), 'date_joined', 'email')
 
     def send_test_mail(modeladmin, request, queryset):
-        send_mass_mail("Scala Dining: Testmail",
-                       template_name="general/testmail",
-                       recipients=queryset,
-                       fail_silently=False)
+        send_templated_mass_mail("Scala Dining: Testmail",
+                                 template_name="general/testmail",
+                                 recipients=queryset,
+                                 fail_silently=False)
 
     actions = [send_test_mail]
 

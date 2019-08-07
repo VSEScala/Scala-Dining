@@ -105,6 +105,9 @@ class UpgradeBalanceInstructionsView(View):
 
 
 class EmailTemplateView(View):
+    """
+    A view to test mail templates with
+    """
 
     class ContentFactory(dict):
         """

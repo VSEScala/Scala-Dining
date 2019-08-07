@@ -1,7 +1,7 @@
 from django.db import models
 from django.conf import settings
 from django.utils import timezone
-from .mail_control import send_mail, send_mass_mail
+from .mail_control import send_templated_mail, send_templated_mass_mail
 
 # Create your models here.
 
@@ -24,10 +24,10 @@ class SiteUpdate(models.Model):
         context['update'] = self.message
 
         from UserDetails.models import User
-        send_mass_mail(subject=subject,
-                       template_name=template,
-                       context_data=context,
-                       recipients=User.objects.all())
+        send_templated_mass_mail(subject=subject,
+                                 template_name=template,
+                                 context_data=context,
+                                 recipients=User.objects.all())
 
 
 class AbstractVisitTracker(models.Model):

@@ -16,7 +16,7 @@ from django.views.generic.detail import SingleObjectMixin
 from django.views.generic.edit import DeleteView
 
 from Dining.datesequence import sequenced_date
-from General.mail_control import send_mass_mail, send_mail
+from General.mail_control import send_templated_mass_mail, send_templated_mail
 from .forms import *
 from .models import *
 
@@ -290,7 +290,7 @@ class EntryAddView(LoginRequiredMixin, DiningListMixin, TemplateView):
                     context = {'entry': entry, 'dining_list': entry.dining_list}
 
                     # Send mail to the people on the dining list
-                    send_mail(subject=subject, template_name=template, context_data=context, recipient=entry.user)
+                    send_templated_mail(subject=subject, template_name=template, context_data=context, recipient=entry.user)
                     msg = _("You successfully added {} to the dining list").format(entry.user.get_short_name())
             else:
                 msg = _("You successfully added {} to the dining list").format(entry.name)
@@ -327,7 +327,7 @@ class EntryDeleteView(LoginRequiredMixin, SingleObjectMixin, View):
                 context = {'entry': entry, 'dining_list': entry.dining_list, 'remover': request.user}
 
                 # Send mail to the people on the dining list
-                send_mail(subject=subject, template_name=template, context_data=context, recipient=entry.user)
+                send_templated_mail(subject=subject, template_name=template, context_data=context, recipient=entry.user)
 
             success_msg = "The external diner is removed from the dining list"
         else:
@@ -337,7 +337,7 @@ class EntryDeleteView(LoginRequiredMixin, SingleObjectMixin, View):
             context = {'entry': entry, 'dining_list': entry.dining_list, 'remover': request.user}
 
             # Send mail to the people on the dining list
-            send_mail(subject=subject, template_name=template, context_data=context, recipient=entry.user)
+            send_templated_mail(subject=subject, template_name=template, context_data=context, recipient=entry.user)
 
             success_msg = "The user is removed from the dining list"
 
@@ -613,10 +613,10 @@ class SlotDeleteView(LoginRequiredMixin, SlotMixin, DeleteView):
             form.execute()
 
             # Send mail to the people on the dining list
-            send_mass_mail(template_name=template,
-                           subject=subject,
-                           context_data=context,
-                           recipients=diners)
+            send_templated_mass_mail(template_name=template,
+                                     subject=subject,
+                                     context_data=context,
+                                     recipients=diners)
 
             messages.success(request, _("Dining list is deleted"))
 
