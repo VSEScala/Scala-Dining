@@ -1,3 +1,6 @@
+{% extends 'base.txt' %}
+
+{% block content %}
 Hey {{ user }}
 
 {{cancelled_by}} has just cancelled the following dining list:
@@ -14,3 +17,4 @@ Feel free to start a dining list of your own or join another one if possible.
 With kind regards,
 
 The Scala Dining App
+{% endblock %}
