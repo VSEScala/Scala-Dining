@@ -7,7 +7,7 @@ class EmailTemplateMessage(EmailMultiAlternatives):
     """
     Renders emails from a given template
     """
-    mail_source = settings.SEND_MAIL_FROM
+    mail_source = settings.DEFAULT_FROM_EMAIL
 
     def __init__(self, *args, template_name=None, txt_template=None, html_template=None, context_data={}, **kwargs):
         # Check if the templates are given properly, if not, recompute them.
