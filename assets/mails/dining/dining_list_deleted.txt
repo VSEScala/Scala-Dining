@@ -1,5 +1,16 @@
 Hey {{ user }}
 
+{{cancelled_by}} has just cancelled the following dining list:
 
+{{entry.created_by}} has just added you to the following dining list:
+Date: {{dining_list.date}}
+By: {{dining_list.claimed_by}}
+On behalf of: {{dining_list.association}}
+
+You have been removed from the dining list.
 
 Feel free to start a dining list of your own or join another one if possible.
+
+With kind regards,
+
+The Scala Dining App
