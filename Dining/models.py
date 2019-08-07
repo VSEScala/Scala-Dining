@@ -40,6 +40,13 @@ class DiningList(models.Model):
     The following fields may not be changed after creation: kitchen_cost, min_diners/max_diners!
     """
     date = models.DateField()
+
+    """Todo: the date+association combination determines the URL. This makes it impossible to have multiple dining lists
+    of the same association on the same day. Probably need to change that"""
+    association = models.ForeignKey(Association, on_delete=models.PROTECT)
+    owners = models.ManyToManyField(settings.AUTH_USER_MODEL, related_name='owned_dining_lists',
+                                    help_text='Owners can manage the dining list.')
+
     sign_up_deadline = models.DateTimeField(help_text="The time before users need to sign up.")
     serve_time = models.TimeField(default=time(18, 00))
 
@@ -48,18 +55,9 @@ class DiningList(models.Model):
     adjustable_duration = models.DurationField(
         default=settings.TRANSACTION_PENDING_DURATION,
         help_text="The amount of time the dining list can be adjusted after its date")
-    claimed_by = models.ForeignKey(settings.AUTH_USER_MODEL, related_name="dininglist_claimer",
-                                   on_delete=models.PROTECT)
-    # Association is needed for kitchen cost transactions and url calculation and is therefore required and may not be
-    # changed.
-    association = models.ForeignKey(Association, on_delete=models.PROTECT)
     # Todo: implement limit in the views.
     limit_signups_to_association_only = models.BooleanField(
         default=False, help_text="Whether only members of the given association can sign up")
-    # The person who paid can be someone else
-    #  this is displayed in the dining list and this user can update payment status.
-    purchaser = models.ForeignKey(settings.AUTH_USER_MODEL, related_name="dininglist_purchaser", blank=True, null=True,
-                                  on_delete=models.SET_NULL)
 
     kitchen_cost = models.DecimalField(decimal_places=2, verbose_name="kitchen cost per person", max_digits=10,
                                        default=settings.KITCHEN_COST, validators=[MinValueValidator(Decimal('0.00'))])
@@ -79,14 +77,25 @@ class DiningList(models.Model):
     diners = models.ManyToManyField(settings.AUTH_USER_MODEL, through='DiningEntry',
                                     through_fields=('dining_list', 'user'))
 
+    # Metadata for display only
+    main_contact = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+                                     help_text='If specified, is shown on the dining list as the main contact. '
+                                               'The owners are always shown.',
+                                     related_name='main_contact_dining_lists')
+    purchaser = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, blank=True, null=True,
+                                  related_name="purchaser_dining_lists",
+                                  help_text='If specified, is shown on the dining list as the user who should receive '
+                                            'the grocery shopping payments.')
+
     objects = DiningListManager()
 
-    def get_purchaser(self):
-        """Returns the user who purchased for the dining list"""
-        return self.purchaser if self.purchaser else self.claimed_by
+    def is_owner(self, user: User) -> bool:
+        """Returns whether given user has all rights to this dining list.
 
-    def is_authorised_user(self, user):
-        return user == self.claimed_by or user == self.purchaser
+        If we would like to give board members all rights to association dining
+        lists, we could modify this method to implement that.
+        """
+        return self.owners.filter(pk=user.pk).exists()
 
     def is_adjustable(self):
         """Whether the dining list has not expired it's adjustable date and can therefore not be modified anymore"""
@@ -112,7 +121,7 @@ class DiningList(models.Model):
         return self.diners.count() < self.max_diners
 
     def __str__(self):
-        return "{} - {} by {}".format(self.date, self.association.slug, self.claimed_by)
+        return "{} {}".format(self.date, self.association)
 
     def get_absolute_url(self):
         from django.shortcuts import reverse
