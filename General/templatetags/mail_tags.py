@@ -32,4 +32,4 @@ def full_url(parser, token):
 
 @register.filter
 def to_full_url(url_string, domain_name=settings.DOMAIN_NAME):
-    return "https://"+domain_name+url_string
+    return "https://"+domain_name+url_string.__str__()
