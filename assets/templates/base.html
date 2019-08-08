@@ -13,11 +13,11 @@
         </a>
         {% with justify="d-flex justify-content-between align-items-center" %}
             {% if user.is_authenticated %}
-            <span class="navbar-text small text-right px-2">
-                {{ user }}<br>
-                {{ user.usercredit.balance|euro }}
-            </span>
-            <div class="navbar-nav">
+                <span class="navbar-text small text-right px-2">
+                    {{ user }}<br>
+                    {{ user.usercredit.balance|euro }}
+                </span>
+                <div class="navbar-nav">
                     <div class="nav-item dropdown">
                         {# (mb-0 is needed to cancel the margin that gets added by h4) #}
                         <a class="nav-link dropdown-toggle h4 mb-0" href="#" data-toggle="dropdown">
@@ -88,6 +88,9 @@
                             <a class="dropdown-item {{ justify }}" href="{% url 'help_page' %}">
                                 Help <i class="fas fa-question"></i>
                             </a>
+                            <a class="dropdown-item" href="{% url 'upgrade_instructions' %}">
+                                Upgrading Balance
+                            </a>
                             <a class="dropdown-item" href="{% url 'rules_and_regulations' %}">
                                 Rules & Regulation
                                 {% if user.requires_information_rules %}
@@ -105,8 +108,7 @@
                             </a>
                         </div>
                     </div>
-
-            </div>
+                </div>
             {% else %}
                 <div class="navbar-nav">
                     <div class="nav-item text-right px-2">
@@ -118,6 +120,12 @@
                             <i class="fas fa-info"></i>
                         </a>
                         <div class="dropdown-menu dropdown-menu-right">
+                            <a class="dropdown-item {{ justify }}" href="{% url 'help_page' %}">
+                                Help <i class="fas fa-question"></i>
+                            </a>
+                            <a class="dropdown-item" href="{% url 'upgrade_instructions' %}">
+                                Upgrading Balance
+                            </a>
                             <a class="dropdown-item" href="{% url 'rules_and_regulations' %}">
                                 Rules & Regulation
                             </a>
@@ -130,6 +138,10 @@
             {% endif %}
         {% endwith %}
     </nav>
+
+    <div class="container mt-3">
+        {% include 'snippets/negative_balance_alert.html' %}
+    </div>
 
     {% if messages %}
         <div class="container mt-3">

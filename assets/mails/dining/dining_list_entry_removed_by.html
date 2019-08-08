@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+
+
+{% block content %}
+    <p>
+        Hi {{ user.first_name }}
+    </p>
+    <p>
+        {{ remover }} has <b>removed you</b> from the following dining list:
+    </p>
+    <table>
+        <tr><td>
+            Date
+        </td><td>
+            {{dining_list.date}}
+        </td></tr>
+        <tr><td>
+            By
+        </td><td>
+            {{dining_list.claimed_by}}
+        </td></tr>
+        <tr><td>
+            Association
+        </td><td>
+            {{dining_list.association}}
+        </td></tr>
+    </table>
+    {% if dining_list.is_open and dining_list.has_room %}
+        <p>
+            If you still want to join this list, you can re-enter here:
+        </p>
+        <div>
+            <a href="{{ dining_list.get_absolute_url|to_full_url }}"
+               style="background-color: #375a7f;padding: 0.75em; border-radius: 0.25rem; color: white; text-decoration: none;">
+                View dining list</a>
+        </div>
+    {% else %}
+        <p>
+            It is no longer possible to join this dining list.
+    {% endif %}
+
+
+    <p style="padding-top: 1em">
+        Enjoy your day
+    </p>
+{% endblock %}

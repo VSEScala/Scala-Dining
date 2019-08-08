@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+
+
+{% block content %}
+    <p>
+        Hey {{ user.first_name }}
+    </p>
+    <p>
+        The following update has just been placed on the dining app:
+    </p>
+    <p>
+        {{ update }}
+    </p>
+{% endblock %}

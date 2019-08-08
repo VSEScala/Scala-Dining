@@ -81,8 +81,18 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'ScalaApp.context_processors.scala'
             ],
         },
+    },
+    {
+        'NAME': 'EmailTemplates',
+        'BACKEND': 'django.template.backends.django.DjangoTemplates',
+        'DIRS': [os.path.join(BASE_DIR, 'assets/mails')],
+        'APP_DIRS': True,
+        'OPTIONS': {
+            'builtins': ['General.templatetags.mail_tags'],
+        }
     },
 ]
 

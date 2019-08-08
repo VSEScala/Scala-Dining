@@ -3,30 +3,21 @@
 {% load form_extras %}
 
 {% block details %}
-    <form method="post" class="col-12">
+    <form method="post" id="infoForm">
         {% csrf_token %}
         {# Display the info form #}
-        {% if info_form %}
-            <h1>General info</h1>
-            {% include "snippets/bootstrap_form.html" with form=info_form horizontal=True %}
-        {% endif %}
+        <h1>General info</h1>
+        {% include "snippets/bootstrap_form.html" with form=info_form horizontal=True %}
 
-        {# Display the payment form #}
-        {% if payment_form %}
-            <h1>Cost and payment</h1>
-            {% include "snippets/bootstrap_form.html" with form=payment_form horizontal=True %}
-        {% else %}
-            {# Display information that the payment form is absent because it is enabled for someone else #}
-            <h3>Cost and payment</h3>
-            <div class="col-12">
-                Control given to the purchaser: {{ dining_list.get_purchaser }}
-            </div>
-        {% endif %}
+        <h1>Cost and payment</h1>
+        {% include "snippets/bootstrap_form.html" with form=payment_form horizontal=True %}
 
         {# The save and cancel buttons #}
         <div class="row">
-            <div class="col-6"><button type="submit" class="btn btn-block btn-primary">Save</button></div>
-            <div class="col-6">
+            <div class="col">
+                <button type="submit" class="btn btn-block btn-primary" id="submitBtn">Save</button>
+            </div>
+            <div class="col">
                 <a href="{{ dining_list.get_absolute_url }}" class="btn btn-block btn-secondary">Cancel</a>
             </div>
         </div>

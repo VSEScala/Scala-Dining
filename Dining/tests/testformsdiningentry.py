@@ -21,9 +21,9 @@ def _create_dining_list(**kwargs):
         kwargs['date'] = date(2018, 1, 4)
     if 'sign_up_deadline' not in kwargs:
         kwargs['sign_up_deadline'] = datetime.combine(kwargs['date'], time(17, 00))
-    if 'claimed_by' not in kwargs:
-        kwargs['claimed_by'] = User.objects.create_user('tessa', 'tessa@punt.nl')
-    return DiningList.objects.create(**kwargs)
+    dl = DiningList.objects.create(**kwargs)
+    dl.owners.add(User.objects.create_user('tessa', 'tessa@punt.nl'))
+    return dl
 
 
 class DiningEntryUserCreateFormTestCase(TestCase):
@@ -36,8 +36,8 @@ class DiningEntryUserCreateFormTestCase(TestCase):
     def setUp(self):
         # Not in setUpTestData to ensure that it is fresh for every test case
         self.dining_list = DiningList.objects.create(date=date(2089, 1, 1), association=self.association,
-                                                     claimed_by=self.user,
                                                      sign_up_deadline=datetime(2088, 1, 1, tzinfo=timezone.utc))
+        self.dining_list.owners.add(self.user)
         self.dining_entry = DiningEntryUser(dining_list=self.dining_list, created_by=self.user2)
         self.post_data = {'user': str(self.user2.pk)}
         self.form = DiningEntryUserCreateForm(self.post_data, instance=self.dining_entry)
@@ -130,8 +130,8 @@ class DiningEntryExternalCreateFormTestCase(TestCase):
     def setUp(self):
         # Not in setUpTestData to ensure that it is fresh for every test case
         self.dining_list = DiningList.objects.create(date=date(2089, 1, 1), association=self.association,
-                                                     claimed_by=self.user,
                                                      sign_up_deadline=datetime(2088, 1, 1, tzinfo=timezone.utc))
+        self.dining_list.owners.add(self.user)
         self.dining_entry = DiningEntryExternal(dining_list=self.dining_list, user=self.user2, created_by=self.user2)
         self.post_data = {'name': 'Ankie'}
 
@@ -144,8 +144,10 @@ class DiningEntryDeleteFormTestCase(TestCase):
     def setUp(self):
         self.user1 = User.objects.create_user('ankie', email='ankie@universe.cat')
         self.user2 = User.objects.create_user('noortje', email='noortje@universe.cat')
-        self.dining_list = DiningList(claimed_by=self.user1, date=date(2100, 1, 1),
-                                      sign_up_deadline=datetime(2100, 1, 1, tzinfo=timezone.utc))
+        self.association = Association.objects.create(name='C&M')
+        self.dining_list = DiningList.objects.create(date=date(2100, 1, 1), association=self.association,
+                                                     sign_up_deadline=datetime(2100, 1, 1, tzinfo=timezone.utc))
+        self.dining_list.owners.add(self.user1)
         self.entry = DiningEntryUser(user=self.user2, created_by=self.user2, dining_list=self.dining_list)
         self.form = DiningEntryDeleteForm(self.entry, self.user2, {})
 

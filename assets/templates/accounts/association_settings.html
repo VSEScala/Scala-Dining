@@ -1,0 +1,12 @@
+{% extends 'accounts/associations_base.html' %}
+{% load form_extras %}
+
+{% block tab_settings %} active{% endblock %}
+
+{% block details %}
+    <form method="post">
+        {% csrf_token %}
+        {% include "snippets/bootstrap_form.html" with horizontal=True %}
+        <input type="submit" value="Save" class="btn btn-block btn-primary"/>
+    </form>
+{% endblock %}

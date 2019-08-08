@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block head %}
+    <link rel="stylesheet" href="{% static 'css/dining_v2.css' %}">
+{% endblock %}
+
+{% block content %}
+    <h3>
+        Upgrading your balance
+    </h3>
+    <p>
+        The boards of all associations using the kitchen can upgrade your balance.
+        For convenience try to upgrade your balance at your association(s) first.
+    </p>
+
+    {% if user_associations %}
+        {% for association in user_associations %}
+            {% include "credit_management/balance_upgrade_assoc_snippet.html" %}
+        {% endfor %}
+        <hr>
+        <p class="mt-4">
+            You can also try to contact any of the other associations if necessary, but please do this as little as
+            possible.
+        </p>
+    {% endif %}
+
+    {% for association in other_associations %}
+        {% include "credit_management/balance_upgrade_assoc_snippet.html" with border_color="#444" %}
+    {% endfor %}
+    <hr style="border-color: #444;">
+
+{% endblock %}
