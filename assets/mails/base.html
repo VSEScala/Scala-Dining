@@ -27,8 +27,8 @@
             <td style="font-size: small; color: #555555; padding-top: 2em">
                 {% block mail_footer %}
                     Don't want to recieve this e-mail? Adjust your mail preferences:
-                    {% url 'settings_account' as url %}
-                    <a href="{{ url }}">{{ url }}</a>
+                    {% full_url 'settings_account' as url %}
+                    <a href={{ url }}">{{ url }}</a>
                 {% endblock %}
             </td>
             <td></td>
