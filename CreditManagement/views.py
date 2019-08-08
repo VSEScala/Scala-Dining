@@ -1,13 +1,15 @@
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import render, get_object_or_404
 from django.views.generic.list import ListView
-from django.core.exceptions import PermissionDenied
+from django.shortcuts import reverse
 from CreditManagement.models import *
 from django.contrib import messages
 from django.utils.translation import gettext as _
 from .forms import UserTransactionForm, AssociationTransactionForm, UserDonationForm, TransactionDeleteForm
 from django.views.generic import View, TemplateView
 from django.http import HttpResponseForbidden, HttpResponseRedirect, HttpResponse
+
+from UserDetails.views_association import AssociationBoardMixin
 
 
 class TransactionListView(ListView):
@@ -30,10 +32,17 @@ class CustomAccessMixin:
         return None
 
 
-class TransactionAlterView(LoginRequiredMixin, CustomAccessMixin, TemplateView):
+class TransactionAlterView(CustomAccessMixin, TemplateView):
     template_name = None
     template_add_name = "credit_management/transaction_add.html"
     template_edit_name = "credit_management/transaction_edit.html"
+    transaction = None
+
+    def dispatch(self, request, *args, **kwargs):
+        transaction_id = request.GET.get('id', None)
+        if transaction_id is not None:
+            self.transaction = get_object_or_404(PendingTransaction, pk=transaction_id)
+        return super(TransactionAlterView, self).dispatch(request, *args, **kwargs)
 
     def get_transaction(self):
         transaction_id = self.request.GET.get('id', None)
@@ -52,7 +61,7 @@ class TransactionAlterView(LoginRequiredMixin, CustomAccessMixin, TemplateView):
         # get the form
         context['form'] = self.get_form(transaction=transaction_obj)
 
-        context['redirect'] = self.request.GET.get('redirect')
+        context['redirect'] = self.request.GET.get('redirect', reverse('index'))
         context['chain'] = self.request.GET.get('chain', False)
 
         # Set the correct template
@@ -62,7 +71,7 @@ class TransactionAlterView(LoginRequiredMixin, CustomAccessMixin, TemplateView):
             self.template_name = self.template_edit_name
         return context
 
-    def post(self, request):
+    def post(self, request, *args, **kwargs):
         transaction_obj = self.get_transaction()
         form = self.get_form(transaction=transaction_obj, data=request.POST)
 
@@ -85,10 +94,10 @@ class TransactionAlterView(LoginRequiredMixin, CustomAccessMixin, TemplateView):
 
         context = self.get_context_data()
         context['form'] = form
-        return render(request, self.template_name, context)
+        return self.render_to_response(context)
 
 
-class TransactionUserView(TransactionAlterView):
+class TransactionUserView(LoginRequiredMixin, TransactionAlterView):
     def get_form(self, transaction=None, data=None):
         return UserTransactionForm(self.request.user,
                                    initial_from_get=self.request.GET,
@@ -96,17 +105,18 @@ class TransactionUserView(TransactionAlterView):
                                    instance=transaction)
 
     def check_access_permission(self, request):
-        transaction_id = request.GET.get('id', None)
-
-        if transaction_id is not None:
-            # get the instance
-            t_order = get_object_or_404(PendingTransaction, pk=transaction_id)
-            if t_order.source_user != request.user:
+        if self.transaction is not None:
+            if self.transaction.source_user != request.user:
                 return HttpResponseForbidden("You do not have access to this transaction")
-            if t_order.confirm_moment <= timezone.now():
+            if self.transaction.confirm_moment <= timezone.now():
                 return HttpResponseForbidden("This transaction can no longer be altered")
 
         return super(TransactionUserView, self).check_access_permission(request)
+
+    def get_context_data(self, *args, **kwargs):
+        context = super(TransactionUserView, self).get_context_data(*args, **kwargs)
+        context['redirect'] = self.request.GET.get('redirect', reverse('index'))
+        return context
 
 
 class DonationView(TransactionUserView):
@@ -123,40 +133,27 @@ class DonationView(TransactionUserView):
                                 instance=transaction)
 
 
-class TransactionAssociationView(TransactionAlterView):
+class TransactionAssociationView(LoginRequiredMixin, AssociationBoardMixin, TransactionAlterView):
+    # LogInRequired is reiterated in TransactionAlterView, but is needed here too as it needs to be executed
+    # before teh AssociationBoardMixin
+
     def check_access_permission(self, request):
-        association_name = self.kwargs.get('association_name')
-        association = get_object_or_404(Association, slug=association_name)
-
-        transaction_id = request.GET.get('id', None)
-
-        if transaction_id is not None:
-            # If an association is given as the source, check user credentials
-            if not self.request.user.is_board_of(association.id):
-                return HttpResponseForbidden("You do not have access to this transaction")
-            t_order = get_object_or_404(PendingTransaction, pk=transaction_id)
-            if t_order.confirm_moment <= timezone.now():
+        if self.transaction is not None:
+            if self.transaction.confirm_moment <= timezone.now():
                 return HttpResponseForbidden("This transaction can no longer be altered")
-        else:
-            if not self.request.user.is_board_of(association.id):
-                return HttpResponseForbidden("You can not make transactions for this association")
+            if self.association != self.transaction.source_association:
+                return HttpResponseForbidden("You do not have access to this transaction")
 
         return super(TransactionAssociationView, self).check_access_permission(request)
 
     def get_form(self, transaction=None, data=None):
         association_name = self.kwargs.get('association_name')
         association = Association.objects.get(slug=association_name)
-        # If an association is given as the source, check user credentials
-        if not self.request.user.is_board_of(association.id):
-            return HttpResponseForbidden()
         # Create the form
         return AssociationTransactionForm(association,
                                           initial_from_get=self.request.GET,
                                           data=data,
                                           instance=transaction)
-
-    def post(self, request, association_name=None):
-        return super(TransactionAssociationView, self).post(request)
 
 
 class TransactionDeleteView(CustomAccessMixin, TemplateView):
@@ -169,6 +166,7 @@ class TransactionDeleteView(CustomAccessMixin, TemplateView):
         target = tr_obj.target()
         target = target if target is not None else "Scala Kitchen"
         context['transaction_text'] = "€{amount} to {target}".format(amount=tr_obj.amount, target=target)
+        context['redirect'] = self.request.GET.get('redirect')
 
         return context
 
@@ -205,7 +203,7 @@ class TransactionDeleteView(CustomAccessMixin, TemplateView):
                     return HttpResponseForbidden("You do not have access to this transaction")
             else:
                 # Transaction has no source
-                HttpResponseForbidden("You do not have access to this transaction")
+                return HttpResponseForbidden("You do not have access to this transaction")
 
             if t_order.confirm_moment <= timezone.now():
                 return HttpResponseForbidden("This transaction can no longer be altered")
