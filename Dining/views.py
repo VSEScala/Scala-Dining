@@ -562,10 +562,14 @@ class SlotDeleteView(LoginRequiredMixin, SlotMixin, DeleteView):
         instance = self.get_object()
         form = DiningListDeleteForm(request.user, instance)
         if form.is_valid():
+            day_view_url = super(DiningListMixin, self).reverse("day_view")
+
             # Set up the mail
             subject = "Dining list {date} cancelled".format(date=instance.date)
             template = "dining/dining_list_deleted"
-            context = {'dining_list': instance, 'cancelled_by': request.user}
+            context = {'dining_list': instance,
+                       'cancelled_by': request.user,
+                       'day_view_url': day_view_url}
             diners = instance.diners
             diners = diners.exclude(id=request.user.id)
 
@@ -587,7 +591,7 @@ class SlotDeleteView(LoginRequiredMixin, SlotMixin, DeleteView):
             messages.success(request, _("Dining list is deleted"))
 
             # Need to use reverse from the DiningListMixin superclass
-            return HttpResponseRedirect(super(DiningListMixin, self).reverse("day_view"))
+            return HttpResponseRedirect(day_view_url)
 
         # Could not delete
         for error in form.non_field_errors():
