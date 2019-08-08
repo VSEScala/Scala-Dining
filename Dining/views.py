@@ -306,15 +306,17 @@ class EntryDeleteView(LoginRequiredMixin, SingleObjectMixin, View):
             template = "dining/dining_list_entry_removed_by"
             context = {'entry': entry, 'dining_list': entry.dining_list, 'remover': request.user}
 
-            # Send mail to the people on the dining list
-            send_templated_mail(subject=subject, template_name=template, context_data=context, recipient=entry.user)
-
             success_msg = "The user is removed from the dining list"
 
         # Process deletion
         form = DiningEntryDeleteForm(entry, request.user, {})
         if form.is_valid():
             form.execute()
+
+            if entry != request.user:
+                # Send mail to the people on the dining list
+                send_templated_mail(subject=subject, template_name=template, context_data=context, recipient=entry.user)
+
             messages.success(request, success_msg)
         else:
             for error in form.non_field_errors():
