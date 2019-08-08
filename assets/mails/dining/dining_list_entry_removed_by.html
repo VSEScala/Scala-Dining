@@ -3,7 +3,7 @@
 
 {% block content %}
     <p>
-        Hey {{ user.first_name }}
+        Hi {{ user.first_name }}
     </p>
     <p>
         {{ remover }} has <b>removed you</b> from the following dining list:
@@ -30,19 +30,13 @@
             If you still want to join this list, you can re-enter here:
         </p>
         <div>
-            <a href="{{ dining_list.get_absolute_url }}"
+            <a href="{{ dining_list.get_absolute_url|to_full_url }}"
                style="background-color: #375a7f;padding: 0.75em; border-radius: 0.25rem; color: white; text-decoration: none;">
                 View dining list</a>
         </div>
     {% else %}
         <p>
-            It is no longer possible to join this dining list. Maybe you can join another dining list or start your own.
-        </p>
-        <div>
-            <a href="{{ day_view_url }}"
-               style="background-color: #375a7f;padding: 0.75em; border-radius: 0.25rem; color: white; text-decoration: none;">
-                Go to day view</a>
-        </div>
+            It is no longer possible to join this dining list.
     {% endif %}
 
 

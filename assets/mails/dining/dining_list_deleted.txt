@@ -1,7 +1,7 @@
 {% extends 'base.txt' %}
 
 {% block content %}
-Hey {{ user.first_name }}
+Hi {{ user.first_name }}
 
 We regret to inform you that the following dining list has been cancelled.
 Date: {{dining_list.date}}
@@ -11,7 +11,7 @@ On behalf of: {{dining_list.association}}
 
 As you were subscribed to this dining list, you have been removed from the dining list and your money has been refunded
 Maybe you can join or start another dining list. You can do so here:
-https://dining.studentencultuur.nl/5/5/2019
+{{ day_view_url|to_full_url }}
 
 We are sorry for the inconvenience,
 With kind regards,

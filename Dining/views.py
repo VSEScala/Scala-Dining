@@ -306,15 +306,17 @@ class EntryDeleteView(LoginRequiredMixin, SingleObjectMixin, View):
             template = "dining/dining_list_entry_removed_by"
             context = {'entry': entry, 'dining_list': entry.dining_list, 'remover': request.user}
 
-            # Send mail to the people on the dining list
-            send_templated_mail(subject=subject, template_name=template, context_data=context, recipient=entry.user)
-
             success_msg = "The user is removed from the dining list"
 
         # Process deletion
         form = DiningEntryDeleteForm(entry, request.user, {})
         if form.is_valid():
             form.execute()
+
+            if entry.user != request.user:
+                # Send mail to the removed user
+                send_templated_mail(subject=subject, template_name=template, context_data=context, recipient=entry.user)
+
             messages.success(request, success_msg)
         else:
             for error in form.non_field_errors():
@@ -562,10 +564,14 @@ class SlotDeleteView(LoginRequiredMixin, SlotMixin, DeleteView):
         instance = self.get_object()
         form = DiningListDeleteForm(request.user, instance)
         if form.is_valid():
+            day_view_url = super(DiningListMixin, self).reverse("day_view")
+
             # Set up the mail
             subject = "Dining list {date} cancelled".format(date=instance.date)
             template = "dining/dining_list_deleted"
-            context = {'dining_list': instance, 'cancelled_by': request.user}
+            context = {'dining_list': instance,
+                       'cancelled_by': request.user,
+                       'day_view_url': day_view_url}
             diners = instance.diners
             diners = diners.exclude(id=request.user.id)
 
@@ -586,8 +592,7 @@ class SlotDeleteView(LoginRequiredMixin, SlotMixin, DeleteView):
 
             messages.success(request, _("Dining list is deleted"))
 
-            # Need to use reverse from the DiningListMixin superclass
-            return HttpResponseRedirect(super(DiningListMixin, self).reverse("day_view"))
+            return HttpResponseRedirect(day_view_url)
 
         # Could not delete
         for error in form.non_field_errors():
