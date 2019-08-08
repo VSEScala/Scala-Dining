@@ -313,8 +313,8 @@ class EntryDeleteView(LoginRequiredMixin, SingleObjectMixin, View):
         if form.is_valid():
             form.execute()
 
-            if entry != request.user:
-                # Send mail to the people on the dining list
+            if entry.user != request.user:
+                # Send mail to the removed user
                 send_templated_mail(subject=subject, template_name=template, context_data=context, recipient=entry.user)
 
             messages.success(request, success_msg)
@@ -592,7 +592,6 @@ class SlotDeleteView(LoginRequiredMixin, SlotMixin, DeleteView):
 
             messages.success(request, _("Dining list is deleted"))
 
-            # Need to use reverse from the DiningListMixin superclass
             return HttpResponseRedirect(day_view_url)
 
         # Could not delete
