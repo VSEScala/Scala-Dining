@@ -39,14 +39,14 @@
                 {% else %}
                     href="{% url 'credits:transaction_donate' %}?redirect={{ request.path }}&id={{ transaction.id }}">
                 {% endif %}
-                <i class="fas fa-pen"></i>
+                <span class="fas fa-pen"></span>
                 </a>
             {% endif %}
         {% elif transaction.type == 3 %}
             {% with transaction.id|get_dining_slot as slot %}
                 <a class="btn btn-outline-primary"
                    href="{{ slot.get_absolute_url }}">
-                    <i class="fas fa-search"></i>
+                    <span class="fas fa-search"></span>
                 </a>
             {% endwith %}
         {% endif %}
