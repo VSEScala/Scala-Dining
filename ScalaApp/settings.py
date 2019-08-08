@@ -90,6 +90,9 @@ TEMPLATES = [
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
         'DIRS': [os.path.join(BASE_DIR, 'assets/mails')],
         'APP_DIRS': True,
+        'OPTIONS': {
+            'builtins': ['General.templatetags.mail_tags'],
+        }
     },
 ]
 
