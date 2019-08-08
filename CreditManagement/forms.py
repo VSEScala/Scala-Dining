@@ -16,8 +16,9 @@ class InitialFromGETMixin:
         Special implementation of initial gathering if initial values are given through request GET object
         """
         value = self.initial_from_get.get(field_name)
+        print(value)
         if value is not None:
-            return value[0] if len(value) == 1 else value
+            return value
 
         return super(InitialFromGETMixin, self).get_initial_for_field(field, field_name)
 
@@ -116,7 +117,7 @@ class TransactionDeleteForm(forms.Form):
         if self.transaction.confirm_moment <= timezone.now():
             raise ValidationError(_('This transaction can no longer be altered'), code='locked')
 
-        # Validate dining list is still open (except for claimant)
+        # Validate deleter is part of the source of the transaction
         if self.transaction.source_user is not None:
             if not self.transaction.source_user == self.deleter:
                 raise ValidationError(_('You are not the source for this transaction'), code='locked')
