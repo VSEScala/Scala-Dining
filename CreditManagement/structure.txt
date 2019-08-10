@@ -1,0 +1,81 @@
+This document entails the structure of the creditmanagement models.
+
+- - General structure - -
+- Transaction model
+Any transaction will, at the minimum contain:
+
+A source, defined in either:
+    source_user
+    source_association
+A certain amount of money being transfered
+    amount
+A target, defined in either
+    target_user
+    target_association
+A description containing a description of what the transfer entails.
+    description
+
+Furthermore, any transaction is either pending or non-pending. To aid in the status two stats are also kept:
+The moment the transaction is processed
+    order_moment
+The moment on which the transaction is processed or is supposed to be processed
+    confirm_moment
+
+
+- Methods
+AbstractTransaction.get_all_transactions(user, association)
+    If any queryset of transactions is required, this method constructs that queryset.
+    One can also trim this queryset on user and association
+    The queryset itself assumes all items in the queryset as the general model. To retrieve the type, (fixed, pending...)
+        please check the type_code.
+    Result only allows .count() and .order_by() to be executed on the resulting query_set due to use of union()!
+
+
+AbstractTransaction.get_user_balance(user)
+AbstractTransaction.get_association_balance(association)
+    Returns a value of the balance of the user and association respectively
+
+
+AbstractPendingTransaction.finalise_all_expired()
+    Moves any transaction whose status is pending to the FixedTransaction table, thus changing the status from pending
+    to non-pending.
+
+
+- Databases
+AbstractTransaction
+            /\
+        -------------------------------------
+        |                                   |
+PendingAbstractTransaction          FixedTransaction
+        /\
+    ---------------------------------
+    |                               |
+PendingTransaction             PendingDiningTransaction
+
+
+
+- - FixedTransaction - -
+Contains a database table of all processed non-pending transaction.
+On the server this database table allows only inserts, no removals or alterations.
+
+
+
+- - PendingTransaction - -
+Whenever a new transaction needs to be created, create it here !!
+Confirm moment can be left blank, auto defaults to the set default in settings (2 days)
+Also checks if the source_user doesn't become or is negative
+
+pending_transaction_obj.finalise()
+Finalizes a transaction by creating a new transaction in the FixedTransactionTable with the same information
+as this transaction. Then deletes this transaction.
+
+
+
+- - PendingDiningTransaction - -
+Is basically a view which autocreates transactions based on dining entries in dining lists.
+Eligable dining lists are tracked through PendingDiningListTracker instances.
+Because these objects are autocreated on a query level (by many annotations), this is also the most sensetive to
+changes in the code. Therefore, do not change any code within this class without knowing what you are doing!
+
+pending_dining_tracker_obj.finalise()
+Finalises all pending dining transactions of a dining list. Then removes this instances.
