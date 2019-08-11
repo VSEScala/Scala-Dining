@@ -74,40 +74,37 @@
         {% endfor %}
     </div>
 
-    <div class="row">
-        {% if date|dining_list_creation_open %}
-            {% with user|can_create_dining_list:date as can_create_list %}
-                {% with user|cant_create_dining_list_reason:date as cant_create_reason %}
-                    <div class="btn-group col-12 d-md-inline-flex d-none">
-                        <a class="btn btn-secondary col-3"
-                           href="{% url 'credits:transaction_donate' %}?redirect={{ request.path }}">
-                            <i class="fas fa-coins"></i> Single use
-                        </a>
-                        {% if can_create_list %}
-                            <a href="{% url 'new_slot' year=date.year month=date.month day=date.day %}"
-                               class="btn btn-primary">Create and claim a new slot</a>
-                        {% elif cant_create_reason %}
-                            <div class="btn btn-primary disabled">{{ cant_create_reason }}</div>
-                        {% endif %}
-                    </div>
+    {% if date|dining_list_creation_open %}
+        {% with user|can_create_dining_list:date as can_create_list %}
+            {% with user|cant_create_dining_list_reason:date as cant_create_reason %}
+                <div class="btn-group w-100 d-md-inline-flex d-none">
+                    <a class="btn btn-secondary col-3"
+                       href="{% url 'credits:transaction_donate' %}?redirect={{ request.path }}">
+                        <i class="fas fa-coins"></i> Donate to kitchen
+                    </a>
+                    {% if can_create_list %}
+                        <a href="{% url 'new_slot' year=date.year month=date.month day=date.day %}"
+                           class="btn btn-primary"><i class="fas fa-plus"></i> Create a new dining list</a>
+                    {% elif cant_create_reason %}
+                        <div class="btn btn-primary disabled">{{ cant_create_reason }}</div>
+                    {% endif %}
+                </div>
 
-                    <div class="col-12 d-md-none d-inline">
-                        {% if can_create_list %}
-                            <a href="{% url 'new_slot' year=date.year month=date.month day=date.day %}"
-                               class="btn btn-primary col-12">Create and claim a new slot</a>
-                        {% elif cant_create_reason %}
-                            <div class="btn btn-primary disabled">{{ cant_create_reason }}</div>
-                        {% endif %}
-                        <a class="btn btn-secondary col-5 mt-2"
-                           href="{% url 'credits:transaction_donate' %}?redirect={{ request.path }}">
-                            <i class="fas fa-coins"></i> Single use
-                        </a>
-                    </div>
-                {% endwith %}
+                <div class="d-md-none d-inline">
+                    {% if can_create_list %}
+                        <a href="{% url 'new_slot' year=date.year month=date.month day=date.day %}"
+                           class="btn btn-primary w-100"><i class="fas fa-plus"></i> Create a new dining list</a>
+                    {% elif cant_create_reason %}
+                        <div class="btn btn-primary disabled">{{ cant_create_reason | capfirst }}</div>
+                    {% endif %}
+                    <a class="btn btn-secondary col-5 mt-2"
+                       href="{% url 'credits:transaction_donate' %}?redirect={{ request.path }}">
+                        <i class="fas fa-coins"></i> Donate to kitchen
+                    </a>
+                </div>
             {% endwith %}
-        {% endif %}
+        {% endwith %}
+    {% endif %}
 
-
-    </div>
 
 {% endblock %}

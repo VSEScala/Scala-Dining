@@ -16,7 +16,6 @@ class InitialFromGETMixin:
         Special implementation of initial gathering if initial values are given through request GET object
         """
         value = self.initial_from_get.get(field_name)
-        print(value)
         if value is not None:
             return value
 
