@@ -14,14 +14,8 @@
   much easier to calculate the balance for an account, since there are no
   source and target columns. To ensure integrity, a database constraint is
   needed to make sure that all transaction entries add up to zero.
-* We have an enumeration of special accounts for transactions like kitchen cost
-  payments. The target for e.g. the kitchen cost payment would be a kitchen
-  cost special account. This makes it possible to get reportings on these
-  different types of accounts, e.g. it's possible to get a sum of all kitchen
-  costs, or for only a certain period, by aggregating the rows for the kitchen
-  cost account.
-* Using the 'cash book' account we can directly find how much money is 'in the
-  system'.
+* We have a 'system account' which indicates the assets of the system owner.
+  This is explained in more detail in the code docstring.
 * I've thought a lot about performance considerations for calculating the
   balance. It is probably not going to be an issue that all entries need to be
   summed each time to calculate the balance, as that's a very fast operation.
@@ -76,7 +70,7 @@ old tables can be removed using another migration.
 
 
 It is possible to archive transactions when this is needed.
-However this is not implemented as it should never be necessary.
+However this is not yet implemented as it should never be necessary.
 When this appears to be necessary, it can be done using a procedure which replaces a set of transactions
 with a summary transaction that has the same net amount as for the transaction set.
 The transaction set should not be discarded but instead it should be moved to an archival table.
