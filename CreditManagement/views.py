@@ -22,6 +22,10 @@ class TransactionListView(ListView):
 
 
 class CustomAccessMixin:
+    """
+    A mixin that determines whether a user has access by calling check_access_permission()
+    Similar to UserPassesTestMixin except allows more freedom in returned HTTP protocols/messaging
+    """
     def dispatch(self, request, *args, **kwargs):
         permission_check = self.check_access_permission(request)
         if permission_check is not None:
@@ -29,55 +33,60 @@ class CustomAccessMixin:
         return super(CustomAccessMixin, self).dispatch(request, *args, **kwargs)
 
     def check_access_permission(self, request):
+        """
+        Checks whether user has access
+        :param request:
+        :return: None if user has access, otherwise a HTTPResponse object
+        """
         return None
 
 
-class TransactionAlterView(CustomAccessMixin, TemplateView):
+class TransactionBaseAlterView(CustomAccessMixin, TemplateView):
+    """
+    Provides a base view for the transactions which automatically alters the layout depending on whether
+    a Pending Transaction model is created or altered.
+    """
     template_name = None
     template_add_name = "credit_management/transaction_add.html"
     template_edit_name = "credit_management/transaction_edit.html"
-    transaction = None
+    transaction_obj = None
 
     def dispatch(self, request, *args, **kwargs):
         transaction_id = request.GET.get('id', None)
         if transaction_id is not None:
-            self.transaction = get_object_or_404(PendingTransaction, pk=transaction_id)
-        return super(TransactionAlterView, self).dispatch(request, *args, **kwargs)
+            self.transaction_obj = get_object_or_404(PendingTransaction, pk=transaction_id)
+        return super(TransactionBaseAlterView, self).dispatch(request, *args, **kwargs)
 
-    def get_transaction(self):
-        transaction_id = self.request.GET.get('id', None)
-        try:
-            return PendingTransaction.objects.get(pk=transaction_id)
-        except PendingTransaction.DoesNotExist:
-            return None
-
-    def get_form(self, transaction=None, data=None):
+    def get_form(self, data=None):
+        """
+        Returns the form the view is supposed to display
+        :param data: request.POST data
+        :return:
+        """
         raise NotImplementedError()
 
     def get_context_data(self, *args, **kwargs):
-        context = super(TransactionAlterView, self).get_context_data(*args, **kwargs)
+        context = super(TransactionBaseAlterView, self).get_context_data(*args, **kwargs)
 
-        transaction_obj = self.get_transaction()
         # get the form
-        context['form'] = self.get_form(transaction=transaction_obj)
+        context['form'] = self.get_form()
 
         context['redirect'] = self.request.GET.get('redirect', reverse('index'))
         context['chain'] = self.request.GET.get('chain', False)
 
         # Set the correct template
-        if transaction_obj is None:
+        if self.transaction_obj is None:
             self.template_name = self.template_add_name
         else:
             self.template_name = self.template_edit_name
         return context
 
     def post(self, request, *args, **kwargs):
-        transaction_obj = self.get_transaction()
-        form = self.get_form(transaction=transaction_obj, data=request.POST)
+        form = self.get_form(transaction=self.transaction_obj, data=request.POST)
 
         if form.is_valid():
             form.save()
-            if transaction_obj is None:
+            if self.transaction_obj is None:
                 messages.add_message(request, messages.SUCCESS, _("Transaction has been added successfully."))
             else:
                 messages.add_message(request, messages.SUCCESS, _("Transaction has been changed successfully."))
@@ -96,20 +105,28 @@ class TransactionAlterView(CustomAccessMixin, TemplateView):
         context['form'] = form
         return self.render_to_response(context)
 
+    def check_access_permission(self, request):
+        if self.transaction_obj is not None:
+            if self.transaction_obj.confirm_moment <= timezone.now():
+                return HttpResponseForbidden("This transaction can no longer be altered")
+        return super(TransactionBaseAlterView, self).check_access_permission(request)
 
-class TransactionUserView(LoginRequiredMixin, TransactionAlterView):
-    def get_form(self, transaction=None, data=None):
+
+class TransactionUserView(LoginRequiredMixin, TransactionBaseAlterView):
+    """
+    Basic user transaction view
+    """
+
+    def get_form(self, data=None):
         return UserTransactionForm(self.request.user,
                                    initial_from_get=self.request.GET,
                                    data=data,
-                                   instance=transaction)
+                                   instance=self.transaction_obj)
 
     def check_access_permission(self, request):
-        if self.transaction is not None:
-            if self.transaction.source_user != request.user:
+        if self.transaction_obj is not None:
+            if self.transaction_obj.source_user != request.user:
                 return HttpResponseForbidden("You do not have access to this transaction")
-            if self.transaction.confirm_moment <= timezone.now():
-                return HttpResponseForbidden("This transaction can no longer be altered")
 
         return super(TransactionUserView, self).check_access_permission(request)
 
@@ -119,10 +136,14 @@ class TransactionUserView(LoginRequiredMixin, TransactionAlterView):
         return context
 
 
-class DonationView(TransactionUserView):
-    def get_form(self, transaction=None, data=None):
-        if transaction is None:
-            initial = {'amount': 0.5}
+class UserDonationView(TransactionUserView):
+    """
+    Basic user transaction view, except calls UserDonationForm allowing users to contribute to the kitchen directly
+    """
+    def get_form(self, data=None):
+        # If the transaction is supposed to be created, default amount to default dining cost except when told otherwise
+        if self.transaction_obj is None:
+            initial = {'amount': settings.KITCHEN_COST}
         else:
             initial = {}
 
@@ -130,33 +151,32 @@ class DonationView(TransactionUserView):
                                 initial_from_get=self.request.GET,
                                 initial=initial,
                                 data=data,
-                                instance=transaction)
+                                instance=self.transaction_obj)
 
 
-class TransactionAssociationView(LoginRequiredMixin, AssociationBoardMixin, TransactionAlterView):
-    # LogInRequired is reiterated in TransactionAlterView, but is needed here too as it needs to be executed
-    # before teh AssociationBoardMixin
+class TransactionAssociationView(LoginRequiredMixin, AssociationBoardMixin, TransactionBaseAlterView):
+    """
+    Association transaction view, checks whether user is part of the association
+    """
 
     def check_access_permission(self, request):
-        if self.transaction is not None:
-            if self.transaction.confirm_moment <= timezone.now():
-                return HttpResponseForbidden("This transaction can no longer be altered")
-            if self.association != self.transaction.source_association:
+        if self.transaction_obj is not None:
+            if self.association != self.transaction_obj.source_association:
                 return HttpResponseForbidden("You do not have access to this transaction")
 
         return super(TransactionAssociationView, self).check_access_permission(request)
 
-    def get_form(self, transaction=None, data=None):
+    def get_form(self, data=None):
         association_name = self.kwargs.get('association_name')
         association = Association.objects.get(slug=association_name)
         # Create the form
         return AssociationTransactionForm(association,
                                           initial_from_get=self.request.GET,
                                           data=data,
-                                          instance=transaction)
+                                          instance=self.transaction_obj)
 
 
-class TransactionDeleteView(CustomAccessMixin, TemplateView):
+class TransactionDeleteView(LoginRequiredMixin, CustomAccessMixin, TemplateView):
     template_name = "credit_management/transaction_delete.html"
 
     def get_context_data(self, **kwargs):
