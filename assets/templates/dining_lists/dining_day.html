@@ -80,13 +80,13 @@
                 <div class="btn-group w-100 d-md-inline-flex d-none">
                     <a class="btn btn-secondary col-3"
                        href="{% url 'credits:transaction_donate' %}?redirect={{ request.path }}">
-                        <i class="fas fa-coins"></i> Donate to kitchen
+                        <i class="fas fa-coins"></i> Contribute single use*
                     </a>
                     {% if can_create_list %}
                         <a href="{% url 'new_slot' year=date.year month=date.month day=date.day %}"
                            class="btn btn-primary"><i class="fas fa-plus"></i> Create a new dining list</a>
                     {% elif cant_create_reason %}
-                        <div class="btn btn-primary disabled">{{ cant_create_reason }}</div>
+                        <div class="btn btn-primary disabled">{{ cant_create_reason | capfirst }}</div>
                     {% endif %}
                 </div>
 
@@ -99,10 +99,14 @@
                     {% endif %}
                     <a class="btn btn-secondary col-5 mt-2"
                        href="{% url 'credits:transaction_donate' %}?redirect={{ request.path }}">
-                        <i class="fas fa-coins"></i> Donate to kitchen
+                        <i class="fas fa-coins"></i> Contribute single use*
                     </a>
                 </div>
             {% endwith %}
+            <small>
+            * This allows you to contribute to the use of the kitchen without claiming a dining slot.
+            For example when using the ovens to heat a pizza.
+            </small>
         {% endwith %}
     {% endif %}
 
