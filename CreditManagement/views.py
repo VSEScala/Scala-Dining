@@ -82,7 +82,7 @@ class TransactionBaseAlterView(CustomAccessMixin, TemplateView):
         return context
 
     def post(self, request, *args, **kwargs):
-        form = self.get_form(transaction=self.transaction_obj, data=request.POST)
+        form = self.get_form(data=request.POST)
 
         if form.is_valid():
             form.save()
