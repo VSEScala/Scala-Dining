@@ -32,6 +32,8 @@
     </td>
     <td class="py-2">
         {% if transaction.type == 2 %}
+            {# Redacted #}
+            {% comment %}
             {% if transaction.source_user == request.user %}
                 <a class="btn btn-outline-primary"
                 {% if transaction.target_user or transaction.target_association %}
@@ -42,6 +44,7 @@
                 <span class="fas fa-pen"></span>
                 </a>
             {% endif %}
+            {% endcomment %}
         {% elif transaction.type == 3 %}
             {% with transaction.id|get_dining_slot as slot %}
                 <a class="btn btn-outline-primary"
