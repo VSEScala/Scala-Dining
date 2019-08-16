@@ -184,6 +184,17 @@ class Mail(AbstractMessage):
 
 
 class TemplateMail(Mail):
+    """ Constructs and sends Mails through a given template (txt and html)
+
+    Inherits:
+        Mail
+
+    Attributes:
+        txt_template: the rendered txt template
+        html: the rendered html template
+        target_user_format: how the name of the recipient is called in the template
+
+    """
     txt_template = None
     html_template = None
     target_user_format = 'target_user'
