@@ -74,10 +74,14 @@ class CustomUserAdmin(admin.ModelAdmin):
     fields = ('username', ('first_name', 'last_name'), 'date_joined', 'email')
 
     def send_test_mail(modeladmin, request, queryset):
-        send_templated_mass_mail("Scala Dining: Testmail",
-                                 template_name="general/testmail",
-                                 recipients=queryset,
-                                 fail_silently=False)
+        from General.notifications import TestNotification
+
+        TestNotification(queryset).notify()
+
+        # send_templated_mass_mail("Scala Dining: Testmail",
+        #                          template_name="general/testmail",
+        #                          recipients=queryset,
+        #                          fail_silently=False)
 
     actions = [send_test_mail]
 

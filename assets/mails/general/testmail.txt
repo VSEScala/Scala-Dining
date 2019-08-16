@@ -1,1 +1,3 @@
+Hey {target_user}
+
 This is a testmail
