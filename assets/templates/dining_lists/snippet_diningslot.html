@@ -30,7 +30,7 @@
         {% if slot|can_join:user %}
             {% url 'entry_add' day=date.day month=date.month year=date.year identifier=slot.association.slug as url%}
             {% url 'slot_details' day=date.day month=date.month year=date.year identifier=slot.association.slug as next%}
-            <form method="post" action="{{ url }}?next={{ next }}" class="btn-block col-2 slot-signup d-inline-flex">
+            <form method="post" action="{{ url }}?next={{ next }}" class="btn-block col-2 slot-signup d-none d-md-inline-flex">
                 {% csrf_token %}
                 <input type="hidden" name="user" value="{{ user.pk }}">
                 <button type="submit" class="btn-block btn btn-primary slot-signup"></button>
@@ -40,7 +40,7 @@
                 {% if entry and entry|can_delete_entry:user %}
                     {% url 'entry_delete' pk=entry.pk as url %}
                     {% url 'day_view' day=date.day month=date.month year=date.year as next %}
-                    <form method="post" action="{{ url }}?next={{ next }}" class="btn-block col-2 slot-signup d-inline-flex">
+                    <form method="post" action="{{ url }}?next={{ next }}" class="btn-block col-2 slot-signup d-none d-md-inline-flex">
                         {% csrf_token %}
                         <button type="submit" class="btn-block btn btn-primary slot-unlist"></button>
                     </form>
