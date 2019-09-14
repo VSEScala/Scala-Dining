@@ -45,7 +45,7 @@
     </p>
     {% if dining_list.payment_link %}
     <div>
-            You can do that here:<br>
+            You can do that here:<br><br>
         <a href="{{ dining_list.payment_link }}"
            style="background-color: #375a7f;padding: 0.75em; border-radius: 0.25rem; color: white; text-decoration: none;">
             Pay dining list</a>
@@ -54,7 +54,7 @@
     <p>
         For more information check the dining list here:
         <a href="{{ dining_list.get_absolute_url|to_full_url }}"
-           style="background-color: #375a7f;padding: 0.75em; border-radius: 0.25rem; color: white; text-decoration: none;">
+           style="">
             {{ dining_list.get_absolute_url|to_full_url }}</a>
     </p>
 
