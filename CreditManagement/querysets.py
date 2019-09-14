@@ -157,7 +157,8 @@ class DiningTransactionQuerySet(AbstractTransactionQuerySet):
         :return: The users with 'balance' annotated
         """
         # Select all entries in the pending dininglists, filter on the intended user in that dining list
-        entries = DiningEntry.objects.filter(dining_list__pendingdininglisttracker__isnull=False)
+        entries = DiningEntry.objects.filter(dining_list__pendingdininglisttracker__isnull=False,
+                                             dining_list__kitchen_cost__gt=0)
 
         target_sum_qs = entries.filter(user=OuterRef('pk'))
         target_sum_qs = target_sum_qs.values('user')
