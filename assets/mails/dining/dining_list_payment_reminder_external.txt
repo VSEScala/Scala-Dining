@@ -12,8 +12,8 @@
     By: {{dining_list|short_owners_string}}
     On behalf of: {{dining_list.association}}
 
-    {% is_reminder %}
-    However, according to our administration, {% if guest %} {{ guest }} has not paid for the meal yet. {%else%} Some of them have not paid for their meal yet {%endif%}
+    {% if is_reminder %}
+        However, according to our administration, {% if guest %} {{ guest }} has not paid for the meal yet. {%else%} Some of them have not paid for their meal yet {%endif%}
     {% endif %}
 
     {% if guest %}
