@@ -6,7 +6,7 @@
         Hi {{ user.first_name }}
     </p>
     <p>
-        {{entry|short_owners_string}} has just added you to the following dining list:
+        {{entry.created_by}} has just added you to the following dining list:
     </p>
     <table>
         <tr><td>
@@ -17,7 +17,7 @@
         <tr><td>
                 By
             </td><td>
-                {{dining_list.claimed_by}}
+                {{dining_list|short_owners_string}}
         </td></tr>
         <tr><td>
                 Association
