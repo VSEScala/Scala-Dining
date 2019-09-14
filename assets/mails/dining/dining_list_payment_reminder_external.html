@@ -34,14 +34,16 @@
         </td></tr>
     </table>
     <p>
-        However, according to our administration,
-        {% if guest %} {{ guest }} has not paid for the meal yet.{% else %}
-            Some of them have not yet paid for the meal yet.
+        {% is_reminder %}
+            However, according to our administration,
+            {% if guest %} {{ guest }} has not paid for the meal yet.{% else %}
+                Some of them have not yet paid for the meal yet.
+            {% endif %}
         {% endif %}
     </p>
     <p>
         {% if guest %}
-            {{ reminder }} kindly ask you to contact him/her and ask him to pay for the meal.
+            {{ reminder }} kindly ask you to contact {{ guest }} and ask him to pay for the meal.
         {% else %}
             {{ reminder }} kindly asks you to contact the following guests:
             <li>

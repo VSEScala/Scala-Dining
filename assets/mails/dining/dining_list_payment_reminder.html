@@ -30,9 +30,11 @@
             {{dining_list.association}}
         </td></tr>
     </table>
-    <p>
-        However, according to our administration, you have not yet paid for the meal itself.
-    </p>
+    {% if is_reminder %}
+        <p>
+            However, according to our administration, you have not yet paid for the meal itself.
+        </p>
+    {% endif %}
     <p>
         {{ reminder }} kindly asks you if you could pay
         {% if dining_list.dining_cost %}

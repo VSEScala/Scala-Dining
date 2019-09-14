@@ -12,7 +12,9 @@
     By: {{dining_list|short_owners_string}}
     On behalf of: {{dining_list.association}}
 
+    {% is_reminder %}
     However, according to our administration, {% if guest %} {{ guest }} has not paid for the meal yet. {%else%} Some of them have not paid for their meal yet {%endif%}
+    {% endif %}
 
     {% if guest %}
         {{ reminder }} kindly ask you to contact him/her and ask him to pay for the meal.

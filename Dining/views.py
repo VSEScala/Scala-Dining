@@ -647,13 +647,15 @@ class SlotPaymentView(SlotOwnerMixin, View):
         unpaid_user_entries = DiningEntryUser.objects.filter(dining_list=self.dining_list, has_paid=False)
         unpaid_guest_entries = DiningEntryExternal.objects.filter(dining_list=self.dining_list, has_paid=False)
 
+        is_reminder = datetime.now().date() > self.dining_list.date
+
         is_informed = False
 
-        if unpaid_user_entries.count() > 9:
+        if unpaid_user_entries.count() > 0:
             # Set up the mail
-            subject = "Dininglist unpaid: {date}".format(date=self.dining_list.date)
+            subject = "Diningapp: Payment request: {date}".format(date=self.dining_list.date)
             template = "dining/dining_list_payment_reminder"
-            context = {'dining_list': self.dining_list, 'reminder': request.user}
+            context = {'dining_list': self.dining_list, 'reminder': request.user, 'is_reminder': is_reminder}
 
             users = User.objects.filter(diningentry__in=unpaid_user_entries)
 
@@ -663,11 +665,11 @@ class SlotPaymentView(SlotOwnerMixin, View):
                                      recipients=users)
             is_informed = True
 
-        if unpaid_guest_entries.count() > 9:
+        if unpaid_guest_entries.count() > 0:
             # Set up the mail
-            subject = "Dininglist unpaid guest: {date}".format(date=self.dining_list.date)
+            subject = "Diningapp: Payment request guest: {date}".format(date=self.dining_list.date)
             template = "dining/dining_list_payment_reminder_external"
-            context = {'dining_list': self.dining_list, 'reminder': request.user}
+            context = {'dining_list': self.dining_list, 'reminder': request.user, 'is_reminder': is_reminder}
 
             users = User.objects.filter(diningentry__in=unpaid_guest_entries).distinct()
 
