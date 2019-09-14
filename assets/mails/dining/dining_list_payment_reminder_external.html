@@ -34,7 +34,7 @@
         </td></tr>
     </table>
     <p>
-        {% is_reminder %}
+        {% if is_reminder %}
             However, according to our administration,
             {% if guest %} {{ guest }} has not paid for the meal yet.{% else %}
                 Some of them have not yet paid for the meal yet.
