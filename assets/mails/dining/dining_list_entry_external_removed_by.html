@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-
+{% load dining_tags %}
 
 {% block content %}
     <p>
@@ -17,7 +17,7 @@
         <tr><td>
             By
         </td><td>
-            {{dining_list.claimed_by}}
+            {{dining_list|short_owners_string}}
         </td></tr>
         <tr><td>
             Association

@@ -1,12 +1,12 @@
 {% extends 'base.html' %}
-
+{% load dining_tags %}
 
 {% block content %}
     <p>
         Hi {{ user.first_name }}
     </p>
     <p>
-        {{entry.created_by}} has just added you to the following dining list:
+        {{entry|short_owners_string}} has just added you to the following dining list:
     </p>
     <table>
         <tr><td>
