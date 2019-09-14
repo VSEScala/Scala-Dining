@@ -1,0 +1,32 @@
+{% extends 'base.txt' %}
+{% load dining_tags %}
+
+{% block content %}
+    Hi {{user.first_name}}
+
+    {% if guest %} Your guest {{guest}} recently dined on the following dining_list:
+    {%else%} You recently added  a couple of guests to the following dining list:
+    {%endif%}
+    Date: {{dining_list.date}}
+    Dish: {{dining_list.dish}}
+    By: {{dining_list|short_owners_string}}
+    On behalf of: {{dining_list.association}}
+
+    {% is_reminder %}
+    However, according to our administration, {% if guest %} {{ guest }} has not paid for the meal yet. {%else%} Some of them have not paid for their meal yet {%endif%}
+    {% endif %}
+
+    {% if guest %}
+        {{ reminder }} kindly ask you to contact him/her and ask him to pay for the meal.
+    {% else %}
+        {{ reminder }} kindly asks you to contact the following guests:
+        {% for guest in guests %}
+            {{guest}}
+        {%endfor%}
+    {%endif%}
+
+    For more information, check the dining list here:
+    {{ dining_list.get_absolute_url|to_full_url }}
+
+    Enjoy your day!
+{% endblock %}

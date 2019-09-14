@@ -478,8 +478,42 @@ class SlotInfoView(LoginRequiredMixin, SlotMixin, TemplateView):
             return self.render_to_response(context)
 
 
+class IsOwnerMixin(object):
+    """
+    Ensures the page can only be visited by dining list owners
+
+    Attributes:
+        redirect_name: The url name to redirect to upon rejection
+        base_redirect: the actual url to redirect to, can be called when succesfully processing the page
+    """
+    redirect_name = "slot_details"
+
+    @property
+    def base_redirect(self):
+        return self.reverse(self.redirect_name)
+
+    def dispatch(self, request, *args, **kwargs):
+        """
+        Construct date before get/post is called.
+        """
+        if not self.dining_list.is_owner(request.user):
+            if hasattr(self, "base_redirect"):
+                messages.error(request, "You are not the owner of this list and can't do this action")
+                return HttpResponseRedirect(self.base_redirect)
+            else:
+                return HttpResponseForbidden()
+        return super().dispatch(request, *args, **kwargs)
+
+
+class SlotOwnerMixin(LoginRequiredMixin, SlotMixin, IsOwnerMixin):
+    """
+    Combined mixin for slot pages that should only be accessable for dining list owners
+    """
+    pass
+
+
 # Could possibly use the Django built-in FormView or ModelFormView in combination with FormSet
-class SlotInfoChangeView(LoginRequiredMixin, SlotMixin, TemplateView):
+class SlotInfoChangeView(SlotOwnerMixin, TemplateView):
     template_name = "dining_lists/dining_slot_info_alter.html"
 
     def get_context_data(self, **kwargs):
@@ -523,7 +557,7 @@ class SlotInfoChangeView(LoginRequiredMixin, SlotMixin, TemplateView):
             # Ensure that current user remains owner of the dining list
             self.dining_list.owners.add(request.user)
 
-            return HttpResponseRedirect(self.reverse('slot_details'))
+            return HttpResponseRedirect(self.base_redirect)
 
         context.update({
             'info_form': info_form,
@@ -547,7 +581,7 @@ class SlotAllergyView(LoginRequiredMixin, SlotMixin, TemplateView):
         return context
 
 
-class SlotDeleteView(LoginRequiredMixin, SlotMixin, DeleteView):
+class SlotDeleteView(SlotOwnerMixin, DeleteView):
     """
     Page for slot deletion. Page is only available for slot owners.
     """
@@ -599,3 +633,75 @@ class SlotDeleteView(LoginRequiredMixin, SlotMixin, DeleteView):
             messages.add_message(request, messages.ERROR, error)
 
         return HttpResponseRedirect(self.reverse("slot_delete"))
+
+
+class SlotPaymentView(SlotOwnerMixin, View):
+    """
+    A view class that allows dining list owners to send payment reminders
+    """
+
+    def __init__(self, *args, **kwargs):
+        super(SlotPaymentView, self).__init__(*args, **kwargs)
+
+    def post(self, request, *args, **kwargs):
+        unpaid_user_entries = DiningEntryUser.objects.filter(dining_list=self.dining_list, has_paid=False)
+        unpaid_guest_entries = DiningEntryExternal.objects.filter(dining_list=self.dining_list, has_paid=False)
+
+        is_reminder = datetime.now().date() > self.dining_list.date
+
+        is_informed = False
+
+        if unpaid_user_entries.count() > 0:
+            # Set up the mail
+            subject = "Diningapp: Payment request: {date}".format(date=self.dining_list.date)
+            template = "dining/dining_list_payment_reminder"
+            context = {'dining_list': self.dining_list, 'reminder': request.user, 'is_reminder': is_reminder}
+
+            users = User.objects.filter(diningentry__in=unpaid_user_entries)
+
+            send_templated_mass_mail(template_name=template,
+                                     subject=subject,
+                                     context_data=context,
+                                     recipients=users)
+            is_informed = True
+
+        if unpaid_guest_entries.count() > 0:
+            # Set up the mail
+            subject = "Diningapp: Payment request guest: {date}".format(date=self.dining_list.date)
+            template = "dining/dining_list_payment_reminder_external"
+            context = {'dining_list': self.dining_list, 'reminder': request.user, 'is_reminder': is_reminder}
+
+            users = User.objects.filter(diningentry__in=unpaid_guest_entries).distinct()
+
+            for user in users:
+                guests = []
+
+                for external_entry in unpaid_guest_entries.filter(user=user):
+                    guests.append(external_entry.name)
+
+                # Call a different message if a the user added multiple guests who hadn't paid
+                if len(guests) == 1:
+                    context["guest"] = guests[0]
+                    context["guests"] = None
+                    send_templated_mail(subject=subject,
+                                        template_name=template,
+                                        context_data=context,
+                                        recipient=user)
+                else:
+                    context["guest"] = None
+                    context["guests"] = guests
+                    send_templated_mail(subject=subject,
+                                        template_name=template,
+                                        context_data=context,
+                                        recipient=user)
+
+            is_informed = True
+
+        if is_informed:
+            success_message = "Diners have been informed"
+            messages.success(request, _(success_message))
+        else:
+            inform_message = "There was nobody to inform, everybody has paid"
+            messages.info(request, _(inform_message))
+
+        return HttpResponseRedirect(self.base_redirect)

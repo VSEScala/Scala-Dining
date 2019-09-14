@@ -16,6 +16,7 @@ urlpatterns = [
             path('entry/add/', views.EntryAddView.as_view(), name='entry_add'),
             path('change/', views.SlotInfoChangeView.as_view(), name='slot_change'),
             path('delete/', views.SlotDeleteView.as_view(), name='slot_delete'),
+            path('inform_payment/', views.SlotPaymentView.as_view(), name='slot_inform_payment'),
         ])),
     ])),
     path('entries/<int:pk>/delete/', views.EntryDeleteView.as_view(), name='entry_delete'),
