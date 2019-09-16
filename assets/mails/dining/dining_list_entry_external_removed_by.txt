@@ -1,10 +1,12 @@
 {% extends 'base.txt' %}
+{% load dining_tags %}
+
 {% block content %}
 Hi {{ entry.user}}
 
 {{ remover }} has removed your guest {{entry.name}} from the following dining list:
 Date: {{dining_list.date}}
-By: {{dining_list.claimed_by}}
+By: {{dining_list|short_owners_string}}
 Association: {{dining_list.association}}
 
 {% if dining_list.is_open and dining_list.has_room %}

@@ -14,7 +14,7 @@
         {% endif %}">
     <div class="col-2 slot_image"
          {% if slot.association and slot.association.image %}style="background-image: url({{ slot.association.image.url }});"{% endif %}></div>
-    <div class="col-8">
+    <div class="col-12 col-md-8">
         <div class="text-size-5">{{ slot|short_owners_string }}</div>
         <div class="text-size-4">{{ slot.dish }}</div>
         <br>
@@ -30,7 +30,7 @@
         {% if slot|can_join:user %}
             {% url 'entry_add' day=date.day month=date.month year=date.year identifier=slot.association.slug as url%}
             {% url 'slot_details' day=date.day month=date.month year=date.year identifier=slot.association.slug as next%}
-            <form method="post" action="{{ url }}?next={{ next }}" class="btn-block col-2 slot-signup d-inline-flex">
+            <form method="post" action="{{ url }}?next={{ next }}" class="btn-block col-2 slot-signup d-none d-md-inline-flex">
                 {% csrf_token %}
                 <input type="hidden" name="user" value="{{ user.pk }}">
                 <button type="submit" class="btn-block btn btn-primary slot-signup"></button>
@@ -40,7 +40,7 @@
                 {% if entry and entry|can_delete_entry:user %}
                     {% url 'entry_delete' pk=entry.pk as url %}
                     {% url 'day_view' day=date.day month=date.month year=date.year as next %}
-                    <form method="post" action="{{ url }}?next={{ next }}" class="btn-block col-2 slot-signup d-inline-flex">
+                    <form method="post" action="{{ url }}?next={{ next }}" class="btn-block col-2 slot-signup d-none d-md-inline-flex">
                         {% csrf_token %}
                         <button type="submit" class="btn-block btn btn-primary slot-unlist"></button>
                     </form>

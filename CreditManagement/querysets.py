@@ -158,11 +158,12 @@ class DiningTransactionQuerySet(AbstractTransactionQuerySet):
         """
         # Select all entries in the pending dininglists, filter on the intended user in that dining list
         entries = DiningEntry.objects.filter(dining_list__pendingdininglisttracker__isnull=False)
+        entries = entries.annotate(kitch_cost=F('dining_list__kitchen_cost'))
 
         target_sum_qs = entries.filter(user=OuterRef('pk'))
         target_sum_qs = target_sum_qs.values('user')
-        target_sum_qs = target_sum_qs.annotate(kitchen_cost=F('dining_list__kitchen_cost'))
-        target_sum_qs = target_sum_qs.annotate(total_cost=Coalesce(Sum('kitchen_cost'), Value(0))).values('total_cost')
+        target_sum_qs = target_sum_qs.annotate(total_cost=Coalesce(Sum('kitch_cost'), Value(0)))
+        target_sum_qs = target_sum_qs.values('total_cost')
         target_sum_qs = Coalesce(Subquery(target_sum_qs), Value(0))
 
         users = users.annotate(**{output_name: - Cast(target_sum_qs, models.FloatField())})
