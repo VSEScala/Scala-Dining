@@ -492,7 +492,7 @@ class SlotOwnerMixin(SlotMixin):
 
 
 # Could possibly use the Django built-in FormView or ModelFormView in combination with FormSet
-class SlotInfoChangeView(SlotOwnerMixin, TemplateView):
+class SlotInfoChangeView(LoginRequiredMixin, SlotOwnerMixin, TemplateView):
     template_name = "dining_lists/dining_slot_info_alter.html"
 
     def get_context_data(self, **kwargs):
@@ -553,7 +553,7 @@ class SlotAllergyView(LoginRequiredMixin, SlotMixin, TemplateView):
         return context
 
 
-class SlotDeleteView(SlotOwnerMixin, DeleteView):
+class SlotDeleteView(LoginRequiredMixin, SlotOwnerMixin, DeleteView):
     """
     Page for slot deletion. Page is only available for slot owners.
     """
@@ -604,7 +604,7 @@ class SlotDeleteView(SlotOwnerMixin, DeleteView):
         return HttpResponseRedirect(self.reverse("slot_delete"))
 
 
-class SlotPaymentView(SlotOwnerMixin, View):
+class SlotPaymentView(LoginRequiredMixin, SlotOwnerMixin, View):
     """A view class that allows dining list owners to send payment reminders."""
 
     def post(self, request, *args, **kwargs):
