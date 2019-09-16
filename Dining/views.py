@@ -478,50 +478,25 @@ class SlotInfoView(LoginRequiredMixin, SlotMixin, TemplateView):
             return self.render_to_response(context)
 
 
-class IsOwnerMixin(object):
-    """
-    Ensures the page can only be visited by dining list owners
-
-    Attributes:
-        redirect_name: The url name to redirect to upon rejection
-        base_redirect: the actual url to redirect to, can be called when succesfully processing the page
-    """
-    redirect_name = "slot_details"
-
-    @property
-    def base_redirect(self):
-        return self.reverse(self.redirect_name)
+class SlotOwnerMixin(SlotMixin):
+    """Slot mixin extension that makes it only accessible for dining list owners."""
 
     def dispatch(self, request, *args, **kwargs):
-        """
-        Construct date before get/post is called.
-        """
+        # Initialise dining list
+        self.init_dining_list()
+        # Check permission
         if not self.dining_list.is_owner(request.user):
-            if hasattr(self, "base_redirect"):
-                messages.error(request, "You are not the owner of this list and can't do this action")
-                return HttpResponseRedirect(self.base_redirect)
-            else:
-                return HttpResponseForbidden()
+            raise PermissionDenied
+        # Dispatch
         return super().dispatch(request, *args, **kwargs)
 
 
-class SlotOwnerMixin(LoginRequiredMixin, SlotMixin, IsOwnerMixin):
-    """
-    Combined mixin for slot pages that should only be accessable for dining list owners
-    """
-    pass
-
-
 # Could possibly use the Django built-in FormView or ModelFormView in combination with FormSet
-class SlotInfoChangeView(SlotOwnerMixin, TemplateView):
+class SlotInfoChangeView(LoginRequiredMixin, SlotOwnerMixin, TemplateView):
     template_name = "dining_lists/dining_slot_info_alter.html"
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-
-        # Deny non owners
-        if not self.dining_list.is_owner(self.request.user):
-            raise PermissionDenied
 
         context.update({
             'info_form': DiningInfoForm(instance=self.dining_list, prefix='info'),
@@ -554,10 +529,7 @@ class SlotInfoChangeView(SlotOwnerMixin, TemplateView):
             payment_form.save()
             messages.success(request, "Changes successfully saved")
 
-            # Ensure that current user remains owner of the dining list
-            self.dining_list.owners.add(request.user)
-
-            return HttpResponseRedirect(self.base_redirect)
+            return HttpResponseRedirect(self.reverse('slot_details'))
 
         context.update({
             'info_form': info_form,
@@ -581,7 +553,7 @@ class SlotAllergyView(LoginRequiredMixin, SlotMixin, TemplateView):
         return context
 
 
-class SlotDeleteView(SlotOwnerMixin, DeleteView):
+class SlotDeleteView(LoginRequiredMixin, SlotOwnerMixin, DeleteView):
     """
     Page for slot deletion. Page is only available for slot owners.
     """
@@ -589,9 +561,6 @@ class SlotDeleteView(SlotOwnerMixin, DeleteView):
     context_object_name = "dining_list"
 
     def get_object(self, queryset=None):
-        if not self.dining_list.is_owner(self.request.user):
-            # Block page for non slot owners
-            raise PermissionDenied("Deletion not available")
         return self.dining_list
 
     def delete(self, request, *args, **kwargs):
@@ -635,13 +604,8 @@ class SlotDeleteView(SlotOwnerMixin, DeleteView):
         return HttpResponseRedirect(self.reverse("slot_delete"))
 
 
-class SlotPaymentView(SlotOwnerMixin, View):
-    """
-    A view class that allows dining list owners to send payment reminders
-    """
-
-    def __init__(self, *args, **kwargs):
-        super(SlotPaymentView, self).__init__(*args, **kwargs)
+class SlotPaymentView(LoginRequiredMixin, SlotOwnerMixin, View):
+    """A view class that allows dining list owners to send payment reminders."""
 
     def post(self, request, *args, **kwargs):
         unpaid_user_entries = DiningEntryUser.objects.filter(dining_list=self.dining_list, has_paid=False)
@@ -704,4 +668,4 @@ class SlotPaymentView(SlotOwnerMixin, View):
             inform_message = "There was nobody to inform, everybody has paid"
             messages.info(request, _(inform_message))
 
-        return HttpResponseRedirect(self.base_redirect)
+        return HttpResponseRedirect(self.reverse('slot_details'))
