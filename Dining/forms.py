@@ -126,9 +126,6 @@ class DiningInfoForm(ConcurrenflictFormMixin, ServeTimeCheckMixin, forms.ModelFo
         widgets = {
             'owners': ModelSelect2Multiple(url='people_autocomplete', attrs={'data-minimum-input-length': '1'}),
         }
-        help_texts = {
-            'owners': 'It is not possible to remove yourself from the list of owners.',
-        }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

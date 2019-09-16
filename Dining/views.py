@@ -520,9 +520,6 @@ class SlotInfoChangeView(LoginRequiredMixin, SlotMixin, TemplateView):
             payment_form.save()
             messages.success(request, "Changes successfully saved")
 
-            # Ensure that current user remains owner of the dining list
-            self.dining_list.owners.add(request.user)
-
             return HttpResponseRedirect(self.reverse('slot_details'))
 
         context.update({
