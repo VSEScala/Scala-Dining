@@ -7,23 +7,25 @@ Contains the Scala Dining Website Design
 ## Prerequisites
 
 - Python 3
+- Pipenv, not strictly necessary. If not installed, you'll need to install the
+dependencies in `Pipfile` manually.
 
 ## Main application
 
 ### First time set-up
 
-This will install the project
+- `pipenv install --dev`
+- `pipenv run python manage.py migrate`
+- `pipenv run python manage.py createsuperuser`
 
-- (Optional) create virtual environment
-- `pip install -r requirements.txt`
-- `./manage.py migrate`
-- `./manage.py createsuperuser`
+Alternatively you can set the environment correctly using `pipenv shell` so
+that you can directly call `python manage.py`.
 
-### Running the project
+### Development commands
 
-- `./manage.py runserver`
-
-Now navigate to [localhost:8000](http://localhost:8000)
+- Run test server: `pipenv run python manage.py runserver`
+- Lint code: `pipenv run lint`
+- Run test suite: `pipenv run test`
 
 ## App dependency graph
 The code is currently not adhering to this dependency graph, but it would be
@@ -36,13 +38,6 @@ when it adheres to a graph like this one.
             |          V
 CreditManagement --> UserDetails
 ```
-
-## Code coverage
-To get a test coverage report:
-* `pip install coverage`
-* `coverage run manage.py test`
-* Console report: `coverage report`
-* HTML report: `coverage html`
 
 ## Deployment
 

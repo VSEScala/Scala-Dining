@@ -1,0 +1,24 @@
+[[source]]
+name = "pypi"
+url = "https://pypi.org/simple"
+verify_ssl = true
+
+[dev-packages]
+flake8 = "*"
+flake8-docstrings = "*"
+flake8-import-order = "*"
+pep8-naming = "*"
+
+[packages]
+django-widget-tweaks = "*"
+django-allauth = "*"
+django-autocomplete-light = "*"
+Django = "*"
+Pillow = "*"
+
+[requires]
+python_version = "3.6"
+
+[scripts]
+lint = "flake8"
+test = "python manage.py test"

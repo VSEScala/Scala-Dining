@@ -1,0 +1,23 @@
+[flake8]
+ignore =
+    # Missing docstring
+    D1
+exclude =
+    .git,
+    __pycache__,
+    */migrations
+max-complexity = 10
+max-line-length = 120
+
+# Docstrings
+docstring-convention = google
+
+# Import order
+import-order-style = pycharm
+application-import-names =
+    CreditManagement,
+    Dining,
+    General,
+    ScalaApp,
+    UserDetails,
+    allauthproviders
