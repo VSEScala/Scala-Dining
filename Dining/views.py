@@ -26,7 +26,7 @@ def index(request):
     return redirect('day_view', year=d.year, month=d.month, day=d.day)
 
 
-class DayMixin(ContextMixin):
+class DayMixin(object):
     """
     Adds useful thingies to context and self that have to do with the request date.
     """
@@ -34,7 +34,7 @@ class DayMixin(ContextMixin):
     date = None
 
     def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
+        context = super(DayMixin, self).get_context_data(**kwargs)
         context['date'] = self.date
         # Nr of days between date and today
         context['date_diff'] = (self.date - date.today()).days
@@ -69,38 +69,6 @@ class DayMixin(ContextMixin):
         kwargs['month'] = self.date.month
         kwargs['day'] = self.date.day
         return reverse(*args, kwargs=kwargs, **other_kwargs)
-
-
-class DiningListMixin(DayMixin):
-    """
-    Extends the day mixin with dining list thingies.
-    """
-    dining_list = None
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['dining_list'] = self.dining_list
-        return context
-
-    def init_dining_list(self):
-        """
-        Fetches the dining list using the request arguments.
-        """
-        if self.dining_list:
-            # Already initialized
-            return
-        # Needs initialized date
-        self.init_date()
-        self.dining_list = get_object_or_404(DiningList, date=self.date, association__slug=self.kwargs['identifier'])
-
-    def dispatch(self, request, *args, **kwargs):
-        self.init_dining_list()
-        return super().dispatch(request, *args, **kwargs)
-
-    def reverse(self, *args, kwargs=None, **other_kwargs):
-        kwargs = kwargs or {}
-        kwargs['identifier'] = self.dining_list.association.slug
-        return super().reverse(*args, kwargs=kwargs, **other_kwargs)
 
 
 class DayView(LoginRequiredMixin, DayMixin, TemplateView):
@@ -224,7 +192,61 @@ class NewSlotView(LoginRequiredMixin, DayMixin, TemplateView):
         return self.render_to_response(context)
 
 
-class EntryAddView(LoginRequiredMixin, DiningListMixin, TemplateView):
+class UpdateSlotViewTrackerMixin:
+    """ Updates the View tracker for the specific dining slot """
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # Get the amount of messages
+        context['comments_total'] = self.dining_list.diningcomment_set.count()
+        # Get the amount of unread messages
+        view_time = DiningCommentVisitTracker.get_latest_visit(user=self.request.user, dining_list=self.dining_list)
+        if view_time is None:
+            context['comments_unread'] = context['comments_total']
+        else:
+            context['comments_unread'] = self.dining_list.diningcomment_set.filter(timestamp__gte=view_time).count()
+
+        return context
+
+
+class DiningListMixin(DayMixin):
+    """ Retrieves and stores the dining list in the view and template """
+    dining_list = None
+
+    def get_context_data(self, **kwargs):
+        context = super(DiningListMixin, self).get_context_data(**kwargs)
+        context['dining_list'] = self.dining_list
+        return context
+
+    def init_dining_list(self):
+        """
+        Fetches the dining list using the request arguments.
+        """
+        if self.dining_list:
+            # Already initialized
+            return
+        # Needs initialized date
+        self.init_date()
+        self.dining_list = get_object_or_404(DiningList, date=self.date, association__slug=self.kwargs['identifier'])
+
+    def dispatch(self, request, *args, **kwargs):
+        self.init_dining_list()
+        return super().dispatch(request, *args, **kwargs)
+
+    def reverse(self, *args, kwargs=None, **other_kwargs):
+        kwargs = kwargs or {}
+        kwargs['identifier'] = self.dining_list.association.slug
+        return super().reverse(*args, kwargs=kwargs, **other_kwargs)
+
+
+class SlotMixin(LoginRequiredMixin, DiningListMixin, UpdateSlotViewTrackerMixin):
+    """ Provides an initial mixin for dining slots """
+
+    def get_context_data(self, **kwargs):
+        return super(SlotMixin, self).get_context_data(**kwargs)
+
+
+class EntryAddView(SlotMixin, TemplateView):
     template_name = "dining_lists/dining_entry_add.html"
 
     def get_context_data(self, **kwargs):
@@ -330,22 +352,7 @@ class EntryDeleteView(LoginRequiredMixin, SingleObjectMixin, View):
         return HttpResponseRedirect(next_url)
 
 
-class SlotMixin(DiningListMixin):
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        # Get the amount of messages
-        context['comments_total'] = self.dining_list.diningcomment_set.count()
-        # Get the amount of unread messages
-        view_time = DiningCommentVisitTracker.get_latest_visit(user=self.request.user, dining_list=self.dining_list)
-        if view_time is None:
-            context['comments_unread'] = context['comments_total']
-        else:
-            context['comments_unread'] = self.dining_list.diningcomment_set.filter(timestamp__gte=view_time).count()
-
-        return context
-
-
-class SlotListView(LoginRequiredMixin, SlotMixin, TemplateView):
+class SlotListView(SlotMixin, TemplateView):
     template_name = "dining_lists/dining_slot_diners.html"
 
     def get_context_data(self, **kwargs):
@@ -443,7 +450,7 @@ class SlotListView(LoginRequiredMixin, SlotMixin, TemplateView):
         return HttpResponseRedirect(self.reverse('slot_list'))
 
 
-class SlotInfoView(LoginRequiredMixin, SlotMixin, TemplateView):
+class SlotInfoView(SlotMixin, TemplateView):
     template_name = "dining_lists/dining_slot_info.html"
 
     def get_context_data(self, **kwargs):
@@ -478,7 +485,21 @@ class SlotInfoView(LoginRequiredMixin, SlotMixin, TemplateView):
             return self.render_to_response(context)
 
 
-class SlotOwnerMixin(SlotMixin):
+class SlotAllergyView(SlotMixin, TemplateView):
+    template_name = "dining_lists/dining_slot_allergy.html"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        from django.db.models import CharField
+        from django.db.models.functions import Length
+        CharField.register_lookup(Length)
+        context['allergy_entries'] = self.dining_list.internal_dining_entries().filter(
+            user__userdiningsettings__allergies__length__gte=1)
+
+        return context
+
+
+class SlotOwnerMixin(object):
     """Slot mixin extension that makes it only accessible for dining list owners."""
 
     def dispatch(self, request, *args, **kwargs):
@@ -492,7 +513,7 @@ class SlotOwnerMixin(SlotMixin):
 
 
 # Could possibly use the Django built-in FormView or ModelFormView in combination with FormSet
-class SlotInfoChangeView(LoginRequiredMixin, SlotOwnerMixin, TemplateView):
+class SlotInfoChangeView(SlotMixin, SlotOwnerMixin, TemplateView):
     template_name = "dining_lists/dining_slot_info_alter.html"
 
     def get_context_data(self, **kwargs):
@@ -539,21 +560,7 @@ class SlotInfoChangeView(LoginRequiredMixin, SlotOwnerMixin, TemplateView):
         return self.render_to_response(context)
 
 
-class SlotAllergyView(LoginRequiredMixin, SlotMixin, TemplateView):
-    template_name = "dining_lists/dining_slot_allergy.html"
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        from django.db.models import CharField
-        from django.db.models.functions import Length
-        CharField.register_lookup(Length)
-        context['allergy_entries'] = self.dining_list.internal_dining_entries().filter(
-            user__userdiningsettings__allergies__length__gte=1)
-
-        return context
-
-
-class SlotDeleteView(LoginRequiredMixin, SlotOwnerMixin, DeleteView):
+class SlotDeleteView(SlotMixin, SlotOwnerMixin, DeleteView):
     """
     Page for slot deletion. Page is only available for slot owners.
     """
@@ -604,7 +611,7 @@ class SlotDeleteView(LoginRequiredMixin, SlotOwnerMixin, DeleteView):
         return HttpResponseRedirect(self.reverse("slot_delete"))
 
 
-class SlotPaymentView(LoginRequiredMixin, SlotOwnerMixin, View):
+class SlotPaymentView(SlotMixin, SlotOwnerMixin, View):
     """A view class that allows dining list owners to send payment reminders."""
 
     def post(self, request, *args, **kwargs):
