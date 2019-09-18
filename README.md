@@ -15,17 +15,20 @@ dependencies in `Pipfile` manually.
 ### First time set-up
 
 - `pipenv install --dev`
-- `pipenv run python manage.py migrate`
-- `pipenv run python manage.py createsuperuser`
+- `pipenv shell`
+- `python manage.py migrate`
+- `python manage.py createsuperuser`
 
-Alternatively you can set the environment correctly using `pipenv shell` so
-that you can directly call `python manage.py`.
+You don't need `pipenv shell` to set the environment, you can also use `pipenv
+run`.
 
 ### Development commands
 
-- Run test server: `pipenv run python manage.py runserver`
-- Lint code: `pipenv run lint`
-- Run test suite: `pipenv run test`
+These assume that the environment is set correctly, e.g. using `pipenv shell`.
+
+- Run test server: `python manage.py runserver`
+- Run test suite: `python manage.py test`
+- Lint code: `flake8`
 
 ## App dependency graph
 The code is currently not adhering to this dependency graph, but it would be

@@ -18,7 +18,3 @@ Pillow = "*"
 
 [requires]
 python_version = "3.6"
-
-[scripts]
-lint = "flake8"
-test = "python manage.py test"
