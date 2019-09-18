@@ -11,7 +11,6 @@ from django.urls import reverse
 from django.utils.http import is_safe_url
 from django.utils.translation import gettext as _
 from django.views.generic import TemplateView, View
-from django.views.generic.base import ContextMixin
 from django.views.generic.detail import SingleObjectMixin
 from django.views.generic.edit import DeleteView
 
@@ -192,23 +191,6 @@ class NewSlotView(LoginRequiredMixin, DayMixin, TemplateView):
         return self.render_to_response(context)
 
 
-class UpdateSlotViewTrackerMixin:
-    """ Updates the View tracker for the specific dining slot """
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        # Get the amount of messages
-        context['comments_total'] = self.dining_list.diningcomment_set.count()
-        # Get the amount of unread messages
-        view_time = DiningCommentVisitTracker.get_latest_visit(user=self.request.user, dining_list=self.dining_list)
-        if view_time is None:
-            context['comments_unread'] = context['comments_total']
-        else:
-            context['comments_unread'] = self.dining_list.diningcomment_set.filter(timestamp__gte=view_time).count()
-
-        return context
-
-
 class DiningListMixin(DayMixin):
     """ Retrieves and stores the dining list in the view and template """
     dining_list = None
@@ -237,6 +219,23 @@ class DiningListMixin(DayMixin):
         kwargs = kwargs or {}
         kwargs['identifier'] = self.dining_list.association.slug
         return super().reverse(*args, kwargs=kwargs, **other_kwargs)
+
+
+class UpdateSlotViewTrackerMixin:
+    """ Updates the View tracker for the specific dining slot """
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # Get the amount of messages
+        context['comments_total'] = self.dining_list.diningcomment_set.count()
+        # Get the amount of unread messages
+        view_time = DiningCommentVisitTracker.get_latest_visit(user=self.request.user, dining_list=self.dining_list)
+        if view_time is None:
+            context['comments_unread'] = context['comments_total']
+        else:
+            context['comments_unread'] = self.dining_list.diningcomment_set.filter(timestamp__gte=view_time).count()
+
+        return context
 
 
 class SlotMixin(LoginRequiredMixin, DiningListMixin, UpdateSlotViewTrackerMixin):
