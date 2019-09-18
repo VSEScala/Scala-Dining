@@ -241,9 +241,6 @@ class UpdateSlotViewTrackerMixin:
 class SlotMixin(LoginRequiredMixin, DiningListMixin, UpdateSlotViewTrackerMixin):
     """ Provides an initial mixin for dining slots """
 
-    def get_context_data(self, **kwargs):
-        return super(SlotMixin, self).get_context_data(**kwargs)
-
 
 class EntryAddView(SlotMixin, TemplateView):
     template_name = "dining_lists/dining_entry_add.html"
