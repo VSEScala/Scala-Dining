@@ -1,5 +1,5 @@
-from decimal import Decimal
 from datetime import time, timedelta
+from decimal import Decimal
 
 # Maximum number of slots on each date
 MAX_SLOT_NUMBER = 3

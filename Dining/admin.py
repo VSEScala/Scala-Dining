@@ -1,12 +1,11 @@
 from django.contrib import admin
 
-from Dining.models import *
+from Dining.models import DiningEntryUser, DiningEntryExternal, DiningList, DiningComment, UserDiningSettings, \
+    DiningDayAnnouncement, DiningWork
 
 
 class DiningSettingAdmin(admin.ModelAdmin):
-    """
-    Set up limited view of the user page
-    """
+    """Set up limited view of the user page."""
 
     fields = ('user', 'allergies',)
     readonly_fields = ('user',)
@@ -18,28 +17,25 @@ class DiningSettingAdmin(admin.ModelAdmin):
 
 
 class DiningEntryAdmin(admin.ModelAdmin):
-    """
-    Sets up the admin for the dining list entries
-    """
+    """Sets up the admin for the dining list entries."""
 
     list_display = ('__str__', 'dining_list', 'user')
     list_filter = ['dining_list__date', 'user']
 
 
 class DiningListEntryLink(admin.StackedInline):
-    """
-    Create the entries in the dininglist (taken from a new table)
-    """
+    """Create the entries in the dining list (taken from a new table)."""
+
     model = DiningEntryUser
     fields = (('user', 'created_by', 'has_shopped', 'has_cooked', 'has_cleaned', 'has_paid'),)
     verbose_name = ""
     verbose_name_plural = "Dining Entries"
     extra = 1
 
+
 class DiningListExternalEntryLink(admin.StackedInline):
-    """
-    Create the external entries in the dininglist (taken from a new table)
-    """
+    """Create the external entries in the dining list (taken from a new table)."""
+
     model = DiningEntryExternal
     verbose_name_plural = "External entries"
     fields = (('name', 'user', 'has_paid'),)
@@ -48,14 +44,12 @@ class DiningListExternalEntryLink(admin.StackedInline):
 
 # This class is not used and not updated for the new situation (don't really want to use it)
 class DiningListAdmin(admin.ModelAdmin):
-    """
-    Set up limited view of the user page
-    """
+    """Set up limited view of the user page."""
 
     list_display = ('__str__', 'association', 'is_adjustable')
     list_filter = ['association', 'date']
 
-    #readonly_fields = ('date', 'diners', 'dinner_cost_single')
+    # readonly_fields = ('date', 'diners', 'dinner_cost_single')
     inlines = [DiningListEntryLink, DiningListExternalEntryLink]
     fields = (('date', 'sign_up_deadline', 'adjustable_duration'),
               ('dish'),
@@ -69,9 +63,7 @@ admin.site.register(DiningList)
 
 
 class DininglistCommentsLink(admin.StackedInline):
-    """
-    Create the additional information on the user page (taken from a new table)
-    """
+    """Create the additional information on the user page (taken from a new table)."""
     model = DiningComment
     fields = (('poster', 'timestamp'), 'message', 'pinned_to_top')
     verbose_name = ""
@@ -81,9 +73,8 @@ class DininglistCommentsLink(admin.StackedInline):
 
 
 class DiningListComment(DiningList):
-    """
-    Create a meta class to obtain personal names instead of usernames
-    """
+    """Create a meta class to obtain personal names instead of usernames."""
+
     class Meta:
         proxy = True
 
