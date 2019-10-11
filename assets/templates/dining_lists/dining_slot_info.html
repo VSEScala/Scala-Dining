@@ -11,25 +11,10 @@
             {# Dish #}
             <h3>{{ dining_list.dish }}</h3>
 
-            {# Main contact #}
-            {% if dining_list.main_contact %}
-                {# TODO: show contact information (telephone/email) #}
-                <div class="row">
-                    <div class="col-3">Main contact:</div>
-                    <div class="col-9">{{ dining_list.main_contact }}</div>
-                </div>
-            {% endif %}
-
             {# Owners #}
             <div class="row">
                 <div class="col-3">Owners:</div>
-                <div class="col-9">
-                    {% if not dining_list.owners.exists %}
-                        There are no owners
-                    {% else %}
-                        {{ dining_list.owners.all|join:", " }}
-                    {% endif %}
-                </div>
+                <div class="col-9">{{ dining_list.owners.all|join:", " }}</div>
             </div>
 
             {# Association #}
@@ -55,7 +40,6 @@
                     </div>
                     <div class="col-9">
                         &euro; {{ dining_list.dining_cost }}
-                        {% if dining_list.purchaser %}to be paid to {{ dining_list.purchaser }}{% endif %}
                         {% if dining_list.payment_link %}
                             <br>
                             <a href="{{ dining_list.payment_link }}">{{ dining_list.payment_link }}</a>

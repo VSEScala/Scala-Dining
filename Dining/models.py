@@ -77,16 +77,6 @@ class DiningList(models.Model):
     diners = models.ManyToManyField(settings.AUTH_USER_MODEL, through='DiningEntry',
                                     through_fields=('dining_list', 'user'))
 
-    # Metadata for display only
-    main_contact = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
-                                     help_text='If specified, is shown on the dining list as the main contact. '
-                                               'The owners are always shown.',
-                                     related_name='main_contact_dining_lists')
-    purchaser = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, blank=True, null=True,
-                                  related_name="purchaser_dining_lists",
-                                  help_text='If specified, is shown on the dining list as the user who should receive '
-                                            'the grocery shopping payments.')
-
     objects = DiningListManager()
 
     def is_owner(self, user: User) -> bool:

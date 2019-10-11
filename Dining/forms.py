@@ -121,15 +121,10 @@ class CreateSlotForm(ServeTimeCheckMixin, forms.ModelForm):
 class DiningInfoForm(ConcurrenflictFormMixin, ServeTimeCheckMixin, forms.ModelForm):
     class Meta:
         model = DiningList
-        fields = ['owners', 'main_contact', 'dish', 'serve_time', 'min_diners', 'max_diners',
-                  'sign_up_deadline']
+        fields = ['owners', 'dish', 'serve_time', 'min_diners', 'max_diners', 'sign_up_deadline']
         widgets = {
             'owners': ModelSelect2Multiple(url='people_autocomplete', attrs={'data-minimum-input-length': '1'}),
         }
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.fields['main_contact'].queryset = self.instance.owners.all()
 
 
 class DiningPaymentForm(ConcurrenflictFormMixin, forms.ModelForm):
@@ -140,11 +135,7 @@ class DiningPaymentForm(ConcurrenflictFormMixin, forms.ModelForm):
 
     class Meta:
         model = DiningList
-        fields = ['purchaser', 'dinner_cost_total', 'dining_cost', 'payment_link']
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.fields['purchaser'].queryset = self.instance.owners.all()
+        fields = ['dinner_cost_total', 'dining_cost', 'payment_link']
 
     def clean(self):
         """This cleaning calculates the person dining cost from the total dining cost"""
