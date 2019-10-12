@@ -13,7 +13,7 @@ from django.utils.translation import gettext as _
 
 from General.forms import ConcurrenflictFormMixin
 from General.util import SelectWithDisabled
-from UserDetails.models import Association
+from UserDetails.models import Association, UserMembership
 from .models import DiningComment, DiningEntryExternal, DiningEntryUser, DiningList
 
 
@@ -49,8 +49,10 @@ class CreateSlotForm(ServeTimeCheckMixin, forms.ModelForm):
         # Should find a way that does not need an extra form argument (creator), maybe using created_by model field
         self.creator = creator
 
-        # Get associations that the user is a member of (not verified)
+        # Get associations that the user is a member of (not necessarily verified)
         associations = Association.objects.filter(usermembership__related_user=creator)
+        denied_memberships = UserMembership.objects.filter(related_user=creator, is_verified=False, verified_on__isnull=False)
+        associations = associations.exclude(usermembership__in=denied_memberships)
 
         # Filter out unavailable associations (those that have a dining list already on this day)
         dining_lists = DiningList.objects.filter(date=self.instance.date, association=OuterRef('pk'))
@@ -71,9 +73,14 @@ class CreateSlotForm(ServeTimeCheckMixin, forms.ModelForm):
             self.initial['association'] = available[0].pk
             self.fields['association'].disabled = True
 
+        if associations.count() == 0:
+            # Ready an error message as the user is not a member of any of the associations and thus can not create a slot
+            self.cleaned_data = {}
+            self.add_error(None, ValidationError("You are not a member of any of the associations and thus can not claima a list"))
+            print("No associations availlable")
+
     def clean(self):
         """Clean fields for new dining list.
-
         Note: uniqueness for date+association is implicitly enforced using the association form field.
         """
         cleaned_data = super().clean()
