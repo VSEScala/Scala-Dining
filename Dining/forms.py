@@ -51,7 +51,9 @@ class CreateSlotForm(ServeTimeCheckMixin, forms.ModelForm):
 
         # Get associations that the user is a member of (not necessarily verified)
         associations = Association.objects.filter(usermembership__related_user=creator)
-        denied_memberships = UserMembership.objects.filter(related_user=creator, is_verified=False, verified_on__isnull=False)
+        denied_memberships = UserMembership.objects.filter(related_user=creator,
+                                                           is_verified=False,
+                                                           verified_on__isnull=False)
         associations = associations.exclude(usermembership__in=denied_memberships)
 
         # Filter out unavailable associations (those that have a dining list already on this day)
@@ -74,13 +76,13 @@ class CreateSlotForm(ServeTimeCheckMixin, forms.ModelForm):
             self.fields['association'].disabled = True
 
         if associations.count() == 0:
-            # Ready an error message as the user is not a member of any of the associations and thus can not create a slot
             self.cleaned_data = {}
-            self.add_error(None, ValidationError("You are not a member of any of the associations and thus can not claima a list"))
-            print("No associations availlable")
+            self.add_error(None, ValidationError(
+                "You are not a member of any of the associations and thus can not claim a list."))
 
     def clean(self):
         """Clean fields for new dining list.
+
         Note: uniqueness for date+association is implicitly enforced using the association form field.
         """
         cleaned_data = super().clean()
