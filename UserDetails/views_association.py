@@ -4,16 +4,16 @@ from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import PermissionDenied
 from django.db.models import Q
-from django.http import HttpResponseRedirect, HttpResponse
+from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import get_object_or_404, render
-from django.views import View
-from django.utils.translation import gettext as _
-from django.views.generic import ListView, TemplateView
 from django.utils.http import is_safe_url
+from django.utils.translation import gettext as _
+from django.views import View
+from django.views.generic import ListView, TemplateView
 
 from CreditManagement.models import AbstractTransaction, FixedTransaction
-from .models import UserMembership, Association, User
-from .forms import AssociationSettingsForm
+from UserDetails.forms import AssociationSettingsForm
+from UserDetails.models import Association, User, UserMembership
 
 
 class AssociationBoardMixin:
@@ -99,9 +99,8 @@ class AssociationOverview(LoginRequiredMixin, AssociationBoardMixin, TemplateVie
         context['pending_memberships'] = UserMembership.objects.filter(association=self.association,
                                                                        verified_on__isnull=True)
         context['balance'] = AbstractTransaction.get_association_balance(self.association)
-        context['transactions'] = AbstractTransaction.\
-            get_all_transactions(association=self.association).\
-            order_by('-order_moment')[0:5]
+        context['transactions'] = AbstractTransaction.get_all_transactions(
+            association=self.association).order_by('-order_moment')[0:5]
 
         return context
 
@@ -114,11 +113,12 @@ class MembersEditView(LoginRequiredMixin, AssociationBoardMixin, ListView):
         return UserMembership.objects.filter(Q(association=self.association)).order_by('is_verified', 'verified_on',
                                                                                        'created_on')
 
-    def _alter_state(self, verified, id):
-        """
-        Alter the state of the given usermembership
-        :param verified: yes/no(!) if it should be verified or not.
-        :param id: The id of the usermembershipobject
+    def _alter_state(self, verified: str, id):
+        """Alter the state of the given user membership.
+
+        Args:
+            verified: 'yes'/'no'(!) if it should be verified or not.
+            id: The id of the user membership object.
         """
         membership = UserMembership.objects.get(id=id)
         if verified == "yes":

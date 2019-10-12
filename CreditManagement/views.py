@@ -1,12 +1,17 @@
-from django.contrib.auth.mixins import LoginRequiredMixin
-from django.shortcuts import render
-from django.views.generic.list import ListView
-from CreditManagement.models import *
+from datetime import datetime
+
 from django.contrib import messages
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.http import HttpResponse, HttpResponseForbidden, HttpResponseRedirect
+from django.shortcuts import render
+from django.utils import timezone
 from django.utils.translation import gettext as _
-from .forms import UserTransactionForm, AssociationTransactionForm
 from django.views.generic import View
-from django.http import HttpResponseForbidden, HttpResponseRedirect, HttpResponse
+from django.views.generic.list import ListView
+
+from CreditManagement.forms import AssociationTransactionForm, UserTransactionForm
+from CreditManagement.models import AbstractPendingTransaction, AbstractTransaction, FixedTransaction
+from UserDetails.models import Association
 
 
 class TransactionListView(ListView):
@@ -79,7 +84,6 @@ class TransactionFinalisationView(View):
 class MoneyObtainmentView(LoginRequiredMixin, View):
 
     def get(self, request, *args, **kwargs):
-        from django.db.models import Q, Count
 
         # Only superusers can access this page
         if not request.user.is_superuser:

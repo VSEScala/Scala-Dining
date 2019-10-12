@@ -1,5 +1,5 @@
 from django.core.mail import EmailMultiAlternatives, get_connection
-from django.template.loader import get_template, TemplateDoesNotExist
+from django.template.loader import TemplateDoesNotExist, get_template
 
 
 def _render_and_send_mail(*args, txt_template=None, html_template=None, context_data={}, fail_silently=False, **kwargs):
@@ -19,7 +19,7 @@ def _get_mail_templates(full_template_name):
     try:
         return get_template(full_template_name, using='EmailTemplates')
     except TemplateDoesNotExist:
-            return None
+        return None
 
 
 def send_templated_mail(subject=None, template_name=None, context_data={}, recipient=None, **kwargs):
@@ -30,25 +30,25 @@ def send_templated_mail(subject=None, template_name=None, context_data={}, recip
     to = [recipient.email]
 
     _render_and_send_mail(subject=subject,
-                          txt_template=_get_mail_templates(template_name+".txt"),
-                          html_template=_get_mail_templates(template_name+".html"),
+                          txt_template=_get_mail_templates(template_name + ".txt"),
+                          html_template=_get_mail_templates(template_name + ".html"),
                           context_data=context_data,
                           to=to, **kwargs)
 
 
 def send_templated_mass_mail(subject=None, template_name=None, context_data={}, recipients=None, **kwargs):
-    """
-    Send a mass mail to all recipients with an EmailTemplateMessage as the message created
-    :param subject: The email subject or header
-    :param template_name: The name of the template
-    :param context_data: the context data for the mail
-    :param recipients: The queryset of users
-    :param kwargs: additional EmailTemplateMessage arguments
-    """
+    """Send a mass mail to all recipients with an EmailTemplateMessage as the message created.
 
+    Args:
+        subject: The email subject or header.
+        template_name: The name of the template.
+        context_data: The context data for the mail.
+        recipients: The queryset of users.
+        **kwargs: Additional EmailTemplateMessage arguments.
+    """
     # Get the templates
-    txt_template = _get_mail_templates(template_name+".txt")
-    html_template = _get_mail_templates(template_name+".html")
+    txt_template = _get_mail_templates(template_name + ".txt")
+    html_template = _get_mail_templates(template_name + ".html")
 
     # Open the connection
     connection = get_connection()
@@ -65,7 +65,3 @@ def send_templated_mass_mail(subject=None, template_name=None, context_data={}, 
                               context_data=context_data,
                               to=to, **kwargs)
     connection.close()
-
-
-
-

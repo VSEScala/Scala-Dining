@@ -1,13 +1,14 @@
-from django.views.generic import View, ListView, TemplateView
-from django.http import HttpResponseForbidden, Http404, HttpResponse
-from django.shortcuts import render
-from django.db.models import ObjectDoesNotExist
-from django.template.loader import get_template, TemplateDoesNotExist
-from django.utils import timezone
 from datetime import datetime
 
-from .models import SiteUpdate, PageVisitTracker
+from django.db.models import ObjectDoesNotExist
+from django.http import Http404, HttpResponseForbidden
+from django.shortcuts import render
+from django.template.loader import TemplateDoesNotExist, get_template
+from django.utils import timezone
+from django.views.generic import ListView, TemplateView, View
+
 from UserDetails.models import Association
+from .models import PageVisitTracker, SiteUpdate
 
 
 class SiteUpdateView(ListView):
@@ -30,12 +31,8 @@ class SiteUpdateView(ListView):
         return context
 
     @staticmethod
-    def has_new_update(user):
-        """
-        Checks whether a new update for the given user is present
-        :param user:
-        :return:
-        """
+    def has_new_update(user) -> bool:
+        """Checks whether a new update for the given user is present."""
         visit_timestamp = PageVisitTracker.get_latest_visit('updates', user)
         if visit_timestamp is None:
             return False
@@ -73,12 +70,9 @@ class RulesPageView(View):
         return render(request, self.template, self.context)
 
     @staticmethod
-    def has_new_update(user):
-        """
-        Checks whether a new update for the given user is present
-        :param user:
-        :return:
-        """
+    def has_new_update(user) -> bool:
+        """Checks whether a new update for the given user is present."""
+        # Todo: duplicate of above
         visit_timestamp = PageVisitTracker.get_latest_visit('rules', user)
         if visit_timestamp is None:
             return False
@@ -104,17 +98,18 @@ class UpgradeBalanceInstructionsView(TemplateView):
 
 
 class EmailTemplateView(View):
-    """
-    A view to test mail templates with.
-    The contentfactory class inside ensures that when an object does not reside in the context,
-    it prints the query name instead
+    """A view to test mail templates with.
+
+    The contentfactory class inside ensures that when an object does not reside
+    in the context, it prints the query name instead.
     """
 
     class ContentFactory(dict):
+        """A dictionary that either returns the content, or a new dictionary with the name of the searched content.
+
+        Used to replace unfound content in the template with the original name.
         """
-        A dictionary that either returns the content, or a new dictionary with the name of the searched content
-        Used to replace unfound content in the template with the original name
-        """
+
         def __init__(self, name="", dictionary={}):
             self._dict = dictionary
             self._name = name
@@ -153,7 +148,7 @@ class EmailTemplateView(View):
         template_location = request.GET.get('template', None) + ".html"
 
         try:
-            template = get_template(template_location, using='EmailTemplates')
+            get_template(template_location, using='EmailTemplates')
         except TemplateDoesNotExist:
             return Http404("Given template name not found")
 
@@ -161,5 +156,3 @@ class EmailTemplateView(View):
         context['request'] = request
         context['user'] = request.user
         return render(None, template_location, context, using='EmailTemplates')
-
-

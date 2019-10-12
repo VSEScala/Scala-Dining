@@ -3,7 +3,7 @@ from django.contrib.sites.models import Site
 from django.test import TestCase
 
 from UserDetails.externalaccounts import _create_membership
-from UserDetails.models import User, Association, UserMembership
+from UserDetails.models import Association, User, UserMembership
 
 
 class CreateMembershipTestCase(TestCase):

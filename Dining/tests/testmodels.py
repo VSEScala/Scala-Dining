@@ -1,13 +1,13 @@
-from datetime import datetime, date, timezone, time
+from datetime import date, datetime
 from unittest.mock import patch
 
 from django.core.exceptions import ValidationError
 from django.test import TestCase
 from django.utils import timezone
 
-from Dining.models import DiningEntryUser, DiningEntryExternal
-from Dining.models import DiningList, DiningEntry
-from UserDetails.models import User, Association
+from Dining.models import DiningEntryExternal, DiningEntryUser
+from Dining.models import DiningList
+from UserDetails.models import Association, User
 
 
 class DiningListTestCase(TestCase):
@@ -25,11 +25,11 @@ class DiningListTestCase(TestCase):
         list = DiningList.objects.create(date=date(2015, 1, 1), association=self.association,
                                          sign_up_deadline=datetime(2015, 1, 1, 17, 00, tzinfo=timezone.utc))
 
-        with patch.object(timezone, 'now', return_value=datetime(2015, 1, 1, 16, 59, tzinfo=timezone.utc)) as mock_now:
+        with patch.object(timezone, 'now', return_value=datetime(2015, 1, 1, 16, 59, tzinfo=timezone.utc)):
             self.assertTrue(list.is_open())
-        with patch.object(timezone, 'now', return_value=datetime(2015, 1, 1, 17, 00, tzinfo=timezone.utc)) as mock_now:
+        with patch.object(timezone, 'now', return_value=datetime(2015, 1, 1, 17, 00, tzinfo=timezone.utc)):
             self.assertFalse(list.is_open())
-        with patch.object(timezone, 'now', return_value=datetime(2015, 1, 1, 17, 1, tzinfo=timezone.utc)) as mock_now:
+        with patch.object(timezone, 'now', return_value=datetime(2015, 1, 1, 17, 1, tzinfo=timezone.utc)):
             self.assertFalse(list.is_open())
 
     def test_is_owner(self):

@@ -16,10 +16,8 @@ class User(AbstractUser):
         else:
             return name
 
-    def is_verified(self):
-        """
-        Whether this user is verified as part of a Scala association
-        """
+    def is_verified(self) -> bool:
+        """Whether this user is verified as part of a Scala association."""
         links = UserMembership.objects.filter(related_user=self)
 
         for membership in links:
@@ -29,35 +27,28 @@ class User(AbstractUser):
 
     @cached_property
     def boards(self):
-        """
-        Returns all associations of which this member has board access
-        :return: A queryset of all associations on which this member is board member
-        """
+        """Returns all associations of which this member has board access, as a queryset."""
         return Association.objects.filter(user=self).all()
 
     @cached_property
-    def requires_action(self):
-        """
-        Whether some action is required by the user
-        :return: True or False
-        """
+    def requires_action(self) -> bool:
+        """Whether some arbitrary action is required by the user."""
         for board in self.boards:
             if board.requires_action:
                 return True
-
         return False
 
     @cached_property
-    def requires_information_updates(self):
+    def requires_information_updates(self) -> bool:
         from General.views import SiteUpdateView
         return SiteUpdateView.has_new_update(self)
 
     @cached_property
-    def requires_information_rules(self):
+    def requires_information_rules(self) -> bool:
         from General.views import RulesPageView
         return RulesPageView.has_new_update(self)
 
-    def has_any_perm(self):
+    def has_any_perm(self) -> bool:
         """Returns true if the user has one or more permissions."""
         for group in self.groups.all():
             if group.permissions.count() > 0:
@@ -66,22 +57,26 @@ class User(AbstractUser):
             return True
         return False
 
-    def has_admin_site_access(self):
+    def has_admin_site_access(self) -> bool:
         return self.is_active and (self.has_any_perm() or self.is_superuser)
 
-    def is_board_of(self, associationId):
-        """Return if user is a board member of association identified by id"""
-        return self.groups.filter(id=associationId).count() > 0
+    def is_board_of(self, association_id):
+        """Return if user is a board member of association identified by id."""
+        return self.groups.filter(id=association_id).count() > 0
 
     def is_verified_member_of(self, association):
-        """Return if the user is a verified member of the association"""
+        """Return if the user is a verified member of the association."""
         return self.get_verified_memberships().filter(association=association).exists()
 
     def get_verified_memberships(self):
         return self.usermembership_set.filter(is_verified=True)
 
     def has_min_balance_exception(self):
-        """Whether this user is allowed unlimited debt. For this, the association membership must be verified"""
+        """Whether this user is allowed unlimited debt.
+
+        Users for which the association membership is not verified are not
+        considered! Thus they will not be allowed unlimited debt.
+        """
         exceptions = [membership.association.has_min_exception for membership in self.get_verified_memberships()]
         return True in exceptions
 
@@ -91,26 +86,32 @@ class Association(Group):
     image = models.ImageField(blank=True, null=True)
     icon_image = models.ImageField(blank=True, null=True)
     is_choosable = models.BooleanField(default=True,
-                                       help_text="If checked, this association can be chosen as membership by users")
+                                       help_text="If checked, this association can be chosen as membership by users.")
     has_min_exception = models.BooleanField(default=False,
-                                            help_text="If checked, this association has an exception to the minimum balance")
-    social_app = models.ForeignKey(SocialApp, on_delete=models.PROTECT, null=True, blank=True,
-                                   help_text='A user automatically becomes member of the association if she signs up using this social app')
+                                            help_text=("If checked, this association has an exception to the minimum"
+                                                       " balance."))
+    social_app = models.ForeignKey(SocialApp,
+                                   on_delete=models.PROTECT,
+                                   null=True,
+                                   blank=True,
+                                   help_text=("A user automatically becomes member of the association if she signs up"
+                                              " using this social app."))
     balance_update_instructions = models.TextField(max_length=512, default="to be defined")
 
     @cached_property
-    def requires_action(self):
-        """Whether some action needs to be done by the board. Used for display of notifications on the site"""
+    def requires_action(self) -> bool:
+        """Whether some action needs to be done by the board.
+
+        Used for display of notifications on the site.
+        """
         return self.has_new_member_requests()
 
-    def has_new_member_requests(self):
+    def has_new_member_requests(self) -> bool:
         return UserMembership.objects.filter(association=self, verified_on__isnull=True).exists()
 
 
 class UserMembership(models.Model):
-    """
-    Stores membership information
-    """
+    """Stores membership information."""
     related_user = models.ForeignKey(User, on_delete=models.CASCADE)
     association = models.ForeignKey(Association, on_delete=models.CASCADE)
     is_verified = models.BooleanField(default=False)
@@ -134,7 +135,7 @@ class UserMembership(models.Model):
         return "{user} - {association}".format(user=self.related_user, association=self.association)
 
     def set_verified(self, verified):
-        """Set the verified state to the value of verified (True or False) and set verified_on to now and save"""
+        """Set the verified state to the value of verified (True or False) and set verified_on to now and save."""
         self.is_verified = verified
         self.verified_on = timezone.now()
         self.save()

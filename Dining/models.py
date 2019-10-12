@@ -3,14 +3,14 @@ from decimal import Decimal
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
-from django.core.validators import MinValueValidator, MaxValueValidator
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.db.models import Sum
 from django.utils import timezone
 from django.utils.translation import gettext, gettext_lazy as _
 
 from General.models import AbstractVisitTracker
-from UserDetails.models import User, Association
+from UserDetails.models import Association, User
 
 
 class UserDiningSettings(models.Model):

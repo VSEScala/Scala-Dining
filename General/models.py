@@ -1,15 +1,13 @@
-from django.db import models
 from django.conf import settings
+from django.db import models
 from django.utils import timezone
-from .mail_control import send_templated_mail, send_templated_mass_mail
 
-# Create your models here.
+from .mail_control import send_templated_mass_mail
 
 
 class SiteUpdate(models.Model):
-    """
-    Contains setting related to the dining lists and use of the dining lists.
-    """
+    """Contains setting related to the dining lists and use of the dining lists."""
+
     date = models.DateTimeField(auto_now_add=True, unique=True)
     title = models.CharField(max_length=140, unique=True)
     message = models.TextField()
@@ -35,7 +33,7 @@ class AbstractVisitTracker(models.Model):
     timestamp = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        abstract=True
+        abstract = True
 
 
 class PageVisitTracker(AbstractVisitTracker):
@@ -43,10 +41,13 @@ class PageVisitTracker(AbstractVisitTracker):
 
     @classmethod
     def __get_page_int__(cls, page_name):
-        """
-        Returns the integer form for the type of page
-        :param page_name: The page name
-        :return: The integer number for the page
+        """Returns the integer form for the type of page.
+
+        Args:
+            page_name: The page name.
+
+        Returns:
+            The integer number for the page.
         """
         page_name = page_name.lower()
         if page_name == "updates":
@@ -58,13 +59,13 @@ class PageVisitTracker(AbstractVisitTracker):
 
     @classmethod
     def get_latest_visit(cls, page_name, user, update=False):
-        """
-        Get the datetime of the latest visit.
-        If there isn't one it either returns None, or the current time if update is set to True
-        :param page_name: The name of the page
-        :param user: The user visiting the page
-        :param update:
-        :return:
+        """Get the datetime of the latest visit.
+
+        If there isn't one it either returns None, or the current time if update is set to True.
+
+        Args:
+            page_name: The name of the page.
+            user: The user visiting the page.
         """
         if update:
             latest_visit_obj = cls.objects.get_or_create(user=user, page=cls.__get_page_int__(page_name))[0]

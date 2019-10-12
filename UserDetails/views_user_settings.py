@@ -1,10 +1,10 @@
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.shortcuts import render, redirect
-from django.views.generic import TemplateView
+from django.shortcuts import redirect
 from django.utils.translation import gettext as _
+from django.views.generic import TemplateView
 
-from .forms import UserForm, DiningProfileForm, AssociationLinkForm
+from .forms import AssociationLinkForm, DiningProfileForm, UserForm
 
 
 class SettingsProfileView(LoginRequiredMixin, TemplateView):

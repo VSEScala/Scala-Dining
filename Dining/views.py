@@ -1,13 +1,14 @@
 import csv
-from datetime import date
+from datetime import date, datetime
 
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import NON_FIELD_ERRORS, PermissionDenied
-from django.db.models import Q, Count
-from django.http import Http404, HttpResponseRedirect, HttpResponseForbidden, HttpResponse
-from django.shortcuts import redirect, get_object_or_404
+from django.db.models import Count, Q
+from django.http import Http404, HttpResponse, HttpResponseForbidden, HttpResponseRedirect
+from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse
+from django.utils import timezone
 from django.utils.http import is_safe_url
 from django.utils.translation import gettext as _
 from django.views.generic import TemplateView, View
@@ -16,9 +17,13 @@ from django.views.generic.detail import SingleObjectMixin
 from django.views.generic.edit import DeleteView
 
 from Dining.datesequence import sequenced_date
-from General.mail_control import send_templated_mass_mail, send_templated_mail
-from .forms import *
-from .models import *
+from Dining.forms import CreateSlotForm, DiningCommentForm, DiningEntryDeleteForm, DiningEntryExternalCreateForm, \
+    DiningEntryUserCreateForm, \
+    DiningInfoForm, DiningListDeleteForm, DiningPaymentForm
+from Dining.models import DiningCommentVisitTracker, DiningDayAnnouncement, DiningEntry, DiningEntryExternal, \
+    DiningEntryUser, DiningList
+from General.mail_control import send_templated_mail, send_templated_mass_mail
+from UserDetails.models import Association, User
 
 
 def index(request):
@@ -27,9 +32,7 @@ def index(request):
 
 
 class DayMixin(ContextMixin):
-    """
-    Adds useful thingies to context and self that have to do with the request date.
-    """
+    """Adds useful thingies to context and self that have to do with the request date."""
 
     date = None
 
@@ -41,9 +44,7 @@ class DayMixin(ContextMixin):
         return context
 
     def init_date(self):
-        """
-        Fetches the date from the request arguments.
-        """
+        """Fetches the date from the request arguments."""
         if self.date:
             # Already initialized
             return
@@ -53,16 +54,14 @@ class DayMixin(ContextMixin):
             raise Http404('Invalid date')
 
     def dispatch(self, request, *args, **kwargs):
-        """
-        Construct date before get/post is called.
-        """
+        """Construct date before get/post is called."""
         self.init_date()
         return super().dispatch(request, *args, **kwargs)
 
     def reverse(self, *args, kwargs=None, **other_kwargs):
-        """
-        URL reverse which expands the date. See
-        https://docs.djangoproject.com/en/2.1/ref/urlresolvers/#django.urls.reverse
+        """URL reverse which expands the date.
+
+        See https://docs.djangoproject.com/en/2.1/ref/urlresolvers/#django.urls.reverse
         """
         kwargs = kwargs or {}
         kwargs['year'] = self.date.year
@@ -72,9 +71,7 @@ class DayMixin(ContextMixin):
 
 
 class DiningListMixin(DayMixin):
-    """
-    Extends the day mixin with dining list thingies.
-    """
+    """Extends the day mixin with dining list thingies."""
     dining_list = None
 
     def get_context_data(self, **kwargs):
@@ -83,9 +80,7 @@ class DiningListMixin(DayMixin):
         return context
 
     def init_dining_list(self):
-        """
-        Fetches the dining list using the request arguments.
-        """
+        """Fetches the dining list using the request arguments."""
         if self.dining_list:
             # Already initialized
             return
@@ -104,8 +99,8 @@ class DiningListMixin(DayMixin):
 
 
 class DayView(LoginRequiredMixin, DayMixin, TemplateView):
-    """"
-    This is the view responsible for the day index
+    """This view shows all dining lists on a certain date.
+
     Task:
     -   display all occupied dining slots
     -   allow for additional dining slots to be made if place is available
@@ -136,7 +131,6 @@ class DailyDinersCSVView(LoginRequiredMixin, View):
         # Todo: allow access by permission
         # Todo: linkin in interface
 
-
         # Get the end date
         date_end = request.GET.get('to', None)
         if date_end:
@@ -151,11 +145,11 @@ class DailyDinersCSVView(LoginRequiredMixin, View):
         else:
             date_start = date_end
 
-
         # Count all dining entries in the given period
         entry_count = Count('diningentry',
-                             filter=(Q(diningentry__dining_list__date__lte=date_end) &
-                                     Q(diningentry__dining_list__date__gte=date_start)))
+                            filter=(Q(
+                                diningentry__dining_list__date__lte=date_end) & Q(
+                                diningentry__dining_list__date__gte=date_start)))
 
         # Annotate the counts to the user
         users = User.objects.annotate(diningentry_count=entry_count)
@@ -167,7 +161,7 @@ class DailyDinersCSVView(LoginRequiredMixin, View):
         # Get all associations
         associations = Association.objects.all()
 
-        ### CREATE THE CSV FILE ###
+        # ==CREATE THE CSV FILE==
         # Set up
         response = HttpResponse(content_type='text/csv')
         response['Content-Disposition'] = 'attachment; filename="association_members.csv"'
@@ -199,9 +193,7 @@ class DailyDinersCSVView(LoginRequiredMixin, View):
 
 
 class NewSlotView(LoginRequiredMixin, DayMixin, TemplateView):
-    """
-    Creation page for a new dining list.
-    """
+    """Creation page for a new dining list."""
     template_name = "dining_lists/dining_add.html"
 
     def get_context_data(self, **kwargs):
@@ -236,9 +228,11 @@ class EntryAddView(LoginRequiredMixin, DiningListMixin, TemplateView):
         return context
 
     def post(self, request, *args, **kwargs):
-        """This post method always redirects, does not show the form again on validation errors, so that we don't have
-        to write HTML for displaying these errors (they are already in a Django message)."""
+        """Post request for entry addition (sign up).
 
+        This post method always redirects, does not show the form again on validation errors, so that we don't have
+        to write HTML for displaying these errors (they are already in a Django message).
+        """
         # Do form shenanigans
         if 'add_external' in request.POST:
             entry = DiningEntryExternal(user=request.user, dining_list=self.dining_list, created_by=request.user)
@@ -260,7 +254,10 @@ class EntryAddView(LoginRequiredMixin, DiningListMixin, TemplateView):
                     context = {'entry': entry, 'dining_list': entry.dining_list}
 
                     # Send mail to the people on the dining list
-                    send_templated_mail(subject=subject, template_name=template, context_data=context, recipient=entry.user)
+                    send_templated_mail(subject=subject,
+                                        template_name=template,
+                                        context_data=context,
+                                        recipient=entry.user)
                     msg = _("You successfully added {} to the dining list").format(entry.user.get_short_name())
             else:
                 msg = _("You successfully added {} to the dining list").format(entry.name)
@@ -284,7 +281,7 @@ class EntryAddView(LoginRequiredMixin, DiningListMixin, TemplateView):
 class EntryDeleteView(LoginRequiredMixin, SingleObjectMixin, View):
     model = DiningEntry
 
-    def post(self, request, *args,**kwargs):
+    def post(self, request, *args, **kwargs):
         # Determine success message before it's actually deleted
         entry = self.get_object().get_subclass()
         if entry.is_internal() and entry.user == request.user:
@@ -292,7 +289,8 @@ class EntryDeleteView(LoginRequiredMixin, SingleObjectMixin, View):
         elif entry.is_external():
             if entry.user != request.user:
                 # Set up the mail
-                subject = "Your guest has been removed from the dining list of {date}".format(date=entry.dining_list.date)
+                subject = "Your guest has been removed from the dining list of {date}".format(
+                    date=entry.dining_list.date)
                 template = "dining/dining_list_entry_external_removed_by"
                 context = {'entry': entry, 'dining_list': entry.dining_list, 'remover': request.user}
 
@@ -351,11 +349,12 @@ class SlotListView(LoginRequiredMixin, SlotMixin, TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         # Select related eliminates the extra queries during rendering of the template
-        context['entries'] = self.dining_list.dining_entries\
-            .select_related('user', 'diningentryuser','diningentryexternal').order_by('user__first_name')
+        context['entries'] = self.dining_list.dining_entries.select_related(
+            'user', 'diningentryuser', 'diningentryexternal').order_by('user__first_name')
         return context
 
-    def post(self, request, *args, **kwargs):
+    def post(self, request, *args, **kwargs):  # noqa: C901
+        # Todo: linter indicates that the method is too complex (C901) but the method needs to be rewritten anyway.
         if not self.dining_list.is_owner(request.user):
             raise PermissionDenied
 
@@ -366,20 +365,20 @@ class SlotListView(LoginRequiredMixin, SlotMixin, TemplateView):
             if entry.is_internal():
                 initial_shop = request.POST.get('initial_entry{}_shop'.format(entry.pk))
                 if initial_shop and initial_shop != str(entry.has_shopped):
-                        conflict = True
-                        break
-                initial_cook = request.POST.get('initial_entry{}_cook'.format(entry.pk))
-                if initial_cook and initial_cook != str(entry.has_cooked):
-                        conflict = True
-                        break
-                initial_clean = request.POST.get('initial_entry{}_clean'.format(entry.pk))
-                if initial_clean and initial_clean != str(entry.has_cleaned):
-                        conflict = True
-                        break
-            initial_paid = request.POST.get('initial_entry{}_paid'.format(entry.pk))
-            if initial_paid and initial_paid != str(entry.has_paid):
                     conflict = True
                     break
+                initial_cook = request.POST.get('initial_entry{}_cook'.format(entry.pk))
+                if initial_cook and initial_cook != str(entry.has_cooked):
+                    conflict = True
+                    break
+                initial_clean = request.POST.get('initial_entry{}_clean'.format(entry.pk))
+                if initial_clean and initial_clean != str(entry.has_cleaned):
+                    conflict = True
+                    break
+            initial_paid = request.POST.get('initial_entry{}_paid'.format(entry.pk))
+            if initial_paid and initial_paid != str(entry.has_paid):
+                conflict = True
+                break
         if conflict:
             messages.error(request, 'Someone else modified the stats while you were changing them, your changes have '
                                     'not been saved. We apologize for the inconvenience')
@@ -515,7 +514,7 @@ class SlotInfoChangeView(LoginRequiredMixin, SlotOwnerMixin, TemplateView):
         invalid field values of the info form do get applied to the dining list instance, they are just normally not
         saved in the database because the form would be invalid. However the payment form is valid and therefore saves
         the dining list anyway, with the invalid field values.
-        
+
         An explicit include of only fields that were part of the form during saving prevented the bug from manifesting
         (perhaps it was meant that way?).
         """
@@ -554,8 +553,9 @@ class SlotAllergyView(LoginRequiredMixin, SlotMixin, TemplateView):
 
 
 class SlotDeleteView(LoginRequiredMixin, SlotOwnerMixin, DeleteView):
-    """
-    Page for slot deletion. Page is only available for slot owners.
+    """Page for slot deletion.
+
+    Page is only available for slot owners.
     """
     template_name = "dining_lists/dining_slot_delete.html"
     context_object_name = "dining_list"

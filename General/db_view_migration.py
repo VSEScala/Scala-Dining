@@ -1,5 +1,6 @@
-from django.db import migrations
 from django.apps import apps
+from django.db import migrations
+
 
 # Code excerpts taken from https://github.com/manuelnaranjo/django-database-view
 # Original code no longer works, produced internal reference errors
@@ -14,7 +15,7 @@ class CreateView(migrations.CreateModel):
         # Drop any table with the same name
         sql = 'DROP VIEW IF EXISTS %(table)s;'
         args = {
-            'table' : schema_editor.quote_name(model._meta.db_table),
+            'table': schema_editor.quote_name(model._meta.db_table),
         }
         schema_editor.execute(sql % args, None)
 

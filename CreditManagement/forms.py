@@ -1,7 +1,8 @@
 from dal_select2.widgets import ModelSelect2
 from django import forms
+from django.core.exceptions import ValidationError
 
-from .models import *
+from CreditManagement.models import PendingTransaction
 
 
 class TransactionForm(forms.ModelForm):

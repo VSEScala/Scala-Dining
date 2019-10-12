@@ -1,26 +1,22 @@
-from Dining.models import *
-from django.contrib.contenttypes.models import ContentType
+from decimal import Decimal
+
+from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 from django.db import models, transaction
 from django.db.models import F
+from django.utils import timezone
 from django.utils.translation import gettext as _
 
+from CreditManagement.querysets import DiningTransactionQuerySet, PendingDiningTrackerQuerySet, \
+    PendingTransactionQuerySet, TransactionQuerySet
 from Dining.models import DiningList
 from UserDetails.models import Association, User
 
-from .querysets import TransactionQuerySet, DiningTransactionQuerySet, \
-    PendingDiningTrackerQuerySet, PendingTransactionQuerySet
-
-"""""""""""""""""""""""""""""""""""""""""""""
-New implementation of the transaction models
-"""""""""""""""""""""""""""""""""""""""""""""
-
 
 class AbstractTransaction(models.Model):
-    """
-    Abstract model defining the Transaction models, can retrieve information from all its children
-    """
+    """Abstract model defining the Transaction models, can retrieve information from all its children."""
+
     # DO NOT CHANGE THIS ORDER, IT CAN CAUSE PROBLEMS IN THE UNION METHODS AT DATABASE LEVEL!
     source_user = models.ForeignKey(User, related_name="%(class)s_transaction_source",
                                     on_delete=models.SET_NULL,
@@ -63,23 +59,19 @@ class AbstractTransaction(models.Model):
 
     @classmethod
     def get_children(cls):
-        """
-        Get all child classes that need to be combined
-        :return: Its child classes
-        """
+        """Get all child classes that need to be combined."""
         return [FixedTransaction, AbstractPendingTransaction]
 
     @classmethod
     def get_all_transactions(cls, user=None, association=None):
-        """
-        Get all credit instances defined in its immediate children and present them as a queryset
+        """Get all credit instances defined in its immediate children and present them as a queryset.
+
         :param user: The user(s) that need to be part of the transactions
                      Can be single instance or queryset of instances
         :param association: The association(s) that need to be part of the transactions.
                             Can be single instance or queryset of instances
         :return: A queryset of all credit instances
         """
-
         result = None
         # Get all child classes
         children = cls.get_children()
@@ -95,11 +87,7 @@ class AbstractTransaction(models.Model):
 
     @classmethod
     def get_user_balance(cls, user):
-        """
-        Returns the usercredit
-        :return: The current credits
-        """
-
+        """Returns the user's credit."""
         result = Decimal(0.00)
         children = cls.get_children()
 
@@ -115,11 +103,7 @@ class AbstractTransaction(models.Model):
 
     @classmethod
     def get_association_balance(cls, association):
-        """
-        Returns the usercredit
-        :return: The current credits
-        """
-
+        """Returns the usercredit."""
         result = Decimal('0.00')
         children = cls.get_children()
 
@@ -135,8 +119,8 @@ class AbstractTransaction(models.Model):
 
     @classmethod
     def annotate_balance(cls, users=None, associations=None):
-        """
-        Returns a list of all users or associations with their respective credits
+        """Returns a list of all users or associations with their respective credits.
+
         :param users: A list of users to annotate, defaults to users if none is given
         :param associations: a list of associations to annnotate
         :return: The list annotated with 'balance'
@@ -185,10 +169,7 @@ class AbstractTransaction(models.Model):
 
 
 class FixedTransaction(AbstractTransaction):
-    """
-    Transaction model on an immutable
-    Contains all final processed transactions
-    """
+    """Immutable transaction."""
     objects = TransactionQuerySet.as_manager()
     balance_annotation_name = "balance_fixed"
 
@@ -199,8 +180,8 @@ class FixedTransaction(AbstractTransaction):
 
     @classmethod
     def get_all_transactions(cls, user=None, association=None):
-        """
-        Get all credit instances defined in its immediate children and present them as a queryset
+        """Get all credit instances defined in its immediate children and present them as a queryset.
+
         :param user: The user(s) that need to be part of the transactions
                      Can be single instance or queryset of instances
         :param association: The association(s) that need to be part of the transactions.
@@ -216,8 +197,8 @@ class FixedTransaction(AbstractTransaction):
 
     @classmethod
     def get_association_balance(cls, association):
-        """
-        Compute the balance according to this model based on the given association
+        """Compute the balance according to this model based on the given association.
+
         :param association: The association
         :return: The balance in Decimal
         """
@@ -232,9 +213,7 @@ class FixedTransaction(AbstractTransaction):
 
 
 class AbstractPendingTransaction(AbstractTransaction):
-    """
-    Abstract model for the Pending Transactions
-    """
+    """Abstract model for the Pending Transactions."""
     balance_annotation_name = "balance_pending"
 
     class Meta:
@@ -249,9 +228,10 @@ class AbstractPendingTransaction(AbstractTransaction):
 
     @classmethod
     def finalise_all_expired(cls):
-        """
-        Moves all pending transactions to the fixed transactions table
-        :return: All new entries in the fixed transaction table
+        """Moves all pending transactions to the fixed transactions table.
+
+        Returns:
+            All new entries in the fixed transaction table.
         """
         # Get all child classes
         children = cls.get_children()
@@ -265,17 +245,13 @@ class AbstractPendingTransaction(AbstractTransaction):
 
 
 class PendingTransaction(AbstractPendingTransaction):
-    """
-    Model for the general Pending Transactions
-    """
+    """Model for the general Pending Transactions <-- Very bad docstring."""
 
     objects = PendingTransactionQuerySet.as_manager()
     balance_annotation_name = "balance_pending_normal"
 
     def clean(self):
-        """
-        Performs entry checks on model contents
-        """
+        """Performs entry checks on model contents."""
         super(PendingTransaction, self).clean()
 
         # Check whether balance does not exceed set limit on balance
@@ -299,9 +275,7 @@ class PendingTransaction(AbstractPendingTransaction):
         #    raise ValidationError(_("Associations cannot transfer money between each other"))
 
     def finalise(self):
-        """
-        Moves the pending transaction over as a fixed transaction
-        """
+        """Moves the pending transaction over as a fixed transaction."""
         # Create the fixed database entry
         fixed_transaction = FixedTransaction(source_user=self.source_user, source_association=self.source_association,
                                              target_user=self.target_user, target_association=self.target_association,
@@ -334,8 +308,8 @@ class PendingTransaction(AbstractPendingTransaction):
 
     @classmethod
     def get_all_transactions(cls, user=None, association=None):
-        """
-        Get all credit instances defined in its immediate children and present them as a queryset
+        """Get all credit instances defined in its immediate children and present them as a queryset.
+
         :param user: The user(s) that need to be part of the transactions
                      Can be single instance or queryset of instances
         :param association: The association(s) that need to be part of the transactions.
@@ -351,8 +325,8 @@ class PendingTransaction(AbstractPendingTransaction):
 
     @classmethod
     def get_association_balance(cls, association):
-        """
-        Compute the balance according to this model based on the given association
+        """Compute the balance according to this model based on the given association.
+
         :param association: The association
         :return: The balance in Decimal
         """
@@ -367,9 +341,9 @@ class PendingTransaction(AbstractPendingTransaction):
 
 
 class PendingDiningTransactionManager(models.Manager):
-    """
-    Manager for the PendingDiningTransaction Model
-    Created specially due to the different behaviour of the model (different database and model use)
+    """Manager for the PendingDiningTransaction model.
+
+    Created specially due to the different behaviour of the model (different database and model use).
     """
 
     @staticmethod
@@ -387,9 +361,9 @@ class PendingDiningTransactionManager(models.Manager):
 
 
 class PendingDiningTransaction(AbstractPendingTransaction):
-    """
-    Model for the Pending Dining Transactions
-    Does NOT create a database, information is obtained elsewhere as specified in the manager/queryset
+    """Model for the Pending Dining Transactions.
+
+    Does NOT create a database, information is obtained elsewhere as specified in the manager/queryset.
     """
     balance_annotation_name = "balance_pending_dining"
     objects = PendingDiningTransactionManager()
@@ -429,8 +403,8 @@ class PendingDiningTransaction(AbstractPendingTransaction):
 
     @classmethod
     def get_association_credit(cls, association):
-        """
-        Compute the balance according to this model based on the given association
+        """Compute the balance according to this model based on the given association.
+
         :param association: The association
         :return: The balance in Decimal
         """
@@ -447,10 +421,11 @@ class PendingDiningTransaction(AbstractPendingTransaction):
 
 
 class PendingDiningListTracker(models.Model):
+    """Model to track all Dining Lists that are pending.
+
+    Used for creating Pending Dining Transactions.
     """
-    Model to track all Dining Lists that are pending.
-    Used for creating Pending Dining Transactions
-    """
+
     dining_list = models.OneToOneField(DiningList, on_delete=models.CASCADE)
 
     objects = PendingDiningTrackerQuerySet.as_manager()
@@ -474,23 +449,19 @@ class PendingDiningListTracker(models.Model):
 
     @classmethod
     def finalise_to_date(cls, date):
-        """
-        Finalises all pending dining list transactions till the given date
-        :param date: The date all tracked dining lists need to be finalised
+        """Finalises all pending dining list transactions till the given date.
+
+        :param date: The date all tracked dining lists need to be finalised.
         """
         query = cls.objects.filter_lists_for_date(date)
         for pending_dining_list_tracker in query:
             pending_dining_list_tracker.finalise()
 
 
-"""""""""""""""""""""""""""""""""""""""""""""
-New implemented User and Association Views
-"""""""""""""""""""""""""""""""""""""""""""""
-
-
 class UserCredit(models.Model):
-    """
-    User credit model, implemented as Database VIEW (see migrations/usercredit_view.py)
+    """User credit model, implemented as a database view.
+
+    See migrations/usercredit_view.py
     """
     user = models.OneToOneField(User, primary_key=True,
                                 db_column='id',
@@ -506,9 +477,10 @@ class UserCredit(models.Model):
                                         max_digits=6)
 
     def negative_since(self):
-        """
-        Compute the date from the balance_fixed table when the users balance has become negative
-        :return: The date when the users balance became negative
+        """Compute the date from the balance_fixed table when the users balance has become negative.
+
+        Returns:
+            The date when the users balance became negative.
         """
         balance = self.balance_fixed
         if balance >= 0:
@@ -528,10 +500,7 @@ class UserCredit(models.Model):
 
     @classmethod
     def view(cls):
-        """
-        This method returns the SQL string that creates the view
-        """
-
+        """This method returns the SQL string that creates the view."""
         qs = AbstractTransaction.annotate_balance(users=User.objects.all()). \
             values('id', AbstractTransaction.balance_annotation_name, FixedTransaction.balance_annotation_name)
         return str(qs.query)

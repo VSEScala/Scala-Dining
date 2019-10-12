@@ -1,7 +1,7 @@
 from django.contrib import admin
 
-from Dining.models import DiningEntryUser, DiningEntryExternal, DiningList, DiningComment, UserDiningSettings, \
-    DiningDayAnnouncement, DiningWork
+from Dining.models import DiningComment, DiningDayAnnouncement, DiningEntryExternal, DiningEntryUser, DiningList, \
+    DiningWork, UserDiningSettings
 
 
 class DiningSettingAdmin(admin.ModelAdmin):

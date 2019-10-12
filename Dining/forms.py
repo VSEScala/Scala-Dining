@@ -6,21 +6,19 @@ from django import forms
 from django.conf import settings
 from django.core.validators import MinValueValidator
 from django.db import transaction
-from django.db.models import OuterRef, Exists
+from django.db.models import Exists, OuterRef
 from django.forms import ValidationError
 from django.utils import timezone
 from django.utils.translation import gettext as _
 
 from General.forms import ConcurrenflictFormMixin
 from General.util import SelectWithDisabled
-from UserDetails.models import Association, User
-from .models import DiningList, DiningEntryUser, DiningEntryExternal, DiningComment
+from UserDetails.models import Association
+from .models import DiningComment, DiningEntryExternal, DiningEntryUser, DiningList
 
 
 def _clean_form(form):
-    """
-    Cleans the given form by validating it and throwing ValidationError if it is not valid.
-    """
+    """Cleans the given form by validating it and throwing ValidationError if it is not valid."""
     if not form.is_valid():
         validation_errors = []
         for field, errors in form.errors.items():
@@ -29,7 +27,7 @@ def _clean_form(form):
 
 
 class ServeTimeCheckMixin:
-    """Mixin with clean_serve_time which gives errors on the serve_time if it is not within the kitchen opening hours"""
+    """Mixin which gives error on the serve_time field if it is not within the kitchen opening hours."""
 
     def clean_serve_time(self):
         serve_time = self.cleaned_data['serve_time']
@@ -74,8 +72,10 @@ class CreateSlotForm(ServeTimeCheckMixin, forms.ModelForm):
             self.fields['association'].disabled = True
 
     def clean(self):
-        """Note: uniqueness for date+association is implicitly enforced using the association form field"""
+        """Clean fields for new dining list.
 
+        Note: uniqueness for date+association is implicitly enforced using the association form field.
+        """
         cleaned_data = super().clean()
 
         creator = self.creator
@@ -84,7 +84,8 @@ class CreateSlotForm(ServeTimeCheckMixin, forms.ModelForm):
             raise ValidationError("All dining slots are already occupied on this day")
 
         # Check if user has enough money to claim a slot
-        if not creator.has_min_balance_exception() and creator.usercredit.balance < settings.MINIMUM_BALANCE_FOR_DINING_SLOT_CLAIM:
+        balance_too_low = creator.usercredit.balance < settings.MINIMUM_BALANCE_FOR_DINING_SLOT_CLAIM
+        if not creator.has_min_balance_exception() and balance_too_low:
             raise ValidationError("Your balance is too low to claim a slot")
 
         # Check if user does not already own another dining list this day
@@ -92,11 +93,12 @@ class CreateSlotForm(ServeTimeCheckMixin, forms.ModelForm):
             raise ValidationError(_("User already owns a dining list on this day"))
 
         # If date is valid
-        if self.instance.date < timezone.now().date():
+        today = timezone.now().date()
+        if self.instance.date < today:
             raise ValidationError("This date is in the past")
-        if self.instance.date == timezone.now().date() and timezone.now().time() > settings.DINING_SLOT_CLAIM_CLOSURE_TIME:
+        if self.instance.date == today and timezone.now().time() > settings.DINING_SLOT_CLAIM_CLOSURE_TIME:
             raise ValidationError("It's too late to claim any dining slots")
-        if self.instance.date > timezone.now().date() + settings.DINING_SLOT_CLAIM_AHEAD:
+        if self.instance.date > today + settings.DINING_SLOT_CLAIM_AHEAD:
             raise ValidationError("Dining list is too far in the future")
 
         return cleaned_data
@@ -147,7 +149,7 @@ class DiningPaymentForm(ConcurrenflictFormMixin, forms.ModelForm):
         self.fields['purchaser'].queryset = self.instance.owners.all()
 
     def clean(self):
-        """This cleaning calculates the person dining cost from the total dining cost"""
+        """This cleaning calculates the person dining cost from the total dining cost."""
         cleaned_data = super().clean()
         dinner_cost_total = cleaned_data.get('dinner_cost_total')
         dining_cost = cleaned_data.get('dining_cost')
@@ -184,7 +186,7 @@ class DiningEntryUserCreateForm(forms.ModelForm):
         }
 
     def get_user(self):
-        """Returns the user responsible for the kitchen cost (not necessarily creator)"""
+        """Returns the user responsible for the kitchen cost (not necessarily creator)."""
         user = self.cleaned_data.get('user')
         if not user:
             raise ValidationError("User not provided")
@@ -215,7 +217,8 @@ class DiningEntryUserCreateForm(forms.ModelForm):
                 raise ValidationError(_("Dining list is limited for members only"), code='members_only')
 
         # User balance check
-        if not user.has_min_balance_exception() and user.usercredit.balance < settings.MINIMUM_BALANCE_FOR_DINING_SIGN_UP:
+        balance_too_low = user.usercredit.balance < settings.MINIMUM_BALANCE_FOR_DINING_SIGN_UP
+        if not user.has_min_balance_exception() and balance_too_low:
             raise ValidationError("The balance of the user is too low to add", code='nomoneyzz')
 
         return cleaned_data
@@ -261,8 +264,10 @@ class DiningEntryDeleteForm(forms.Form):
 
 
 class DiningListDeleteForm(forms.ModelForm):
-    """
-    Allows deletion of a dining list with it's entries. This will refund all kitchen costs.
+    """Form for dining list deletion.
+
+    When executed, this first deletes all dining entries and with that refunds
+    all kitchen costs before deleting the actual dining list.
     """
 
     class Meta:
@@ -290,9 +295,7 @@ class DiningListDeleteForm(forms.ModelForm):
         return cleaned_data
 
     def execute(self):
-        """
-        Deletes the dining list by first deleting the entries and after that deleting the dining list.
-        """
+        """Deletes the dining list by first deleting the entries and after that deleting the dining list."""
         # Check if validated
         self.save(commit=False)
 

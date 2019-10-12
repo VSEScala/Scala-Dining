@@ -2,6 +2,8 @@
 ignore =
     # Missing docstring
     D1
+    # Missing blank line after last docstring section
+    D413
 exclude =
     .git,
     __pycache__,

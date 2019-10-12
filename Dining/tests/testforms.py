@@ -1,11 +1,11 @@
-from datetime import time, timedelta, date, datetime
+from datetime import time, timedelta
 from decimal import Decimal
 
 from django.test import TestCase
 from django.utils import timezone
 
 from CreditManagement.models import FixedTransaction
-from Dining.forms import CreateSlotForm, DiningInfoForm
+from Dining.forms import CreateSlotForm
 from Dining.models import DiningList
 from UserDetails.models import Association, User, UserMembership
 
@@ -36,7 +36,7 @@ class CreateSlotFormTestCase(TestCase):
         self.assertEqual(self.dining_date, dining_list.date)
 
     def test_invalid_association(self):
-        """Tests using an association which the user is not a member of
+        """Tests using an association which the user is not a member of.
 
         NOTE: when there is 1 available association, the form sets the association field to disabled. This means that
         the value that is sent with the form is totally ignored in favor of the initial value of the field. Therefore
@@ -54,7 +54,7 @@ class CreateSlotFormTestCase(TestCase):
         self.assertEqual(self.association1, form.instance.association)
 
     def test_association_unique_for_date(self):
-        """Test that there can be only one dining slot for an association for each date"""
+        """Test that there can be only one dining slot for an association for each date."""
         # Save one dining list
         self.form.save()
 

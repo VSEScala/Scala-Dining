@@ -1,4 +1,3 @@
-# Totally taken from https://github.com/frnhr/django-concurrenflict
 import json
 
 from django import forms
@@ -8,9 +7,14 @@ from django.utils.safestring import mark_safe
 
 
 class ConcurrenflictFormMixin:
-    """
-    Compares model instance between requests: first at form render, then upon submit but before save (i.e. on clean).
-    If model instances are different, the Form fails validation and displays what has been changed.
+    """Check for concurrent edit conflicts for a form.
+
+    This works by comparing the model instance between requests: first at form
+    render, then upon submit but before save (i.e. on clean). If model
+    instances are different, the Form fails validation and displays what has
+    been changed.
+
+    The code is an almost exact copy of: https://github.com/frnhr/django-concurrenflict
     """
 
     concurrenflict_field_name = 'concurrenflict_initial'
@@ -25,7 +29,7 @@ class ConcurrenflictFormMixin:
             self._concurrenflict_json_data = serializers.serialize('json', [instance])
             self.fields[self.concurrenflict_field_name].initial = self._concurrenflict_json_data
 
-    def clean(self):
+    def clean(self):  # noqa: C901
         cleaned_data = super().clean()
         json_at_get = self.cleaned_data[self.concurrenflict_field_name]
         del self.cleaned_data[self.concurrenflict_field_name]
@@ -63,7 +67,7 @@ class ConcurrenflictFormMixin:
                 json_value_before = json_data_before[0]['fields'].get(key, None)
                 json_value_after = json_data_after[0]['fields'].get(key, None)
                 if json_value_after != json_value_before:
-                    value_before = getattr(model_before, key, m2m_before.get(key))
+                    # value_before = getattr(model_before, key, m2m_before.get(key))
                     value_after = getattr(model_after, key, m2m_after.get(key, ''))
                     have_diff = True
                     # fake_form.data[key] = value_after
@@ -71,8 +75,8 @@ class ConcurrenflictFormMixin:
                     # <script type="text/javascript">
                     #     (function($){
                     #         $(function(){
-                    #             $('[name^="%(html_name)s"]').attr('disabled', 'disabled').attr('readonly', 'readonly');
-                    #             $('#add_id_%(html_name)s').remove();
+                    #            $('[name^="%(html_name)s"]').attr('disabled', 'disabled').attr('readonly', 'readonly');
+                    #            $('#add_id_%(html_name)s').remove();
                     #         });
                     #     })(window.jQuery || django.jQuery);
                     # </script>

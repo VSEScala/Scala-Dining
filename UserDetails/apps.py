@@ -6,4 +6,5 @@ class UserDetailsConfig(AppConfig):
 
     def ready(self):
         # Import to register the receiver in this module
-        import UserDetails.externalaccounts
+        # noinspection PyUnresolvedReferences
+        import UserDetails.externalaccounts  # noqa: F401

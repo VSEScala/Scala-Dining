@@ -16,4 +16,3 @@ def multiply(var, multiply_value):
 @register.filter(name='get_class')
 def get_class(value):
     return value.__class__.__name__
-

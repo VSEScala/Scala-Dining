@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import SiteUpdate, PageVisitTracker
+from .models import PageVisitTracker, SiteUpdate
 
 
 def mail_users(modeladmin, request, queryset):

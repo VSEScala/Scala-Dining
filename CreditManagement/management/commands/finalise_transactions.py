@@ -1,5 +1,7 @@
 from django.core.management.base import BaseCommand
+
 from CreditManagement.models import AbstractPendingTransaction
+
 
 class Command(BaseCommand):
     help = 'Finalises all expired transactions'
