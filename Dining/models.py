@@ -34,11 +34,7 @@ class DiningListManager(models.Manager):
 
 
 class DiningList(models.Model):
-    """
-    A single dining list (slot) model.
-
-    The following fields may not be changed after creation: kitchen_cost, min_diners/max_diners!
-    """
+    """A single dining list (slot) model."""
     date = models.DateField()
 
     """Todo: the date+association combination determines the URL. This makes it impossible to have multiple dining lists
@@ -70,8 +66,6 @@ class DiningList(models.Model):
 
     payment_link = models.CharField(blank=True, max_length=100, help_text=_('Link for payment, e.g. a Tikkie link.'))
 
-    # min_diners can be set to a negative value. Is not really problematic though
-    min_diners = models.IntegerField(default=4, validators=[MaxValueValidator(settings.MAX_SLOT_DINER_MINIMUM)])
     max_diners = models.IntegerField(default=20, validators=[MinValueValidator(settings.MIN_SLOT_DINER_MAXIMUM)])
 
     diners = models.ManyToManyField(settings.AUTH_USER_MODEL, through='DiningEntry',

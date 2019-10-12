@@ -77,9 +77,7 @@
                     <i class="fas fa-tools"></i> Change information
                 </a>
             </div>
-            {% if dining_list|is_owner:user and dining_list.diners.count < dining_list.min_diners %}
-                {# The min_diners check is only performed here and not while a list is actually deleted, so it's #}
-                {# possible to delete a list even if there are more diners than min_diners XD #}
+            {% if dining_list|is_owner:user %}
                 <div class="col-md">
                     {% url "slot_delete" year=date.year month=date.month day=date.day identifier=dining_list.association.slug as url %}
                     <a href="{{ url }}" class="btn btn-outline-danger btn-block">
@@ -178,14 +176,6 @@
                     {% endif %}
                 </div>
             </div>
-
-            {# Minimum number of diners #}
-            {% if dining_list.dining_entries.count < dining_list.min_diners %}
-                <div class="row mt-3">
-                    <div class="col-3">Minimum diners:</div>
-                    <div class="col-9">{{ dining_list.min_diners }}</div>
-                </div>
-            {% endif %}
 
             {# Kitchen cost #}
             <div class="row mt-3">

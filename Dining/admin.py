@@ -58,11 +58,11 @@ class DiningListAdmin(admin.ModelAdmin):
     #readonly_fields = ('date', 'diners', 'dinner_cost_single')
     inlines = [DiningListEntryLink, DiningListExternalEntryLink]
     fields = (('date', 'sign_up_deadline', 'adjustable_duration'),
-              ('dish'),
+              ('dish',),
               ('association', 'limit_signups_to_association_only'),
-              ('min_diners', 'max_diners'),
+              ('max_diners',),
               ('kitchen_cost', 'dining_cost', 'auto_pay'),
-              'payment_link')
+              ('payment_link',))
 
 
 admin.site.register(DiningList)
