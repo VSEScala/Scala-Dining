@@ -121,7 +121,7 @@ class CreateSlotForm(ServeTimeCheckMixin, forms.ModelForm):
 class DiningInfoForm(ConcurrenflictFormMixin, ServeTimeCheckMixin, forms.ModelForm):
     class Meta:
         model = DiningList
-        fields = ['owners', 'dish', 'serve_time', 'max_diners', 'sign_up_deadline']
+        fields = ('owners', 'dish', 'serve_time', 'max_diners', 'sign_up_deadline')
         widgets = {
             'owners': ModelSelect2Multiple(url='people_autocomplete', attrs={'data-minimum-input-length': '1'}),
         }

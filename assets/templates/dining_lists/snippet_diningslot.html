@@ -18,7 +18,11 @@
         <div class="text-size-5">{{ slot|short_owners_string }}</div>
         <div class="text-size-4">{{ slot.dish }}</div>
         <br>
-        <div class="text-size-3">{{ slot.diners.count }}/{{ slot.max_diners }} diners - Serve time: {{ slot.serve_time }}</div>
+        <div class="text-size-3">
+            {{ slot.diners.count }}{% if slot.max_diners %}/{{ slot.max_diners }}{% endif %} diners
+            -
+            Serve time: {{ slot.serve_time }}
+        </div>
     </div>
 
     {% if interactive %}
