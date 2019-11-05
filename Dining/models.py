@@ -2,7 +2,7 @@ from django.db import models
 from django.db.models import Sum
 
 from django.conf import settings
-from django.core.exceptions import ValidationError, ObjectDoesNotExist
+from django.core.exceptions import ValidationError, ObjectDoesNotExist, MultipleObjectsReturned
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.utils import timezone
 from django.utils.translation import gettext, gettext_lazy as _
@@ -236,19 +236,30 @@ class DiningCommentVisitTracker(AbstractVisitTracker):
         :param update:
         :return:
         """
-        if update:
-            latest_visit_obj = cls.objects.get_or_create(user=user, dining_list=dining_list)[0]
-        else:
-            try:
-                latest_visit_obj = cls.objects.get(user=user, dining_list=dining_list)
-            except cls.DoesNotExist:
-                return None
+        try:
+            if update:
+                latest_visit_obj = cls.objects.get_or_create(user=user, dining_list=dining_list)[0]
+            else:
+                try:
+                    latest_visit_obj = cls.objects.get(user=user, dining_list=dining_list)
+                except cls.DoesNotExist:
+                    return None
+        except MultipleObjectsReturned:
+            # A race condition occured and multiple were created. Clean up the entries
+            visit_entries = cls.objects.filter(user=user, dining_list=dining_list)
+            # Store 1 object, remove the others this could result in dataloss, but the problem is not noticeable
+            latest_visit_obj = visit_entries.first()
+            visit_entries.exclude(id=latest_visit_obj.id)
+            visit_entries.delete()
 
         timestamp = latest_visit_obj.timestamp
         if update:
             latest_visit_obj.timestamp = timezone.now()
             latest_visit_obj.save()
         return timestamp
+
+    def __str__(self):
+        return "{dining_list} - {user}".format(dining_list=self.dining_list, user=self.user)
 
 
 class DiningDayAnnouncement(models.Model):
