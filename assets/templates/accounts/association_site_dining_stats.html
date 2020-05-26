@@ -1,0 +1,40 @@
+{% extends 'accounts/associations_base.html' %}
+{% load form_extras %}
+
+{% block tab_site_dining %} active{% endblock %}
+
+{% block details %}
+    <form method="get">
+        {% include "snippets/bootstrap_form_one_line.html" with horizontal=True form=daterange_form submit_value='filter' %}
+    </form>
+
+    {# The actual table #}
+    <div class="row">
+        <div class="col-12 table-responsive">
+            <table class="table table-hover">
+                {# Table header #}
+                <thead>
+                <tr>
+                    <td>Association</td>
+                    <td>Lists claimed</td>
+                    <td>Cooked for</td>
+                    <td>Weighted eaters</td>
+                </tr>
+                </thead>
+
+                <tbody>
+                {# Table rows #}
+                {% for assoc_name, contents in stats.items %}
+                    <tr>
+                        <td>{{ contents.association }}</td>
+                        <td>{{ contents.lists_claimed }}</td>
+                        <td>{{ contents.cooked_for_own }}/{{ contents.cooked_for }}</td>
+                        <td>{{ contents.weighted_eaters }}</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+{% endblock %}

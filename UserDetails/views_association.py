@@ -3,7 +3,7 @@ import csv
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import PermissionDenied
-from django.db.models import Q
+from django.db.models import Q, Count
 from django.http import HttpResponseRedirect, HttpResponse
 from django.shortcuts import get_object_or_404, render
 from django.views import View
@@ -12,6 +12,8 @@ from django.views.generic import ListView, TemplateView
 from django.utils.http import is_safe_url
 
 from CreditManagement.models import AbstractTransaction, FixedTransaction
+from General.views import DateRangeFilterMixin
+from Dining.models import DiningList, DiningEntry
 from .models import UserMembership, Association, User
 from .forms import AssociationSettingsForm
 
@@ -34,6 +36,14 @@ class AssociationBoardMixin:
         if not request.user.groups.filter(id=self.association.id):
             raise PermissionDenied("You are not on the board of this association")
         return super().dispatch(request, *args, **kwargs)
+
+
+class AssociationHasSiteAccessMixin:
+    def dispatch(self, request, *args, **kwargs):
+        """Gets association and checks if user is board member."""
+        if not self.association.has_site_stats_access:
+            raise PermissionDenied("This association may not view this data")
+        return super(AssociationHasSiteAccessMixin, self).dispatch(request, *args, **kwargs)
 
 
 class CreditsOverview(LoginRequiredMixin, AssociationBoardMixin, ListView):
@@ -169,3 +179,48 @@ class AssociationSettingsView(AssociationBoardMixin, TemplateView):
         context = self.get_context_data()
         context['form'] = form
         return render(request, self.template_name, context)
+
+
+class AssociationSiteDiningView(AssociationBoardMixin, AssociationHasSiteAccessMixin, DateRangeFilterMixin, TemplateView):
+    template_name = "accounts/association_site_dining_stats.html"
+
+    def get_context_data(self, **kwargs):
+        context = super(AssociationSiteDiningView, self).get_context_data(**kwargs)
+
+        if self.date_range_form.is_valid():
+            dining_lists = DiningList.objects.filter(date__gte=self.date_start, date__lte=self.date_end)
+            association_stats = {}
+
+            # Get general data for each association
+            for association in Association.objects.all():
+                # Some general statistics
+                cooked_for = DiningEntry.objects.filter(
+                    dining_list__association=association,
+                    dining_list__in=dining_lists)
+                memberships = UserMembership.objects.filter(association=association, is_verified=True)
+                members = User.objects.filter(usermembership__in=memberships)
+
+                cooked_for_own = cooked_for.filter(user__in=members)
+
+                association_stats[association.id] = {
+                    'association': association,
+                    'lists_claimed': dining_lists.filter(association=association).count(),
+                    'cooked_for': cooked_for.count(),
+                    'cooked_for_own': cooked_for_own.count(),
+                    'weighted_eaters': 0,
+                }
+            # Get general data for all members. Note: this is done here as the length of members is significantly longer
+            # than the number of associations so this should be quicker
+            users = User.objects.\
+                filter(diningentry__dining_list__in=dining_lists).\
+                annotate(dining_entry_count=Count('diningentry'))
+
+            for user in users:
+                memberships = UserMembership.objects.filter(is_verified=True, related_user=user)
+                if memberships:
+                    user_weight = user.dining_entry_count / memberships.count()
+
+                    for membership in memberships:
+                        association_stats[membership.association_id]['weighted_eaters'] += user_weight
+            context['stats'] = association_stats
+        return context
