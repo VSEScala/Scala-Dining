@@ -1,9 +1,10 @@
 import csv
+import decimal
 
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import PermissionDenied
-from django.db.models import Q, Count
+from django.db.models import Q, Count, Sum
 from django.http import HttpResponseRedirect, HttpResponse
 from django.shortcuts import get_object_or_404, render
 from django.views import View
@@ -223,4 +224,51 @@ class AssociationSiteDiningView(AssociationBoardMixin, AssociationHasSiteAccessM
                     for membership in memberships:
                         association_stats[membership.association_id]['weighted_eaters'] += user_weight
             context['stats'] = association_stats
+        return context
+
+
+class AssociationSiteCreditView(AssociationBoardMixin, AssociationHasSiteAccessMixin, DateRangeFilterMixin, TemplateView):
+    template_name = "accounts/association_site_credit_stats.html"
+
+    def get_context_data(self, **kwargs):
+        context = super(AssociationSiteCreditView, self).get_context_data(**kwargs)
+
+        # Get the balance for each association
+        association_stats = {}
+        for association in Association.objects.all():
+            association_stats[association.id] = {
+                'association': association,
+                'balance': AbstractTransaction.get_association_balance(association),
+            }
+        context['association_balances'] = association_stats
+
+        # Get the income through the dining list
+        if self.date_range_form.is_valid():
+            transactions = FixedTransaction.objects. \
+                filter(confirm_moment__gte=self.date_start,
+                       confirm_moment__lte=self.date_end)
+            # Aggregate the values
+            influx = transactions.filter(
+                target_user__isnull=True,
+                target_association__isnull=True
+            ).aggregate(sum=Sum('amount'))['sum']
+
+            outflux = transactions.filter(
+                source_user__isnull=True,
+                source_association__isnull=True
+            ).aggregate(sum=Sum('amount'))['sum']
+
+            if influx is None:
+                influx = 0
+            influx = decimal.Decimal(influx)
+
+            if outflux is None:
+                outflux = 0
+            outflux = decimal.Decimal(outflux)
+
+            context['dining_balance'] = {
+                'influx': influx.quantize(decimal.Decimal('.01')),
+                'outflux': outflux.quantize(decimal.Decimal('.01')),
+                'nettoflux': (influx - outflux).quantize(decimal.Decimal('.01'))
+            }
         return context
