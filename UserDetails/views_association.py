@@ -4,7 +4,6 @@ import decimal
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import PermissionDenied
-from django.db.models import Q
 from django.urls import reverse
 from django.db.models import Q, Count, Sum
 from django.http import HttpResponseRedirect, HttpResponse
