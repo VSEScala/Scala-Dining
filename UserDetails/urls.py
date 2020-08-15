@@ -5,6 +5,7 @@ from CreditManagement.views import TransactionAddView
 from .views import RegisterView, DiningJoinHistoryView, DiningClaimHistoryView, PeopleAutocompleteView
 from .views_user_settings import SettingsProfileView
 from .views_association import CreditsOverview, TransactionsCsvView, MembersOverview, MembersEditView, \
+    AssociationOverview, AssociationSettingsView, AssociationSiteDiningView, AssociationSiteCreditView
     AssociationOverview, AssociationSettingsView, AutoCreateNegativeCreditsView
 
 urlpatterns = [
@@ -18,7 +19,11 @@ urlpatterns = [
         ])),
         path('members/', MembersOverview.as_view(), name='association_members'),
         path('members/edit/', MembersEditView.as_view(), name='association_members_edit'),
-        path('settings/', AssociationSettingsView.as_view(), name='association_settings')
+        path('settings/', AssociationSettingsView.as_view(), name='association_settings'),
+        path('site_stats/', include([
+            path('dining/', AssociationSiteDiningView.as_view(), name='association_site_dining_stats'),
+            path('credit/', AssociationSiteCreditView.as_view(), name='association_site_credit_stats'),
+        ])),
     ])),
 
     path('statistics/', include([
