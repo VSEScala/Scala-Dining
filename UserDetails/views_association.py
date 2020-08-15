@@ -4,14 +4,16 @@ from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import PermissionDenied
 from django.db.models import Q
+from django.urls import reverse
 from django.http import HttpResponseRedirect, HttpResponse
 from django.shortcuts import get_object_or_404, render
 from django.views import View
 from django.utils.translation import gettext as _
-from django.views.generic import ListView, TemplateView
+from django.views.generic import ListView, TemplateView, FormView
 from django.utils.http import is_safe_url
 
 from CreditManagement.models import AbstractTransaction, FixedTransaction
+from CreditManagement.forms import ClearOpenExpensesForm
 from .models import UserMembership, Association, User
 from .forms import AssociationSettingsForm
 
@@ -47,6 +49,24 @@ class CreditsOverview(LoginRequiredMixin, AssociationBoardMixin, ListView):
         context = super().get_context_data(**kwargs)
         context['balance'] = AbstractTransaction.get_association_balance(self.association)
         return context
+
+
+class AutoCreateNegativeCreditsView(LoginRequiredMixin, AssociationBoardMixin, FormView):
+    template_name = "accounts/association_correct_negatives.html"
+    form_class = ClearOpenExpensesForm
+
+    def get_form_kwargs(self):
+        kwargs = super(AutoCreateNegativeCreditsView, self).get_form_kwargs()
+        kwargs['association'] = self.association
+        return kwargs
+
+    def form_valid(self, form):
+        form.save()
+        messages.success(self.request, 'Member credits have successfully been processed')
+        return super(AutoCreateNegativeCreditsView, self).form_valid(form)
+
+    def get_success_url(self):
+        return reverse('association_credits', kwargs={'association_name': self.association.slug})
 
 
 class TransactionsCsvView(LoginRequiredMixin, AssociationBoardMixin, View):
