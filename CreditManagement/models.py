@@ -31,7 +31,7 @@ class AbstractTransaction(models.Model):
                                            null=True, blank=True,
                                            verbose_name="The association giving the money")
     amount = models.DecimalField(verbose_name="Money transferred",
-                                 decimal_places=2, max_digits=4,
+                                 decimal_places=2, max_digits=5,
                                  validators=[MinValueValidator(Decimal('0.01'))])
     target_user = models.ForeignKey(User, related_name="%(class)s_transaction_target",
                                     on_delete=models.SET_NULL,
