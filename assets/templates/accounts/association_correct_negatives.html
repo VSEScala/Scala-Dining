@@ -1,0 +1,21 @@
+{% extends 'accounts/associations_base.html' %}
+{% load form_extras %}
+{% load credit_tags %}
+
+{% block tab_credits %} active{% endblock %}
+
+{% block details %}
+    <h3>Create transactions for members</h3>
+    <p>
+        By pressing the button below transactions are created for all members of this association whose balance is currently
+        below 0.
+        <br>
+        There are currently {{ form.negative_members_count }} members applicapple with a total amount of €{{ form.negative_member_credit_total }}
+    </p>
+
+    <form method="post">
+        {% csrf_token %}
+        {% include "snippets/bootstrap_form.html" %}
+        <input type="submit" value="Process negative member balances" class="btn btn-primary"/>
+    </form>
+{% endblock %}

@@ -4,10 +4,39 @@ from django.shortcuts import render
 from django.db.models import ObjectDoesNotExist
 from django.template.loader import get_template, TemplateDoesNotExist
 from django.utils import timezone
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from .models import SiteUpdate, PageVisitTracker
 from userdetails.models import Association
+from General.forms import DateRangeForm
+
+
+class DateRangeFilterMixin:
+    """
+    A filter that takes time of day attributes from the GET attributes
+    """
+    date_start = None
+    date_end = None
+    default_time_length = timedelta(days=3650)
+    date_range_form = None
+
+    def dispatch(self, request, *args, **kwargs):
+        if request.GET:
+            self.date_range_form = DateRangeForm(request.GET)
+        else:
+            self.date_range_form = DateRangeForm()
+
+        if self.date_range_form.is_valid():
+            self.date_start = self.date_range_form.cleaned_data['date_start']
+            self.date_end = self.date_range_form.cleaned_data['date_end']
+
+        return super(DateRangeFilterMixin, self).dispatch(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        context = super(DateRangeFilterMixin, self).get_context_data(**kwargs)
+        context['date_range_form'] = self.date_range_form
+
+        return context
 
 
 class SiteUpdateView(ListView):

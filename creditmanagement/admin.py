@@ -94,8 +94,7 @@ class PendingTransactionAdmin(admin.ModelAdmin):
 
     actions = ['finalise']
 
-    @staticmethod
-    def finalise(request, queryset):
+    def finalise(self, request, queryset):
         for obj in queryset:
             obj.finalise()
 
@@ -105,8 +104,7 @@ class PendingDiningListTrackerAdmin(admin.ModelAdmin):
 
     actions = ['finalise']
 
-    @staticmethod
-    def finalise(request, queryset):
+    def finalise(self, request, queryset):
         for obj in queryset:
             obj.finalise()
 
