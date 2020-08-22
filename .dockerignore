@@ -1,0 +1,9 @@
+__pycache__
+.git
+.github
+.idea
+.dockerignore
+Dockerfile
+db.sqlite3
+.env
+docker-compose.override.yml

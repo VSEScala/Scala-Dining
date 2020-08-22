@@ -1,0 +1,33 @@
+name: Continuous integration
+
+on: push
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/setup-python@v1
+      with:
+        python-version: 3.8
+    - uses: actions/cache@v2
+      with:
+        path: ~/.cache/pip
+        # Match requirements.txt and dev-requirements.txt
+        key: ${{ runner.os }}-pip-${{ hashFiles('*requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+    - name: Install dependencies
+      run: |
+        pip install --upgrade pip setuptools wheel
+        pip install -r requirements.txt -r dev-requirements.txt
+#    - name: Lint
+#      run: |
+#        flake8
+    - name: Unit tests
+      if: always()
+      env:
+        DJANGO_SECRET_KEY: hi
+        DJANGO_DEBUG: on
+      run: |
+        python manage.py test
