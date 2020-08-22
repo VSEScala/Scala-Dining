@@ -14,9 +14,9 @@ from django.views.generic import ListView, TemplateView, FormView
 from django.utils.http import is_safe_url
 
 from creditmanagement.models import AbstractTransaction, FixedTransaction
-from CreditManagement.forms import ClearOpenExpensesForm
-from General.views import DateRangeFilterMixin
-from Dining.models import DiningList, DiningEntry
+from creditmanagement.forms import ClearOpenExpensesForm
+from general.views import DateRangeFilterMixin
+from dining.models import DiningList, DiningEntry
 from .models import UserMembership, Association, User
 from .forms import AssociationSettingsForm
 

@@ -8,7 +8,7 @@ from datetime import datetime, timedelta
 
 from .models import SiteUpdate, PageVisitTracker
 from userdetails.models import Association
-from General.forms import DateRangeForm
+from general.forms import DateRangeForm
 
 
 class DateRangeFilterMixin:

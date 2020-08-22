@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('UserDetails', '0017_association_balance_update_instructions'),
+        ('userdetails', '0017_association_balance_update_instructions'),
     ]
 
     operations = [
