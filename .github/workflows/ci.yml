@@ -27,7 +27,7 @@ jobs:
     - name: Unit tests
       if: always()
       env:
-        DJANGO_SECRET_KEY: hi
-        DJANGO_DEBUG: on
+        DINING_SECRET_KEY: hi
+        DINING_DEBUG: on
       run: |
         python manage.py test
