@@ -65,9 +65,6 @@ class DiningListAdmin(admin.ModelAdmin):
               'payment_link')
 
 
-admin.site.register(DiningList)
-
-
 class DininglistCommentsLink(admin.StackedInline):
     """
     Create the additional information on the user page (taken from a new table)
@@ -88,9 +85,19 @@ class DiningListComment(DiningList):
         proxy = True
 
 
+class DiningAnnouncementsAdmin(admin.ModelAdmin):
+    """
+    Dining Day Announcement admin
+    """
+
+    list_display = ('title', 'date', 'slots_occupy')
+    list_filter = ['date', 'slots_occupy']
+
+
 admin.site.register(UserDiningSettings, DiningSettingAdmin)
-admin.site.register(DiningDayAnnouncement)
+admin.site.register(DiningDayAnnouncement, DiningAnnouncementsAdmin)
 admin.site.register(DiningComment)
 admin.site.register(DiningEntryUser, DiningEntryAdmin)
 admin.site.register(DiningEntryExternal, DiningEntryAdmin)
 admin.site.register(DiningWork)
+admin.site.register(DiningList)

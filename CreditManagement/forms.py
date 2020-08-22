@@ -1,5 +1,7 @@
 from dal_select2.widgets import ModelSelect2
 from django import forms
+from django.db.models import Sum
+from decimal import *
 
 from .models import *
 
@@ -60,3 +62,54 @@ class UserTransactionForm(TransactionForm):
             raise ValidationError("Select a target to transfer the money to.")
 
         return cleaned_data
+
+
+class ClearOpenExpensesForm(forms.Form):
+    """
+    Creates pending transactions for all members of this associations who are negative.
+    """
+    def __init__(self, *args, association=None, **kwargs):
+        assert association is not None
+        self.association = association
+        super(ClearOpenExpensesForm, self).__init__(*args, **kwargs)
+
+    def get_applicable_user_credits(self):
+        return UserCredit.objects.filter(
+            user__usermembership__association=self.association,
+            balance__lt=0,  # Use this to correct for any pending transactions
+        )
+
+    @property
+    def negative_members_count(self):
+        return self.get_applicable_user_credits().count()
+
+    @property
+    def negative_member_credit_total(self):
+        balance_sum = self.get_applicable_user_credits().aggregate(Sum('balance'))['balance__sum']
+        if balance_sum is None:
+            balance_sum = 0
+        # Remember the - value to correct for the negative outcomes
+        return "{:.2f}".format(-balance_sum)
+
+    def clean(self):
+        if not self.association.has_min_exception:
+            # This does not work for associations that have no minimum balance exception
+            raise ValidationError(f"{self.association} has no miniumum exception")
+        if self.negative_members_count == 0:
+            raise ValidationError("There are no members with a negative balance to process")
+
+        return super(ClearOpenExpensesForm, self).clean()
+
+    def save(self):
+        credits = self.get_applicable_user_credits()
+        description = f"Process open costs to {self.association}"
+
+        for credit in credits:
+            PendingTransaction.objects.create(
+                source_association = self.association,
+                amount = -credit.balance,
+                target_user = credit.user,
+                description = description
+            )
+
+

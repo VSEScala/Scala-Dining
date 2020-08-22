@@ -1,17 +1,22 @@
 import csv
+import decimal
 
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import PermissionDenied
-from django.db.models import Q
+from django.urls import reverse
+from django.db.models import Q, Count, Sum
 from django.http import HttpResponseRedirect, HttpResponse
 from django.shortcuts import get_object_or_404, render
 from django.views import View
 from django.utils.translation import gettext as _
-from django.views.generic import ListView, TemplateView
+from django.views.generic import ListView, TemplateView, FormView
 from django.utils.http import is_safe_url
 
 from CreditManagement.models import AbstractTransaction, FixedTransaction
+from CreditManagement.forms import ClearOpenExpensesForm
+from General.views import DateRangeFilterMixin
+from Dining.models import DiningList, DiningEntry
 from .models import UserMembership, Association, User
 from .forms import AssociationSettingsForm
 
@@ -36,6 +41,14 @@ class AssociationBoardMixin:
         return super().dispatch(request, *args, **kwargs)
 
 
+class AssociationHasSiteAccessMixin:
+    def dispatch(self, request, *args, **kwargs):
+        """Gets association and checks if user is board member."""
+        if not self.association.has_site_stats_access:
+            raise PermissionDenied("This association may not view this data")
+        return super(AssociationHasSiteAccessMixin, self).dispatch(request, *args, **kwargs)
+
+
 class CreditsOverview(LoginRequiredMixin, AssociationBoardMixin, ListView):
     template_name = "accounts/association_credits.html"
     paginate_by = 50
@@ -47,6 +60,24 @@ class CreditsOverview(LoginRequiredMixin, AssociationBoardMixin, ListView):
         context = super().get_context_data(**kwargs)
         context['balance'] = AbstractTransaction.get_association_balance(self.association)
         return context
+
+
+class AutoCreateNegativeCreditsView(LoginRequiredMixin, AssociationBoardMixin, FormView):
+    template_name = "accounts/association_correct_negatives.html"
+    form_class = ClearOpenExpensesForm
+
+    def get_form_kwargs(self):
+        kwargs = super(AutoCreateNegativeCreditsView, self).get_form_kwargs()
+        kwargs['association'] = self.association
+        return kwargs
+
+    def form_valid(self, form):
+        form.save()
+        messages.success(self.request, 'Member credits have successfully been processed')
+        return super(AutoCreateNegativeCreditsView, self).form_valid(form)
+
+    def get_success_url(self):
+        return reverse('association_credits', kwargs={'association_name': self.association.slug})
 
 
 class TransactionsCsvView(LoginRequiredMixin, AssociationBoardMixin, View):
@@ -169,3 +200,95 @@ class AssociationSettingsView(AssociationBoardMixin, TemplateView):
         context = self.get_context_data()
         context['form'] = form
         return render(request, self.template_name, context)
+
+
+class AssociationSiteDiningView(AssociationBoardMixin, AssociationHasSiteAccessMixin, DateRangeFilterMixin, TemplateView):
+    template_name = "accounts/association_site_dining_stats.html"
+
+    def get_context_data(self, **kwargs):
+        context = super(AssociationSiteDiningView, self).get_context_data(**kwargs)
+
+        if self.date_range_form.is_valid():
+            dining_lists = DiningList.objects.filter(date__gte=self.date_start, date__lte=self.date_end)
+            association_stats = {}
+
+            # Get general data for each association
+            for association in Association.objects.all():
+                # Some general statistics
+                cooked_for = DiningEntry.objects.filter(
+                    dining_list__association=association,
+                    dining_list__in=dining_lists)
+                memberships = UserMembership.objects.filter(association=association, is_verified=True)
+                members = User.objects.filter(usermembership__in=memberships)
+
+                cooked_for_own = cooked_for.filter(user__in=members)
+
+                association_stats[association.id] = {
+                    'association': association,
+                    'lists_claimed': dining_lists.filter(association=association).count(),
+                    'cooked_for': cooked_for.count(),
+                    'cooked_for_own': cooked_for_own.count(),
+                    'weighted_eaters': 0,
+                }
+            # Get general data for all members. Note: this is done here as the length of members is significantly longer
+            # than the number of associations so this should be quicker
+            users = User.objects.\
+                filter(diningentry__dining_list__in=dining_lists).\
+                annotate(dining_entry_count=Count('diningentry'))
+
+            for user in users:
+                memberships = UserMembership.objects.filter(is_verified=True, related_user=user)
+                if memberships:
+                    user_weight = user.dining_entry_count / memberships.count()
+
+                    for membership in memberships:
+                        association_stats[membership.association_id]['weighted_eaters'] += user_weight
+            context['stats'] = association_stats
+        return context
+
+
+class AssociationSiteCreditView(AssociationBoardMixin, AssociationHasSiteAccessMixin, DateRangeFilterMixin, TemplateView):
+    template_name = "accounts/association_site_credit_stats.html"
+
+    def get_context_data(self, **kwargs):
+        context = super(AssociationSiteCreditView, self).get_context_data(**kwargs)
+
+        # Get the balance for each association
+        association_stats = {}
+        for association in Association.objects.all():
+            association_stats[association.id] = {
+                'association': association,
+                'balance': AbstractTransaction.get_association_balance(association),
+            }
+        context['association_balances'] = association_stats
+
+        # Get the income through the dining list
+        if self.date_range_form.is_valid():
+            transactions = FixedTransaction.objects. \
+                filter(confirm_moment__gte=self.date_start,
+                       confirm_moment__lte=self.date_end)
+            # Aggregate the values
+            influx = transactions.filter(
+                target_user__isnull=True,
+                target_association__isnull=True
+            ).aggregate(sum=Sum('amount'))['sum']
+
+            outflux = transactions.filter(
+                source_user__isnull=True,
+                source_association__isnull=True
+            ).aggregate(sum=Sum('amount'))['sum']
+
+            if influx is None:
+                influx = 0
+            influx = decimal.Decimal(influx)
+
+            if outflux is None:
+                outflux = 0
+            outflux = decimal.Decimal(outflux)
+
+            context['dining_balance'] = {
+                'influx': influx.quantize(decimal.Decimal('.01')),
+                'outflux': outflux.quantize(decimal.Decimal('.01')),
+                'nettoflux': (influx - outflux).quantize(decimal.Decimal('.01'))
+            }
+        return context

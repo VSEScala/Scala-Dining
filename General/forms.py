@@ -5,6 +5,25 @@ from django import forms
 from django.core import serializers
 from django.core.exceptions import NON_FIELD_ERRORS
 from django.utils.safestring import mark_safe
+from django.utils import timezone
+
+
+class DateRangeForm(forms.Form):
+    date_start = forms.DateField()
+    date_end = forms.DateField()
+
+    def __init__(self, *args, initial=None, **kwargs):
+        if initial is None:
+            initial = {}
+
+        initial.setdefault('date_end', timezone.now())
+        initial.setdefault('date_start', initial['date_end'] - timezone.timedelta(days=365))
+
+        super(DateRangeForm, self).__init__(*args, initial=initial, **kwargs)
+
+    def clean(self):
+        if self.cleaned_data['date_start'] > self.cleaned_data['date_end']:
+            raise forms.ValidationError("The end date is further in the past than the starting date")
 
 
 class ConcurrenflictFormMixin:
