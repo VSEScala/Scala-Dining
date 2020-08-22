@@ -22,4 +22,4 @@ RUN useradd -u 1001 appuser && chown appuser /app/media
 USER appuser
 
 # By default launch gunicorn on :8000
-CMD ["gunicorn", "-w", "3", "-b", "0.0.0.0:8000", "ScalaApp.wsgi"]
+CMD ["gunicorn", "-w", "3", "-b", "0.0.0.0:8000", "scaladining.wsgi"]
