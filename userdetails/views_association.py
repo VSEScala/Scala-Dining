@@ -4,21 +4,20 @@ import decimal
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import PermissionDenied
-from django.urls import reverse
 from django.db.models import Q, Count, Sum
 from django.http import HttpResponseRedirect, HttpResponse
 from django.shortcuts import get_object_or_404, render
-from django.views import View
-from django.utils.translation import gettext as _
-from django.views.generic import ListView, TemplateView, FormView
+from django.urls import reverse
 from django.utils.http import is_safe_url
+from django.views import View
+from django.views.generic import ListView, TemplateView, FormView
 
-from creditmanagement.models import AbstractTransaction, FixedTransaction
 from creditmanagement.forms import ClearOpenExpensesForm
-from general.views import DateRangeFilterMixin
+from creditmanagement.models import AbstractTransaction, FixedTransaction
 from dining.models import DiningList, DiningEntry
-from .models import UserMembership, Association, User
-from .forms import AssociationSettingsForm
+from general.views import DateRangeFilterMixin
+from userdetails.forms import AssociationSettingsForm
+from userdetails.models import UserMembership, Association, User
 
 
 class AssociationBoardMixin:
@@ -130,9 +129,8 @@ class AssociationOverview(LoginRequiredMixin, AssociationBoardMixin, TemplateVie
         context['pending_memberships'] = UserMembership.objects.filter(association=self.association,
                                                                        verified_on__isnull=True)
         context['balance'] = AbstractTransaction.get_association_balance(self.association)
-        context['transactions'] = AbstractTransaction.\
-            get_all_transactions(association=self.association).\
-            order_by('-order_moment')[0:5]
+        context['transactions'] = AbstractTransaction.get_all_transactions(
+            association=self.association).order_by('-order_moment')[0:5]
 
         return context
 
@@ -146,10 +144,10 @@ class MembersEditView(LoginRequiredMixin, AssociationBoardMixin, ListView):
                                                                                        'created_on')
 
     def _alter_state(self, verified, id):
-        """
-        Alter the state of the given usermembership
+        """Alter the state of the given user membership.
+
         :param verified: yes/no(!) if it should be verified or not.
-        :param id: The id of the usermembershipobject
+        :param id: The id of the usermembership object.
         """
         membership = UserMembership.objects.get(id=id)
         if verified == "yes":
@@ -194,7 +192,7 @@ class AssociationSettingsView(AssociationBoardMixin, TemplateView):
 
         if form.is_valid():
             form.save()
-            messages.add_message(request, messages.SUCCESS, _("Changes succesfully saved."))
+            messages.add_message(request, messages.SUCCESS, "Changes successfully saved.")
             return HttpResponseRedirect(request.path_info)
 
         context = self.get_context_data()
@@ -202,7 +200,8 @@ class AssociationSettingsView(AssociationBoardMixin, TemplateView):
         return render(request, self.template_name, context)
 
 
-class AssociationSiteDiningView(AssociationBoardMixin, AssociationHasSiteAccessMixin, DateRangeFilterMixin, TemplateView):
+class AssociationSiteDiningView(AssociationBoardMixin, AssociationHasSiteAccessMixin, DateRangeFilterMixin,
+                                TemplateView):
     template_name = "accounts/association_site_dining_stats.html"
 
     def get_context_data(self, **kwargs):
@@ -232,9 +231,8 @@ class AssociationSiteDiningView(AssociationBoardMixin, AssociationHasSiteAccessM
                 }
             # Get general data for all members. Note: this is done here as the length of members is significantly longer
             # than the number of associations so this should be quicker
-            users = User.objects.\
-                filter(diningentry__dining_list__in=dining_lists).\
-                annotate(dining_entry_count=Count('diningentry'))
+            users = User.objects.filter(diningentry__dining_list__in=dining_lists).annotate(
+                dining_entry_count=Count('diningentry'))
 
             for user in users:
                 memberships = UserMembership.objects.filter(is_verified=True, related_user=user)
@@ -247,7 +245,8 @@ class AssociationSiteDiningView(AssociationBoardMixin, AssociationHasSiteAccessM
         return context
 
 
-class AssociationSiteCreditView(AssociationBoardMixin, AssociationHasSiteAccessMixin, DateRangeFilterMixin, TemplateView):
+class AssociationSiteCreditView(AssociationBoardMixin, AssociationHasSiteAccessMixin, DateRangeFilterMixin,
+                                TemplateView):
     template_name = "accounts/association_site_credit_stats.html"
 
     def get_context_data(self, **kwargs):

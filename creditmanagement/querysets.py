@@ -1,21 +1,20 @@
+from datetime import date
+
 from django.db import models
-from django.db.models import Q, F, Value, Sum, OuterRef, Subquery, ExpressionWrapper
+from django.db.models import Q, F, Value, Sum, OuterRef, Subquery, ExpressionWrapper, QuerySet
 from django.db.models.functions import Coalesce, Cast
+from django.utils import timezone
 
 from dining.models import DiningEntry
 from userdetails.models import User, Association
-from django.utils import timezone
 
 
 class AbstractTransactionQuerySet(models.QuerySet):
-    """
-    An abstract Transaction Queryset, defines base methods for filtering and balance computations
-    For any model inheriting the AbstractTransaction class
-    """
+    """An abstract Transaction Queryset, defines base methods for filtering and balance computations."""
 
     def _filter_for(self, item, source_column, target_column):
-        """
-        Filter the transactions for the given paramater, returns all if item is None
+        """Filters the transactions for the given parameters, returns all if item is None.
+
         :param item: The item that needs to be filtered on, can also be a queryset
         :param source_column: The source column of the transaction
         :param target_column: The target column of the transaction
@@ -23,16 +22,14 @@ class AbstractTransactionQuerySet(models.QuerySet):
         """
         if item is not None:
             if type(item) is models.QuerySet:
-                return self.filter(Q(**{source_column+"__in": item}) |
-                                   Q(**{target_column+"__in": item}))
+                return self.filter(Q(**{source_column + "__in": item}) | Q(**{target_column + "__in": item}))
             else:
-                return self.filter(Q(**{source_column: item}) |
-                                   Q(**{target_column: item}))
+                return self.filter(Q(**{source_column: item}) | Q(**{target_column: item}))
         return self
 
     def _annotate_balance(self, items, source_column, target_column, output_name="balance"):
-        """
-        Annotates the current balance to the current items in the items queryset
+        """Annotates the current balance to the current items in the items queryset.
+
         :param items: a queryset of the items that needs their credits computed
         :param source_column: The source column of the transaction
         :param target_column: The target column of the transaction
@@ -64,8 +61,8 @@ class AbstractTransactionQuerySet(models.QuerySet):
         return items.annotate(**{output_name: target_sum_qs - source_sum_qs})
 
     def _compute_balance(self, item, source_column, target_column):
-        """
-        Returns the total credits based on the computed value from the queryset
+        """Returns the total credits based on the computed value from the queryset.
+
         :param item: either a user or an association
         :param source_column: the source column (source_user or source_association)
         :param target_column: the target column (source_user or source_association)
@@ -87,9 +84,7 @@ class AbstractTransactionQuerySet(models.QuerySet):
 
 
 class TransactionQuerySet(AbstractTransactionQuerySet):
-    """
-    Queryset for Transactions (both Fixed and Pending) Model
-    """
+    """Queryset for Transactions (both Fixed and Pending) Model."""
     source_user_column = 'source_user'
     target_user_column = 'target_user'
     source_association_column = 'source_association'
@@ -122,16 +117,12 @@ class TransactionQuerySet(AbstractTransactionQuerySet):
 
 class PendingTransactionQuerySet(TransactionQuerySet):
     def get_expired_transactions(self):
-        """
-        Returns all transactions that are expired and should be moved to Fixed Transactions
-        """
+        """Returns all transactions that are expired and should be moved to Fixed Transactions."""
         return self.filter(confirm_moment__lte=timezone.now())
 
 
 class DiningTransactionQuerySet(AbstractTransactionQuerySet):
-    """
-    Queryset for the DiningTransaction, uses special implementation to 'imitate' a working database model.
-    """
+    """Queryset for the DiningTransaction, uses special implementation to 'imitate' a working database model."""
     dining_identifier = "DINING"
 
     def compute_user_balance(self, user):
@@ -150,8 +141,8 @@ class DiningTransactionQuerySet(AbstractTransactionQuerySet):
 
     @classmethod
     def annotate_user_balance(cls, users=User.objects.all(), output_name="balance"):
-        """
-        Annotates the user balance behind all the users
+        """Annotates the user balance behind all the users.
+
         :param users: The users which need their balance calculated
         :param output_name: The name of the column for the balance
         :return: The users with 'balance' annotated
@@ -180,16 +171,15 @@ class DiningTransactionQuerySet(AbstractTransactionQuerySet):
         return associations.annotate(**{output_name: -Value(0.00, output_field=models.FloatField())})
 
     @staticmethod
-    def _filter_entries(entries, user=None, dining_list=None):
-        """
-        Filters the Dining Entries on the given users and/or dining lists
+    def _filter_entries(entries, user=None, dining_list=None) -> QuerySet:
+        """Filters the Dining Entries on the given users and/or dining lists.
+
         :param entries: The dining entries model
         :param user: The user(s) that needs to be kept in (can be single instance or query)
         :param dining_list: The dining_list to be kept in (can be single instance or query)
-        :return: the filtered entries Query
         """
         if user:
-            if type(user) is models.QuerySet:
+            if type(user) is QuerySet:
                 # Filter for the given set of users
                 entries = entries.filter(user__id__in=user)
             else:
@@ -197,7 +187,7 @@ class DiningTransactionQuerySet(AbstractTransactionQuerySet):
                 entries = entries.filter(user=user)
 
         if dining_list:
-            if type(dining_list) is models.QuerySet:
+            if type(dining_list) is QuerySet:
                 # Filter for the given set of users
                 entries = entries.filter(dining_list__id__in=dining_list)
             else:
@@ -208,9 +198,11 @@ class DiningTransactionQuerySet(AbstractTransactionQuerySet):
 
     @classmethod
     def generate_queryset(cls, user=None, dining_list=None):
-        """
-        Generates a query for all the Pending Dining Transactions, these can not be taken directly from the Database
-        as storing it has been done elsewhere (indirectly through DiningEntry)
+        """Generates a query for all the Pending Dining Transactions.
+
+        These can not be taken directly from the database as storing it has
+        been done elsewhere (indirectly through DiningEntry).
+
         :param user: The user(s) that needs to be part of the set. Can be single instance or Query of instances
         :param dining_list: The dining list(s) that needs to be part of the set. Can be single instance or Query of instances
         :return: The queryset of PendingDiningTransactions
@@ -242,8 +234,8 @@ class DiningTransactionQuerySet(AbstractTransactionQuerySet):
 
     @staticmethod
     def set_queryset_to_class_type(qs, class_name):
-        """
-        Adjusts the queryset to the given class type
+        """Adjusts the queryset to the given class type.
+
         :param qs: the queryset
         :param class_name: the class name of the items in the queryset
         :return: the new queryset with the contents treated as the given class type
@@ -265,18 +257,14 @@ class DiningTransactionQuerySet(AbstractTransactionQuerySet):
 class PendingDiningTrackerQuerySet(models.QuerySet):
 
     def filter_lists_expired(self):
-        """
-        Filt the trackenQuery for lists that have expired (i.e. are no longer adjustable)
-        :return:
-        """
-        from django.utils import timezone
+        """Filter the trackerQuery for lists that have expired (i.e. are no longer adjustable)."""
         return self.filter_lists_for_date(timezone.now().date())
 
-    def filter_lists_for_date(self, date):
-        """
-        Returns all lists which have an editable state older than the given date
-        :param date: The date that needs to be checked
-        :return: A QuerySet consisting of Trackers linking to lists that are no longer editable on the given date
+    def filter_lists_for_date(self, d: date):
+        """Returns all lists which have an editable state older than the given date.
+
+        Returns:
+            A QuerySet consisting of Trackers linking to lists that are no longer editable on the given date.
         """
         return self.annotate(
             # Wrap in an Expression to allow additons between variables
@@ -284,7 +272,4 @@ class PendingDiningTrackerQuerySet(models.QuerySet):
                 # Add the dining list date and the adjustable parameter
                 F('dining_list__date') + F('dining_list__adjustable_duration'),
                 output_field=models.DateField()
-            )).filter(lockdate__lt=date)
-
-
-
+            )).filter(lockdate__lt=d)

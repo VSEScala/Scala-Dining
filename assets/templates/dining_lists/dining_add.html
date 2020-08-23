@@ -12,11 +12,6 @@
 
     <div>
         <h3>Create new dining list</h3>
-        <div class="alert alert-info">
-            <span class="badge badge-secondary">new</span>
-            After creation you can add other cooks who can also manage the dining list.
-            See the dining list settings page!
-        </div>
         <form method="post">
             {% csrf_token %}
             {% include "snippets/bootstrap_form.html" with form=slot_form horizontal=True %}

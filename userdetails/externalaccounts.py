@@ -11,7 +11,7 @@ from userdetails.models import Association, UserMembership
 
 
 def _create_membership(socialaccount, request):
-    """Create memberships for all associations that are linked to the external application"""
+    """Creates memberships for all associations that are linked to the external application."""
     user = socialaccount.user
     social_app = socialaccount.get_provider().get_app(request)
     linked_associations = Association.objects.filter(social_app=social_app)
@@ -32,7 +32,7 @@ def _create_membership(socialaccount, request):
 
 @receiver(user_signed_up)
 def automatic_association_link(sender, request, user, **kwargs):
-    """Create membership when someone signs up using an association account"""
+    """Creates membership when someone signs up using an association account."""
     sociallogin = kwargs.get('sociallogin', None)
     if not sociallogin:
         # Normal registration, not using association account
@@ -42,13 +42,15 @@ def automatic_association_link(sender, request, user, **kwargs):
 
 @receiver(social_account_added)
 def automatic_association_link2(sender, request, sociallogin, **kwargs):
-    """Create membership status when someone connects an association account to an existing dining account"""
+    """Creates membership status when someone connects an association account to an existing dining account."""
     _create_membership(sociallogin.account, request)
 
 
 class SocialAccountAdapter(DefaultSocialAccountAdapter):
-    """Adapter that redirects user to settings page after first login using external account, so that she directly sees
-    the option of settings any allergies/dietary wishes."""
+    """Adapter that redirects user to settings page after first login using external account.
+
+    This is so that he directly sees the option of setting any allergies/dietary wishes.
+    """
 
     def save_user(self, request, sociallogin, form=None):
         u = super().save_user(request, sociallogin, form)

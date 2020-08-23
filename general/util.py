@@ -4,15 +4,18 @@ import django.forms
 
 
 class SelectWithDisabled(django.forms.Select):
-    """
-    Widget that adds disabled options to the select. The enabled options provided using the ChoiceField or other input
-    are not modified or considered, these disabled options are simply added afterwards.
+    """Widget that adds disabled options to the select.
+
+    The enabled options provided using the ChoiceField or other input are not
+    touched, these disabled options are simply added afterwards.
     """
 
     def __init__(self, disabled_choices=(), *args, **kwargs):
-        """
-        The disabled_choices parameter must be just like the choices parameter, i.e. a list or tuple of tuple pairs with
-        (option_value, option_label).
+        """Constructor.
+
+        Args:
+            disabled_choices: Must be just like the choices parameter, i.e. a
+                list or tuple of tuple pairs with (option_value, option_label).
         """
         super().__init__(*args, **kwargs)
         self.disabled_choices = disabled_choices

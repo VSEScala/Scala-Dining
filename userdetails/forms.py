@@ -1,14 +1,13 @@
 from django import forms
+from django.conf import settings
 from django.contrib.auth.forms import UserCreationForm
-from django.db.utils import OperationalError
+from django.core.exceptions import ValidationError
 from django.db.models import Q
 from django.forms import ModelForm
-from django.core.exceptions import ValidationError
-from django.conf import settings
 from django.utils import timezone
 
 from dining.models import UserDiningSettings
-from .models import User, Association, UserMembership
+from userdetails.models import User, Association, UserMembership
 
 
 class RegisterUserForm(UserCreationForm):
@@ -55,13 +54,13 @@ class UserForm(ModelForm):
 
 
 class AssociationLinkField(forms.BooleanField):
-    """
-    A special BooleanField model for association links.
-    Can also indicate current validation state and auto-sets initial value
+    """A special BooleanField model for association links.
+
+    Can also indicate current validation state and auto-sets initial value.
     """
 
     def __init__(self, user, association, *args, **kwargs):
-        super(AssociationLinkField, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
         self.initial = False
         self.required = False
@@ -135,9 +134,7 @@ class AssociationLinkForm(forms.Form):
             associations = Association.objects.filter(is_choosable=True)
         else:
             associations = Association.objects.filter(
-                Q(is_choosable=True) |
-                (Q(is_choosable=False) & Q(usermembership__related_user=user))) \
-                .order_by('slug')
+                Q(is_choosable=True) | (Q(is_choosable=False) & Q(usermembership__related_user=user))).order_by('slug')
 
         # Get all associations and make a checkbox field
         for association in associations:
@@ -156,10 +153,7 @@ class AssociationLinkForm(forms.Form):
         return cleaned_data
 
     def save(self, user=None):
-        """
-        Saves the association links by creating or removing UserMembership instances.
-        :return:
-        """
+        """Saves the association links by creating or removing UserMembership instances."""
         if not self.user and not user:
             raise ValueError("Both self.user and user are None")
         if user is None:
@@ -170,12 +164,12 @@ class AssociationLinkForm(forms.Form):
             if value:
                 if link.id is None:
                     link.save()
-                elif link.get_verified_state() == False:
+                elif link.get_verified_state() is False:
                     # If user was rejected, and a new request is entered
                     link.verified_on = None
                     link.save()
             else:
-                if link and link.get_verified_state() != False:
+                if link and link.get_verified_state() is not False:
                     link.delete()
 
 

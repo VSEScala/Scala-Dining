@@ -1,9 +1,9 @@
 from dal_select2.widgets import ModelSelect2
 from django import forms
+from django.core.exceptions import ValidationError
 from django.db.models import Sum
-from decimal import *
 
-from .models import *
+from creditmanagement.models import PendingTransaction, UserCredit
 
 
 class TransactionForm(forms.ModelForm):
@@ -65,9 +65,8 @@ class UserTransactionForm(TransactionForm):
 
 
 class ClearOpenExpensesForm(forms.Form):
-    """
-    Creates pending transactions for all members of this associations who are negative.
-    """
+    """Creates pending transactions for all members of this associations who are negative."""
+
     def __init__(self, *args, association=None, **kwargs):
         assert association is not None
         self.association = association
@@ -106,10 +105,8 @@ class ClearOpenExpensesForm(forms.Form):
 
         for credit in credits:
             PendingTransaction.objects.create(
-                source_association = self.association,
-                amount = -credit.balance,
-                target_user = credit.user,
-                description = description
+                source_association=self.association,
+                amount=-credit.balance,
+                target_user=credit.user,
+                description=description
             )
-
-

@@ -5,4 +5,5 @@ class CreditManagementConfig(AppConfig):
     name = 'creditmanagement'
 
     def ready(self):
-        import creditmanagement.recievers
+        # noinspection PyUnresolvedReferences
+        import creditmanagement.receivers  # noqa: F401

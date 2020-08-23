@@ -1,15 +1,15 @@
 from dal_select2.views import Select2QuerySetView
 from django.contrib.auth import login
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.db.models import Value
 from django.db.models.functions import Concat
 from django.http import HttpResponseRedirect
 from django.urls import reverse
 from django.views.generic import TemplateView, ListView
-from django.db.models import Q, Value as V
 
 from dining.models import DiningEntryUser, DiningList
-from .forms import RegisterUserForm, RegisterUserDetails, AssociationLinkForm
-from .models import User
+from userdetails.forms import RegisterUserForm, RegisterUserDetails, AssociationLinkForm
+from userdetails.models import User
 
 
 class RegisterView(TemplateView):
@@ -74,7 +74,9 @@ class PeopleAutocompleteView(LoginRequiredMixin, Select2QuerySetView):
     def get_queryset(self):
         qs = User.objects.all()
         if self.q:
-            qs = qs.annotate(full_name=Concat('first_name', V(' '), 'last_name')).filter(full_name__icontains=self.q)
+            qs = qs.annotate(full_name=Concat('first_name',
+                                              Value(' '),
+                                              'last_name')).filter(full_name__icontains=self.q)
         return qs
 
     def get_result_label(self, result):

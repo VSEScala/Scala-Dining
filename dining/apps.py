@@ -5,4 +5,5 @@ class DiningConfig(AppConfig):
     name = 'dining'
 
     def ready(self):
-        import dining.recievers
+        # noinspection PyUnresolvedReferences
+        import dining.receivers  # noqa F401

@@ -1,18 +1,20 @@
 from django.db import migrations
 from django.apps import apps
 
+
 # Code excerpts taken from https://github.com/manuelnaranjo/django-database-view
 # Original code no longer works, produced internal reference errors
 # Excerpts taken for working version
 
 
 def drop_view(schema_editor, model):
-    """ Drops view if exists on the database """
+    """Drops view if exists on the database."""
     sql = 'DROP VIEW IF EXISTS %(table)s;'
     args = {
         'table': schema_editor.quote_name(model._meta.db_table),
     }
     schema_editor.execute(sql % args, None)
+
 
 def create_view(schema_editor, model):
     args = {
@@ -55,5 +57,3 @@ class DeleteView(migrations.DeleteModel):
 
         # Create the view
         create_view(schema_editor, model)
-
-

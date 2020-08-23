@@ -1,10 +1,9 @@
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.shortcuts import render, redirect
+from django.shortcuts import redirect
 from django.views.generic import TemplateView
-from django.utils.translation import gettext as _
 
-from .forms import UserForm, DiningProfileForm, AssociationLinkForm
+from userdetails.forms import UserForm, DiningProfileForm, AssociationLinkForm
 
 
 class SettingsProfileView(LoginRequiredMixin, TemplateView):
@@ -28,13 +27,11 @@ class SettingsProfileView(LoginRequiredMixin, TemplateView):
             'association_links_form': AssociationLinkForm(self.request.user, request.POST),
         })
 
-        if context['user_form'].is_valid() and \
-                context['dining_form'].is_valid() and \
-                context['association_links_form'].is_valid():
-            context['user_form'].save()
-            context['dining_form'].save()
-            context['association_links_form'].save()
-            messages.success(request, _("Account saved"))
+        forms = context['user_form'], context['dining_form'], context['association_links_form']
+        if all(form.is_valid() for form in forms):
+            for form in forms:
+                form.save()
+            messages.success(request, "Account saved")
 
             return redirect('settings_account')
 

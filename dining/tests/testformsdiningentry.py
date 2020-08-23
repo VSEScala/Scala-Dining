@@ -1,20 +1,18 @@
 from datetime import date, datetime, time
 from decimal import Decimal
 
+from django.core.exceptions import NON_FIELD_ERRORS
 from django.test import TestCase
 from django.utils import timezone
-from django.core.exceptions import NON_FIELD_ERRORS
 
 from creditmanagement.models import FixedTransaction
 from dining.forms import DiningEntryUserCreateForm, DiningEntryDeleteForm, DiningEntryExternalCreateForm
-from dining.models import DiningEntry, DiningList, DiningEntryUser, DiningEntryExternal
+from dining.models import DiningList, DiningEntryUser, DiningEntryExternal
 from userdetails.models import User, Association, UserMembership
 
 
 def _create_dining_list(**kwargs):
-    """
-    Creates a dining list with defaults if omitted.
-    """
+    """Creates a dining list with defaults if omitted."""
     if 'association' not in kwargs:
         kwargs['association'] = Association.objects.create()
     if 'date' not in kwargs:
@@ -57,7 +55,7 @@ class DiningEntryUserCreateFormTestCase(TestCase):
         self.assertTrue(self.form.has_error(NON_FIELD_ERRORS, 'closed'))
 
     def test_dining_list_closed_owner(self):
-        """Closed exception for list owner"""
+        """Tests closed exception for list owner."""
         self.dining_list.sign_up_deadline = datetime(2000, 1, 1, tzinfo=timezone.utc)  # Close list
         self.dining_entry.created_by = self.user  # Entry creator is dining list owner
         self.assertTrue(self.form.is_valid())
@@ -73,8 +71,11 @@ class DiningEntryUserCreateFormTestCase(TestCase):
         self.assertTrue(self.form.is_valid())
 
     def test_race_condition_max_diners(self):
-        """Note! As long as this test passes, the race condition is present! Ideally therefore you'd want this test case
-        to fail."""
+        """Tries to do a race condition on the maximum number of diners.
+
+        Note! As long as this test passes, the race condition is present! Ideally therefore you'd want this test case
+        to fail.
+        """
         self.dining_list.max_diners = 1
 
         # Try creating 2 entries using race condition
@@ -119,7 +120,7 @@ class DiningEntryUserCreateFormTestCase(TestCase):
 
 
 class DiningEntryExternalCreateFormTestCase(TestCase):
-    """Only test a valid form instance since the clean method has been tested above already"""
+    """This class only tests a valid form instance since the clean method has been tested above already."""
 
     @classmethod
     def setUpTestData(cls):

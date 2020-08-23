@@ -2,14 +2,22 @@ from datetime import date, timedelta
 
 
 class BaseSequencedDate(date):
-    """A date that is in a sequence of dates and has next/previous methods to move. This base class is a sequence
-    over all dates. To create different sequences, subclass this and override the upcoming method."""
+    """A date that is in a sequence of dates and has next/previous methods to move.
+
+    This base class is a sequence over all dates. To create different
+    sequences, subclass this and override the upcoming method.
+    """
 
     @classmethod
-    def upcoming(cls, from_date=None, reverse=False):
-        """Returns the closest date in the sequence after given date, or before given date if reverse is True.
+    def upcoming(cls, from_date: date = None, reverse=False):
+        """Returns the closest date in the sequence after given date.
+
         If given date is in the sequence, this date itself is returned! (But as a sequence subclass.)
-        If from_date is None, current date is used."""
+
+        Args:
+            from_date: If None, the current date is used.
+            reverse: If True, returns the closest date before given date.
+        """
         if not from_date:
             # Might want to use django.utils.timezone if we're going global
             return cls.today()
@@ -23,19 +31,19 @@ class BaseSequencedDate(date):
 
     @classmethod
     def in_sequence(cls, d):
-        """Returns True if the given date is in the sequence of this class, False otherwise"""
+        """Returns True if the given date is in the sequence of this class, False otherwise."""
         return cls.upcoming(d) == d
 
     @classmethod
     def fromdate(cls, d):
-        """Creates an instance using any date instance, raises ValueError when given date is not in the sequence"""
+        """Creates an instance using any date instance, raises ValueError when given date is not in the sequence."""
         if not cls.in_sequence(d):
             raise ValueError("Date is not in the sequence")
         return cls(d.year, d.month, d.day)
 
 
 class WeekdaySequencedDate(BaseSequencedDate):
-    """Sequence consisting of all weekdays"""
+    """Sequence consisting of all weekdays but not weekends."""
 
     @classmethod
     def upcoming(cls, from_date=None, reverse=False):

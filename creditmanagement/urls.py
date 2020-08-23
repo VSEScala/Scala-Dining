@@ -1,5 +1,7 @@
 from django.urls import path
-from .views import *
+
+from creditmanagement.views import TransactionListView, TransactionAddView, TransactionFinalisationView, \
+    MoneyObtainmentView
 
 app_name = 'credits'
 

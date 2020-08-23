@@ -1,23 +1,19 @@
 from django import forms
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
-from general.mail_control import send_templated_mass_mail
 
-from .models import User, UserMembership, Association
+from general.mail_control import send_templated_mass_mail
+from userdetails.models import User, UserMembership, Association
 
 
 class AssociationLinks(admin.TabularInline):
-    """
-    Create the membership information on the User page
-    """
+    """Membership inline."""
     model = UserMembership
     extra = 0
 
 
 class MemberOfFilter(admin.SimpleListFilter):
-    """
-    Creates a filter that filters users on the association they are part of (unvalidated)
-    """
+    """Creates a filter that filters users on the association they are part of (unvalidated)."""
     # Human-readable title which will be displayed in the
     # right admin sidebar just above the filter options.
     title = 'Member of association'
@@ -26,34 +22,23 @@ class MemberOfFilter(admin.SimpleListFilter):
     parameter_name = 'associationmember'
 
     def lookups(self, request, model_admin):
-        """
-        Returns a list of tuples representing all the associations
-        as displayed in the table
-        """
-
+        """Returns a list of tuples representing all the associations as displayed in the table."""
         return Association.objects.all().values_list('pk', 'name', )
 
     def queryset(self, request, queryset):
-        """
-        Returns the filtered querysets containing all members of the selected associations
-        """
-
-        # If no selection is made, return the entire query
+        """Returns the filtered querysets containing all members of the selected associations."""
         if self.value() is None:
             return queryset
 
         # Find all members in the UserMemberships model containing the selected association
         a = UserMembership.objects.filter(association=self.value()).values_list('related_user_id')
-
-        # Crosslink the given user identities with the given query
         return queryset.filter(pk__in=a)
 
 
 class BoardFilter(admin.RelatedOnlyFieldListFilter):
-
     def __init__(self, *args, **kwargs):
-        super(admin.RelatedOnlyFieldListFilter, self).__init__(*args, **kwargs)
-        self.title = 'Boardmembers'
+        super().__init__(*args, **kwargs)
+        self.title = "board members"
 
 
 class UserOverview(User):
@@ -61,11 +46,8 @@ class UserOverview(User):
         proxy = True
 
 
+@admin.register(UserOverview)
 class CustomUserAdmin(admin.ModelAdmin):
-    """
-    Set up limited view of the user page
-    """
-
     list_display = ('username', 'first_name', 'last_name', 'is_verified', 'last_login')
     list_filter = [MemberOfFilter, ('groups', BoardFilter)]
 
@@ -73,7 +55,7 @@ class CustomUserAdmin(admin.ModelAdmin):
     inlines = [AssociationLinks]
     fields = ('username', ('first_name', 'last_name'), 'date_joined', 'email')
 
-    def send_test_mail(modeladmin, request, queryset):
+    def send_test_mail(self, request, queryset):
         send_templated_mass_mail("Scala Dining: Testmail",
                                  template_name="general/testmail",
                                  recipients=queryset,
@@ -83,9 +65,9 @@ class CustomUserAdmin(admin.ModelAdmin):
 
 
 class GroupAdminForm(forms.ModelForm):
-    """
-    Creates a multi-select form for the members in teh group panel
-    ( opposed to Djangos standard location: in the user page)
+    """Creates a multi-select form for the members in the group.
+
+    (As opposed to Djangos standard location in the user page.)
     """
     users = forms.ModelMultipleChoiceField(
         User.objects.all(),
@@ -110,15 +92,24 @@ class GroupAdminForm(forms.ModelForm):
         self.instance.user_set.add(*self.cleaned_data['users'])
 
 
+@admin.register(Association)
 class AssociationAdmin(admin.ModelAdmin):
-    """
-    Create the model for the groups page.
-    """
     exclude = ['permissions']
     form = GroupAdminForm
 
 
-admin.site.register(UserOverview, CustomUserAdmin)
 admin.site.register(User, UserAdmin)
-admin.site.register(Association, AssociationAdmin)
-admin.site.register(UserMembership)
+
+
+@admin.register(UserMembership)
+class UserMembershipAdmin(admin.ModelAdmin):
+    """Allows viewing of group membership."""
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False

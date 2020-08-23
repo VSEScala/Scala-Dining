@@ -3,9 +3,11 @@
 import os
 from email.utils import getaddresses
 
-from django.utils.translation import gettext_lazy as _
 from environs import Env
 
+# Include Scala settings
+# noinspection PyUnresolvedReferences
+from scaladining.scala_settings import *  # noqa: F403 F401
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -35,6 +37,12 @@ AUTH_USER_MODEL = 'userdetails.User'
 INSTALLED_APPS = [
     'whitenoise.runserver_nostatic',  # For static files
 
+    'userdetails.apps.UserDetailsConfig',
+    'dining.apps.DiningConfig',
+    'creditmanagement.apps.CreditManagementConfig',
+    'general.apps.GeneralConfig',
+    'scaladining.apps.MyAdminConfig',
+
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
@@ -42,21 +50,14 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'django.contrib.humanize',
     'django.contrib.sites',
+
     'dal',
     'dal_select2',
-    'scaladining.apps.MyAdminConfig',
-
     'widget_tweaks',
-
     'allauth',
     'allauth.account',
     'allauth.socialaccount',
     'allauthproviders.quadrivium',
-
-    'userdetails.apps.UserDetailsConfig',
-    'dining.apps.DiningConfig',
-    'creditmanagement.apps.CreditManagementConfig',
-    'general.apps.GeneralConfig',
 ]
 
 MIDDLEWARE = [
@@ -106,7 +107,7 @@ LOGOUT_REDIRECT_URL = '/'
 
 STATIC_ROOT = env.str('DINING_STATIC_ROOT', default=os.path.join(BASE_DIR, 'static'))
 STATIC_URL = '/static/'
-STATICFILES_DIRS = (os.path.join(BASE_DIR, 'assets/static/'),)
+STATICFILES_DIRS = [os.path.join(BASE_DIR, 'assets/static')]
 # STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 MEDIA_ROOT = env.str('DINING_MEDIA_ROOT', default=os.path.join(BASE_DIR, 'uploads'))
@@ -177,7 +178,3 @@ SOCIALACCOUNT_ADAPTER = "userdetails.externalaccounts.SocialAccountAdapter"
 if env.bool('DINING_COOKIE_SECURE', default=False):
     CSRF_COOKIE_SECURE = True
     SESSION_COOKIE_SECURE = True
-
-
-# Include Scala settings
-from scaladining.scala_settings import *

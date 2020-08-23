@@ -27,9 +27,11 @@ class DateRangeForm(forms.Form):
 
 
 class ConcurrenflictFormMixin:
-    """
-    Compares model instance between requests: first at form render, then upon submit but before save (i.e. on clean).
-    If model instances are different, the Form fails validation and displays what has been changed.
+    """Compares model instances between requests.
+
+    Compares first at form render, then upon submit but before save (i.e. on
+    clean). If the model instances are different, the Form fails validation and
+    displays what has been changed.
     """
 
     concurrenflict_field_name = 'concurrenflict_initial'
@@ -44,7 +46,8 @@ class ConcurrenflictFormMixin:
             self._concurrenflict_json_data = serializers.serialize('json', [instance])
             self.fields[self.concurrenflict_field_name].initial = self._concurrenflict_json_data
 
-    def clean(self):
+    def clean(self):  # noqa: C901
+        # This function is too complex and ugly, should just get rid of it
         cleaned_data = super().clean()
         json_at_get = self.cleaned_data[self.concurrenflict_field_name]
         del self.cleaned_data[self.concurrenflict_field_name]
@@ -82,7 +85,7 @@ class ConcurrenflictFormMixin:
                 json_value_before = json_data_before[0]['fields'].get(key, None)
                 json_value_after = json_data_after[0]['fields'].get(key, None)
                 if json_value_after != json_value_before:
-                    value_before = getattr(model_before, key, m2m_before.get(key))
+                    # value_before = getattr(model_before, key, m2m_before.get(key))
                     value_after = getattr(model_after, key, m2m_after.get(key, ''))
                     have_diff = True
                     # fake_form.data[key] = value_after

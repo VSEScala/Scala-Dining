@@ -5,7 +5,7 @@ from dining.datesequence import BaseSequencedDate, WeekdaySequencedDate
 
 
 class DummySequencedDate(BaseSequencedDate):
-    """Sequence which includes every even day, using ordinal"""
+    """Sequence which includes every even day, using ordinal."""
 
     @classmethod
     def upcoming(cls, from_date=None, reverse=False):

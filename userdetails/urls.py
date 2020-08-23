@@ -1,11 +1,12 @@
-from django.urls import path, include
 from allauth.account.views import LoginView
+from django.urls import path, include
 
 from creditmanagement.views import TransactionAddView
-from .views import RegisterView, DiningJoinHistoryView, DiningClaimHistoryView, PeopleAutocompleteView
-from .views_user_settings import SettingsProfileView
-from .views_association import CreditsOverview, TransactionsCsvView, MembersOverview, MembersEditView, \
-    AssociationOverview, AssociationSettingsView, AssociationSiteDiningView, AssociationSiteCreditView, AutoCreateNegativeCreditsView
+from userdetails.views import RegisterView, DiningJoinHistoryView, DiningClaimHistoryView, PeopleAutocompleteView
+from userdetails.views_association import CreditsOverview, TransactionsCsvView, MembersOverview, MembersEditView, \
+    AssociationOverview, AssociationSettingsView, AssociationSiteDiningView, AssociationSiteCreditView, \
+    AutoCreateNegativeCreditsView
+from userdetails.views_user_settings import SettingsProfileView
 
 urlpatterns = [
     path('association/<slug:association_name>/', include([
@@ -31,7 +32,6 @@ urlpatterns = [
         path('claimed/', DiningClaimHistoryView.as_view(), name='history_claimed_lists'),
         path('claimed/<int:page>/', DiningClaimHistoryView.as_view(), name='history_claimed_lists'),
     ])),
-
 
     path('settings/', SettingsProfileView.as_view(), name='settings_account'),
 
