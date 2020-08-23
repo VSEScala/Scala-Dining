@@ -10,10 +10,11 @@ from django.db.models import OuterRef, Exists
 from django.forms import ValidationError
 from django.utils import timezone
 
-from dining.models import DiningList, DiningEntryUser, DiningEntryExternal, DiningComment
+from creditmanagement.models import Transaction, Account
+from dining.models import DiningList, DiningEntryUser, DiningEntryExternal, DiningComment, DiningEntry
 from general.forms import ConcurrenflictFormMixin
 from general.util import SelectWithDisabled
-from userdetails.models import Association, UserMembership
+from userdetails.models import Association, UserMembership, User
 
 
 def _clean_form(form):
@@ -42,10 +43,9 @@ class CreateSlotForm(ServeTimeCheckMixin, forms.ModelForm):
         model = DiningList
         fields = ('dish', 'association', 'max_diners', 'serve_time')
 
-    def __init__(self, creator, *args, **kwargs):
+    def __init__(self, creator: User, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        # Should find a way that does not need an extra form argument (creator), maybe using created_by model field
         self.creator = creator
 
         # Get associations that the user is a member of (not necessarily verified)
@@ -88,7 +88,7 @@ class CreateSlotForm(ServeTimeCheckMixin, forms.ModelForm):
 
         # Check if user has enough money to claim a slot
         min_balance_exception = creator.has_min_balance_exception()
-        if not min_balance_exception and creator.usercredit.balance < settings.MINIMUM_BALANCE_FOR_DINING_SLOT_CLAIM:
+        if not min_balance_exception and creator.account.get_balance() < settings.MINIMUM_BALANCE_FOR_DINING_SLOT_CLAIM:
             raise ValidationError("Your balance is too low to claim a slot")
 
         # Check if user does not already own another dining list this day
@@ -216,13 +216,32 @@ class DiningEntryUserCreateForm(forms.ModelForm):
         if dining_list.limit_signups_to_association_only:
             # User should be verified association member, except when the entry creator is owner
             if not dining_list.is_owner(creator) and not user.is_verified_member_of(dining_list.association):
-                raise ValidationError("Dining list is limited for members only", code='members_only')
+                raise ValidationError("Dining list is limited to members only")
 
         # User balance check
-        if not user.has_min_balance_exception() and user.usercredit.balance < settings.MINIMUM_BALANCE_FOR_DINING_SIGN_UP:
-            raise ValidationError("The balance of the user is too low to add", code='nomoneyzz')
+        if not user.has_min_balance_exception() and user.account.get_balance() < settings.MINIMUM_BALANCE_FOR_DINING_SIGN_UP:
+            raise ValidationError("The balance of the user is too low to add")
 
         return cleaned_data
+
+    def save(self, commit=True):
+        """Creates a kitchen cost transaction and saves the entry."""
+        if commit:
+            with transaction.atomic():
+                instance = super().save(commit=False)  # type: DiningEntry
+                amount = instance.dining_list.kitchen_cost
+                # Skip transaction if dining list is free
+                if amount != Decimal('0.00'):
+                    tx = Transaction.objects.create(source=instance.user.account,
+                                                    target=Account.objects.get(special='kitchen_cost'),
+                                                    amount=amount,
+                                                    description="Kitchen cost",
+                                                    created_by=instance.created_by)
+                    instance.transaction = tx
+                instance.save()
+                return instance
+
+        return super().save(commit)
 
 
 class DiningEntryExternalCreateForm(DiningEntryUserCreateForm):

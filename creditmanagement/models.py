@@ -217,7 +217,7 @@ class AbstractPendingTransaction(AbstractTransaction):
 
     @classmethod
     def get_children(cls):
-        return [PendingTransaction, PendingDiningTransaction]
+        return [PendingTransaction]
 
     def finalise(self):
         raise NotImplementedError()
@@ -259,7 +259,7 @@ class PendingTransaction(AbstractPendingTransaction):
             else:
                 change = self.amount
             new_balance = balance - change
-            if new_balance < settings.MINIMUM_BALANCE_FOR_USER_TRANSACTION:
+            if new_balance < Decimal('0.00'):
                 raise ValidationError("Balance becomes too low")
 
     def finalise(self):
@@ -489,12 +489,12 @@ class Account(models.Model):
 
     # We can have special accounts which are not linked to a user or association,
     #  e.g. an account where the kitchen payments can be sent to.
-    # special = models.CharField(max_length=30, unique=True, blank=True)
+    special = models.CharField(max_length=30, unique=True, blank=True)
 
     def get_balance(self) -> Decimal:
         tx = Transaction.objects.filter_valid()
         # 2 separate queries for the source and target sums
-        # If there are no rows, the value will be 0.00
+        # If there are no rows, the value will be made 0.00
         source_sum = tx.filter(source=self).aggregate(sum=Sum('amount'))['sum'] or Decimal('0.00')
         target_sum = tx.filter(target=self).aggregate(sum=Sum('amount'))['sum'] or Decimal('0.00')
         return target_sum - source_sum

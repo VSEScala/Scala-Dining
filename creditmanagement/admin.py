@@ -1,7 +1,6 @@
 from django.contrib import admin
 
-from creditmanagement.models import FixedTransaction, PendingTransaction, PendingDiningTransaction, \
-    PendingDiningListTracker, UserCredit
+from creditmanagement.models import FixedTransaction, PendingTransaction, PendingDiningTransaction
 from userdetails.models import Association, UserMembership
 
 
@@ -69,28 +68,5 @@ class PendingDiningTransactionAdmin(admin.ModelAdmin):
         return False
 
 
-class UserCreditAdmin(admin.ModelAdmin):
-    list_display = ('user', 'balance', 'balance_fixed', 'is_verified', 'negative_since')
-    list_filter = [MemberOfFilter]
-    readonly_fields = ('negative_since',)
-
-    def is_verified(self, obj):
-        return obj.user.is_verified()
-
-    is_verified.short_description = 'User verified?'
-
-    def has_add_permission(self, request):
-        return False
-
-    def has_change_permission(self, request, obj=None):
-        return False
-
-    def has_delete_permission(self, request, obj=None):
-        return False
-
-
 admin.site.register(FixedTransaction, FixedTransactionAdmin)
 admin.site.register(PendingTransaction, PendingTransactionAdmin)
-admin.site.register(PendingDiningTransaction, PendingDiningTransactionAdmin)
-admin.site.register(PendingDiningListTracker, PendingDiningListTrackerAdmin)
-admin.site.register(UserCredit, UserCreditAdmin)

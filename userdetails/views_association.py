@@ -36,7 +36,7 @@ class AssociationBoardMixin:
         """Gets association and checks if user is board member."""
         self.association = get_object_or_404(Association, slug=kwargs['association_name'])
         if not request.user.groups.filter(id=self.association.id):
-            raise PermissionDenied("You are not on the board of this association")
+            raise PermissionDenied
         return super().dispatch(request, *args, **kwargs)
 
 

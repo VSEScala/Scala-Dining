@@ -8,6 +8,7 @@ from django.db import models
 from django.db.models import Sum
 from django.utils import timezone
 
+from creditmanagement.models import Transaction
 from general.models import AbstractVisitTracker
 from userdetails.models import User, Association
 
@@ -68,8 +69,7 @@ class DiningList(models.Model):
     min_diners = models.IntegerField(default=4, validators=[MaxValueValidator(settings.MAX_SLOT_DINER_MINIMUM)])
     max_diners = models.IntegerField(default=20, validators=[MinValueValidator(settings.MIN_SLOT_DINER_MAXIMUM)])
 
-    diners = models.ManyToManyField(settings.AUTH_USER_MODEL, through='DiningEntry',
-                                    through_fields=('dining_list', 'user'))
+    diners = models.ManyToManyField(User, through='DiningEntry', through_fields=('dining_list', 'user'))
 
     # Metadata for display only
     main_contact = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
@@ -146,9 +146,11 @@ class DiningEntry(models.Model):
     """Represents an entry on a dining list."""
 
     dining_list = models.ForeignKey(DiningList, on_delete=models.PROTECT, related_name='dining_entries')
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
-    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT,
-                                   related_name='created_dining_entries')
+    # This is the person who is responsible for the kitchen cost, it will be the same as the transaction source
+    user = models.ForeignKey(User, on_delete=models.PROTECT)
+    created_by = models.ForeignKey(User, on_delete=models.PROTECT, related_name='created_dining_entries')
+    # The transaction that belongs to this entry
+    transaction = models.OneToOneField(Transaction, on_delete=models.PROTECT, null=True)
 
     has_paid = models.BooleanField(default=False)
 

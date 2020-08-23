@@ -1,7 +1,5 @@
-from datetime import date
-
 from django.db import models
-from django.db.models import Q, F, Value, Sum, OuterRef, Subquery, ExpressionWrapper, QuerySet
+from django.db.models import Q, F, Value, Sum, OuterRef, Subquery, QuerySet
 from django.db.models.functions import Coalesce, Cast
 from django.utils import timezone
 
@@ -252,24 +250,3 @@ class DiningTransactionQuerySet(AbstractTransactionQuerySet):
         new_qs.query.combined_queries = tuple([qs.query])
         new_qs.query.combinator = 'union'
         return new_qs
-
-
-class PendingDiningTrackerQuerySet(models.QuerySet):
-
-    def filter_lists_expired(self):
-        """Filter the trackerQuery for lists that have expired (i.e. are no longer adjustable)."""
-        return self.filter_lists_for_date(timezone.now().date())
-
-    def filter_lists_for_date(self, d: date):
-        """Returns all lists which have an editable state older than the given date.
-
-        Returns:
-            A QuerySet consisting of Trackers linking to lists that are no longer editable on the given date.
-        """
-        return self.annotate(
-            # Wrap in an Expression to allow additons between variables
-            lockdate=ExpressionWrapper(
-                # Add the dining list date and the adjustable parameter
-                F('dining_list__date') + F('dining_list__adjustable_duration'),
-                output_field=models.DateField()
-            )).filter(lockdate__lt=d)
