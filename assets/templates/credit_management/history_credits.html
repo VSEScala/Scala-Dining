@@ -1,32 +1,52 @@
 {% extends 'base.html' %}
+{% load credit_tags %}
+{% load humanize %}
 
-{% block title %}{{ request.user }} - Transaction history {% endblock %}
+{% block title %}Transaction history - {{ block.super }}{% endblock %}
 
 {% block content %}
-    <div class="row">
-        <div class="col-12 table-responsive">
-            <table class="table table-hover">
-                {# Table header #}
-                <thead>
-                <tr>
-                    <td>Date</td>
-                    <td></td>
-                    <td>Name</td>
-                    <td>Amount</td>
-                    <td>Description</td>
+    <h2>Transaction history</h2>
+    <p>
+    <a href="{% url 'credits:transaction_add' %}" class="btn btn-primary">
+        <i class="fas fa-plus"></i> Transfer money
+    </a>
+   </p>
+    <div class="table-responsive">
+        <table class="table table-sm table-striped">
+            <thead>
+            <tr>
+                <th scope="col">Date</th>
+                <th scope="col">Other party</th>
+                <th scope="col">Amount</th>
+                <th scope="col">Description</th>
+            </tr>
+            </thead>
+            <tbody>
+            {# Table rows #}
+            {% for transaction in transactions %}
+                {# We should not put this in a separate snippet unless we use it in multiple locations. #}
+                <tr class="{% if transaction.is_cancelled %}text-muted{% endif %}">
+                    <td>{{ transaction.moment }}</td>
+                    <td>
+                        {% if transaction.source == user.account %}
+                            {{ transaction.target }}
+                        {% else %}
+                            {{ transaction.source }}
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if transaction.source == user.account %}
+                            <span class="text-danger">{{ transaction.amount|negate|euro }}</span>
+                        {% else %}
+                            <span class="text-success">+{{ transaction.amount|euro }}</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ transaction.description }}</td>
                 </tr>
-                </thead>
-                <tbody>
-                {# Table rows #}
-                {% for transaction in transactions %}
-                    {% include 'credit_management/snippet_credit_history_user.html' %}
-                {% endfor %}
-                </tbody>
-            </table>
-        </div>
+            {% endfor %}
+            </tbody>
+        </table>
     </div>
-
-    <br><br>
 
     {% url 'transaction_list' as url %}
     {% include 'snippets/snippet_pagination.html' %}

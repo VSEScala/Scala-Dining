@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from allauth.socialaccount.models import SocialApp
 from django.contrib.auth.models import AbstractUser, Group
 from django.db import models

@@ -1,11 +1,12 @@
 from datetime import date
 from decimal import Decimal
+from typing import Union
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 from django.db import models, transaction
-from django.db.models import F
+from django.db.models import F, QuerySet, Sum
 from django.db.models.functions import Cast
 from django.utils import timezone
 
@@ -477,3 +478,79 @@ class UserCredit(models.Model):
                                              AbstractTransaction.balance_annotation_name,
                                              FixedTransaction.balance_annotation_name)
         return str(qs.query)
+
+
+class Account(models.Model):
+    """Money account which can be used as a transaction source or target."""
+
+    # An account can only have one of user or association
+    user = models.OneToOneField(User, on_delete=models.PROTECT, null=True)
+    association = models.OneToOneField(Association, on_delete=models.PROTECT, null=True)
+
+    # We can have special accounts which are not linked to a user or association,
+    #  e.g. an account where the kitchen payments can be sent to.
+    # special = models.CharField(max_length=30, unique=True, blank=True)
+
+    def get_balance(self) -> Decimal:
+        tx = Transaction.objects.filter_valid()
+        # 2 separate queries for the source and target sums
+        # If there are no rows, the value will be 0.00
+        source_sum = tx.filter(source=self).aggregate(sum=Sum('amount'))['sum'] or Decimal('0.00')
+        target_sum = tx.filter(target=self).aggregate(sum=Sum('amount'))['sum'] or Decimal('0.00')
+        return target_sum - source_sum
+
+    def get_entity(self) -> Union[User, Association, None]:
+        """Returns the user or association for this account.
+
+        Returns None when this is a special account.
+        """
+        if self.user:
+            return self.user
+        if self.association:
+            return self.association
+        return None
+
+    def __str__(self):
+        return str(self.get_entity())
+
+
+class TransactionQuerySet2(QuerySet):
+    def filter_valid(self):
+        """Filters transactions that have not been cancelled."""
+        return self.filter(cancelled__isnull=True)
+
+
+class Transaction(models.Model):
+    # We do not enforce that source != target because those rows are not harmful,
+    #  balance is not affected when source == target.
+    source = models.ForeignKey(Account, on_delete=models.PROTECT, related_name='transaction_source_set')
+    target = models.ForeignKey(Account, on_delete=models.PROTECT, related_name='transaction_target_set')
+    amount = models.DecimalField(decimal_places=2, max_digits=8, validators=[MinValueValidator(Decimal('0.01'))])
+    moment = models.DateTimeField(default=timezone.now)
+    description = models.CharField(max_length=150)
+    created_by = models.ForeignKey(User, on_delete=models.PROTECT, related_name='transaction_set')
+
+    # Implementation note on cancellation: instead of an extra 'cancelled'
+    # column we could also write a method that creates a new
+    # transaction that reverses this transaction. In that case however it
+    # is not possible to check whether a transaction is already cancelled.
+    cancelled = models.DateTimeField(null=True)
+    cancelled_by = models.ForeignKey(User,
+                                     on_delete=models.PROTECT,
+                                     null=True,
+                                     related_name='transaction_cancelled_set')
+
+    objects = TransactionQuerySet2.as_manager()
+
+    def cancel(self, user: User):
+        """Sets the transaction as cancelled.
+
+        Don't forget to save afterwards.
+        """
+        if self.cancelled:
+            raise ValueError("Already cancelled")
+        self.cancelled = timezone.now()
+        self.cancelled_by = user
+
+    def is_cancelled(self) -> bool:
+        return bool(self.cancelled)

@@ -2,62 +2,60 @@ from datetime import datetime
 
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.db.models import Sum
+from django.core.exceptions import PermissionDenied
+from django.db.models import Sum, Q
 from django.http import HttpResponseForbidden, HttpResponseRedirect, HttpResponse
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
 from django.utils import timezone
-from django.views.generic import View
+from django.views.generic import View, FormView
 from django.views.generic.list import ListView
 
-from creditmanagement.forms import UserTransactionForm, AssociationTransactionForm
-from creditmanagement.models import AbstractTransaction, AbstractPendingTransaction, FixedTransaction
+from creditmanagement.forms import TransactionForm
+from creditmanagement.models import AbstractTransaction, AbstractPendingTransaction, FixedTransaction, Transaction
 from userdetails.models import Association
 
 
 class TransactionListView(ListView):
     template_name = "credit_management/history_credits.html"
-    paginate_by = 10
+    paginate_by = 20
     context_object_name = 'transactions'
+    ordering = '-moment'
 
     def get_queryset(self):
-        return AbstractTransaction.get_all_transactions(user=self.request.user).order_by('-pk')
+        account = self.request.user.account
+        return Transaction.objects.filter(Q(source=account) | Q(target=account))
+
+    def get_context_data(self, *args, **kwargs):
+        context = super().get_context_data(*args, **kwargs)
+        # context['']
+        return context
 
 
-class TransactionAddView(LoginRequiredMixin, View):
+class TransactionAddView(LoginRequiredMixin, FormView):
     template_name = "credit_management/transaction_add.html"
-    context = {}
+    form_class = TransactionForm
 
-    def get(self, request, association_name=None):
-        if association_name:
-            association = Association.objects.get(slug=association_name)
+    def get_form_kwargs(self):
+        """Sets up the form instance."""
+        kwargs = super().get_form_kwargs()
+        # Set transaction source based on URL params
+        if self.kwargs.get('association_name'):
+            association = get_object_or_404(Association, slug=self.kwargs.get('association_name'))
             # If an association is given as the source, check user credentials
-            if not request.user.is_board_of(association.id):
-                return HttpResponseForbidden()
-            # Create the form
-            self.context['slot_form'] = AssociationTransactionForm(association)
+            if not self.request.user.is_board_of(association.id):
+                raise PermissionDenied
+            kwargs['source'] = association.account
         else:
-            self.context['slot_form'] = UserTransactionForm(request.user)
-        return render(request, self.template_name, self.context)
+            kwargs['source'] = self.request.user.account
+        # Set transaction creator
+        kwargs['user'] = self.request.user
+        return kwargs
 
-    def post(self, request, association_name=None):
-        # Do form shenanigans
-        if association_name:
-            association = Association.objects.get(slug=association_name)
-            # If an association is given as the source, check user credentials
-            if not request.user.is_board_of(association.id):
-                return HttpResponseForbidden()
-            # Create the form
-            form = AssociationTransactionForm(association, request.POST)
-        else:
-            form = UserTransactionForm(request.user, request.POST)
-
-        if form.is_valid():
-            form.save()
-            messages.add_message(request, messages.SUCCESS, "Transaction has been successfully added.")
-            return HttpResponseRedirect(request.path_info)
-
-        self.context['slot_form'] = form
-        return render(request, self.template_name, self.context)
+    def form_valid(self, form):
+        form.save()
+        messages.add_message(self.request, messages.SUCCESS, "Transaction has been successfully added.")
+        # Maybe better to redirect to transaction list
+        return HttpResponseRedirect(self.request.path_info)
 
 
 class TransactionFinalisationView(View):

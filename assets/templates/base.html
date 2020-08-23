@@ -15,7 +15,7 @@
             {% if user.is_authenticated %}
                 <span class="navbar-text small text-right px-2">
                     {{ user }}<br>
-                    {{ user.usercredit.balance|euro }}
+                    {{ user.account.get_balance|euro }}
                 </span>
                 <div class="navbar-nav">
                     <div class="nav-item dropdown">

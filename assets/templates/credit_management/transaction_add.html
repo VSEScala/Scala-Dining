@@ -2,10 +2,14 @@
 
 {% block content %}
     <div>
-        <h3>Create new transaction</h3>
+        <h3>Transfer money</h3>
+        <div class="alert alert-warning">
+            A money transfer can only be undone by the receiving party!
+            Check the fields carefully before creating a new transaction.
+        </div>
         <form method="post">
             {% csrf_token %}
-            {% include "snippets/bootstrap_form.html" with form=slot_form horizontal=True %}
+            {% include "snippets/bootstrap_form.html" with horizontal=True %}
             <input type="submit" value="Create transaction" class="btn btn-block btn-primary"/>
         </form>
     </div>
