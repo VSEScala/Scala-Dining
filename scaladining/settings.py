@@ -37,12 +37,6 @@ AUTH_USER_MODEL = 'userdetails.User'
 INSTALLED_APPS = [
     'whitenoise.runserver_nostatic',  # For static files
 
-    'userdetails.apps.UserDetailsConfig',
-    'dining.apps.DiningConfig',
-    'creditmanagement.apps.CreditManagementConfig',
-    'general.apps.GeneralConfig',
-    'scaladining.apps.MyAdminConfig',
-
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
@@ -51,11 +45,19 @@ INSTALLED_APPS = [
     'django.contrib.humanize',
     'django.contrib.sites',
 
+    'dining.apps.DiningConfig',
+    'creditmanagement.apps.CreditManagementConfig',
+    'general.apps.GeneralConfig',
+    'scaladining.apps.MyAdminConfig',
+
+    'allauth.account',  # This needs to be before userdetails due to admin.site.unregister
+    'userdetails.apps.UserDetailsConfig',
+
+
     'dal',
     'dal_select2',
     'widget_tweaks',
     'allauth',
-    'allauth.account',
     'allauth.socialaccount',
     'allauthproviders.quadrivium',
 ]

@@ -1,62 +1,45 @@
 from django.contrib import admin
+from django.db.models import Q
 
-from creditmanagement.models import FixedTransaction, PendingTransaction
-from userdetails.models import Association, UserMembership
+from creditmanagement.models import Account, Transaction
 
 
-class MemberOfFilter(admin.SimpleListFilter):
-    """Filters users on the association they are part of (unvalidated)."""
+class AccountTypeListFilter(admin.SimpleListFilter):
+    """Allows filtering on account type which is either user, association or special."""
 
-    # Human-readable title which will be displayed in the
-    # right admin sidebar just above the filter options.
-    title = 'Member of association'
+    title = 'account type'  # (displayed in side bar)
+    parameter_name = 'type'  # (used in URL query)
 
-    # Parameter for the filter that will be used in the URL query.
-    parameter_name = 'associationmember'
+    # Queries can be overridden in a subclass
+    user_query = Q(user__isnull=False)
+    association_query = Q(association__isnull=False)
+    special_query = Q(special__isnull=False)
 
     def lookups(self, request, model_admin):
-        """Returns a list of tuples representing all the associations as displayed in the table."""
-        return Association.objects.all().values_list('pk', 'name', )
+        # First element is URL param, second element is display value
+        return (
+            ('user', "User"),
+            ('association', "Association"),
+            ('special', "Special"),
+        )
 
     def queryset(self, request, queryset):
-        """Returns the filtered querysets containing all members of the selected associations."""
-        if self.value() is None:
-            return queryset
-
-        # Find all members in the UserMemberships model containing the selected association
-        a = UserMembership.objects.filter(association=self.value()).values_list('related_user_id')
-
-        return queryset.filter(user__pk__in=a)
+        if self.value() == 'user':
+            return queryset.filter(self.user_query)
+        if self.value() == 'association':
+            return queryset.filter(self.association_query)
+        if self.value() == 'special':
+            return queryset.filter(self.special_query)
 
 
-class FixedTransactionAdmin(admin.ModelAdmin):
-    list_display = ('order_moment', 'source_user', 'source_association',
-                    'amount', 'target_user', 'target_association')
+@admin.register(Account)
+class AccountAdmin(admin.ModelAdmin):
+    """The account admin enables viewing of accounts with their balance."""
 
-
-class PendingTransactionAdmin(admin.ModelAdmin):
-    list_display = ('order_moment', 'source_user', 'source_association',
-                    'amount', 'target_user', 'target_association')
-
-    actions = ['finalise']
-
-    def finalise(self, request, queryset):
-        for obj in queryset:
-            obj.finalise()
-
-
-class PendingDiningListTrackerAdmin(admin.ModelAdmin):
-    list_display = ('dining_list',)
-
-    actions = ['finalise']
-
-    def finalise(self, request, queryset):
-        for obj in queryset:
-            obj.finalise()
-
-
-class PendingDiningTransactionAdmin(admin.ModelAdmin):
-    list_display = ('order_moment', 'source_user', 'amount')
+    ordering = ('special', 'association__name', 'user__first_name', 'user__last_name')
+    list_display = ('__str__', 'get_balance', 'negative_since')
+    list_filter = (AccountTypeListFilter,)
+    search_fields = ('user__first_name', 'user__last_name', 'user__username', 'association__name', 'special')
 
     def has_add_permission(self, request):
         return False
@@ -68,5 +51,51 @@ class PendingDiningTransactionAdmin(admin.ModelAdmin):
         return False
 
 
-admin.site.register(FixedTransaction, FixedTransactionAdmin)
-admin.site.register(PendingTransaction, PendingTransactionAdmin)
+class SourceTypeListFilter(AccountTypeListFilter):
+    """Allows filtering on the source account type."""
+    title = "source account type"
+    parameter_name = 'source_type'
+    user_query = Q(source__user__isnull=False)
+    association_query = Q(source__association__isnull=False)
+    special_query = Q(source__special__isnull=False)
+
+
+class TargetTypeListFilter(AccountTypeListFilter):
+    """Allows filtering on the target account type."""
+    title = "target account type"
+    parameter_name = 'target_type'
+    user_query = Q(target__user__isnull=False)
+    association_query = Q(target__association__isnull=False)
+    special_query = Q(target__special__isnull=False)
+
+
+@admin.register(Transaction)
+class TransactionAdmin(admin.ModelAdmin):
+    """The transaction admin enables viewing transactions and creating new transactions."""
+
+    ordering = ('-moment',)
+    list_display = ('moment', 'source', 'target', 'amount', 'description', 'is_cancelled')
+    list_filter = (SourceTypeListFilter, TargetTypeListFilter)
+
+    fields = ('source', 'target', 'amount', 'description', 'moment', 'created_by', 'cancelled', 'cancelled_by')
+    # Created_by, cancelled and cancelled_by are also shown on the add form (read only),
+    #  it would be nice to hide it but that requires a separate form which is overkill.
+    readonly_fields = ('moment', 'created_by', 'cancelled', 'cancelled_by')
+    autocomplete_fields = ('source', 'target')
+
+    # Changing transactions is obviously not possible, I have however also not
+    #  implemented an action for refunding transactions. That is however on
+    #  purpose, because you can refund a transaction by creating a new reversed
+    #  transaction, which is better in my opinion.
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+    def save_model(self, request, obj, form, change):
+        """Sets the transaction creator and saves the transaction."""
+        if not change:
+            obj.created_by = request.user
+        obj.save()

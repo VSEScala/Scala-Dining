@@ -331,10 +331,17 @@ class Account(models.Model):
     # We can have special accounts which are not linked to a user or association,
     #  e.g. an account where the kitchen payments can be sent to.
 
-    # The special accounts listed here are automatically created using a receiver.
+    # (The special accounts listed here are automatically created using a receiver.)
     SPECIAL_ACCOUNTS = [
+        # Account which receives the kitchen payments
+        # The balance indicates the money that is payed for kitchen usage (minus optional withdraws)
         ('kitchen_cost', 'Kitchen cost'),
 
+        # Generic account, if source/target is unknown
+        # All transactions in the older version that didn't have a source use this account!
+        # But the account is too general so it's probably better to never use this for new transactions
+        # and always use a more specific account.
+        ('generic', 'Unspecified'),
     ]
     special = models.CharField(max_length=30, unique=True, null=True, default=None, choices=SPECIAL_ACCOUNTS)
 
@@ -345,6 +352,8 @@ class Account(models.Model):
         source_sum = tx.filter(source=self).aggregate(sum=Sum('amount'))['sum'] or Decimal('0.00')
         target_sum = tx.filter(target=self).aggregate(sum=Sum('amount'))['sum'] or Decimal('0.00')
         return target_sum - source_sum
+
+    get_balance.short_description = "Balance"  # (used in admin site)
 
     def get_entity(self) -> Union[User, Association, None]:
         """Returns the user or association for this account.
@@ -434,3 +443,5 @@ class Transaction(models.Model):
 
     def is_cancelled(self) -> bool:
         return bool(self.cancelled)
+
+    is_cancelled.boolean = True

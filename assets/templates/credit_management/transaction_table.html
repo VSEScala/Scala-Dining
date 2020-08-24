@@ -11,7 +11,6 @@
         </tr>
         </thead>
         <tbody>
-        {# Table rows #}
         {% for tx in object_list %}
             <tr {% if tx.is_cancelled %}style="text-decoration: line-through;"{% endif %}>
                 <td>{{ tx.moment }}</td>

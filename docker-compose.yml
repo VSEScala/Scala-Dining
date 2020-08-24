@@ -21,10 +21,11 @@ services:
       POSTGRES_PASSWORD: dining
       POSTGRES_DB: dining
     volumes:
-      - db:/var/lib/postgresql/data
+      - db3:/var/lib/postgresql/data
     ports:
       - 5432:5432
 
 volumes:
   db:
 #  db2:
+  db3:  # Contains the imported live version

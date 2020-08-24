@@ -8,7 +8,6 @@
     {% if pending_memberships %}
         <form method="post"
               action="{% url 'association_members_edit' association_name=association.slug %}?next={{ request.path }}">
-            {# Pending member overview #}
             <div class="table-responsive">
                 {% csrf_token %}
                 <table class="table table-hover">

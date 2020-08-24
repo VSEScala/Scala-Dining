@@ -1,3 +1,4 @@
+from allauth.account.models import EmailAddress
 from django import forms
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
@@ -113,3 +114,7 @@ class UserMembershipAdmin(admin.ModelAdmin):
 
     def has_delete_permission(self, request, obj=None):
         return False
+
+
+# From allauth
+admin.site.unregister(EmailAddress)

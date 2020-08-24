@@ -1,4 +1,4 @@
-from django.db import connection
+from django.db import connection, DatabaseError
 from django.db.models.signals import post_save, post_migrate
 from django.dispatch import receiver
 
@@ -21,8 +21,12 @@ def create_association_account(sender, instance, created, **kwargs):
 @receiver(post_migrate)
 def create_special_accounts(sender, **kwargs):
     """Ensures that the special bookkeeping accounts exist."""
-    for name, label in Account.SPECIAL_ACCOUNTS:
-        Account.objects.get_or_create(special=name)
+    try:
+        for name, label in Account.SPECIAL_ACCOUNTS:
+            Account.objects.get_or_create(special=name)
+    except DatabaseError:
+        # Database error might arise when migrating backwards
+        print("Failed to create special accounts")
 
 
 @receiver(post_migrate)

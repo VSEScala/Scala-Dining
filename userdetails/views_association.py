@@ -131,10 +131,6 @@ class AssociationOverview(LoginRequiredMixin, AssociationBoardMixin, TemplateVie
         context = super().get_context_data(**kwargs)
         context['pending_memberships'] = UserMembership.objects.filter(association=self.association,
                                                                        verified_on__isnull=True)
-        context['balance'] = AbstractTransaction.get_association_balance(self.association)
-        context['transactions'] = AbstractTransaction.get_all_transactions(
-            association=self.association).order_by('-order_moment')[0:5]
-
         return context
 
 

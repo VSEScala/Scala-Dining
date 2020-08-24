@@ -112,7 +112,6 @@ class UserMembership(models.Model):
     verified_on = models.DateTimeField(blank=True, null=True, default=None)
     created_on = models.DateTimeField(default=timezone.now)
 
-    # I think this method is incorrect, because it's not even possible to store null values in the is_verified column
     def get_verified_state(self):
         if self.is_verified:
             return True
@@ -129,7 +128,6 @@ class UserMembership(models.Model):
     def __str__(self):
         return "{user} - {association}".format(user=self.related_user, association=self.association)
 
-    # I think this method is incorrect, because it's not even possible to store null values in the is_verified column
     def set_verified(self, verified):
         """Sets the verified state to the value of verified (True or False) and set verified_on to now and save."""
         self.is_verified = verified

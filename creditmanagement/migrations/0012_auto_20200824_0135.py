@@ -2,6 +2,8 @@
 
 from django.db import migrations, models
 
+from creditmanagement.tmp import SafeDeleteModel
+
 
 class Migration(migrations.Migration):
 
@@ -31,10 +33,21 @@ class Migration(migrations.Migration):
             name='special',
             field=models.CharField(default=None, max_length=30, null=True, unique=True),
         ),
-        migrations.DeleteModel(
+        # Deletion is blocked when the table is not empty (sanity check)
+        SafeDeleteModel(
             name='PendingDiningListTracker',
         ),
-        migrations.DeleteModel(
+        # Added this managed=True manually, because in migration 8 the PendingDiningTransaction table was created and
+        # afterwards set to managed=False. Due to this, it was physically created in the database and will remain there
+        # if this isn't set back to managed=True.
+        migrations.AlterModelOptions(
+            name='pendingdiningtransaction',
+            options={
+                'managed': True,
+            },
+        ),
+        migrations.DeleteModel(  # (This model had managed=False)
             name='PendingDiningTransaction',
+
         ),
     ]
