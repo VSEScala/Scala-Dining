@@ -25,13 +25,13 @@ class TransactionForm(forms.ModelForm):
     target_user = forms.ModelChoiceField(User.objects.all(),
                                          required=False,
                                          widget=ModelSelect2(url='people_autocomplete'),
-                                         label="User",
-                                         help_text="Provide a user or an association who will receive the money. "
-                                                   "You can't provide both a user and an association.")
+                                         label="User")
 
     target_association = forms.ModelChoiceField(Association.objects.all(),
                                                 required=False,
-                                                label="Association")
+                                                label="Association",
+                                                help_text="Provide a user or an association who will receive the money. "
+                                                          "You can't provide both a user and an association.")
 
     class Meta:
         model = Transaction

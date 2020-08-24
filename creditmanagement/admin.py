@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from creditmanagement.models import FixedTransaction, PendingTransaction, PendingDiningTransaction
+from creditmanagement.models import FixedTransaction, PendingTransaction
 from userdetails.models import Association, UserMembership
 
 

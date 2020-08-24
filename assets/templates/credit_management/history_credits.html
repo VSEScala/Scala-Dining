@@ -25,7 +25,7 @@
             {# Table rows #}
             {% for transaction in transactions %}
                 {# We should not put this in a separate snippet unless we use it in multiple locations. #}
-                <tr class="{% if transaction.is_cancelled %}text-muted{% endif %}">
+                <tr {% if transaction.is_cancelled %}style="text-decoration: line-through;"{% endif %}>
                     <td>{{ transaction.moment }}</td>
                     <td>
                         {% if transaction.source == user.account %}

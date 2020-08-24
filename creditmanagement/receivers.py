@@ -1,16 +1,8 @@
 from django.db.models.signals import post_save, post_migrate
 from django.dispatch import receiver
 
-from creditmanagement.models import PendingDiningListTracker, Account
-from dining.models import DiningList
+from creditmanagement.models import Account
 from userdetails.models import User, Association
-
-
-@receiver(post_save, sender=DiningList)
-def create_pending_dining_list_tracker(sender, instance=False, created=False, **kwargs):
-    """Creates a new PendingDiningListTracker when a new dining list is added."""
-    if created:
-        PendingDiningListTracker(dining_list=instance).save()
 
 
 @receiver(post_save, sender=User)
@@ -28,4 +20,5 @@ def create_association_account(sender, instance, created, **kwargs):
 @receiver(post_migrate)
 def create_special_accounts(sender, **kwargs):
     """Ensures that the special bookkeeping accounts exist."""
-    Account.objects.get_or_create(special='kitchen_cost')
+    for name, label in Account.SPECIAL_ACCOUNTS:
+        Account.objects.get_or_create(special=name)

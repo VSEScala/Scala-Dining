@@ -50,7 +50,8 @@ class CreateSlotForm(ServeTimeCheckMixin, forms.ModelForm):
 
         # Get associations that the user is a member of (not necessarily verified)
         associations = Association.objects.filter(usermembership__related_user=creator)
-        denied_memberships = UserMembership.objects.filter(related_user=creator, is_verified=False, verified_on__isnull=False)
+        denied_memberships = UserMembership.objects.filter(related_user=creator, is_verified=False,
+                                                           verified_on__isnull=False)
         associations = associations.exclude(usermembership__in=denied_memberships)
 
         # Filter out unavailable associations (those that have a dining list already on this day)
@@ -75,7 +76,8 @@ class CreateSlotForm(ServeTimeCheckMixin, forms.ModelForm):
             # Ready an error message as the user is not a member of any of the associations and thus can not create a slot
             self.cleaned_data = {}
             self.add_error(None,
-                           ValidationError("You are not a member of any association and thus can not claim a dining list"))
+                           ValidationError(
+                               "You are not a member of any association and thus can not claim a dining list"))
 
     def clean(self):
         # Note: uniqueness for date+association is implicitly enforced using the association form field
@@ -235,7 +237,7 @@ class DiningEntryUserCreateForm(forms.ModelForm):
                     tx = Transaction.objects.create(source=instance.user.account,
                                                     target=Account.objects.get(special='kitchen_cost'),
                                                     amount=amount,
-                                                    description="Kitchen cost",
+                                                    description="Kitchen cost for {}".format(instance.dining_list),
                                                     created_by=instance.created_by)
                     instance.transaction = tx
                 instance.save()
@@ -254,7 +256,7 @@ class DiningEntryExternalCreateForm(DiningEntryUserCreateForm):
 
 
 class DiningEntryDeleteForm(forms.Form):
-    def __init__(self, entry, deleter, *args, **kwargs):
+    def __init__(self, entry: DiningEntry, deleter: User, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.entry = entry
         self.deleter = deleter
@@ -279,7 +281,12 @@ class DiningEntryDeleteForm(forms.Form):
         return cleaned_data
 
     def execute(self):
-        self.entry.delete()
+        with transaction.atomic():
+            tx = self.entry.transaction
+            if tx:
+                tx.cancel(self.deleter)
+                tx.save()
+            self.entry.delete()
 
 
 class DiningListDeleteForm(forms.ModelForm):
@@ -287,6 +294,7 @@ class DiningListDeleteForm(forms.ModelForm):
 
     This will refund all kitchen costs.
     """
+
     class Meta:
         model = DiningList
         fields = []

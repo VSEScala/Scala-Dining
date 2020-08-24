@@ -1,4 +1,3 @@
-from datetime import date
 from decimal import Decimal
 from typing import Union
 
@@ -10,10 +9,8 @@ from django.db.models import F, QuerySet, Sum
 from django.db.models.functions import Cast
 from django.utils import timezone
 
-from dining.models import DiningList
+from creditmanagement.querysets import TransactionQuerySet, PendingTransactionQuerySet
 from userdetails.models import Association, User
-from .querysets import TransactionQuerySet, DiningTransactionQuerySet, \
-    PendingDiningTrackerQuerySet, PendingTransactionQuerySet
 
 
 class AbstractTransaction(models.Model):
@@ -323,116 +320,6 @@ class PendingTransaction(AbstractPendingTransaction):
             return cls.objects.annotate_user_balance(users=users, output_name=output_name)
 
 
-class PendingDiningTransactionManager(models.Manager):
-    # Created specially due to the different behaviour of the model (different database and model use)
-
-    @staticmethod
-    def get_queryset(user=None, dining_list=None):
-        return DiningTransactionQuerySet.generate_queryset(user=user, dining_list=dining_list)
-
-    @staticmethod
-    def annotate_users_balance(users, output_name=None):
-        return DiningTransactionQuerySet.annotate_user_balance(users=users, output_name=output_name)
-
-    @staticmethod
-    def annotate_association_balance(associations, output_name=None):
-        return DiningTransactionQuerySet.annotate_association_balance(associations=associations,
-                                                                      output_name=output_name)
-
-
-class PendingDiningTransaction(AbstractPendingTransaction):
-    """Model for the Pending Dining Transactions.
-
-    Does NOT create a table, information is obtained elsewhere as specified in the manager/queryset.
-    """
-    balance_annotation_name = "balance_pending_dining"
-    objects = PendingDiningTransactionManager()
-
-    class Meta:
-        managed = False  # There's no actual table in the database
-
-    @classmethod
-    def finalise_all_expired(cls):
-        # Get all finished dining lists
-        results = []
-        for dining_list in PendingDiningListTracker.objects.filter_lists_expired():
-            results += dining_list.finalise()
-        return results
-
-    @classmethod
-    def get_all_transactions(cls, user=None, association=None):
-        if association:
-            # Return none, no associations can be involved in dining lists
-            return cls.objects.none()
-        return cls.objects.get_queryset(user=user)
-
-    @classmethod
-    def get_user_balance(cls, user):
-        return cls.objects.all().compute_user_balance(user)
-
-    @classmethod
-    def get_association_balance(cls, association):
-        return cls.objects.all().compute_association_balance(association)
-
-    @classmethod
-    def annotate_balance(cls, users=None, associations=None, output_name=balance_annotation_name):
-        if associations:
-            return cls.objects.annotate_association_balance(associations, output_name=cls.balance_annotation_name)
-        else:
-            return cls.objects.annotate_users_balance(users, output_name=cls.balance_annotation_name)
-
-    @classmethod
-    def get_association_credit(cls, association):
-        return Decimal('0.00')
-
-    def finalise(self):
-        raise NotImplementedError("PendingDiningTransactions are read-only")
-
-    def _get_fixed_form(self):
-        return FixedTransaction(source_user=self.source_user, source_association=self.source_association,
-                                target_user=self.target_user, target_association=self.target_association,
-                                amount=self.amount,
-                                order_moment=self.order_moment, description=self.description)
-
-
-class PendingDiningListTracker(models.Model):
-    """Model to track all Dining Lists that are pending.
-
-    Used for creating Pending Dining Transactions.
-    """
-    dining_list = models.OneToOneField(DiningList, on_delete=models.CASCADE)
-
-    objects = PendingDiningTrackerQuerySet.as_manager()
-
-    def finalise(self):
-        # Generate the initial list
-        transactions = []
-
-        # Get all corresponding dining transactions
-        # loop over all items and make the transactions
-        for dining_transaction in PendingDiningTransaction.objects.get_queryset(dining_list=self.dining_list):
-            transactions.append(dining_transaction._get_fixed_form())
-
-        # Save the changes
-        with transaction.atomic():
-            for fixed_transaction in transactions:
-                fixed_transaction.save()
-            self.delete()
-
-        return transactions
-
-    @classmethod
-    def finalise_to_date(cls, d: date):
-        """Finalises all pending dining list transactions.
-
-        Args:
-            d: The date until which all tracked dining lists need to be finalised.
-        """
-        query = cls.objects.filter_lists_for_date(d)
-        for pending_dining_list_tracker in query:
-            pending_dining_list_tracker.finalise()
-
-
 # User and association views
 
 
@@ -483,13 +370,19 @@ class UserCredit(models.Model):
 class Account(models.Model):
     """Money account which can be used as a transaction source or target."""
 
-    # An account can only have one of user or association
+    # An account can only have one of user or association or special
     user = models.OneToOneField(User, on_delete=models.PROTECT, null=True)
     association = models.OneToOneField(Association, on_delete=models.PROTECT, null=True)
 
     # We can have special accounts which are not linked to a user or association,
     #  e.g. an account where the kitchen payments can be sent to.
-    special = models.CharField(max_length=30, unique=True, blank=True)
+
+    # The special accounts listed here are automatically created using a receiver.
+    SPECIAL_ACCOUNTS = [
+        ('kitchen_cost', 'Kitchen cost'),
+
+    ]
+    special = models.CharField(max_length=30, unique=True, null=True, default=None, choices=SPECIAL_ACCOUNTS)
 
     def get_balance(self) -> Decimal:
         tx = Transaction.objects.filter_valid()
@@ -511,7 +404,11 @@ class Account(models.Model):
         return None
 
     def __str__(self):
-        return str(self.get_entity())
+        if self.get_entity():
+            return str(self.get_entity())
+        if self.special:
+            return self.get_special_display()
+        return super().__str__()
 
 
 class TransactionQuerySet2(QuerySet):

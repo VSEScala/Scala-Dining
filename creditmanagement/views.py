@@ -6,12 +6,13 @@ from django.core.exceptions import PermissionDenied
 from django.db.models import Sum, Q
 from django.http import HttpResponseForbidden, HttpResponseRedirect, HttpResponse
 from django.shortcuts import render, get_object_or_404
+from django.urls import reverse
 from django.utils import timezone
 from django.views.generic import View, FormView
 from django.views.generic.list import ListView
 
 from creditmanagement.forms import TransactionForm
-from creditmanagement.models import AbstractTransaction, AbstractPendingTransaction, FixedTransaction, Transaction
+from creditmanagement.models import AbstractPendingTransaction, FixedTransaction, Transaction
 from userdetails.models import Association
 
 
@@ -19,11 +20,10 @@ class TransactionListView(ListView):
     template_name = "credit_management/history_credits.html"
     paginate_by = 20
     context_object_name = 'transactions'
-    ordering = '-moment'
 
     def get_queryset(self):
         account = self.request.user.account
-        return Transaction.objects.filter(Q(source=account) | Q(target=account))
+        return Transaction.objects.filter(Q(source=account) | Q(target=account)).order_by('-moment')
 
     def get_context_data(self, *args, **kwargs):
         context = super().get_context_data(*args, **kwargs)
@@ -32,30 +32,41 @@ class TransactionListView(ListView):
 
 
 class TransactionAddView(LoginRequiredMixin, FormView):
+    """View where a user can transfer money to someone else."""
     template_name = "credit_management/transaction_add.html"
     form_class = TransactionForm
 
     def get_form_kwargs(self):
         """Sets up the form instance."""
         kwargs = super().get_form_kwargs()
-        # Set transaction source based on URL params
-        if self.kwargs.get('association_name'):
-            association = get_object_or_404(Association, slug=self.kwargs.get('association_name'))
-            # If an association is given as the source, check user credentials
-            if not self.request.user.is_board_of(association.id):
-                raise PermissionDenied
-            kwargs['source'] = association.account
-        else:
-            kwargs['source'] = self.request.user.account
-        # Set transaction creator
+        kwargs['source'] = self.request.user.account
         kwargs['user'] = self.request.user
         return kwargs
 
     def form_valid(self, form):
         form.save()
-        messages.add_message(self.request, messages.SUCCESS, "Transaction has been successfully added.")
-        # Maybe better to redirect to transaction list
-        return HttpResponseRedirect(self.request.path_info)
+        messages.add_message(self.request, messages.SUCCESS, "Transaction has been successfully created.")
+        return HttpResponseRedirect(self.get_success_url())
+
+    def get_success_url(self):
+        return reverse('credits:transaction_list')
+
+
+class AssociationTransactionAddView(TransactionAddView):
+    """View where an association can transfer money to someone else."""
+    template_name = 'credit_management/transaction_add_association.html'
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        association = get_object_or_404(Association, slug=self.kwargs.get('association_name'))
+        # Make sure that the user is a board member
+        if not self.request.user.is_board_of(association.id):
+            raise PermissionDenied
+        kwargs['source'] = association.account
+        return kwargs
+
+    def get_success_url(self):
+        return reverse('association_credits', kwargs={'association_name': self.kwargs.get('association_name')})
 
 
 class TransactionFinalisationView(View):

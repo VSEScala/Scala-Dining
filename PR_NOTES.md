@@ -14,4 +14,5 @@ The following steps are necessary:
 
 * Create `Account` instances for all users and associations.
 * Finalize all pending transactions.
+* Ensure `PendingDiningListTracker` table is empty.
 * Copy over all transactions to the new table.
