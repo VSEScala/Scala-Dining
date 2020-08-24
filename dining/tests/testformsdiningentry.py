@@ -5,7 +5,7 @@ from django.core.exceptions import NON_FIELD_ERRORS
 from django.test import TestCase
 from django.utils import timezone
 
-from creditmanagement.models import FixedTransaction
+from creditmanagement.models import Transaction
 from dining.forms import DiningEntryUserCreateForm, DiningEntryDeleteForm, DiningEntryExternalCreateForm
 from dining.models import DiningList, DiningEntryUser, DiningEntryExternal
 from userdetails.models import User, Association, UserMembership
@@ -102,7 +102,10 @@ class DiningEntryUserCreateFormTestCase(TestCase):
         self.assertTrue(self.form.has_error(NON_FIELD_ERRORS, 'members_only'))
 
     def test_balance_too_low(self):
-        FixedTransaction.objects.create(source_user=self.user2, amount=Decimal('99'))
+        Transaction.objects.create(source=self.user2.account,
+                                   target=self.association.account,
+                                   amount=Decimal('99'),
+                                   created_by=self.user2)
         self.assertFalse(self.form.is_valid())
         self.assertTrue(self.form.has_error(NON_FIELD_ERRORS, 'nomoneyzz'))
 
@@ -111,7 +114,10 @@ class DiningEntryUserCreateFormTestCase(TestCase):
         assoc = Association.objects.create(slug='ankie4president', name='PvdD', has_min_exception=True)
         UserMembership.objects.create(related_user=self.user2, association=assoc, is_verified=True,
                                       verified_on=timezone.now())
-        FixedTransaction.objects.create(source_user=self.user2, amount=Decimal('99'))
+        Transaction.objects.create(source=self.user2.account,
+                                   target=self.association.account,
+                                   amount=Decimal('99'),
+                                   created_by=self.user2)
         self.assertTrue(self.form.is_valid())
 
     def test_invalid_user(self):

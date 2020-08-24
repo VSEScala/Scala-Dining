@@ -3,8 +3,8 @@ from django.urls import path, include
 
 from creditmanagement.views import AssociationTransactionAddView
 from userdetails.views import RegisterView, DiningJoinHistoryView, DiningClaimHistoryView, PeopleAutocompleteView
-from userdetails.views_association import AssociationTransactionListView, TransactionsCsvView, MembersOverview, MembersEditView, \
-    AssociationOverview, AssociationSettingsView, AssociationSiteDiningView, AssociationSiteCreditView, \
+from userdetails.views_association import AssociationTransactionListView, TransactionsCsvView, MembersOverview, \
+    MembersEditView, AssociationOverview, AssociationSettingsView, AssociationSiteDiningView, AssociationSiteCreditView, \
     AutoCreateNegativeCreditsView
 from userdetails.views_user_settings import SettingsProfileView
 

@@ -4,7 +4,7 @@ from decimal import Decimal
 from django.test import TestCase
 from django.utils import timezone
 
-from creditmanagement.models import FixedTransaction
+from creditmanagement.models import FixedTransaction, Transaction
 from dining.forms import CreateSlotForm
 from dining.models import DiningList
 from userdetails.models import Association, User, UserMembership
@@ -67,7 +67,10 @@ class CreateSlotFormTestCase(TestCase):
         self.assertTrue(form.has_error('association'))
 
     def test_insufficient_balance(self):
-        FixedTransaction.objects.create(source_user=self.user1, amount=Decimal('99'))
+        Transaction.objects.create(source=self.user1.account,
+                                   target=self.association1.account,
+                                   amount=Decimal('99'),
+                                   created_by=self.user1)
         self.assertFalse(self.form.is_valid())
 
     def test_insufficient_balance_exception(self):

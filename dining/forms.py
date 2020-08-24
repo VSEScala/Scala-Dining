@@ -218,11 +218,11 @@ class DiningEntryUserCreateForm(forms.ModelForm):
         if dining_list.limit_signups_to_association_only:
             # User should be verified association member, except when the entry creator is owner
             if not dining_list.is_owner(creator) and not user.is_verified_member_of(dining_list.association):
-                raise ValidationError("Dining list is limited to members only")
+                raise ValidationError("Dining list is limited to members only", code='members_only')
 
         # User balance check
         if not user.has_min_balance_exception() and user.account.get_balance() < settings.MINIMUM_BALANCE_FOR_DINING_SIGN_UP:
-            raise ValidationError("The balance of the user is too low to add")
+            raise ValidationError("The balance of the user is too low to add", code='nomoneyzz')
 
         return cleaned_data
 

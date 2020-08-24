@@ -9,7 +9,7 @@ class Command(BaseCommand):
     help = ("Migrates the transactions from old version to new version. "
             "The command createaccounts needs to be run first otherwise this will fail.")
 
-    def handle(self, *args, **options):
+    def handle(self, *args, **options):  # noqa: C901
         # Sanity checks
 
         # New transactions table must be empty!

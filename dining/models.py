@@ -150,7 +150,7 @@ class DiningEntry(models.Model):
     user = models.ForeignKey(User, on_delete=models.PROTECT)
     created_by = models.ForeignKey(User, on_delete=models.PROTECT, related_name='created_dining_entries')
     # The transaction that belongs to this entry
-    transaction = models.OneToOneField(Transaction, on_delete=models.PROTECT, null=True)
+    transaction = models.OneToOneField(Transaction, on_delete=models.PROTECT, null=True, blank=True)
 
     has_paid = models.BooleanField(default=False)
 
