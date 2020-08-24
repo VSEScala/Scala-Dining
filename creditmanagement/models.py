@@ -5,7 +5,7 @@ from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 from django.db import models, transaction
-from django.db.models import F, QuerySet, Sum
+from django.db.models import F, QuerySet, Sum, Q
 from django.db.models.functions import Cast
 from django.utils import timezone
 
@@ -415,6 +415,10 @@ class TransactionQuerySet2(QuerySet):
     def filter_valid(self):
         """Filters transactions that have not been cancelled."""
         return self.filter(cancelled__isnull=True)
+
+    def filter_account(self, account: Account):
+        """Filters transactions that have the given account as source or target."""
+        return self.filter(Q(source=account) | Q(target=account))
 
 
 class Transaction(models.Model):

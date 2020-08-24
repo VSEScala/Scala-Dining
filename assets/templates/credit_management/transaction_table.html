@@ -1,0 +1,38 @@
+{% load credit_tags %}
+<div class="table-responsive">
+    <table class="table table-sm table-striped">
+        <thead>
+        <tr>
+            <th scope="col">Date</th>
+            <th scope="col">Other party</th>
+            <th scope="col">Amount</th>
+            <th scope="col">Description</th>
+            <th scope="col">Created by</th>
+        </tr>
+        </thead>
+        <tbody>
+        {# Table rows #}
+        {% for tx in object_list %}
+            <tr {% if tx.is_cancelled %}style="text-decoration: line-through;"{% endif %}>
+                <td>{{ tx.moment }}</td>
+                <td>
+                    {% if tx.source == account_self %}
+                        {{ tx.target }}
+                    {% else %}
+                        {{ tx.source }}
+                    {% endif %}
+                </td>
+                <td>
+                    {% if tx.source == account_self %}
+                        <span class="text-danger">{{ tx.amount|negate|euro }}</span>
+                    {% else %}
+                        <span class="text-success">+{{ tx.amount|euro }}</span>
+                    {% endif %}
+                </td>
+                <td>{{ tx.description }}</td>
+                <td>{{ tx.created_by }}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>

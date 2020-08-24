@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+
+{% block title %}Transaction history - {{ block.super }}{% endblock %}
+
+{% block content %}
+    <h2>Transaction history</h2>
+    <p>
+    <a href="{% url 'credits:transaction_add' %}" class="btn btn-primary">
+        <i class="fas fa-plus"></i> Transfer money
+    </a>
+   </p>
+    {% include 'credit_management/transaction_table.html' with account_self=user.account %}
+
+    {% include 'snippets/paginator.html' %}
+
+{% endblock %}

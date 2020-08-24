@@ -1,20 +1,38 @@
 {% extends 'base.html' %}
 
 {% block content %}
-    <div>
-        <h3>Transfer money</h3>
-        <p>
-            As an association board member you can transfer money to user accounts or other associations.
-            ...
-        </p>
-        <div class="alert alert-warning">
-            A money transfer can only be undone by the receiving party!
-            Check the fields carefully before creating a new transaction.
-        </div>
-        <form method="post">
-            {% csrf_token %}
-            {% include "snippets/bootstrap_form.html" with horizontal=True %}
-            <input type="submit" value="Create transaction" class="btn btn-block btn-primary"/>
-        </form>
+    <p>
+        <a href="{% url 'association_credits' association_name=view.kwargs.association_name %}">
+            ← Back to transaction overview
+        </a>
+    </p>
+    <h3>Transfer money</h3>
+    <p>
+        As an association board member you can transfer money to user accounts or other associations.
+        Use this to allow members of any association to deposit money in their account. The procedure for this is:
+    </p>
+    <ul>
+        <li>An association member can ask you to deposit money in their account.</li>
+        <li>You receive the money and store it in the cash box of your association (if it's cash), or hand it over to
+            the treasurer.
+        </li>
+        <li>You transfer the money to their account using this page.</li>
+    </ul>
+    <p>
+        The money remains theirs which is why the association balance decreases by the transfer amount!
+        At any moment your association can repay the money received from users to Scala to correct the negative balance
+        of your association.
+        Whenever the user pays for kitchen cost, the amount is transferred to a special kitchen cost account,
+        Scala uses this account for the kitchen payment.
+    </p>
+    <p></p>
+    <div class="alert alert-warning">
+        A money transfer can only be undone by the receiving party!
+        Check the fields carefully before creating a new transaction.
     </div>
+    <form method="post">
+        {% csrf_token %}
+        {% include "snippets/bootstrap_form.html" with horizontal=True %}
+        <input type="submit" value="Create transaction" class="btn btn-block btn-primary"/>
+    </form>
 {% endblock %}

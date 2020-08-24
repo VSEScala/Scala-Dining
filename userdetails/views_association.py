@@ -13,7 +13,7 @@ from django.views import View
 from django.views.generic import ListView, TemplateView, FormView
 
 from creditmanagement.forms import ClearOpenExpensesForm
-from creditmanagement.models import AbstractTransaction, FixedTransaction
+from creditmanagement.models import AbstractTransaction, FixedTransaction, Transaction
 from dining.models import DiningList, DiningEntry
 from general.views import DateRangeFilterMixin
 from userdetails.forms import AssociationSettingsForm
@@ -48,17 +48,12 @@ class AssociationHasSiteAccessMixin:
         return super(AssociationHasSiteAccessMixin, self).dispatch(request, *args, **kwargs)
 
 
-class CreditsOverview(LoginRequiredMixin, AssociationBoardMixin, ListView):
+class AssociationTransactionListView(LoginRequiredMixin, AssociationBoardMixin, ListView):
     template_name = "accounts/association_credits.html"
-    paginate_by = 50
+    paginate_by = 100
 
     def get_queryset(self):
-        return AbstractTransaction.get_all_transactions(association=self.association).order_by('-order_moment')
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['balance'] = AbstractTransaction.get_association_balance(self.association)
-        return context
+        return Transaction.objects.filter_account(self.association.account).order_by('-moment')
 
 
 class AutoCreateNegativeCreditsView(LoginRequiredMixin, AssociationBoardMixin, FormView):

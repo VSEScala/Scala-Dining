@@ -4,53 +4,26 @@
 {% block tab_credits %} active{% endblock %}
 
 {% block details %}
-    <div class="row">
+    <p>
+        Current association balance: <strong>{{ association.account.get_balance|euro }}</strong>
+    </p>
+    <p>
+        <a class="btn btn-primary" href="{% url 'transaction_add' association_name=association.slug %}">
+            <i class="fas fa-plus"></i> Money transfer
+        </a>
         {% if association.has_min_exception %}
-            <div class="col-12 col-md-6">Current balance: <strong>{{ balance|euro }}</strong></div>
-            <div class="col-sm-6 col-md-3">
-                <a href="{% url 'association_process_negatives' association_name=association.slug %}"
-                   class="btn btn-secondary btn-block">Autocorrect neg. credits</a>
-            </div>
-            <div class="col-sm-6 col-md-3">
-                <a href="{% url 'association_transactions_csv' association_name=association.slug %}"
-                   class="btn btn-secondary btn-block"><i class="fa fa-file-export"></i> Transactions CSV</a>
-            </div>
-        {% else %}
-            <div class="col-sm-6 col-md-8">Current balance: <strong>{{ balance|euro }}</strong></div>
-            <div class="col-sm-6 col-md-4">
-                <a href="{% url 'association_transactions_csv' association_name=association.slug %}"
-                   class="btn btn-secondary btn-block"><i class="fa fa-file-export"></i> Transactions CSV</a>
-            </div>
+            <a href="{% url 'association_process_negatives' association_name=association.slug %}"
+               class="btn btn-secondary">
+                Autocorrect negative credits
+            </a>
         {% endif %}
-    </div>
+        <a href="{% url 'association_transactions_csv' association_name=association.slug %}"
+           class="btn btn-secondary">
+            <i class="fa fa-file-export"></i> Transactions CSV
+        </a>
+    </p>
+    {% include 'credit_management/transaction_table.html' with account_self=association.account %}
 
-    {# The actual table #}
-    <div class="row">
-        <div class="col-12 table-responsive">
-            <table class="table table-hover" >
-                {# Table header #}
-                <thead>
-                    <tr>
-                        <td>When</td>
-                        <td>From/to</td>
-                        <td>Sender or recipient</td>
-                        <td>Amount</td>
-                        <td>Description</td>
-                    </tr>
-                </thead>
-
-                <tbody>
-                {# Table rows #}
-                {% for transaction in object_list %}
-                    {% include 'accounts/snippet_credit_history_association.html' %}
-                {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    </div>
     {% include 'snippets/paginator.html' %}
 
-    <a class="btn btn-block btn-primary" href="{% url 'transaction_add' association_name=association.slug %}">
-        Transfer credits
-    </a>
 {% endblock %}

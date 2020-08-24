@@ -17,18 +17,11 @@ from userdetails.models import Association
 
 
 class TransactionListView(ListView):
-    template_name = "credit_management/history_credits.html"
+    template_name = "credit_management/transaction_history.html"
     paginate_by = 20
-    context_object_name = 'transactions'
 
     def get_queryset(self):
-        account = self.request.user.account
-        return Transaction.objects.filter(Q(source=account) | Q(target=account)).order_by('-moment')
-
-    def get_context_data(self, *args, **kwargs):
-        context = super().get_context_data(*args, **kwargs)
-        # context['']
-        return context
+        return Transaction.objects.filter_account(self.request.user.account).order_by('-moment')
 
 
 class TransactionAddView(LoginRequiredMixin, FormView):

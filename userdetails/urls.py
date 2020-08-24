@@ -3,7 +3,7 @@ from django.urls import path, include
 
 from creditmanagement.views import AssociationTransactionAddView
 from userdetails.views import RegisterView, DiningJoinHistoryView, DiningClaimHistoryView, PeopleAutocompleteView
-from userdetails.views_association import CreditsOverview, TransactionsCsvView, MembersOverview, MembersEditView, \
+from userdetails.views_association import AssociationTransactionListView, TransactionsCsvView, MembersOverview, MembersEditView, \
     AssociationOverview, AssociationSettingsView, AssociationSiteDiningView, AssociationSiteCreditView, \
     AutoCreateNegativeCreditsView
 from userdetails.views_user_settings import SettingsProfileView
@@ -12,7 +12,7 @@ urlpatterns = [
     path('association/<slug:association_name>/', include([
         path('', AssociationOverview.as_view(), name='association_overview'),
         path('transactions/', include([
-            path('', CreditsOverview.as_view(), name='association_credits'),
+            path('', AssociationTransactionListView.as_view(), name='association_credits'),
             path('process_negatives/', AutoCreateNegativeCreditsView.as_view(), name='association_process_negatives'),
             path('csv/', TransactionsCsvView.as_view(), name='association_transactions_csv'),
             path('add/', AssociationTransactionAddView.as_view(), name='transaction_add'),
