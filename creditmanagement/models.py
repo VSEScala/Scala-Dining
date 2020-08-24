@@ -321,54 +321,6 @@ class PendingTransaction(AbstractPendingTransaction):
             return cls.objects.annotate_user_balance(users=users, output_name=output_name)
 
 
-# User and association views
-
-
-class UserCredit(models.Model):
-    """User credit model, implemented as Database VIEW (see migrations/usercredit_view.py)."""
-
-    user = models.OneToOneField(User, primary_key=True,
-                                db_column='id',
-                                on_delete=models.DO_NOTHING)
-    balance = models.DecimalField(blank=True, null=True,
-                                  db_column=AbstractTransaction.balance_annotation_name,
-                                  decimal_places=2,
-                                  max_digits=6)
-    balance_fixed = models.DecimalField(blank=True,
-                                        null=True,
-                                        db_column=FixedTransaction.balance_annotation_name,
-                                        decimal_places=2,
-                                        max_digits=6)
-
-    # I think this code might be incorrect, as it does not consider the direction of the transaction
-    def negative_since(self):
-        """Computes the date from the balance_fixed table when the users balance has become negative."""
-        balance = self.balance_fixed
-        if balance >= 0:
-            # balance is already positive, return nothing
-            return None
-
-        # Loop over all transactions from new to old, reverse its balance
-        transactions = FixedTransaction.get_all_transactions(user=self.user).order_by('-order_moment')
-        for fixed_transaction in transactions:
-            balance += fixed_transaction.amount
-            # If balance is positive now, return the current transaction date
-            if balance >= 0:
-                return fixed_transaction.order_moment
-
-        # This should not be reached, it would indicate that the starting balance was below 0
-        raise RuntimeError("Balance started as negative, negative_since could not be computed")
-
-    @classmethod
-    def view(cls):
-        """This method returns the SQL string that creates the view."""
-        qs = AbstractTransaction.annotate_balance(
-            users=User.objects.all()).values('id',
-                                             AbstractTransaction.balance_annotation_name,
-                                             FixedTransaction.balance_annotation_name)
-        return str(qs.query)
-
-
 class Account(models.Model):
     """Money account which can be used as a transaction source or target."""
 
