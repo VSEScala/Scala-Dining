@@ -1,5 +1,6 @@
+from datetime import datetime
 from decimal import Decimal
-from typing import Union
+from typing import Union, Optional
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
@@ -339,6 +340,7 @@ class UserCredit(models.Model):
                                         decimal_places=2,
                                         max_digits=6)
 
+    # I think this code might be incorrect, as it does not consider the direction of the transaction
     def negative_since(self):
         """Computes the date from the balance_fixed table when the users balance has become negative."""
         balance = self.balance_fixed
@@ -403,6 +405,30 @@ class Account(models.Model):
             return self.association
         return None
 
+    def negative_since(self) -> Optional[datetime]:
+        """Computes the date when the users balance has become negative.
+
+        Returns:
+            The computed date or None if the user balance is positive.
+        """
+        balance = self.get_balance()
+        if balance >= 0:
+            # balance is already positive, return nothing
+            return None
+
+        # Loop over all transactions from new to old, while reversing the balance
+        transactions = Transaction.objects.filter_account(self).order_by('-moment')
+        for tx in transactions:
+            if tx.source == self:
+                balance += tx.amount
+            else:
+                balance -= tx.amount
+            # If balance is positive now, return the current transaction date
+            if balance >= 0:
+                return tx.moment
+        # This should not be reached, it would indicate that the starting balance was below 0
+        raise RuntimeError
+
     def __str__(self):
         if self.get_entity():
             return str(self.get_entity())
@@ -426,6 +452,7 @@ class Transaction(models.Model):
     #  balance is not affected when source == target.
     source = models.ForeignKey(Account, on_delete=models.PROTECT, related_name='transaction_source_set')
     target = models.ForeignKey(Account, on_delete=models.PROTECT, related_name='transaction_target_set')
+    # Amount can only be (strictly) positive
     amount = models.DecimalField(decimal_places=2, max_digits=8, validators=[MinValueValidator(Decimal('0.01'))])
     moment = models.DateTimeField(default=timezone.now)
     description = models.CharField(max_length=150)

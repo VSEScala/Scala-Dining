@@ -1,9 +1,9 @@
 from dal_select2.widgets import ModelSelect2
 from django import forms
 from django.core.exceptions import ValidationError
-from django.db.models import Sum
+from django.db import transaction
 
-from creditmanagement.models import PendingTransaction, UserCredit, Account, Transaction
+from creditmanagement.models import Account, Transaction
 from userdetails.models import User, Association
 
 
@@ -69,48 +69,34 @@ class TransactionForm(forms.ModelForm):
 
 
 class ClearOpenExpensesForm(forms.Form):
-    """Creates pending transactions for all members of this associations who are negative."""
+    """Creates transactions for all members of this association who are negative."""
 
-    def __init__(self, *args, association=None, **kwargs):
-        assert association is not None
-        self.association = association
-        super(ClearOpenExpensesForm, self).__init__(*args, **kwargs)
+    description = forms.CharField(max_length=150, help_text="Is displayed on each user's transaction overview, "
+                                                            "e.g. in the case of Quadrivium it could be 'Q-rekening'.")
 
-    def get_applicable_user_credits(self):
-        return UserCredit.objects.filter(
-            user__usermembership__association=self.association,
-            balance__lt=0,  # Use this to correct for any pending transactions
-        )
+    def __init__(self, *args, association=None, user=None, **kwargs):
+        # Calculate and create the transactions that need to be applied
 
-    @property
-    def negative_members_count(self):
-        return self.get_applicable_user_credits().count()
-
-    @property
-    def negative_member_credit_total(self):
-        balance_sum = self.get_applicable_user_credits().aggregate(Sum('balance'))['balance__sum']
-        if balance_sum is None:
-            balance_sum = 0
-        # Remember the - value to correct for the negative outcomes
-        return "{:.2f}".format(-balance_sum)
-
-    def clean(self):
-        if not self.association.has_min_exception:
-            # This does not work for associations that have no minimum balance exception
-            raise ValidationError(f"{self.association} has no miniumum exception")
-        if self.negative_members_count == 0:
-            raise ValidationError("There are no members with a negative balance to process")
-
-        return super(ClearOpenExpensesForm, self).clean()
+        # Get all verified members. Probably nicer to create a helper method for this.
+        members = User.objects.filter(usermembership__association=association, usermembership__is_verified=True)
+        self.transactions = []
+        for m in members:
+            balance = m.account.get_balance()
+            if balance < 0:
+                # Construct a transaction for each member with negative balance
+                tx = Transaction(source=association.account,
+                                 target=m.account,
+                                 amount=-balance,
+                                 created_by=user)  # Description needs to be set later
+                self.transactions.append(tx)
+        super().__init__(*args, **kwargs)
 
     def save(self):
-        credits = self.get_applicable_user_credits()
-        description = f"Process open costs to {self.association}"
-
-        for credit in credits:
-            PendingTransaction.objects.create(
-                source_association=self.association,
-                amount=-credit.balance,
-                target_user=credit.user,
-                description=description
-            )
+        """Saves the transactions to the database."""
+        if not self.is_valid():
+            raise RuntimeError
+        desc = self.cleaned_data.get('description')
+        with transaction.atomic():
+            for tx in self.transactions:
+                tx.description = desc
+                tx.save()

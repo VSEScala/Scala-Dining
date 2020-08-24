@@ -3,41 +3,33 @@
 {% block tab_members %} active{% endblock %}
 
 {% block details %}
-    <div class="row mb-3">
-        <div class="col-3 offset-9">
-            <a class="btn btn-block btn-outline-primary"
-               href="{% url 'association_members' association_name=association.slug %}">Back</a>
-        </div>
-    </div>
+    <p>
+        <a class="btn btn-primary" href="{% url 'association_members' association_name=association.slug %}">
+            Back
+        </a>
+    </p>
 
-    {# The actual table #}
-    <form method="post" class="row">
+    <form method="post">
         {% csrf_token %}
-        <div class="col-12 table-responsive">
+        <div class="table-responsive">
             <table class="table table-hover">
-                {# Table header #}
                 <thead>
                 <tr>
-                    <td>Username</td>
-                    <td>Full name</td>
-                    <td>E-mail</td>
-                    <td>Status</td>
-                    <td colspan="2">Action</td>
+                    <th scope="col">Username</th>
+                    <th scope="col">Name</th>
+                    <th scope="col">E-mail</th>
+                    <th scope="col">Status</th>
+                    <th scope="col" colspan="2">Action</th>
                 </tr>
                 </thead>
-
                 <tbody>
-                {# Table rows #}
                 {% for entry in object_list %}
                     {% include 'accounts/snippet_member_edits.html' %}
                 {% endfor %}
-
                 </tbody>
             </table>
         </div>
     </form>
-
-
 
     {% include 'snippets/paginator.html' %}
 {% endblock %}

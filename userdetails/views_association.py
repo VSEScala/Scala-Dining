@@ -27,9 +27,7 @@ class AssociationBoardMixin:
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['association'] = self.association
-
         context['notify_overview'] = self.association.has_new_member_requests()
-
         return context
 
     def dispatch(self, request, *args, **kwargs):
@@ -61,17 +59,27 @@ class AutoCreateNegativeCreditsView(LoginRequiredMixin, AssociationBoardMixin, F
     form_class = ClearOpenExpensesForm
 
     def get_form_kwargs(self):
-        kwargs = super(AutoCreateNegativeCreditsView, self).get_form_kwargs()
+        # This view is only meant for associations with a min credit exception
+        if not self.association.has_min_exception:
+            raise PermissionDenied
+        kwargs = super().get_form_kwargs()
         kwargs['association'] = self.association
+        kwargs['user'] = self.request.user
         return kwargs
 
     def form_valid(self, form):
         form.save()
-        messages.success(self.request, 'Member credits have successfully been processed')
-        return super(AutoCreateNegativeCreditsView, self).form_valid(form)
+        messages.success(self.request, "Member credits have successfully been processed")
+        return super().form_valid(form)
 
     def get_success_url(self):
         return reverse('association_credits', kwargs={'association_name': self.association.slug})
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # Sum all transaction amounts
+        context['transactions_sum'] = sum(tx.amount for tx in context['form'].transactions)
+        return context
 
 
 class TransactionsCsvView(LoginRequiredMixin, AssociationBoardMixin, View):

@@ -139,12 +139,9 @@
         {% endwith %}
     </nav>
 
-    <div class="container mt-3">
+    <div class="container my-3">
         {% include 'snippets/negative_balance_alert.html' %}
-    </div>
-
-    {% if messages %}
-        <div class="container mt-3">
+        {% if messages %}
             {% for message in messages %}
                 <div class="alert alert-{% if message.tags == "error" %}danger{% else %}{{ message.tags }}{% endif %} alert-dismissible"
                      role="alert">
@@ -154,8 +151,7 @@
                     {{ message }}
                 </div>
             {% endfor %}
-        </div>
-    {% endif %}
-
-    <div class="container my-3">{% block content %}{% endblock %}</div>
+        {% endif %}
+        {% block content %}{% endblock %}
+    </div>
 {% endblock %}
