@@ -1,11 +1,8 @@
-{% extends 'base.html' %}
+{% extends 'accounts/associations_base.html' %}
 
-{% block content %}
-    <p>
-        <a href="{% url 'association_credits' association_name=view.kwargs.association_name %}">
-            ← Back to transaction overview
-        </a>
-    </p>
+{% block tab_credits %} active{% endblock %}
+
+{% block details %}
     <h3>Transfer money</h3>
     <p>
         As an association board member you can transfer money to user accounts or other associations.

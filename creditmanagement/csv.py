@@ -13,8 +13,8 @@ def write_transactions_csv(csv_file, transactions: Iterable[Transaction], accoun
     Args:
         csv_file: Can be any file-like object with a write() method.
         transactions: List or QuerySet of transactions.
-        account_self: The account that is used to determine the direction and
-            is not included in the CSV.
+        account_self: The account that is used to determine the direction. The
+            opposite account is used for the (counterpart) name column.
     """
     csv_writer = csv.writer(csv_file)
     csv_writer.writerow(['date', 'direction', 'account_type', 'name', 'email', 'amount', 'description', 'created_by'])

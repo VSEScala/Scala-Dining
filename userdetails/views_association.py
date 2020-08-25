@@ -13,7 +13,8 @@ from django.views.generic import ListView, TemplateView, FormView
 
 from creditmanagement.csv import write_transactions_csv
 from creditmanagement.forms import ClearOpenExpensesForm
-from creditmanagement.models import AbstractTransaction, FixedTransaction, Transaction
+from creditmanagement.models import AbstractTransaction, FixedTransaction, Transaction, Account
+from creditmanagement.views import TransactionFormView
 from dining.models import DiningList, DiningEntry
 from general.views import DateRangeFilterMixin
 from userdetails.forms import AssociationSettingsForm
@@ -52,6 +53,17 @@ class AssociationTransactionListView(LoginRequiredMixin, AssociationBoardMixin, 
 
     def get_queryset(self):
         return Transaction.objects.filter_account(self.association.account).order_by('-moment')
+
+
+class AssociationTransactionAddView(LoginRequiredMixin, AssociationBoardMixin, TransactionFormView):
+    """View where an association can transfer money to someone else."""
+    template_name = 'accounts/association_credits_transaction.html'
+
+    def get_source(self) -> Account:
+        return self.association.account
+
+    def get_success_url(self):
+        return reverse('association_credits', kwargs={'association_name': self.kwargs.get('association_name')})
 
 
 class AutoCreateNegativeCreditsView(LoginRequiredMixin, AssociationBoardMixin, FormView):
@@ -225,7 +237,7 @@ class AssociationSiteDiningView(AssociationBoardMixin, AssociationHasSiteAccessM
 
 class AssociationSiteCreditView(AssociationBoardMixin, AssociationHasSiteAccessMixin, DateRangeFilterMixin,
                                 TemplateView):
-    template_name = "accounts/association_site_credit_stats.html"
+    template_name = "accounts/association_site_credit.html"
 
     def get_context_data(self, **kwargs):
         context = super(AssociationSiteCreditView, self).get_context_data(**kwargs)

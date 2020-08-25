@@ -420,10 +420,10 @@ class Transaction(models.Model):
     created_by = models.ForeignKey(User, on_delete=models.PROTECT, related_name='transaction_set')
 
     # Implementation note on cancellation
-    # Instead of an extra 'cancelled'
-    # column we could also write a method that creates a new
-    # transaction that reverses this transaction. In that case however it
-    # is not possible to check whether a transaction is already cancelled.
+    # Instead of an extra 'cancelled' column we could also write a method that
+    # creates a new transaction that reverses this transaction. In that case
+    # however it is not possible to check whether a transaction is already
+    # cancelled.
 
     # Note 2
     # This is by no means an ideal solution and there are probably much better

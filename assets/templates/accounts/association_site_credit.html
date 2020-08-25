@@ -3,13 +3,15 @@
 {% block tab_site_credits %} active{% endblock %}
 
 {% block details %}
+    <p>
+        <a href="" class="btn btn-primary"><i class="fas fa-plus"></i> New transaction</a>
+    </p>
     <div class="table-responsive">
         <table class="table table-hover">
-            {# Table header #}
             <thead>
             <tr>
-                <td>Association</td>
-                <td>Current balance</td>
+                <th scope="col">Association</th>
+                <th scope="col">Current balance</th>
             </tr>
             </thead>
 

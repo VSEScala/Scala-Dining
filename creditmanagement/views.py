@@ -6,14 +6,14 @@ from django.core.exceptions import PermissionDenied
 from django.db.models import Sum
 from django.http import HttpResponseForbidden, HttpResponseRedirect, HttpResponse
 from django.shortcuts import get_object_or_404
-from django.urls import reverse
+from django.urls import reverse, reverse_lazy
 from django.utils import timezone
 from django.views.generic import View, FormView
 from django.views.generic.list import ListView
 
 from creditmanagement.csv import write_transactions_csv
 from creditmanagement.forms import TransactionForm
-from creditmanagement.models import FixedTransaction, Transaction
+from creditmanagement.models import FixedTransaction, Transaction, Account
 from userdetails.models import Association
 
 
@@ -37,16 +37,18 @@ class TransactionCSVView(LoginRequiredMixin, View):
         return response
 
 
-class TransactionAddView(LoginRequiredMixin, FormView):
-    """View where a user can transfer money to someone else."""
-    template_name = "credit_management/transaction_add.html"
+class TransactionFormView(FormView):
+    """Base class for a view with a create transaction form.
+
+    A subclass needs to override get_source(), set the success URL and set the
+    template name.
+    """
     form_class = TransactionForm
 
     def get_form_kwargs(self):
-        """Sets up the form instance."""
         kwargs = super().get_form_kwargs()
-        kwargs['source'] = self.request.user.account
-        kwargs['user'] = self.request.user
+        kwargs['source'] = self.get_source()  # Set transaction source/origin
+        kwargs['user'] = self.request.user  # Set created_by
         return kwargs
 
     def form_valid(self, form):
@@ -54,25 +56,18 @@ class TransactionAddView(LoginRequiredMixin, FormView):
         messages.add_message(self.request, messages.SUCCESS, "Transaction has been successfully created.")
         return HttpResponseRedirect(self.get_success_url())
 
-    def get_success_url(self):
-        return reverse('credits:transaction_list')
+    def get_source(self) -> Account:
+        """Returns the source/origin for the transaction."""
+        raise NotImplementedError
 
 
-class AssociationTransactionAddView(TransactionAddView):
-    """View where an association can transfer money to someone else."""
-    template_name = 'credit_management/transaction_add_association.html'
+class TransactionAddView(LoginRequiredMixin, TransactionFormView):
+    """View where a user can transfer money to someone else."""
+    template_name = "credit_management/transaction_add.html"
+    success_url = reverse_lazy('credits:transaction_list')
 
-    def get_form_kwargs(self):
-        kwargs = super().get_form_kwargs()
-        association = get_object_or_404(Association, slug=self.kwargs.get('association_name'))
-        # Make sure that the user is a board member
-        if not self.request.user.is_board_of(association.id):
-            raise PermissionDenied
-        kwargs['source'] = association.account
-        return kwargs
-
-    def get_success_url(self):
-        return reverse('association_credits', kwargs={'association_name': self.kwargs.get('association_name')})
+    def get_source(self) -> Account:
+        return self.request.user.account
 
 
 class MoneyObtainmentView(LoginRequiredMixin, View):
