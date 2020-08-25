@@ -178,3 +178,6 @@ SOCIALACCOUNT_ADAPTER = "userdetails.externalaccounts.SocialAccountAdapter"
 if env.bool('DINING_COOKIE_SECURE', default=False):
     CSRF_COOKIE_SECURE = True
     SESSION_COOKIE_SECURE = True
+
+# We're running behind a proxy
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
