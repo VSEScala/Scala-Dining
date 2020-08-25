@@ -19,7 +19,7 @@
         {% endif %}
         <a href="{% url 'association_transactions_csv' association_name=association.slug %}"
            class="btn btn-secondary">
-            <i class="fa fa-file-export"></i> Transactions CSV
+            <i class="fa fa-file-export"></i> Download CSV
         </a>
     </p>
     {% include 'credit_management/transaction_table.html' with account_self=association.account %}

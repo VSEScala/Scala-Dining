@@ -2,7 +2,7 @@
 
 {# Works with the Django Paginator class. #}
 
-{% if page_obj.paginator.num_pages > 1 %}
+{#{% if page_obj.paginator.num_pages > 1 %}#}
 
     {# Set the amount of links that should be displayed above and below #}
     {% with show_amount=2 %}
@@ -77,4 +77,4 @@
             {% endwith %}
         {% endwith %}
     {% endwith %}
-{% endif %}
+{#{% endif %}#}

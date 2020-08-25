@@ -5,23 +5,36 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import PermissionDenied
 from django.db.models import Sum
 from django.http import HttpResponseForbidden, HttpResponseRedirect, HttpResponse
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import get_object_or_404
 from django.urls import reverse
 from django.utils import timezone
 from django.views.generic import View, FormView
 from django.views.generic.list import ListView
 
+from creditmanagement.csv import write_transactions_csv
 from creditmanagement.forms import TransactionForm
-from creditmanagement.models import AbstractPendingTransaction, FixedTransaction, Transaction
+from creditmanagement.models import FixedTransaction, Transaction
 from userdetails.models import Association
 
 
-class TransactionListView(ListView):
+class TransactionListView(LoginRequiredMixin, ListView):
     template_name = "credit_management/transaction_history.html"
     paginate_by = 20
 
     def get_queryset(self):
         return Transaction.objects.filter_account(self.request.user.account).order_by('-moment')
+
+
+class TransactionCSVView(LoginRequiredMixin, View):
+    """Returns a CSV with transactions of the current user."""
+
+    def get(self, request, *args, **kwargs):
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = 'attachment; filename="user_transactions.csv"'
+        # We only include non-cancelled transactions
+        qs = Transaction.objects.filter_valid().filter_account(request.user.account).order_by('-moment')
+        write_transactions_csv(response, qs, request.user.account)
+        return response
 
 
 class TransactionAddView(LoginRequiredMixin, FormView):
@@ -60,19 +73,6 @@ class AssociationTransactionAddView(TransactionAddView):
 
     def get_success_url(self):
         return reverse('association_credits', kwargs={'association_name': self.kwargs.get('association_name')})
-
-
-class TransactionFinalisationView(View):
-    context = {}
-    template_name = "credit_management/transaction_finalise.html"
-
-    def get(self, request):
-        return render(request, self.template_name, self.context)
-
-    def post(self, request):
-        self.context['transactions'] = AbstractPendingTransaction.finalise_all_expired()
-
-        return render(request, self.template_name, self.context)
 
 
 class MoneyObtainmentView(LoginRequiredMixin, View):

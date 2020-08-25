@@ -1,4 +1,3 @@
-import csv
 import decimal
 
 from django.contrib import messages
@@ -12,6 +11,7 @@ from django.utils.http import is_safe_url
 from django.views import View
 from django.views.generic import ListView, TemplateView, FormView
 
+from creditmanagement.csv import write_transactions_csv
 from creditmanagement.forms import ClearOpenExpensesForm
 from creditmanagement.models import AbstractTransaction, FixedTransaction, Transaction
 from dining.models import DiningList, DiningEntry
@@ -82,36 +82,15 @@ class AutoCreateNegativeCreditsView(LoginRequiredMixin, AssociationBoardMixin, F
         return context
 
 
-class TransactionsCsvView(LoginRequiredMixin, AssociationBoardMixin, View):
+class AssociationTransactionsCSVView(LoginRequiredMixin, AssociationBoardMixin, View):
     """Returns a CSV file with all transactions."""
 
     def get(self, request, *args, **kwargs):
         response = HttpResponse(content_type='text/csv')
         response['Content-Disposition'] = 'attachment; filename="association_transactions.csv"'
-        csv_writer = csv.writer(response)
-        # Write header
-        csv_writer.writerow(['Created on', 'Executed on', 'Source type', 'Source name', 'Source e-mail', 'Target type',
-                             'Target name', 'Target e-mail', 'Amount', 'Description'])
-        # Write transactions
-        for t in FixedTransaction.get_all_transactions(association=self.association):
-            # Transaction moment
-            moment = [t.order_moment.isoformat(), t.confirm_moment.isoformat()]
-            # Transaction source
-            if t.source_user:
-                source = ['User', t.source_user.get_full_name(), t.source_user.email]
-            elif t.source_association:
-                source = ['Association', t.source_association.name, '']
-            else:
-                source = ['None', '', '']
-            # Transaction target
-            if t.target_user:
-                target = ['User', t.target_user.get_full_name(), t.target_user.email]
-            elif t.target_association:
-                target = ['Association', t.target_association.name, '']
-            else:
-                target = ['None', '', '']
-            # Write to CSV
-            csv_writer.writerow(moment + source + target + [t.amount, t.description])
+        # We only include non-cancelled transactions
+        qs = Transaction.objects.filter_valid().filter_account(self.association.account).order_by('-moment')
+        write_transactions_csv(response, qs, self.association.account)
         return response
 
 

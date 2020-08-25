@@ -419,10 +419,18 @@ class Transaction(models.Model):
     description = models.CharField(max_length=150)
     created_by = models.ForeignKey(User, on_delete=models.PROTECT, related_name='transaction_set')
 
-    # Implementation note on cancellation: instead of an extra 'cancelled'
+    # Implementation note on cancellation
+    # Instead of an extra 'cancelled'
     # column we could also write a method that creates a new
     # transaction that reverses this transaction. In that case however it
     # is not possible to check whether a transaction is already cancelled.
+
+    # Note 2
+    # This is by no means an ideal solution and there are probably much better
+    # solutions but we can easily change this. Other options:
+    # - Separate table: not ideal because DRY
+    # - Delete transaction: while we can't and shouldn't disallow deletion on
+    #   code and database level, we should not make deletion part of the API.
     cancelled = models.DateTimeField(null=True)
     cancelled_by = models.ForeignKey(User,
                                      on_delete=models.PROTECT,
