@@ -113,7 +113,7 @@ STATICFILES_DIRS = [os.path.join(BASE_DIR, 'assets/static')]
 # STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 MEDIA_ROOT = env.str('DINING_MEDIA_ROOT', default=os.path.join(BASE_DIR, 'uploads'))
-MEDIA_URL = "/media/"
+MEDIA_URL = env.str('DINING_MEDIA_URL', default='/media/')
 
 DATABASES = {'default': env.dj_db_url('DINING_DATABASE_URL', default='sqlite:///db.sqlite3')}
 if not DATABASES['default'].get('PASSWORD'):
@@ -180,3 +180,6 @@ SOCIALACCOUNT_ADAPTER = "userdetails.externalaccounts.SocialAccountAdapter"
 if env.bool('DINING_COOKIE_SECURE', default=False):
     CSRF_COOKIE_SECURE = True
     SESSION_COOKIE_SECURE = True
+
+# We're running behind a proxy
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
