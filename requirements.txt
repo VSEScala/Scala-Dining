@@ -18,7 +18,7 @@ environs[django]==8.0.0   # via -r requirements.in
 idna==2.10                # via requests
 marshmallow==3.7.1        # via environs
 oauthlib==3.1.0           # via requests-oauthlib
-pillow==6.2.2             # via -r requirements.in
+pillow==7.1.0             # via -r requirements.in
 python-dotenv==0.14.0     # via environs
 python3-openid==3.2.0     # via django-allauth
 pytz==2020.1              # via django
