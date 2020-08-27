@@ -275,6 +275,7 @@ class SiteTransactionView(AssociationBoardMixin, AssociationHasSiteAccessMixin, 
 
     def form_valid(self, form):
         form.save()
+        messages.success(self.request, "The transaction has been successfully created.")
         return super().form_valid(form)
 
 
