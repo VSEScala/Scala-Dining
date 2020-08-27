@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime
 
 from django.db.models import ObjectDoesNotExist
 from django.http import HttpResponseForbidden, Http404
