@@ -1,0 +1,34 @@
+{% extends 'accounts/associations_base.html' %}
+
+{% block tab_site_credits %} active{% endblock %}
+
+{% block details %}
+    <p>
+        This page allows creating transactions with arbitrary origin and destination.
+        Use carefully, with great power comes great responsibility.
+        Note that if you withdraw money from a user's account, they will get notified.
+    </p>
+    {# Todo! Use button group to only show 1 of the 3 fields! #}
+    {# See https://getbootstrap.com/docs/4.5/components/buttons/#checkbox-and-radio-buttons #}
+    <form method="post">
+        {% csrf_token %}
+        {% include 'snippets/bootstrap_form_non_field_errors.html' %}
+        <h5>Origin/source</h5>
+        <p>Select 1 of the fields.</p>
+        {% include 'snippets/bootstrap_form_field.html' with field=form.source_user horizontal=True %}
+        {% include 'snippets/bootstrap_form_field.html' with field=form.source_association horizontal=True %}
+        {% include 'snippets/bootstrap_form_field.html' with field=form.source_special horizontal=True %}
+
+        <h5>Destination/target</h5>
+        <p>Select 1 of the fields.</p>
+        {% include 'snippets/bootstrap_form_field.html' with field=form.target_user horizontal=True %}
+        {% include 'snippets/bootstrap_form_field.html' with field=form.target_association horizontal=True %}
+        {% include 'snippets/bootstrap_form_field.html' with field=form.target_special horizontal=True %}
+
+        <h5>Details</h5>
+        {% include 'snippets/bootstrap_form_field.html' with field=form.amount horizontal=True %}
+        {% include 'snippets/bootstrap_form_field.html' with field=form.description horizontal=True %}
+        {{ form.media }}
+        <input type="submit" value="Create transaction" class="btn btn-block btn-primary"/>
+    </form>
+{% endblock %}

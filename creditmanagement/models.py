@@ -328,21 +328,20 @@ class Account(models.Model):
     user = models.OneToOneField(User, on_delete=models.PROTECT, null=True)
     association = models.OneToOneField(Association, on_delete=models.PROTECT, null=True)
 
-    # We can have special accounts which are not linked to a user or association,
-    #  e.g. an account where the kitchen payments can be sent to.
-
+    # Special accounts are used for bookkeeping
     # (The special accounts listed here are automatically created using a receiver.)
-    SPECIAL_ACCOUNTS = [
-        # Account which receives the kitchen payments
-        # The balance indicates the money that is payed for kitchen usage (minus optional withdraws)
-        ('kitchen_cost', 'Kitchen cost'),
 
-        # Generic account, if source/target is unknown
-        # All transactions in the older version that didn't have a source use this account!
-        # But the account is too general so it's probably better to never use this for new transactions
-        # and always use a more specific account.
-        ('generic', 'Unspecified'),
+    SPECIAL_ACCOUNTS = [
+        ('kitchen_cost', 'Kitchen cost'),
+        ('generic', 'Generic'),
     ]
+    SPECIAL_ACCOUNT_DESCRIPTION = {
+        'kitchen_cost': "Account which receives the kitchen payments. "
+                        "The balance indicates the money that is payed for kitchen usage "
+                        "(minus withdraws from this account).",
+        'generic': "This account is used for transactions from an older version that didn't have a source set. "
+                   "Do not use this account for new transactions but always use a more specific account.",
+    }
     special = models.CharField(max_length=30, unique=True, null=True, default=None, choices=SPECIAL_ACCOUNTS)
 
     def get_balance(self) -> Decimal:
@@ -397,6 +396,14 @@ class Account(models.Model):
             return self.get_special_display()
         return super().__str__()
 
+    def get_special_description(self) -> str:
+        """Returns the description (when this is a bookkeeping account)."""
+        return self.SPECIAL_ACCOUNT_DESCRIPTION[self.special]
+
+    def get_transactions(self) -> QuerySet:
+        """Returns all transactions with this account as source or target."""
+        return Transaction.objects.filter_account(self)
+
 
 class TransactionQuerySet2(QuerySet):
     def filter_valid(self):
@@ -431,6 +438,11 @@ class Transaction(models.Model):
     # - Separate table: not ideal because DRY
     # - Delete transaction: while we can't and shouldn't disallow deletion on
     #   code and database level, we should not make deletion part of the API.
+
+    # Note 3
+    # This cancelled column is risky, one might forget to filter out cancelled
+    # transactions when calculating balance. We might need to filter those out
+    # by default.
     cancelled = models.DateTimeField(null=True)
     cancelled_by = models.ForeignKey(User,
                                      on_delete=models.PROTECT,

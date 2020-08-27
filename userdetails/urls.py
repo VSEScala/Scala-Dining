@@ -4,8 +4,8 @@ from django.urls import path, include
 from userdetails.views import RegisterView, DiningJoinHistoryView, DiningClaimHistoryView, PeopleAutocompleteView
 from userdetails.views_association import AssociationTransactionListView, AssociationTransactionsCSVView, \
     MembersOverview, \
-    MembersEditView, AssociationOverview, AssociationSettingsView, AssociationSiteDiningView, AssociationSiteCreditView, \
-    AutoCreateNegativeCreditsView, AssociationTransactionAddView
+    MembersEditView, AssociationOverview, AssociationSettingsView, SiteDiningView, SiteCreditView, \
+    AutoCreateNegativeCreditsView, AssociationTransactionAddView, SiteTransactionView, SiteCreditDetailView
 from userdetails.views_user_settings import SettingsProfileView
 
 urlpatterns = [
@@ -21,8 +21,10 @@ urlpatterns = [
         path('members/edit/', MembersEditView.as_view(), name='association_members_edit'),
         path('settings/', AssociationSettingsView.as_view(), name='association_settings'),
         path('site_stats/', include([
-            path('dining/', AssociationSiteDiningView.as_view(), name='association_site_dining_stats'),
-            path('credit/', AssociationSiteCreditView.as_view(), name='association_site_credit_stats'),
+            path('dining/', SiteDiningView.as_view(), name='association_site_dining_stats'),
+            path('credit/', SiteCreditView.as_view(), name='association_site_credit_stats'),
+            path('credit/add/', SiteTransactionView.as_view(), name='association_site_transaction_add'),
+            path('credit/account/<int:pk>/', SiteCreditDetailView.as_view(), name='association_site_credit_detail'),
         ])),
     ])),
 

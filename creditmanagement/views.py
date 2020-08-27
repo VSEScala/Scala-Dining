@@ -1,20 +1,13 @@
-from datetime import datetime
-
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.core.exceptions import PermissionDenied
-from django.db.models import Sum
-from django.http import HttpResponseForbidden, HttpResponseRedirect, HttpResponse
-from django.shortcuts import get_object_or_404
-from django.urls import reverse, reverse_lazy
-from django.utils import timezone
+from django.http import HttpResponseRedirect, HttpResponse
+from django.urls import reverse_lazy
 from django.views.generic import View, FormView
 from django.views.generic.list import ListView
 
 from creditmanagement.csv import write_transactions_csv
 from creditmanagement.forms import TransactionForm
-from creditmanagement.models import FixedTransaction, Transaction, Account
-from userdetails.models import Association
+from creditmanagement.models import Transaction, Account
 
 
 class TransactionListView(LoginRequiredMixin, ListView):
@@ -69,37 +62,4 @@ class TransactionAddView(LoginRequiredMixin, TransactionFormView):
     def get_source(self) -> Account:
         return self.request.user.account
 
-
-class MoneyObtainmentView(LoginRequiredMixin, View):
-    def get(self, request, *args, **kwargs):
-        # Only superusers can access this page
-        if not request.user.is_superuser:
-            return HttpResponseForbidden
-        # Todo: allow access by permission
-        # Todo: linkin in interface
-
-        date_end = request.GET.get('to', None)
-        if date_end:
-            date_end = datetime.strptime(date_end, '%d/%m/%y')
-        else:
-            date_end = timezone.now()
-
-        date_start = request.GET.get('from', None)
-        if date_start:
-            date_start = datetime.strptime(date_start, '%d/%m/%y')
-        else:
-            date_start = date_end
-
-        # Get all fixed transactions in the date range
-        transactions = FixedTransaction.objects.filter(confirm_moment__gte=date_start, confirm_moment__lte=date_end)
-        # Aggregate the values
-        amount_in = transactions.filter(target_user__isnull=True,
-                                        target_association__isnull=True).aggregate(sum=Sum('amount'))
-        amount_out = transactions.filter(source_user__isnull=True,
-                                         source_association__isnull=True).aggregate(sum=Sum('amount'))
-
-        # Create the response
-        message = "Time from {date_start} to {date_end}:\nIn: {amount_in}\nOut: {amount_out}"
-        message = message.format(date_start=date_start, date_end=date_end,
-                                 amount_in=amount_in['sum'], amount_out=amount_out['sum'])
-        return HttpResponse(message, content_type='text/plain')
+# MoneyObtainmentView is removed in favor of Site Credits tab

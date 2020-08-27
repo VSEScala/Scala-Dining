@@ -1,19 +1,20 @@
-import decimal
+from decimal import Decimal
 
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import PermissionDenied
+from django.core.paginator import Paginator
 from django.db.models import Q, Count, Sum
 from django.http import HttpResponseRedirect, HttpResponse
-from django.shortcuts import get_object_or_404, render
+from django.shortcuts import get_object_or_404, render, redirect
 from django.urls import reverse
 from django.utils.http import is_safe_url
 from django.views import View
-from django.views.generic import ListView, TemplateView, FormView
+from django.views.generic import ListView, TemplateView, FormView, DetailView
 
 from creditmanagement.csv import write_transactions_csv
-from creditmanagement.forms import ClearOpenExpensesForm
-from creditmanagement.models import AbstractTransaction, FixedTransaction, Transaction, Account
+from creditmanagement.forms import ClearOpenExpensesForm, AccountPickerForm, SiteWideTransactionForm
+from creditmanagement.models import Transaction, Account
 from creditmanagement.views import TransactionFormView
 from dining.models import DiningList, DiningEntry
 from general.views import DateRangeFilterMixin
@@ -44,7 +45,7 @@ class AssociationHasSiteAccessMixin:
         """Gets association and checks if user is board member."""
         if not self.association.has_site_stats_access:
             raise PermissionDenied("This association may not view this data")
-        return super(AssociationHasSiteAccessMixin, self).dispatch(request, *args, **kwargs)
+        return super().dispatch(request, *args, **kwargs)
 
 
 class AssociationTransactionListView(LoginRequiredMixin, AssociationBoardMixin, ListView):
@@ -190,12 +191,12 @@ class AssociationSettingsView(AssociationBoardMixin, TemplateView):
         return render(request, self.template_name, context)
 
 
-class AssociationSiteDiningView(AssociationBoardMixin, AssociationHasSiteAccessMixin, DateRangeFilterMixin,
-                                TemplateView):
-    template_name = "accounts/association_site_dining_stats.html"
+class SiteDiningView(AssociationBoardMixin, AssociationHasSiteAccessMixin, DateRangeFilterMixin,
+                     TemplateView):
+    template_name = "accounts/site_dining_stats.html"
 
     def get_context_data(self, **kwargs):
-        context = super(AssociationSiteDiningView, self).get_context_data(**kwargs)
+        context = super().get_context_data(**kwargs)
 
         if self.date_range_form.is_valid():
             dining_lists = DiningList.objects.filter(date__gte=self.date_start, date__lte=self.date_end)
@@ -235,49 +236,75 @@ class AssociationSiteDiningView(AssociationBoardMixin, AssociationHasSiteAccessM
         return context
 
 
-class AssociationSiteCreditView(AssociationBoardMixin, AssociationHasSiteAccessMixin, DateRangeFilterMixin,
-                                TemplateView):
-    template_name = "accounts/association_site_credit.html"
+class SiteCreditView(AssociationBoardMixin, AssociationHasSiteAccessMixin, FormView):
+    """Shows an overview of the site wide credit details."""
+
+    template_name = "accounts/site_credit.html"
+    form_class = AccountPickerForm
 
     def get_context_data(self, **kwargs):
-        context = super(AssociationSiteCreditView, self).get_context_data(**kwargs)
+        context = super().get_context_data(**kwargs)
 
         # Get the balance for each association
-        association_stats = {}
-        for association in Association.objects.all():
-            association_stats[association.id] = {
-                'association': association,
-                'balance': AbstractTransaction.get_association_balance(association),
-            }
-        context['association_balances'] = association_stats
+        context['associations'] = Association.objects.all()
+        context['special_accounts'] = Account.objects.filter(special__isnull=False)
+        context['account_picker'] = AccountPickerForm()
+        return context
 
-        # Get the income through the dining list
-        if self.date_range_form.is_valid():
-            transactions = FixedTransaction.objects. \
-                filter(confirm_moment__gte=self.date_start,
-                       confirm_moment__lte=self.date_end)
-            # Aggregate the values
-            influx = transactions.filter(
-                target_user__isnull=True,
-                target_association__isnull=True
-            ).aggregate(sum=Sum('amount'))['sum']
+    def form_valid(self, form):
+        account = form.get_account()
+        return redirect('association_site_credit_detail', pk=account.pk,
+                        association_name=self.kwargs['association_name'])
 
-            outflux = transactions.filter(
-                source_user__isnull=True,
-                source_association__isnull=True
-            ).aggregate(sum=Sum('amount'))['sum']
 
-            if influx is None:
-                influx = 0
-            influx = decimal.Decimal(influx)
+class SiteTransactionView(AssociationBoardMixin, AssociationHasSiteAccessMixin, FormView):
+    """View that allows creating site-wide transactions with arbitrary source.
 
-            if outflux is None:
-                outflux = 0
-            outflux = decimal.Decimal(outflux)
+    This is only meant to be used for the highest boss.
+    """
+    template_name = 'accounts/site_credit_transaction.html'
+    form_class = SiteWideTransactionForm
+
+    def get_success_url(self):
+        return reverse('association_site_credit_stats', kwargs={'association_name': self.kwargs['association_name']})
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['user'] = self.request.user
+        return kwargs
+
+    def form_valid(self, form):
+        form.save()
+        return super().form_valid(form)
+
+
+class SiteCreditDetailView(AssociationBoardMixin, AssociationHasSiteAccessMixin, DateRangeFilterMixin, DetailView):
+    template_name = 'accounts/site_credit_detail.html'
+    model = Account
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        account = context['object']
+
+        # Paginate transactions
+        transaction_qs = account.get_transactions().order_by('-moment')
+        paginator = Paginator(transaction_qs, 100)
+        page_number = self.request.GET.get('page')
+        page_obj = paginator.get_page(page_number)
+        context['page_obj'] = page_obj
+
+        # Handle income/outcome flow
+        # We only handle and show the form if we're on page 1
+        if page_obj.number == 1 and self.date_range_form.is_valid():
+            qs = Transaction.objects.filter_valid().filter(moment__gte=self.date_start,
+                                                           moment__lte=self.date_end)
+            influx = qs.filter(target=account).aggregate(sum=Sum('amount'))['sum'] or Decimal('0.00')
+            outflux = qs.filter(source=account).aggregate(sum=Sum('amount'))['sum'] or Decimal('0.00')
 
             context['dining_balance'] = {
-                'influx': influx.quantize(decimal.Decimal('.01')),
-                'outflux': outflux.quantize(decimal.Decimal('.01')),
-                'nettoflux': (influx - outflux).quantize(decimal.Decimal('.01'))
+                'influx': influx,
+                'outflux': outflux,
+                'nettoflux': influx - outflux,
             }
+
         return context

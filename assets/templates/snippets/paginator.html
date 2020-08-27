@@ -2,7 +2,7 @@
 
 {# Works with the Django Paginator class. #}
 
-{#{% if page_obj.paginator.num_pages > 1 %}#}
+{% if page_obj.paginator.num_pages > 1 %}
 
     {# Set the amount of links that should be displayed above and below #}
     {% with show_amount=2 %}
@@ -35,7 +35,7 @@
                                 <li class="page-item">
                                     {% with page_number=page_obj.number|subtract:disp_low|add:forloop.counter %}
                                         <a class="page-link" href="?page={{ page_number }}">
-                                            {{ page_number  }}
+                                            {{ page_number }}
                                         </a>
                                     {% endwith %}
                                 </li>
@@ -53,7 +53,7 @@
                                 <li class="page-item">
                                     {% with page_number=page_obj.number|add:forloop.counter %}
                                         <a class="page-link" href="?page={{ page_number }}">
-                                            {{ page_number  }}
+                                            {{ page_number }}
                                         </a>
                                     {% endwith %}
                                 </li>
@@ -64,7 +64,7 @@
                         {% if high_num > 0 %}
                             <li class="page-item">
                                 <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">
-                                    {% if page_obj.number|add:disp_high < page_obj.paginator.num_pages  %}
+                                    {% if page_obj.number|add:disp_high < page_obj.paginator.num_pages %}
                                         ...{{ page_obj.paginator.num_pages }}
                                     {% else %}
                                         {{ page_obj.paginator.num_pages }}
@@ -77,4 +77,4 @@
             {% endwith %}
         {% endwith %}
     {% endwith %}
-{#{% endif %}#}
+{% endif %}

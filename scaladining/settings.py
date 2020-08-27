@@ -53,7 +53,6 @@ INSTALLED_APPS = [
     'allauth.account',  # This needs to be before userdetails due to admin.site.unregister
     'userdetails.apps.UserDetailsConfig',
 
-
     'dal',
     'dal_select2',
     'widget_tweaks',

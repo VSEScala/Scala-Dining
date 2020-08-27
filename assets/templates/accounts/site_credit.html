@@ -1,0 +1,119 @@
+{% extends 'accounts/associations_base.html' %}
+
+{% block tab_site_credits %} active{% endblock %}
+
+{% block details %}
+    <p>
+        <a href="{% url 'association_site_transaction_add' association_name=association.slug %}"
+           class="btn btn-primary">
+            <i class="fas fa-plus"></i> New site-wide transaction
+        </a>
+    </p>
+    <h3>Associations</h3>
+    <div class="table-responsive">
+        <table class="table table-sm">
+            <thead>
+            <tr>
+                <th scope="col">Association</th>
+                <th scope="col">Balance</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for a in associations %}
+                <tr>
+                    <td>{{ a.name }}</td>
+                    <td>{{ a.account.get_balance }}</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <h3>Bookkeeping accounts</h3>
+    <p>
+        These accounts are used for bookkeeping of site-wide money flows such as kitchen cost.
+        If you need additional bookkeeping accounts, ask one of the site admins to add those.
+        Create site-wide transactions to move money between bookkeeping or other accounts.
+    </p>
+    <div class="table-responsive">
+        <table class="table table-sm">
+            <thead>
+            <tr>
+                <th scope="col">Account</th>
+                <th scope="col">Balance</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for a in special_accounts %}
+                <tr>
+                    <td>
+                        {{ a.get_special_display }}
+                        <br>
+                        <small class="text-muted">{{ a.get_special_description }}</small>
+                    </td>
+                    <td>{{ a.get_balance }}</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+
+    <h3>Account details</h3>
+    <p>
+        Retrieve transactions, balance and income/outcome flow for any account.
+        First select an account.
+    </p>
+    <form method="post" action="{% url 'association_site_credit_stats' association_name=association.slug %}">
+        {% csrf_token %}
+        <p class="text-muted">
+            <small>Choose one of the 3 fields.</small>
+        </p>
+        {% include 'snippets/bootstrap_form.html' with horizontal=True %}
+        <button type="submit" class="btn btn-primary">Select account</button>
+    </form>
+
+    <h3>Bookkeeping 101</h3>
+    <p class="text-muted"><small>Some general info on bookkeeping.</small></p>
+    <h5>Accounts and transactions</h5>
+    <p>
+        This site works with accounts and transactions.
+        Transactions move money from one account to another.
+        A transaction on this side should <strong>always</strong> be paired with a physical real-money transfer
+        in the other direction, except for internal transactions to/from a bookkeeping account!
+        This will become clear in the next section.
+    </p>
+    <h5>Deposits/withdrawals</h5>
+    <p>
+        When a user wants to deposit money on their account,
+        they transfer physical money to an association. In turn, the association creates a transaction on this site in
+        the other direction, moving money from their balance onto the balance of the user's account.
+        The actual money remains with the user but is stored in the association cash box or bank account,
+        thus the association owes money to the user.
+        This is indicated by a negative association balance and positive user balance.
+    </p>
+    <p>
+        For money withdrawals, the process is exactly the same but in reverse.
+    </p>
+    <h5>Handling kitchen cost</h5>
+    <p>
+        Whenever a user joins a dining list, a transaction is created transferring kitchen cost from the user's
+        balance to the kitchen cost bookkeeping account.
+        Here is a possible example on how you (Scala) can use this kitchen cost account to handle kitchen cost payments
+        to Camelot:
+        to retrieve the exact kitchen income, move the money on the kitchen cost bookkeeping account to Scala's account.
+        Scala's account on the site now becomes positive.
+        To convert the positive balance into actual money, settle the negative balances of the associations by asking
+        them to transfer physical money to Scala, for which in turn you'll create transactions on this site in the
+        other direction, in the same manner as for deposits and withdrawals.
+        This will settle the negative balances of the other associations against your (Scala's) positive
+        balance.
+        If you do this until your balance has become exactly 0, you will now have received the exact physical money
+        that has been payed by users to the kitchen cost account,
+        and you can use this to pay the kitchen cost to Camelot.
+        This money does not include any remittance (afdracht) on the kitchen usage cost that needs to be payed
+        by the associations themselves, that needs to be handled separately.
+    </p>
+    {# Some whitespace #}
+    <div class="py-3"></div>
+
+{% endblock %}

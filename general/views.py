@@ -13,15 +13,14 @@ from userdetails.models import Association
 
 
 class DateRangeFilterMixin:
-    """A filter that takes time of day attributes from the GET attributes."""
+    """A mixin that retrieves a date range from GET query params."""
 
     date_start = None
     date_end = None
-    default_time_length = timedelta(days=3650)
     date_range_form = None
 
     def dispatch(self, request, *args, **kwargs):
-        if request.GET:
+        if 'date_start' in request.GET and 'date_end' in request.GET:
             self.date_range_form = DateRangeForm(request.GET)
         else:
             self.date_range_form = DateRangeForm()
@@ -30,12 +29,11 @@ class DateRangeFilterMixin:
             self.date_start = self.date_range_form.cleaned_data['date_start']
             self.date_end = self.date_range_form.cleaned_data['date_end']
 
-        return super(DateRangeFilterMixin, self).dispatch(request, *args, **kwargs)
+        return super().dispatch(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
-        context = super(DateRangeFilterMixin, self).get_context_data(**kwargs)
+        context = super().get_context_data(**kwargs)
         context['date_range_form'] = self.date_range_form
-
         return context
 
 

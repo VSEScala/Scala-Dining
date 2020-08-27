@@ -3,9 +3,9 @@ import json
 
 from django import forms
 from django.core import serializers
-from django.core.exceptions import NON_FIELD_ERRORS
-from django.utils.safestring import mark_safe
+from django.core.exceptions import NON_FIELD_ERRORS, ValidationError
 from django.utils import timezone
+from django.utils.safestring import mark_safe
 
 
 class DateRangeForm(forms.Form):
@@ -19,11 +19,15 @@ class DateRangeForm(forms.Form):
         initial.setdefault('date_end', timezone.now())
         initial.setdefault('date_start', initial['date_end'] - timezone.timedelta(days=365))
 
-        super(DateRangeForm, self).__init__(*args, initial=initial, **kwargs)
+        super().__init__(*args, initial=initial, **kwargs)
 
     def clean(self):
-        if self.cleaned_data['date_start'] > self.cleaned_data['date_end']:
-            raise forms.ValidationError("The end date is further in the past than the starting date")
+        cleaned_data = super().clean()
+        date_start = cleaned_data.get('date_start')
+        date_end = cleaned_data.get('date_end')
+        if date_start and date_end and date_start > date_end:
+            raise ValidationError("The end date is further in the past than the starting date")
+        return cleaned_data
 
 
 class ConcurrenflictFormMixin:
