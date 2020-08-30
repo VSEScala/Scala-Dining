@@ -1,3 +1,0 @@
-There is a new update on the dining list:
-
-{{ update }}

@@ -1,74 +1,38 @@
-from django.core.mail import EmailMultiAlternatives, get_connection
-from django.template.loader import get_template, TemplateDoesNotExist
+from django.core import mail
+from django.core.mail import EmailMultiAlternatives
+from django.template.loader import render_to_string
+
+from userdetails.models import User
 
 
-def _render_and_send_mail(*args, txt_template=None, html_template=None, context_data={}, fail_silently=False, **kwargs):
-    # Set up the Email template with the txt_template
-    mail_obj = EmailMultiAlternatives(*args, **kwargs, body=txt_template.render(context_data))
+def send_templated_mail(template_dir: str, recipients, context: dict = None):
+    """Sends a mail using a template.
 
-    # Set up the html content in the mail
-    if html_template is not None:
-        content_html = html_template.render(context_data)
-        mail_obj.attach_alternative(content_html, "text/html")
-
-    # Send the mail
-    mail_obj.send(fail_silently=fail_silently)
-
-
-def _get_mail_templates(full_template_name):
-    try:
-        return get_template(full_template_name, using='EmailTemplates')
-    except TemplateDoesNotExist:
-        return None
-
-
-def send_templated_mail(subject=None, template_name=None, context_data={}, recipient=None, **kwargs):
-    if recipient is None:
-        raise KeyError("No email target given. Please define the recipient")
-
-    context_data['user'] = recipient
-    to = [recipient.email]
-
-    _render_and_send_mail(subject=subject,
-                          txt_template=_get_mail_templates(template_name + ".txt"),
-                          html_template=_get_mail_templates(template_name + ".html"),
-                          context_data=context_data,
-                          to=to, **kwargs)
-
-
-# Wouter, originally you wrote 'context_data={}' as function argument. Never do
-#  that! Updating the dictionary in the function happens by reference, which
-#  means that the next function call will use the same dictionary,
-#  including the changes from the previous call. Something you never want.
-
-def send_templated_mass_mail(subject=None, template_name=None, context_data: dict = None, recipients=None, **kwargs):
-    """Send a mass mail to all recipients with an EmailTemplateMessage as the message created.
-
-    :param subject: The email subject or header
-    :param template_name: The name of the template
-    :param context_data: the context data for the mail
-    :param recipients: The queryset of users
-    :param kwargs: additional EmailTemplateMessage arguments
+    Args:
+        template_dir: The directory containing the email templates. They should
+            be named body.html, body.txt and subject.txt.
+        recipients: The recipient(s) for the message as User instances. Can be
+            a list or QuerySet if you want to send the mail to multiple users,
+            or a single User instance.
+        context: Used as the template's context for rendering. The recipient is
+            added with key 'user'.
     """
-    if context_data is None:
-        context_data = {}
+    if context is None:
+        context = {}
+    if isinstance(recipients, User):
+        recipients = [recipients]
 
-    # Get the templates
-    txt_template = _get_mail_templates(template_name + ".txt")
-    html_template = _get_mail_templates(template_name + ".html")
-
-    # Open the connection
-    connection = get_connection()
-    connection.open()
-
+    messages = []
     for recipient in recipients:
-        # Set the user in the context data
-        context_data['user'] = recipient
-        to = [recipient.email]
+        # Render templates
+        context['user'] = recipient
+        subject = render_to_string(template_dir + '/subject.txt', context=context).strip()
+        html_body = render_to_string(template_dir + '/body.html', context=context)
+        text_body = render_to_string(template_dir + '/body.txt', context=context)
+        # Create message
+        message = EmailMultiAlternatives(subject=subject, body=text_body, to=[recipient.email])
+        message.attach_alternative(html_body, 'text/html')
+        messages.append(message)
 
-        _render_and_send_mail(subject=subject,
-                              txt_template=txt_template,
-                              html_template=html_template,
-                              context_data=context_data,
-                              to=to, **kwargs)
-    connection.close()
+    # Send messages
+    mail.get_connection().send_messages(messages)

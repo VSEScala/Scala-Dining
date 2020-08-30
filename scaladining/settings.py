@@ -90,15 +90,6 @@ TEMPLATES = [
             ],
         },
     },
-    {
-        'NAME': 'EmailTemplates',
-        'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [os.path.join(BASE_DIR, 'assets/mails')],
-        'APP_DIRS': True,
-        'OPTIONS': {
-            'builtins': ['general.templatetags.mail_tags'],
-        }
-    },
 ]
 
 WSGI_APPLICATION = 'scaladining.wsgi.application'

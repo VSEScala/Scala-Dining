@@ -19,7 +19,7 @@ from dining.forms import CreateSlotForm, DiningEntryUserCreateForm, DiningEntryE
     DiningEntryDeleteForm, DiningCommentForm, DiningInfoForm, DiningPaymentForm, DiningListDeleteForm
 from dining.models import DiningList, DiningDayAnnouncement, DiningCommentVisitTracker, DiningEntryExternal, \
     DiningEntryUser, DiningEntry
-from general.mail_control import send_templated_mass_mail, send_templated_mail
+from general.mail_control import send_templated_mail
 from userdetails.models import User, Association
 
 
@@ -261,14 +261,10 @@ class EntryAddView(SlotMixin, TemplateView):
                 if entry.user == request.user:
                     msg = "You successfully joined the dining list"
                 else:
-                    # Set up the mail
-                    subject = "You've been added to the dining list of {date}".format(date=entry.dining_list.date)
-                    template = "dining/dining_list_entry_added_by"
-                    context = {'entry': entry, 'dining_list': entry.dining_list}
-
-                    # Send mail to the people on the dining list
-                    send_templated_mail(subject=subject, template_name=template, context_data=context,
-                                        recipient=entry.user)
+                    # Send mail to the diner
+                    send_templated_mail('mail/dining_entry_added_by',
+                                        entry.user,
+                                        context={'entry': entry, 'dining_list': entry.dining_list})
                     msg = "You successfully added {} to the dining list".format(entry.user.get_short_name())
             else:
                 msg = "You successfully added {} to the dining list".format(entry.name)
@@ -293,40 +289,30 @@ class EntryDeleteView(LoginRequiredMixin, SingleObjectMixin, View):
     model = DiningEntry
 
     def post(self, request, *args, **kwargs):
-        # Determine success message before it's actually deleted
         entry = self.get_object().get_subclass()
-        if entry.is_internal() and entry.user == request.user:
-            success_msg = "You are removed from the dining list"
-        elif entry.is_external():
-            if entry.user != request.user:
-                # Set up the mail
-                subject = "Your guest has been removed from the dining list of {date}".format(
-                    date=entry.dining_list.date)
-                template = "dining/dining_list_entry_external_removed_by"
-                context = {'entry': entry, 'dining_list': entry.dining_list, 'remover': request.user}
-
-                # Send mail to the people on the dining list
-                send_templated_mail(subject=subject, template_name=template, context_data=context, recipient=entry.user)
-
-            success_msg = "The external diner is removed from the dining list"
-        else:
-            # Set up the mail
-            subject = "You've been removed from the dining list of {date}".format(date=entry.dining_list.date)
-            template = "dining/dining_list_entry_removed_by"
-            context = {'entry': entry, 'dining_list': entry.dining_list, 'remover': request.user}
-
-            success_msg = "The user is removed from the dining list"
 
         # Process deletion
         form = DiningEntryDeleteForm(entry, request.user, {})
         if form.is_valid():
             form.execute()
 
-            if entry.user != request.user:
-                # Send mail to the removed user
-                send_templated_mail(subject=subject, template_name=template, context_data=context, recipient=entry.user)
-
+            # Success message
+            if entry.is_internal() and entry.user == request.user:
+                success_msg = "You are removed from the dining list"
+            elif entry.is_external():
+                success_msg = "The external diner is removed from the dining list"
+            else:
+                success_msg = "The user is removed from the dining list"
             messages.success(request, success_msg)
+
+            # Send a mail when someone else does the removal
+            if entry.user != request.user:
+                context = {'entry': entry, 'dining_list': entry.dining_list, 'remover': request.user}
+                if entry.is_external():
+                    send_templated_mail('mail/dining_entry_external_removed_by', entry.user, context)
+                else:
+                    send_templated_mail('mail/dining_entry_removed_by', entry.user, context)
+
         else:
             for error in form.non_field_errors():
                 messages.error(request, error)
@@ -566,29 +552,15 @@ class SlotDeleteView(SlotMixin, SlotOwnerMixin, DeleteView):
         if form.is_valid():
             day_view_url = super(DiningListMixin, self).reverse("day_view")
 
-            # Set up the mail
-            subject = "Dining list {date} cancelled".format(date=instance.date)
-            template = "dining/dining_list_deleted"
-            context = {'dining_list': instance,
-                       'cancelled_by': request.user,
-                       'day_view_url': day_view_url}
-            diners = instance.diners
-            diners = diners.exclude(id=request.user.id)
+            # Evaluate the query to obtain diners before the dining list is removed from the database
+            to_notify = list(instance.diners.exclude(id=request.user.id))
 
-            # Evaluate the query to obtain diners before the objects are removed from the database
-            # I read that .repr() should also work, but for some reason it doesn't, thus I did this.
-            len(diners)
-            # The reason that the dining list is removed first is in case anything goes wrong with the deletion,
-            # users aren't incorrectly told that the list has been deleted.
-
-            # Delete the dining list
             form.execute()
 
             # Send mail to the people on the dining list
-            send_templated_mass_mail(template_name=template,
-                                     subject=subject,
-                                     context_data=context,
-                                     recipients=diners)
+            send_templated_mail('mail/dining_list_deleted',
+                                to_notify,
+                                {'dining_list': instance, 'cancelled_by': request.user, 'day_view_url': day_view_url})
 
             messages.success(request, "Dining list is deleted")
 
@@ -608,61 +580,41 @@ class SlotPaymentView(SlotMixin, SlotOwnerMixin, View):
         unpaid_user_entries = DiningEntryUser.objects.filter(dining_list=self.dining_list, has_paid=False)
         unpaid_guest_entries = DiningEntryExternal.objects.filter(dining_list=self.dining_list, has_paid=False)
 
-        is_reminder = datetime.now().date() > self.dining_list.date
+        is_reminder = datetime.now().date() > self.dining_list.date  # ?? Please explain non-trivial operations
 
         is_informed = False
 
+        context = {'dining_list': self.dining_list, 'reminder': request.user, 'is_reminder': is_reminder}
+
         if unpaid_user_entries.count() > 0:
-            # Set up the mail
-            subject = "Diningapp: Payment request: {date}".format(date=self.dining_list.date)
-            template = "dining/dining_list_payment_reminder"
-            context = {'dining_list': self.dining_list, 'reminder': request.user, 'is_reminder': is_reminder}
-
-            users = User.objects.filter(diningentry__in=unpaid_user_entries)
-
-            send_templated_mass_mail(template_name=template,
-                                     subject=subject,
-                                     context_data=context,
-                                     recipients=users)
+            send_templated_mail('mail/dining_payment_reminder',
+                                User.objects.filter(diningentry__in=unpaid_user_entries),
+                                context)
             is_informed = True
 
         if unpaid_guest_entries.count() > 0:
-            # Set up the mail
-            subject = "Diningapp: Payment request guest: {date}".format(date=self.dining_list.date)
-            template = "dining/dining_list_payment_reminder_external"
-            context = {'dining_list': self.dining_list, 'reminder': request.user, 'is_reminder': is_reminder}
-
-            users = User.objects.filter(diningentry__in=unpaid_guest_entries).distinct()
-
-            for user in users:
+            for user in User.objects.filter(diningentry__in=unpaid_guest_entries).distinct():
                 guests = []
 
                 for external_entry in unpaid_guest_entries.filter(user=user):
                     guests.append(external_entry.name)
 
                 # Call a different message if a the user added multiple guests who hadn't paid
+                # Things like this can also be done in the template
                 if len(guests) == 1:
                     context["guest"] = guests[0]
                     context["guests"] = None
-                    send_templated_mail(subject=subject,
-                                        template_name=template,
-                                        context_data=context,
-                                        recipient=user)
                 else:
                     context["guest"] = None
                     context["guests"] = guests
-                    send_templated_mail(subject=subject,
-                                        template_name=template,
-                                        context_data=context,
-                                        recipient=user)
+
+                send_templated_mail('mail/dining_payment_reminder_external', user, context)
 
             is_informed = True
 
         if is_informed:
-            success_message = "Diners have been informed"
-            messages.success(request, success_message)
+            messages.success(request, "Diners have been informed")
         else:
-            inform_message = "There was nobody to inform, everybody has paid"
-            messages.info(request, inform_message)
+            messages.info(request, "There was nobody to inform, everybody has paid")
 
         return HttpResponseRedirect(self.reverse('slot_details'))

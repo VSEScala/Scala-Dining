@@ -1,5 +1,6 @@
-{% extends 'base.txt' %}
+{% extends 'mail/base.txt' %}
 {% load dining_tags %}
+{% load mail_tags %}
 
 {% block content %}
 Hi {{user.first_name}}

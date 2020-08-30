@@ -2,8 +2,6 @@ from django.conf import settings
 from django.db import models
 from django.utils import timezone
 
-from general.mail_control import send_templated_mass_mail
-
 
 class SiteUpdate(models.Model):
     """Contains setting related to the dining lists and use of the dining lists."""
@@ -14,17 +12,7 @@ class SiteUpdate(models.Model):
     def __str__(self):
         return "{date}: {title}".format(date=self.date.strftime("%Y-%m-%d"), title=self.title)
 
-    def mail_users(self):
-        subject = "Scala Dining App Update: {title}".format(title=self.title)
-        template = "general/update_broadcast"
-        context = {}
-        context['update'] = self.message
-
-        from userdetails.models import User
-        send_templated_mass_mail(subject=subject,
-                                 template_name=template,
-                                 context_data=context,
-                                 recipients=User.objects.all())
+    # I've removed the 'mail_users' method on purpose, we should not have that
 
 
 class AbstractVisitTracker(models.Model):

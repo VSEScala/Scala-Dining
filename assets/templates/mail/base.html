@@ -13,9 +13,7 @@
         <tr>
             <td width="30"></td>
             <td style="padding: 1em 0;">
-                {% block content %}
-                    Empty content block
-                {% endblock content %}
+                {% block content %}{% endblock content %}
             </td>
             <td width="30"></td>
         </tr>
@@ -26,9 +24,6 @@
             <td></td>
             <td style="font-size: small; color: #555555; padding-top: 2em">
                 {% block mail_footer %}
-                    Don't want to recieve this e-mail? Adjust your mail preferences:
-                    {% full_url 'settings_account' as url %}
-                    <a href={{ url }}">{{ url }}</a>
                 {% endblock %}
             </td>
             <td></td>

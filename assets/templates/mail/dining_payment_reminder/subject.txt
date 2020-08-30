@@ -1,0 +1,1 @@
+Payment request for the dining list of {{ dining_list.date }}

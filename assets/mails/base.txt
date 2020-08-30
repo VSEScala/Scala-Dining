@@ -1,9 +1,0 @@
-{% block content %}
-Empty content block
-{% endblock content %}
-
-
-{% block mail_footer %}
-Don't want to recieve this e-mail? Adjust your mail preferences:
-{% url 'settings_account' %}
-{% endblock %}
