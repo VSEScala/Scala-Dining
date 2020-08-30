@@ -24,5 +24,5 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RunPython(move_claimant_purchaser, move_back)
+        migrations.RunPython(move_claimant_purchaser, move_back, elidable=True)
     ]
