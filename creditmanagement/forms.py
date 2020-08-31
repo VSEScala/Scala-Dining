@@ -199,6 +199,7 @@ class ClearOpenExpensesForm(forms.Form):
                 tx.save()
 
 
+# Todo! This form is currently not used, it can be removed
 class AccountPickerForm(forms.Form):
     """Form that enables the user to choose any account of any type."""
 

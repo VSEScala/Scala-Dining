@@ -6,14 +6,14 @@ from django.core.exceptions import PermissionDenied
 from django.core.paginator import Paginator
 from django.db.models import Q, Count, Sum
 from django.http import HttpResponseRedirect, HttpResponse
-from django.shortcuts import get_object_or_404, render, redirect
+from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
 from django.utils.http import is_safe_url
 from django.views import View
 from django.views.generic import ListView, TemplateView, FormView, DetailView
 
 from creditmanagement.csv import write_transactions_csv
-from creditmanagement.forms import ClearOpenExpensesForm, AccountPickerForm, SiteWideTransactionForm
+from creditmanagement.forms import ClearOpenExpensesForm, SiteWideTransactionForm
 from creditmanagement.models import Transaction, Account
 from creditmanagement.views import TransactionFormView
 from dining.models import DiningList, DiningEntry
@@ -236,11 +236,10 @@ class SiteDiningView(AssociationBoardMixin, AssociationHasSiteAccessMixin, DateR
         return context
 
 
-class SiteCreditView(AssociationBoardMixin, AssociationHasSiteAccessMixin, FormView):
+class SiteCreditView(AssociationBoardMixin, AssociationHasSiteAccessMixin, TemplateView):
     """Shows an overview of the site wide credit details."""
 
     template_name = "accounts/site_credit.html"
-    form_class = AccountPickerForm
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -248,13 +247,7 @@ class SiteCreditView(AssociationBoardMixin, AssociationHasSiteAccessMixin, FormV
         # Get the balance for each association
         context['associations'] = Association.objects.all()
         context['special_accounts'] = Account.objects.filter(special__isnull=False)
-        context['account_picker'] = AccountPickerForm()
         return context
-
-    def form_valid(self, form):
-        account = form.get_account()
-        return redirect('association_site_credit_detail', pk=account.pk,
-                        association_name=self.kwargs['association_name'])
 
 
 class SiteTransactionView(AssociationBoardMixin, AssociationHasSiteAccessMixin, FormView):
@@ -280,8 +273,13 @@ class SiteTransactionView(AssociationBoardMixin, AssociationHasSiteAccessMixin, 
 
 
 class SiteCreditDetailView(AssociationBoardMixin, AssociationHasSiteAccessMixin, DateRangeFilterMixin, DetailView):
+    """Shows details for an account.
+
+    Only allows displaying details for bookkeeping accounts.
+    """
     template_name = 'accounts/site_credit_detail.html'
     model = Account
+    slug_field = 'special'  # Finds the object from the 'slug' URL parameter
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

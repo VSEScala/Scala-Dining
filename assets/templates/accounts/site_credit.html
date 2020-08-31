@@ -49,6 +49,10 @@
                         {{ a.get_special_display }}
                         <br>
                         <small class="text-muted">{{ a.get_special_description }}</small>
+                        <br>
+                        <a href="{% url 'association_site_credit_detail' association_name=association.slug slug=a.special %}">
+                            Account details
+                        </a>
                     </td>
                     <td>{{ a.get_balance }}</td>
                 </tr>
@@ -56,21 +60,6 @@
             </tbody>
         </table>
     </div>
-
-
-    <h3>Account details</h3>
-    <p>
-        Retrieve transactions, balance and income/outcome flow for any account.
-        First select an account.
-    </p>
-    <form method="post" action="{% url 'association_site_credit_stats' association_name=association.slug %}">
-        {% csrf_token %}
-        <p class="text-muted">
-            <small>Choose one of the 3 fields.</small>
-        </p>
-        {% include 'snippets/bootstrap_form.html' with horizontal=True %}
-        <button type="submit" class="btn btn-primary">Select account</button>
-    </form>
 
     <h3>Bookkeeping 101</h3>
     <p class="text-muted"><small>Some general info on bookkeeping.</small></p>

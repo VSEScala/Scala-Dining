@@ -24,7 +24,7 @@ urlpatterns = [
             path('dining/', SiteDiningView.as_view(), name='association_site_dining_stats'),
             path('credit/', SiteCreditView.as_view(), name='association_site_credit_stats'),
             path('credit/add/', SiteTransactionView.as_view(), name='association_site_transaction_add'),
-            path('credit/account/<int:pk>/', SiteCreditDetailView.as_view(), name='association_site_credit_detail'),
+            path('credit/account/<slug:slug>/', SiteCreditDetailView.as_view(), name='association_site_credit_detail'),
         ])),
     ])),
 
