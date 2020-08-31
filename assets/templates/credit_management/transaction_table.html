@@ -7,7 +7,7 @@
             <th scope="col">Other party</th>
             <th scope="col">Amount</th>
             <th scope="col">Description</th>
-            <th scope="col">Created by</th>
+            {% if not hide_created_by %}<th scope="col">Created by</th>{% endif %}
         </tr>
         </thead>
         <tbody>
@@ -29,7 +29,7 @@
                     {% endif %}
                 </td>
                 <td>{{ tx.description }}</td>
-                <td>{{ tx.created_by }}</td>
+                {% if not hide_created_by %}<td>{{ tx.created_by }}</td>{% endif %}
             </tr>
         {% endfor %}
         </tbody>

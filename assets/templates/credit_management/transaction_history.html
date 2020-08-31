@@ -12,7 +12,7 @@
             <i class="fas fa-file-export"></i> Download CSV
         </a>
     </p>
-    {% include 'credit_management/transaction_table.html' with account_self=user.account %}
+    {% include 'credit_management/transaction_table.html' with account_self=user.account hide_created_by=True %}
 
     {% include 'snippets/paginator.html' %}
 
