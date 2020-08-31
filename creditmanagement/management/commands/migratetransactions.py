@@ -34,7 +34,6 @@ class Command(BaseCommand):
         # Create new transactions from the FixedTransaction table
         transactions = []
         kitchen_cost_account = Account.objects.get(special='kitchen_cost')
-        generic_account = Account.objects.get(special='generic')
         for t in FixedTransaction.objects.all():
             # Integrity checks
             if (t.source_user and t.source_association) or (t.target_user and t.target_association):
@@ -42,13 +41,13 @@ class Command(BaseCommand):
             if not t.confirm_moment:
                 raise ValueError("Invalid transaction: no confirm moment")
 
-                # Get source account
+            # Get source account
             if t.source_user:
                 source = t.source_user.account
             elif t.source_association:
                 source = t.source_association.account
             else:
-                source = generic_account
+                source = kitchen_cost_account
 
             # Get target account
             if t.target_user:

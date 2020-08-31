@@ -333,14 +333,11 @@ class Account(models.Model):
 
     SPECIAL_ACCOUNTS = [
         ('kitchen_cost', 'Kitchen cost'),
-        ('generic', 'Generic'),
     ]
     SPECIAL_ACCOUNT_DESCRIPTION = {
         'kitchen_cost': "Account which receives the kitchen payments. "
                         "The balance indicates the money that is payed for kitchen usage "
                         "(minus withdraws from this account).",
-        'generic': "This account is used for transactions from an older version that didn't have a source set. "
-                   "Do not use this account for new transactions but always use a more specific account.",
     }
     special = models.CharField(max_length=30, unique=True, null=True, default=None, choices=SPECIAL_ACCOUNTS)
 
