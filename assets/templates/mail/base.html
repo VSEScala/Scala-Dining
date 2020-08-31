@@ -1,12 +1,15 @@
+{% load static %}
 <body style="font-family: Lato, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica Neue, Arial, sans-serif, Apple Color Emoji, Segoe UI Emoji, Segoe UI Symbol;">
     <table style="width:100%">
         <tr height="30">
             <th colspan="3" style="background-color: #375a7f; height: 20px; text-align: left;">
                 <div style="margin: 10px;">
-                    <img src="http://dining.studentencultuur.nl/static/images/Scala_dining.png"
-                         alt="Scala Dining"
+                    {# This assumes that static files are hosted on the same domain as the website. #}
+                    {# (Note that media files are actually hosted on a different domain so this wouldn't work for those.) #}
+                    <img src="{{ site_uri }}{% static 'images/Scala_dining.png' %}"
+                         alt="{{ site_name }}"
                          height="30">
-                    <span style="font-size: xx-large; color: #FFFFFF;"> Scala Dining</span>
+                    <span style="font-size: xx-large; color: #FFFFFF;"> {{ site_name }}</span>
                 </div>
             </th>
         </tr>
@@ -23,8 +26,7 @@
         <tr>
             <td></td>
             <td style="font-size: small; color: #555555; padding-top: 2em">
-                {% block mail_footer %}
-                {% endblock %}
+                {% block mail_footer %}{% endblock %}
             </td>
             <td></td>
         </tr>

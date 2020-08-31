@@ -1,1 +1,6 @@
-This is a testmail
+This is a test mail
+
+Site name: {{ site_name }}
+Domain: {{ domain }}
+Protocol: {{ protocol }}
+Site URI: {{ site_uri }}

@@ -6,6 +6,7 @@ from django.core.exceptions import ValidationError
 from django.db import transaction
 
 from creditmanagement.models import Account, Transaction
+from general.mail_control import send_templated_mail
 from userdetails.models import User, Association
 
 # Form fields which are used in transaction forms
@@ -145,20 +146,21 @@ class SiteWideTransactionForm(forms.ModelForm):
 
         return cleaned_data
 
-    def save(self, commit=True):
-        """This method sends an email to the source user on save."""
+    def save(self, commit=True, request=None):
+        """This method sends an email to the source user on save.
+
+        Provide the request for email template rendering.
+        """
         instance = super().save(commit=False)
         if commit:
             with transaction.atomic():
                 # We do this in a DB transaction so that when the e-mail failed,
-                # the transaction is not saved.
+                # the transaction is not saved. (Not sure whether it's a good idea, but doesn't really matter)
                 instance.save()
                 # Send mail if the source is a user
                 source = self.instance.source
                 if source.user:
-                    # Send mail
-                    # Todo!!!
-                    pass
+                    send_templated_mail('mail/transaction_created', source.user, {'transaction': instance}, request)
 
         return instance
 

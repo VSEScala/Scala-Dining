@@ -232,7 +232,7 @@ class DiningCommentVisitTracker(AbstractVisitTracker):
         """
         try:
             if update:
-                latest_visit_obj, created = cls.objects.get_or_create(user=user, dining_list=dining_list)[0]
+                latest_visit_obj, created = cls.objects.get_or_create(user=user, dining_list=dining_list)
             else:
                 try:
                     latest_visit_obj = cls.objects.get(user=user, dining_list=dining_list)

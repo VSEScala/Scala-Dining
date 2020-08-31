@@ -1,6 +1,5 @@
 {% extends 'mail/base.html' %}
 {% load dining_tags %}
-{% load mail_tags %}
 
 {% block content %}
     <p>
@@ -56,17 +55,15 @@
     </p>
     {% if dining_list.payment_link %}
     <div>
-            Paying can be done here:<br>
-        {% with url=dining_list.get_absolute_url|to_full_url %}
-        <a href="{{ url }}"
+        Paying can be done here:
+        <a href="{{ site_uri }}{{ dining_list.get_absolute_url }}"
            style="">
-            {{ url }}</a>
-        {% endwith %}
+            {{ site_uri }}{{ dining_list.get_absolute_url }}</a>
     </div>
     {%endif%}
     <p>
         For more information check the dining list here:<br><br>
-        <a href="{{ dining_list.get_absolute_url|to_full_url }}"
+        <a href="{{ site_uri }}{{ dining_list.get_absolute_url }}"
            style="background-color: #375a7f;padding: 0.75em; border-radius: 0.25rem; color: white; text-decoration: none;">
             To dining list</a>
     </p>

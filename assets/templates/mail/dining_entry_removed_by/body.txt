@@ -1,8 +1,4 @@
-{% extends 'mail/base.txt' %}
 {% load dining_tags %}
-{% load mail_tags %}
-
-{% block content %}
 Hi {{ entry.user}}
 
 {{ remover }} has removed you from the following dining list:
@@ -11,5 +7,4 @@ By: {{dining_list|short_owners_string}}
 On behalf of: {{dining_list.association}}
 
 You can view the dining list here:
-{{ dining_list.get_absolute_url|to_full_url }}
-{% endblock %}
+{{ site_uri }}{{ dining_list.get_absolute_url }}

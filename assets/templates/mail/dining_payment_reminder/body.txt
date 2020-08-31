@@ -1,8 +1,4 @@
-{% extends 'mail/base.txt' %}
 {% load dining_tags %}
-{% load mail_tags %}
-
-{% block content %}
 Hi {{user.first_name}}
 
 You recently dined with the following dining_list:
@@ -19,4 +15,3 @@ You can do that here:
 {%endif%}
 
 Enjoy your day!
-{% endblock %}

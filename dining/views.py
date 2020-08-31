@@ -264,7 +264,8 @@ class EntryAddView(SlotMixin, TemplateView):
                     # Send mail to the diner
                     send_templated_mail('mail/dining_entry_added_by',
                                         entry.user,
-                                        context={'entry': entry, 'dining_list': entry.dining_list})
+                                        context={'entry': entry, 'dining_list': entry.dining_list},
+                                        request=request)
                     msg = "You successfully added {} to the dining list".format(entry.user.get_short_name())
             else:
                 msg = "You successfully added {} to the dining list".format(entry.name)
@@ -309,9 +310,9 @@ class EntryDeleteView(LoginRequiredMixin, SingleObjectMixin, View):
             if entry.user != request.user:
                 context = {'entry': entry, 'dining_list': entry.dining_list, 'remover': request.user}
                 if entry.is_external():
-                    send_templated_mail('mail/dining_entry_external_removed_by', entry.user, context)
+                    send_templated_mail('mail/dining_entry_external_removed_by', entry.user, context, request)
                 else:
-                    send_templated_mail('mail/dining_entry_removed_by', entry.user, context)
+                    send_templated_mail('mail/dining_entry_removed_by', entry.user, context, request)
 
         else:
             for error in form.non_field_errors():
@@ -560,7 +561,8 @@ class SlotDeleteView(SlotMixin, SlotOwnerMixin, DeleteView):
             # Send mail to the people on the dining list
             send_templated_mail('mail/dining_list_deleted',
                                 to_notify,
-                                {'dining_list': instance, 'cancelled_by': request.user, 'day_view_url': day_view_url})
+                                {'dining_list': instance, 'cancelled_by': request.user, 'day_view_url': day_view_url},
+                                request=request)
 
             messages.success(request, "Dining list is deleted")
 
@@ -589,7 +591,8 @@ class SlotPaymentView(SlotMixin, SlotOwnerMixin, View):
         if unpaid_user_entries.count() > 0:
             send_templated_mail('mail/dining_payment_reminder',
                                 User.objects.filter(diningentry__in=unpaid_user_entries),
-                                context)
+                                context=context,
+                                request=request)
             is_informed = True
 
         if unpaid_guest_entries.count() > 0:
@@ -608,7 +611,7 @@ class SlotPaymentView(SlotMixin, SlotOwnerMixin, View):
                     context["guest"] = None
                     context["guests"] = guests
 
-                send_templated_mail('mail/dining_payment_reminder_external', user, context)
+                send_templated_mail('mail/dining_payment_reminder_external', user, context, request)
 
             is_informed = True
 

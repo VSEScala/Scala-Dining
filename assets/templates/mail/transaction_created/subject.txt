@@ -1,1 +1,2 @@
-{# sdf #}
+{# This message is sent whenever someone else (a site admin) creates a transaction with a different source user. #}
+Money has been withdrawn from your account

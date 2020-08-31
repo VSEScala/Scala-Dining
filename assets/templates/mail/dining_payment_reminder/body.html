@@ -1,6 +1,5 @@
 {% extends 'mail/base.html' %}
 {% load dining_tags %}
-{% load mail_tags %}
 
 {% block content %}
     <p>
@@ -54,11 +53,10 @@
     {%endif%}
     <p>
         For more information check the dining list here:
-        <a href="{{ dining_list.get_absolute_url|to_full_url }}"
+        <a href="{{ site_uri }}{{ dining_list.get_absolute_url }}"
            style="">
-            {{ dining_list.get_absolute_url|to_full_url }}</a>
+            {{ site_uri }}{{ dining_list.get_absolute_url }}</a>
     </p>
-
 
     <p style="padding-top: 1em">
         Enjoy your day

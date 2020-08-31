@@ -1,6 +1,5 @@
 {% extends 'mail/base.html' %}
 {% load dining_tags %}
-{% load mail_tags %}
 
 {% block content %}
     <p>
@@ -31,7 +30,7 @@
             If you still want to join this list, you can re-enter here:
         </p>
         <div>
-            <a href="{{ dining_list.get_absolute_url|to_full_url }}"
+            <a href="{{ site_uri }}{{ dining_list.get_absolute_url }}"
                style="background-color: #375a7f;padding: 0.75em; border-radius: 0.25rem; color: white; text-decoration: none;">
                 View dining list</a>
         </div>

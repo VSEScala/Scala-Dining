@@ -1,8 +1,4 @@
-{% extends 'mail/base.txt' %}
 {% load dining_tags %}
-{% load mail_tags %}
-
-{% block content %}
 Hi {{user.first_name}}
 
 {{entry.created_by}} has just added you to the following dining list:
@@ -10,8 +6,6 @@ Date: {{dining_list.date}}
 By: {{dining_list|short_owners_string}}
 On behalf of: {{dining_list.association}}
 
-You can view the dining list here:
-{{ dining_list.get_absolute_url|to_full_url }}
+You can view the dining list here: {{ site_uri }}{{ dining_list.get_absolute_url }}
 
 Enjoy your dinner!
-{% endblock %}

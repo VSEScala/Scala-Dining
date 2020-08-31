@@ -1,8 +1,4 @@
-{% extends 'mail/base.txt' %}
 {% load dining_tags %}
-{% load mail_tags %}
-
-{% block content %}
 Hi {{ user.first_name }}
 
 We regret to inform you that the following dining list has been cancelled.
@@ -13,10 +9,9 @@ On behalf of: {{dining_list.association}}
 
 As you were subscribed to this dining list, you have been removed from the dining list and your money has been refunded
 Maybe you can join or start another dining list. You can do so here:
-{{ day_view_url|to_full_url }}
+{{ site_uri }}{{ day_view_url }}
 
 We are sorry for the inconvenience,
 With kind regards,
 
 The Scala Dining App
-{% endblock %}

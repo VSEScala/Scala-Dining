@@ -57,7 +57,7 @@ class CustomUserAdmin(admin.ModelAdmin):
     fields = ('username', ('first_name', 'last_name'), 'date_joined', 'email')
 
     def send_test_mail(self, request, queryset):
-        send_templated_mail('mail/test', queryset)
+        send_templated_mail('mail/test', queryset, request=request)
 
     actions = [send_test_mail]
 

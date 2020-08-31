@@ -1,1 +1,1 @@
-Scala Dining: Testmail
+Scala Dining test mail

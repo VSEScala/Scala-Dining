@@ -1,5 +1,0 @@
-{% block content %}
-{% endblock content %}
-
-{% block mail_footer %}
-{% endblock %}

@@ -1,0 +1,13 @@
+{% extends 'mail/base.html' %}
+{% load credit_tags %}
+{% block content %}
+    <p>
+        {{ transaction.created_by }} has withdrawn {{ transaction.amount|euro }} from your Scala Dining account,
+        with the description '{{ transaction.description }}'.
+        If this is incorrect, please contact the site operator or a Scala board member as soon as possible.
+    </p>
+    <p>
+        To view the full transaction details, visit the
+        <a href="{{ site_uri }}{% url 'credits:transaction_list' %}">transaction history</a> page.
+    </p>
+{% endblock %}
