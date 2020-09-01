@@ -52,7 +52,7 @@ class TransactionForm(forms.ModelForm):
         model = Transaction
         fields = ['origin', 'amount', 'target_user', 'target_association', 'description']
         help_texts = {
-            'description': "E.g. deposit via board member.",
+            'description': "E.g. deposit or withdrawal via board member.",
         }
 
     def __init__(self, source: Account, user: User, *args, **kwargs):

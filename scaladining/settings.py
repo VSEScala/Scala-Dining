@@ -65,7 +65,7 @@ MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
-    'django.middleware.locale.LocaleMiddleware',
+    # 'django.middleware.locale.LocaleMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -125,8 +125,16 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 # Internationalization
+
 TIME_ZONE = 'Europe/Amsterdam'
-DATE_FORMAT = "l j F"
+
+# Automatic Dutch localization with English language is difficult,
+# so we'll set the date formats manually to Dutch style.
+DATE_FORMAT = 'l j F'  # Default: N j, Y
+SHORT_DATE_FORMAT = 'd-m-Y'  # Default: m/d/Y
+DATETIME_FORMAT = 'N j, Y, G:i'  # Default: N j, Y, P
+SHORT_DATETIME_FORMAT = 'd-m-Y G:i'  # Default: m/d/Y P
+
 USE_I18N = False
 USE_L10N = False
 USE_TZ = True

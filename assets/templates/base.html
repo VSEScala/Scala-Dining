@@ -89,22 +89,19 @@
                                 Help <i class="fas fa-question"></i>
                             </a>
                             <a class="dropdown-item" href="{% url 'upgrade_instructions' %}">
-                                Upgrading Balance
+                                Upgrading balance
                             </a>
                             <a class="dropdown-item" href="{% url 'rules_and_regulations' %}">
-                                Rules & Regulation
+                                Rules & regulation
                                 {% if user.requires_information_rules %}
                                     <span class="badge badge-pill badge-warning">!</span>
                                 {% endif %}
                             </a>
                             <a class="dropdown-item" href="{% url 'site_updates' %}">
-                                News and Updates
+                                News and updates
                                 {% if user.requires_information_updates %}
                                     <span class="badge badge-pill badge-warning">!</span>
                                 {% endif %}
-                            </a>
-                            <a class="dropdown-item" href="{% url 'site_bugreport' %}">
-                                Report Bug
                             </a>
                         </div>
                     </div>
@@ -124,13 +121,10 @@
                                 Help <i class="fas fa-question"></i>
                             </a>
                             <a class="dropdown-item" href="{% url 'upgrade_instructions' %}">
-                                Upgrading Balance
+                                Upgrading balance
                             </a>
                             <a class="dropdown-item" href="{% url 'rules_and_regulations' %}">
-                                Rules & Regulation
-                            </a>
-                            <a class="dropdown-item" href="{% url 'site_bugreport' %}">
-                                Report Bug
+                                Rules & regulation
                             </a>
                         </div>
                     </div>
@@ -139,7 +133,7 @@
         {% endwith %}
     </nav>
 
-    <div class="container my-3">
+    <div class="container mt-3 mb-5">
         {% include 'snippets/negative_balance_alert.html' %}
         {% if messages %}
             {% for message in messages %}

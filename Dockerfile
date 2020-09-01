@@ -17,6 +17,9 @@ ENV DINING_STATIC_ROOT=/app/static DINING_MEDIA_ROOT=/app/media DINING_SECRET_KE
 RUN mkdir /app/media && python manage.py collectstatic --noinput
 ENV DINING_SECRET_KEY=''
 
+# Bake build date
+RUN date -I > builddate.txt
+
 # Create user
 RUN useradd -u 1001 appuser && chown appuser /app/media
 USER appuser
