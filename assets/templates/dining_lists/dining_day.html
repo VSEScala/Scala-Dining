@@ -28,14 +28,15 @@
                         {% with d=date.previous %}
                             <a href="{% url 'day_view' day=d.day month=d.month year=d.year %}"
                                class="btn btn-outline-primary">
-                                <i class="fas fa-chevron-left"></i>
+                                {# Apparently FA sets the line-height which messes with the button height, so we unset it. #}
+                                <i class="fas fa-chevron-left" style="line-height: inherit;"></i>
                                 <span class="sr-only">Previous</span>
                             </a>
                         {% endwith %}
                         {% with d=date.next %}
                             <a href="{% url 'day_view' year=d.year month=d.month day=d.day %}"
                                class="btn btn-outline-primary">
-                                <i class="fas fa-chevron-right"></i>
+                                <i class="fas fa-chevron-right" style="line-height: inherit;"></i>
                                 <span class="sr-only">Next</span>
                             </a>
                         {% endwith %}
