@@ -47,7 +47,7 @@ class PageVisitTracker(AbstractVisitTracker):
         :param user: The user visiting the page
         """
         if update:
-            latest_visit_obj, created = cls.objects.get_or_create(user=user, page=cls.__get_page_int__(page_name))[0]
+            latest_visit_obj, created = cls.objects.get_or_create(user=user, page=cls.__get_page_int__(page_name))
         else:
             try:
                 latest_visit_obj = cls.objects.get(user=user, page=cls.__get_page_int__(page_name))
