@@ -1,4 +1,4 @@
-from django.db import connection, DatabaseError
+from django.db import DatabaseError
 from django.db.models.signals import post_save, post_migrate
 from django.dispatch import receiver
 
@@ -27,16 +27,3 @@ def create_special_accounts(sender, **kwargs):
     except DatabaseError:
         # Database error might arise when migrating backwards
         print("Failed to create special accounts")
-
-
-@receiver(post_migrate)
-def cleanup_old_views(sender, **kwargs):
-    """This cleans up the old view for UserCredit.
-
-    This function can be removed once it has run at least once on the live database.
-    """
-    # Views that need to be removed
-    to_drop = ['creditmanagement_usercredit']
-    with connection.cursor() as cursor:
-        for v in to_drop:
-            cursor.execute('DROP VIEW IF EXISTS {}'.format(v))
