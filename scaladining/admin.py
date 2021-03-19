@@ -1,8 +1,6 @@
 from django.contrib.admin import AdminSite
 
 
-# Todo: for some reason, our custom admin/base.css file is not applied. Might have to do with the INSTALLED_APPS order
-
 class MyAdminSite(AdminSite):
     """Custom admin site for some minor branding."""
     site_header = "Scala app administration"

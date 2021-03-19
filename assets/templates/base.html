@@ -41,7 +41,7 @@
                                 Settings <i class="fas fa-cog fa-fw"></i>
                             </a>
                             {% if user.has_admin_site_access %}
-                                <a class="dropdown-item {{ justify }}" href="{% url 'admin:index' %}" target="_blank">
+                                <a class="dropdown-item {{ justify }}" href="{% url 'admin:index' %}">
                                     Control panel <i class="fas fa-toolbox fa-fw"></i>
                                 </a>
                             {% endif %}

@@ -331,9 +331,6 @@ class DiningListDeleteForm(forms.ModelForm):
             # Delete dining list
             self.instance.delete()
 
-        # After database succeeded, send out a mail to all entries
-        # mail()
-
 
 class DiningCommentForm(forms.ModelForm):
     class Meta:
