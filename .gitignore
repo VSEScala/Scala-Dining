@@ -1,18 +1,24 @@
+# Python cache
 *.pyc
 __pycache__/
+
+# IntelliJ
+/.idea/
+*.iml
+
+# Local data
 /db.sqlite3
 /media
+/uploads
 
-/.idea/
-
-# Config
+# Local configs
 /.env
+/docker-compose.override.yml
 
 # Virtualenv
 /.venv/
 /venv/
 
-uploads/
+# Misc
 Socrates/config.py
-*.iml
 */ignore/*

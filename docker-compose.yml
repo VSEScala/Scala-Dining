@@ -1,8 +1,14 @@
 version: '3.7'
 
+# Docker configuration for development
+#
+# If you need local adjustments, use a Docker compose override file.
+
 services:
   app:
     build: .
+    # Image for pushing
+    image: quadrivium.azurecr.io/scaladining:latest
     command: python manage.py runserver 0.0.0.0:8000
     environment:
       DINING_DEBUG: 'true'
@@ -15,17 +21,15 @@ services:
     depends_on:
       - db
   db:
-    image: postgres:12-alpine
+    image: postgres:12
     environment:
       POSTGRES_USER: dining
       POSTGRES_PASSWORD: dining
       POSTGRES_DB: dining
     volumes:
-      - db3:/var/lib/postgresql/data
+      - db:/var/lib/postgresql/data
     ports:
       - 5432:5432
 
 volumes:
   db:
-#  db2:
-  db3:  # Contains the imported live version

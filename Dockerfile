@@ -1,4 +1,4 @@
-FROM python:3.8-buster
+FROM python:3.8
 
 # Python settings
 ENV PYTHONUNBUFFERED=1
