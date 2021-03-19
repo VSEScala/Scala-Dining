@@ -1,4 +1,4 @@
-from django.db import connection, DatabaseError
+from django.db import DatabaseError
 from django.db.models.signals import post_save, post_migrate
 from django.dispatch import receiver
 
