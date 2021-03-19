@@ -1,7 +1,7 @@
-Django>=2.2,<3
-Pillow>=6.2,<7
-django-widget-tweaks==1.4.3
-django-allauth==0.39.1
-django-autocomplete-light==3.3.4
+Django
+django-widget-tweaks
+django-allauth
+django-autocomplete-light
 environs[django]
 whitenoise  # Used for static files in production
+Pillow  # This one can possibly be removed

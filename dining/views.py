@@ -4,6 +4,7 @@ from datetime import date, datetime
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import NON_FIELD_ERRORS, PermissionDenied
+from django.db import transaction
 from django.db.models import Q, Count
 from django.http import Http404, HttpResponseRedirect, HttpResponseForbidden, HttpResponse
 from django.shortcuts import redirect, get_object_or_404
@@ -556,13 +557,21 @@ class SlotDeleteView(SlotMixin, SlotOwnerMixin, DeleteView):
             # Evaluate the query to obtain diners before the dining list is removed from the database
             to_notify = list(instance.diners.exclude(id=request.user.id))
 
-            form.execute()
+            # Get dining list with related fields, necessary for sending mail because then the object is no longer in db
+            dining_list = DiningList.objects.prefetch_related('owners', 'association').get(pk=instance.pk)
 
-            # Send mail to the people on the dining list
-            send_templated_mail('mail/dining_list_deleted',
-                                to_notify,
-                                {'dining_list': instance, 'cancelled_by': request.user, 'day_view_url': day_view_url},
-                                request=request)
+            with transaction.atomic():
+                form.execute()
+
+                # Send mail to the people on the dining list
+                send_templated_mail('mail/dining_list_deleted',
+                                    to_notify,
+                                    {
+                                        'dining_list': dining_list,
+                                        'cancelled_by': request.user,
+                                        'day_view_url': day_view_url
+                                    },
+                                    request=request)
 
             messages.success(request, "Dining list is deleted")
 
