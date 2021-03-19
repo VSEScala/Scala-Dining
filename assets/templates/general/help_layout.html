@@ -2,61 +2,216 @@
 {% load static %}
 
 {% block content %}
-    <div class="mb-5">
-        <h2>Manual</h2>
-        <p class="mb-5">
-            In case you need additional instructions, Hans Norg of the Knights has written a manual with images:
-            <br>
-            <a target="_blank" rel="noopener noreferrer" href="{% static "files/ManualScalaDiningV6.pdf" %}">
-                Download Scala Dining App Manual</a>
-            <br>
-            <small>Note: The site is still being changed and improved. The file could be slightly outdated in some cases.</small>
-        </p>
-        <h2>Instructions</h2>
-        <div class="mb-5">
-            <p>I'm hungry...</p>
+    <div class="row">
+        <div class="col-md-8">
+            <h2>In short</h2>
+            <div class="media mb-3">
+                <span class="fas fa-utensils fa-fw fa-2x mr-3"></span>
+                <div class="media-body">
+                    To dine with an association or cook in the Scala kitchen, use this app to sign up or
+                    create a dining list.
+                </div>
+            </div>
+            <div class="media mb-3">
+                <span class="fas fa-euro-sign fa-fw fa-2x mr-3"></span>
+                <div class="media-body">
+                    Every time you join a dinner, you will pay €0,50 towards the rent of the kitchen,
+                    next to the cost of the groceries.
+                    The kitchen rent will be subtracted from your balance. The groceries cost is not
+                    handled by this app and instead can be settled directly with the cook.
+                </div>
+            </div>
+            <div class="media mb-3">
+                <span class="fas fa-wallet fa-fw fa-2x mr-3"></span>
+                <div class="media-body">
+                    You need to upgrade your account balance if it becomes negative.
+                    How to do that is explained on the
+                    <a href="{% url 'upgrade_instructions' %}">upgrade balance page</a>.
+                </div>
+            </div>
+
+            <h2>Instructions</h2>
+            <div class="card mb-3">
+                <div class="card-body">
+                    <p>
+                        In case you need additional instructions, Hans Norg of the Knights has written a
+                        <a target="_blank" rel="noopener noreferrer"
+                           href="{% static "files/ManualScalaDiningV6.pdf" %}">
+                            manual with images</a>.
+                    </p>
+                    <small>
+                        Note: The site is still being changed and improved.
+                        The file could be slightly outdated in some cases.
+                    </small>
+                </div>
+            </div>
+
+            <h5>I'm hungry...</h5>
             <ol>
                 <li>Join a dining slot before it's closing time (often 15:30).</li>
                 <li>Be on time and join the meal. Dinners take place in the kitchen and living room.</li>
-                <li>The cook will determine the price of the meal and share the costs. A payment link can be set on the dining list.</li>
-                <li>€0,50 is automatically subtracted from your account. If your balance is negative, please contact your association board. Pay money to your association and they will upgrade the money on your account.</li>
+                <li>The cook will determine the price of the meal and share the costs. A payment link can be set on
+                    the
+                    dining list.
+                </li>
+                <li>€0,50 is automatically subtracted from your account. If your balance is negative, please contact
+                    your association board. Pay money to your association and they will upgrade the money on your
+                    account.
+                </li>
                 <li>Be a nice person and help with the dishes. Please keep the kitchen clean for everyone.🙂</li>
             </ol>
-            <p>I want to cook!</p>
+            <h5>I want to cook!</h5>
             <ol>
-                <li>Reserve a spot in the kitchen by claiming a dining slot. If you claim the last slot, choose your dinnertime 30 minutes before or after one of the other groups.</li>
-                <li>Fill in the requested information (meal, starttime, association). At least 12 people should be able to join.</li>
-                <li>Buy the groceries and cook! The kitchen can be used from 16:30h to 19:30h. Every board member can access the key of the kitchen.</li>
+                <li>Reserve a spot in the kitchen by claiming a dining slot. If you claim the last slot, choose your
+                    dinnertime 30 minutes before or after one of the other groups.
+                </li>
+                <li>Fill in the requested information (meal, starttime, association). At least 12 people should be
+                    able
+                    to join.
+                </li>
+                <li>Buy the groceries and cook! The kitchen can be used from 16:30h to 19:30h. Every board member
+                    can
+                    access the key of the kitchen.
+                </li>
                 <li>Enjoy your meal. Don’t forget to provide food for the latecomers.</li>
-                <li>Recruit volunteers for the dishes and mark who did what (shop, cook, clean) in the app. This way we can ensure that everyone helps in the kitchen.</li>
+                <li>Recruit volunteers for the dishes and mark who did what (shop, cook, clean) in the app. This way
+                    we
+                    can ensure that everyone helps in the kitchen.
+                </li>
             </ol>
-            Enjoy your meal!
-        </div>
+            <p>Enjoy your meal!</p>
 
-        <h2>Frequently asked questions</h2>
-        <p>
-            <i>Can I claim a slot for all associations?</i><br>
-            No, you can only claim a slot for the associations you are a member of (as long as that association doesn’t already have a slot claimed).
-        </p>
-        <p>
-            <i>How can I upgrade my balance?</i><br>
-            This varies per association, for more information visit the
-            <a href="{% url 'upgrade_instructions' %}">upgrade balance page</a>.
-        </p>
-        <p>
-            <i>Are the costs of the meal also taken from my in-app balance?</i><br>
-            No. Not at this point. There are still some technical and bureaucratic hurdles that need to be taken.
-            Maybe one day, but not for now.
-        </p>
-        <p>
-            <i>Can I reserve the kitchen for only my association?</i><br>
-            This is possible in special cases, send an e-mail to
-            <a href="mailto:secretaris@studentencultuur.nl">secretaris@studentencultuur.nl</a>.
-        </p>
-        <p>
-            <i>Is something broken, missing or do you have questions?</i><br>
-            Let us know and e-mail to <a href="mailto:diningapp@studentencultuur.nl">diningapp@studentencultuur.nl</a>.
-        </p>
+            <h2>Frequently asked questions</h2>
+            <p>
+                <i>How can I upgrade my balance?</i><br>
+                This varies per association, for more information visit the
+                <a href="{% url 'upgrade_instructions' %}">upgrade balance page</a>.
+            </p>
+            <p>
+                <i>Are the costs of the meal also taken from my in-app balance?</i><br>
+                No. Not at this point. There are still some technical and bureaucratic hurdles that need to be taken.
+                Maybe one day, but not for now.
+            </p>
+            <p>
+                <i>Can I reserve the kitchen for only my association?</i><br>
+                This is possible in special cases, send an e-mail to
+                <a href="mailto:secretaris@studentencultuur.nl">secretaris@studentencultuur.nl</a>.
+            </p>
+            <p>
+                <i>Is something broken, missing or do you have questions?</i><br>
+                Let us know and e-mail to <a
+                    href="mailto:diningapp@studentencultuur.nl">diningapp@studentencultuur.nl</a>.
+            </p>
+
+            <h2>Bookkeeping 101</h2>
+            <p>
+                <em>This section is meant for association board members and explains how this app deals with
+                    money.</em>
+            </p>
+            <div class="accordion" id="bookkeepingAccordion">
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="mb-0">
+                            <button class="btn btn-link btn-block text-left" type="button" data-toggle="collapse"
+                                    data-target="#collapseOne" aria-expanded="false" aria-controls="collapseOne">
+                                Accounts and transactions
+                            </button>
+                        </h2>
+                    </div>
+                    <div id="collapseOne" class="collapse" data-parent="#bookkeepingAccordion">
+                        <div class="card-body">
+                            <p>
+                                Every user and association on this app has an account
+                                with a balance. Transactions move money between these accounts
+                                and there is a special account which receives the kitchen cost payments.
+                            </p>
+                            <p>
+                                A transaction on this site should <strong>always</strong> be paired with a physical
+                                real-money transfer in the other direction!
+                                Why that is is explained in the section on deposits and withdrawals.
+                                This is not the case for internal transactions to or from a bookkeeping account
+                                but only Scala board members have to deal with those.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="mb-0">
+                            <button class="btn btn-link btn-block text-left collapsed" type="button"
+                                    data-toggle="collapse"
+                                    data-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
+                                Deposits and withdrawals
+                            </button>
+                        </h2>
+                    </div>
+                    <div id="collapseTwo" class="collapse" aria-labelledby="headingTwo"
+                         data-parent="#bookkeepingAccordion">
+                        <div class="card-body">
+                            <p>
+                                When a user wants to deposit money on their account, they transfer physical money to an
+                                association. In turn, the association creates a transaction on this site in the other
+                                direction, moving money from the association balance to the balance of the user's account.
+                                The actual money remains with the user but is stored in the association cash box or bank
+                                account, thus the association owes money to the user.
+                                This is indicated by a negative association balance and positive user balance.
+                            </p>
+                            <p>
+                                For money withdrawals, the process is exactly the same but in reverse.
+                                A user can transfer money from their balance to the association account and in
+                                turn the association treasurer should take the physical money from the association
+                                cash box and hand it over to the user.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-header" id="headingThree">
+                        <h2 class="mb-0">
+                            <button class="btn btn-link btn-block text-left collapsed" type="button"
+                                    data-toggle="collapse"
+                                    data-target="#collapseThree" aria-expanded="false" aria-controls="collapseThree">
+                                Handling kitchen cost (only applicable to Scala board members)
+                            </button>
+                        </h2>
+                    </div>
+                    <div id="collapseThree" class="collapse" aria-labelledby="headingThree"
+                         data-parent="#bookkeepingAccordion">
+                        <div class="card-body">
+                            Whenever a user joins a dining list, a transaction is created transferring kitchen cost
+                            from the user's balance to the kitchen cost bookkeeping account.
+                            Here is an example on how Scala can use this kitchen cost account to retrieve the
+                            kitchen cost payments in order to pay the kitchen rent: to retrieve the exact kitchen
+                            income, move the money on the kitchen cost bookkeeping account to Scala's account.
+                            Scala's account on the site now becomes positive.
+                            To convert the positive balance into actual money,
+                            settle the negative balances of the associations by asking their boards to transfer
+                            physical money to Scala, for which in turn you'll create transactions on this site
+                            in the other direction, in the same manner as for deposits and withdrawals.
+                            This will settle the negative balances of the other associations against Scala's
+                            positive balance. If you do this until your balance is 0,
+                            you will have received the exact physical money that has been payed by users to the
+                            kitchen cost account, and you can use this to pay the kitchen rent.
+                            This money does not include any remittance (afdracht) on the kitchen usage cost that
+                            needs to be payed by the associations themselves, that needs to be handled separately.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <h2>About</h2>
+            <p>Scala Dining app {% if build_date %}build date {{ build_date|date:"SHORT_DATE_FORMAT" }}{% else %}
+                development version{% endif %}.</p>
+            <p>
+                Found a bug? Send an email to
+                <a href="mailto:diningapp@studentencultuur.nl">diningapp@studentencultuur.nl</a>.
+                If you're familiar with GitHub, you can also visit the
+                <a href="https://github.com/DutcherNL/Scala-Dining-WebApp" target="_blank" rel="noopener noreferrer">
+                    <i class="fab fa-github"></i> GitHub repository</a>.
+            </p>
+        </div>
     </div>
+
 
 {% endblock %}

@@ -1,5 +1,7 @@
-from datetime import datetime
+import os.path
+from datetime import datetime, date
 
+from django.conf import settings
 from django.db.models import ObjectDoesNotExist
 from django.http import HttpResponseForbidden, Http404
 from django.shortcuts import render
@@ -65,21 +67,20 @@ class SiteUpdateView(ListView):
         return SiteUpdate.objects.latest('date').date > visit_timestamp
 
 
-class BugReportView(View):
-    template = "general/bugreport.html"
-    context = {}
+class HelpPageView(TemplateView):
+    template_name = "general/help_layout.html"
 
-    def get(self, request):
-        self.context["Sourcepage"] = request.GET.get('source', '')
-        return render(request, self.template, self.context)
-
-
-class HelpPageView(View):
-    template = "general/help_layout.html"
-    context = {}
-
-    def get(self, request):
-        return render(request, self.template, self.context)
+    def get_context_data(self, **kwargs):
+        """Loads app build date from file."""
+        context = super().get_context_data(**kwargs)
+        build_date = None
+        try:
+            with open(os.path.join(settings.BASE_DIR, "builddate.txt")) as f:
+                build_date = date.fromisoformat(f.read().strip())
+        except FileNotFoundError:
+            pass
+        context['build_date'] = build_date
+        return context
 
 
 class RulesPageView(View):
@@ -134,6 +135,7 @@ class EmailTemplateView(View):
 
         Used to replace un-found content in the template with the original name.
         """
+
         # Note: subclassing dict is a very invasive solution for a problem that
         #  can be solved with a much simpler less invasive solution. Please do
         #  not use a dict subclass for this problem.
@@ -176,11 +178,11 @@ class EmailTemplateView(View):
         template_location = request.GET.get('template', None) + ".html"
 
         try:
-            get_template(template_location, using='EmailTemplates')
+            get_template(template_location)
         except TemplateDoesNotExist:
             return Http404("Given template name not found")
 
         context = self.ContentFactory(dictionary=request.GET.dict())
         context['request'] = request
         context['user'] = request.user
-        return render(None, template_location, context, using='EmailTemplates')
+        return render(None, template_location, context)
