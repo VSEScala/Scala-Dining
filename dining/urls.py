@@ -6,7 +6,7 @@ from .views import DayView, index
 urlpatterns = [
     path('', index, name='index'),
     path('csv/', views.DailyDinersCSVView.as_view(), name="diners_csv"),
-    path('<int:day>/<int:month>/<int:year>/', include([
+    path('<int:year>/<int:month>/<int:day>/', include([
         path('', DayView.as_view(), name='day_view'),
         path('add/', views.NewSlotView.as_view(), name='new_slot'),
         path('<slug:identifier>/', include([

@@ -16,8 +16,8 @@ from userdetails.models import User, Association
 class UserDiningSettings(models.Model):
     """Contains setting related to the dining lists and use of the dining lists."""
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    allergies = models.CharField(max_length=100, blank=True, help_text="Leave empty if not applicable",
-                                 verbose_name="Allergies or dietary restrictions")
+    allergies = models.CharField(max_length=100, blank=True, help_text="Leave empty if not applicable.",
+                                 verbose_name="allergies or dietary restrictions")
 
 
 class DiningListManager(models.Manager):
@@ -70,16 +70,6 @@ class DiningList(models.Model):
     max_diners = models.IntegerField(default=20, validators=[MinValueValidator(settings.MIN_SLOT_DINER_MAXIMUM)])
 
     diners = models.ManyToManyField(User, through='DiningEntry', through_fields=('dining_list', 'user'))
-
-    # Metadata for display only
-    main_contact = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
-                                     help_text='If specified, is shown on the dining list as the main contact. '
-                                               'The owners are always shown.',
-                                     related_name='main_contact_dining_lists')
-    purchaser = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, blank=True, null=True,
-                                  related_name="purchaser_dining_lists",
-                                  help_text='If specified, is shown on the dining list as the user who should receive '
-                                            'the grocery shopping payments.')
 
     objects = DiningListManager()
 

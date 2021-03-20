@@ -50,6 +50,7 @@ class UserForm(ModelForm):
         super().__init__(*args, **kwargs)
         self.fields['name'].disabled = True
         self.fields['name'].initial = str(self.instance)
+        self.fields['name'].help_text = "Contact the site administrator if you want to change your name."
         self.fields['email'].disabled = True
 
 
