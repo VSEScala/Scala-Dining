@@ -181,3 +181,5 @@ if env.bool('DINING_COOKIE_SECURE', default=False):
 
 # We're running behind a proxy
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
