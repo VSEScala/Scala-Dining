@@ -151,7 +151,8 @@
                             <p>
                                 When a user wants to deposit money on their account, they transfer physical money to an
                                 association. In turn, the association creates a transaction on this site in the other
-                                direction, moving money from the association balance to the balance of the user's account.
+                                direction, moving money from the association balance to the balance of the user's
+                                account.
                                 The actual money remains with the user but is stored in the association cash box or bank
                                 account, thus the association owes money to the user.
                                 This is indicated by a negative association balance and positive user balance.
@@ -201,14 +202,28 @@
         </div>
         <div class="col-md-4">
             <h2>About</h2>
-            <p>Scala Dining app {% if build_date %}build date {{ build_date|date:"SHORT_DATE_FORMAT" }}{% else %}
-                development version{% endif %}.</p>
+            <p>
+                Scala Dining app
+            </p>
+            <ul>
+                <li>
+                    Commit:
+                    {% if commit_sha %}
+                        <a href="https://github.com/DutcherNL/Scala-Dining-WebApp/commit/{{ commit_sha }}"
+                           target="_blank"
+                           rel="noopener noreferrer">
+                            {{ commit_sha }}
+                        </a>
+                    {% endif %}
+                </li>
+                <li>Build date: {{ build_date|date:"SHORT_DATETIME_FORMAT" }}</li>
+            </ul>
             <p>
                 Found a bug? Send an email to
-                <a href="mailto:diningapp@studentencultuur.nl">diningapp@studentencultuur.nl</a>.
-                If you're familiar with GitHub, you can also visit the
+                <a href="mailto:diningapp@studentencultuur.nl">diningapp@studentencultuur.nl</a>
+                or open an issue on the
                 <a href="https://github.com/DutcherNL/Scala-Dining-WebApp" target="_blank" rel="noopener noreferrer">
-                    <i class="fab fa-github"></i> GitHub repository</a>.
+                    <i class="fab fa-github"></i> GitHub repository</a>
             </p>
         </div>
     </div>

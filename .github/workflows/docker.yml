@@ -1,0 +1,32 @@
+name: Docker deploy
+
+on:
+  push:
+    branches:
+      - master
+
+env:
+  DOCKER_BUILDKIT: 1
+  BUILDKIT_PROGRESS: plain  # Show all build output
+  IMAGE_NAME: quadrivium.azurecr.io/scaladining
+
+jobs:
+  dockerbuild:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Log in to the registry
+        run: docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }} quadrivium.azurecr.io
+      - name: Build image
+        run: |
+          docker build \
+            --cache-from $IMAGE_NAME:latest \
+            --tag $IMAGE_NAME:latest \
+            --build-arg BUILDKIT_INLINE_CACHE=1 \
+            --build-arg COMMIT_SHA=$GITHUB_SHA \
+            --build-arg BUILD_TIMESTAMP=$(date +%s) \
+            "."
+      - name: Push image to registry
+        run: docker push $IMAGE_NAME:latest
+      - name: Trigger re-deploy
+        run: curl -X POST ${{ secrets.UPDATE_WEBHOOK }}
