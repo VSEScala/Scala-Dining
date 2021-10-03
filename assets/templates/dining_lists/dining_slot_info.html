@@ -77,8 +77,10 @@
         <div class="col-md-2 d-none d-md-flex">
             {# (Image is in separate div so that it is inside of the column padding) #}
             {% if dining_list.association.image %}
+                <!-- This has been dropped on request of the board
                 <div class="slot_image w-100" style="background-image: url({{ dining_list.association.image.url }});">
                 </div>
+                -->
             {% endif %}
         </div>
     </div>
