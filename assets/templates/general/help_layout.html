@@ -210,9 +210,8 @@
                     Commit:
                     {% if commit_sha %}
                         <a href="https://github.com/DutcherNL/Scala-Dining-WebApp/commit/{{ commit_sha }}"
-                           target="_blank"
-                           rel="noopener noreferrer">
-                            {{ commit_sha }}
+                           target="_blank" rel="noopener noreferrer" title="{{ commit_sha }}">
+                            {{ commit_sha|slice:":7" }}
                         </a>
                     {% endif %}
                 </li>
