@@ -7,9 +7,9 @@ from .provider import QuadriviumProvider
 class QuadriviumOAuth2Adapter(OAuth2Adapter):
     provider_id = QuadriviumProvider.id
 
-    access_token_url = 'https://keycloak.esmgquadrivium.nl/auth/realms/esmgquadrivium/protocol/openid-connect/token'
-    authorize_url = 'https://keycloak.esmgquadrivium.nl/auth/realms/esmgquadrivium/protocol/openid-connect/auth'
-    profile_url = 'https://keycloak.esmgquadrivium.nl/auth/realms/esmgquadrivium/protocol/openid-connect/userinfo'
+    access_token_url = 'https://keycloak2.esmgquadrivium.nl/auth/realms/q/protocol/openid-connect/token'
+    authorize_url = 'https://keycloak2.esmgquadrivium.nl/auth/realms/q/protocol/openid-connect/auth'
+    profile_url = 'https://keycloak2.esmgquadrivium.nl/auth/realms/q/protocol/openid-connect/userinfo'
 
     def complete_login(self, request, app, token, **kwargs):
         auth = {'Authorization': 'Bearer ' + token.token}
