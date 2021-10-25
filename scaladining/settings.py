@@ -48,6 +48,8 @@ INSTALLED_APPS = [
     'dining.apps.DiningConfig',
     'creditmanagement.apps.CreditManagementConfig',
     'general.apps.GeneralConfig',
+    'groceries.apps.GroceriesConfig',
+    'directdebit.apps.DirectDebitConfig',
     'scaladining.apps.MyAdminConfig',
 
     'allauth.account',  # This needs to be before userdetails due to admin.site.unregister
@@ -86,7 +88,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
-                'scaladining.context_processors.scala'
+                'scaladining.context_processors.dining'
             ],
         },
     },
@@ -125,19 +127,17 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 # Internationalization
-
 TIME_ZONE = 'Europe/Amsterdam'
-
-# Automatic Dutch localization with English language is difficult,
-# so we'll set the date formats manually to Dutch style.
-DATE_FORMAT = 'l j F'  # Default: N j, Y
-SHORT_DATE_FORMAT = 'd-m-Y'  # Default: m/d/Y
-DATETIME_FORMAT = 'N j, Y, G:i'  # Default: N j, Y, P
-SHORT_DATETIME_FORMAT = 'd-m-Y G:i'  # Default: m/d/Y P
-
-USE_I18N = False
-USE_L10N = False
 USE_TZ = True
+# This imports Dutch date/time formats but turns off localization and internationalization so that dates use English
+# names for months/weekdays, but Dutch format.
+from django.conf.locale.nl.formats import *
+
+# Use English format for numbers because the Dutch format is just stupid
+DECIMAL_SEPARATOR = '.'
+THOUSAND_SEPARATOR = ','
+USE_L10N = False
+USE_I18N = False
 USE_THOUSAND_SEPARATOR = True
 
 AUTHENTICATION_BACKENDS = [
@@ -183,3 +183,9 @@ if env.bool('DINING_COOKIE_SECURE', default=False):
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
+
+# The message given here will be shown at the top of every page.
+#
+# Use it for instance when running a staging deployment, to notify the users
+# about this.
+SITE_NOTICE = env.str('SITE_NOTICE', default='Development version')

@@ -1,15 +1,25 @@
 {% extends 'base.html' %}
 {% load static %}
-
-{% block title %}Scala Dining {{ date }} {% endblock %}
+{% load dining_tags %}
 
 {% block head %}
     <link rel="stylesheet" href="{% static 'css/dining_v2.css' %}">
 {% endblock %}
 
 {% block content %}
+{#    <nav>#}
+{#        <ol class="breadcrumb">#}
+{#            <li class="breadcrumb-item">#}
+{#                <a href="{% url 'day_view' year=dining_list.date.year month=dining_list.date.month day=dining_list.date.day %}">#}
+{#                    {{ dining_list.date|date:"SHORT_DATE_FORMAT" }}#}
+{#                </a>#}
+{#            </li>#}
+{#            <li class="breadcrumb-item active">Dining list</li>#}
+{#        </ol>#}
+{#    </nav>#}
+
     {# Add space to bottom for the navigation tabs #}
-    <div style="margin-bottom: 150px;">{% block details%}{% endblock details %}</div>
+    <div style="margin-bottom: 150px;">{% block details %}{% endblock details %}</div>
 
     {# Navigation tabs #}
     <div class="fixed-bottom bg-light">
@@ -20,22 +30,21 @@
             <div class="row">
                 <div class="col px-1">
                     <a class="btn btn-primary btn-block dining-nav {% block tab_info %}{% endblock %}"
-                       href="{% url 'slot_details' day=date.day month=date.month year=date.year identifier=dining_list.association.slug %}">
+                       href="{% url 'slot_details' pk=dining_list.pk %}">
                         <span class="h4">
                             <i class="fas fa-info"></i>
                             <span class="d-none d-md-inline">Info</span>
                         </span>
-
-                        {% if comments_unread > 0 %}
-                            <span class="badge badge-warning align-top">{{ comments_total }}</span>
-                        {% elif comments_total > 0 %}
-                            <span class="badge badge-dark align-top">{{ comments_total }}</span>
+                        {% if dining_list|comments_total > 0 %}
+                            <span class="badge badge-{% if dining_list|comments_unread:user > 0 %}warning{% else %}dark{% endif %} align-top">
+                                {{ dining_list|comments_total }}
+                            </span>
                         {% endif %}
                     </a>
                 </div>
                 <div class="col px-1">
                     <a class="btn btn-primary btn-block dining-nav {% block tab_list %}{% endblock %}"
-                       href="{% url 'slot_list' day=date.day month=date.month year=date.year identifier=dining_list.association.slug %}">
+                       href="{% url 'slot_list' pk=dining_list.pk %}">
                         <span class="h4">
                             <i class="fas fa-list-ul"></i>
                             <span class="d-none d-md-inline">Entries</span>
@@ -44,7 +53,7 @@
                 </div>
                 <div class="col px-1">
                     <a class="btn btn-primary btn-block dining-nav {% block tab_allergy %}{% endblock %}"
-                       href="{% url 'slot_allergy' day=date.day month=date.month year=date.year identifier=dining_list.association.slug %}">
+                       href="{% url 'slot_allergy' pk=dining_list.pk %}">
                         <span class="h4">
                             <i class="fas fa-skull-crossbones"></i>
                             <span class="d-none d-md-inline">Allergies</span>

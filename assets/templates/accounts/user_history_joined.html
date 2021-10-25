@@ -1,28 +1,26 @@
 {% extends 'accounts/user_history_base.html' %}
 
-{% block title %}{{ request.user }} - Dining history {% endblock %}
-
 {% block tab_joined %} active{% endblock %}
 
 {% block details %}
     <div class="table-responsive">
         <table class="table table-hover">
             <thead>
-            <tr class="">
-                <td>Date</td>
-                <td>Dish</td>
-                <td>Association</td>
-                <td>Help stats</td>
-                <td>Paid</td>
-                <td>Link</td>
+            <tr>
+                <th scope="col">Date</th>
+                <th scope="col">Dish</th>
+                <th scope="col">Association</th>
+                <th scope="col">Help stats</th>
             </tr>
             </thead>
 
             <tbody>
             {% for entry in object_list %}
-                <tr>
+                <tr class="position-relative">
                     <td>
-                        {{ entry.dining_list.date }}
+                        <a href="{{ entry.dining_list.get_absolute_url }}" class="stretched-link">
+                            {{ entry.dining_list.date|date:"SHORT_DATE_FORMAT" }}
+                        </a>
                     </td>
                     <td>
                         {{ entry.dining_list.dish }}
@@ -31,21 +29,9 @@
                         {{ entry.dining_list.association.slug }}
                     </td>
                     <td>
-                        {% if entry.has_shopped %} Shop {% endif %}
-                        {% if entry.has_cooked %} Cook {% endif %}
-                        {% if entry.has_cleaned %} Dishes {% endif %}
-                    </td>
-                    <td>
-                        {% if entry.has_paid %}
-                            <span class="text-success">Yes</span>
-                        {% else %}
-                            <span class="text-danger">No</span>
-                        {% endif %}
-                    </td>
-                    <td class="py-2">
-                        <a class="btn btn-outline-primary" href="{{ entry.dining_list.get_absolute_url }}">
-                            <i class="fas fa-arrow-right"></i>
-                        </a>
+                        {% if entry.has_shopped %}Shop{% endif %}
+                        {% if entry.has_cooked %}Cook{% endif %}
+                        {% if entry.has_cleaned %}Clean{% endif %}
                     </td>
                 </tr>
             {% endfor %}

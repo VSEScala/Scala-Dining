@@ -9,47 +9,51 @@
 <div class="form-group {% if horizontal %}row{% endif %}">
     {# The col width is hardcoded on purpose but could be softcoded as explained here: #}
     {# https://docs.djangoproject.com/en/2.1/ref/templates/builtins/#include #}
-
-    {# Field label #}
-    <label for="{{ field.id_for_label }}" class="{% if horizontal %}col-sm-2 col-form-label{% endif %}">
-        {{ field.label }}
-        {% if field.field.required %}
-            <span class="text-danger">*</span>
-        {% endif %}
-    </label>
-    <div class="{% if horizontal %}col-sm-10{% endif %}">
-        {% if field|widget_type == "modelselect2" or field|widget_type == "modelselect2multiple" %}
-            {# Select2 field widget #}
-            {% render_field field data-theme="bootstrap4" data-placeholder=field.label style="width:100%;" %}
-            {% if form.is_bound and field.errors %}
-                {% for error in field.errors %}
-                    <div class="invalid-feedback" style="display: block;">
-                        {{ error }}
-                    </div>
-                {% endfor %}
+    {% if field|widget_type == "checkboxinput" %}
+        {% include 'snippets/bootstrapform/checkboxinput.html' %}
+    {% else %}
+        {# Field label #}
+        <label for="{{ field.id_for_label }}" class="{% if horizontal %}col-sm-2 col-form-label{% endif %}">
+            {{ field.label }}
+            {% if field.field.required %}
+                <span class="text-danger">*</span>
             {% endif %}
-            <link rel="stylesheet" href="{% static "vendor/select2-bootstrap4-theme/select2-bootstrap4.min.css" %}">
-        {% else %}
-            {% if field.field.disabled %}
-                {% render_field field class="form-control-plaintext" placeholder=field.label %}
-            {% elif form.is_bound %}
-                {% if field.errors %}
-                    {% render_field field class="form-control is-invalid" placeholder=field.label %}
+        </label>
+        <div class="{% if horizontal %}col-sm-10{% endif %}">
+            {% if field|widget_type == "modelselect2" or field|widget_type == "modelselect2multiple" %}
+                {# Select2 field widget #}
+                {% render_field field data-theme="bootstrap4" data-placeholder=field.label style="width:100%;" %}
+                {% if form.is_bound and field.errors %}
                     {% for error in field.errors %}
-                        <div class="invalid-feedback">
+                        <div class="invalid-feedback" style="display: block;">
                             {{ error }}
                         </div>
                     {% endfor %}
-                {% else %}
-                    {% render_field field class="form-control is-valid" placeholder=field.label %}
                 {% endif %}
+                {# Look away please #}
+                <link rel="stylesheet" href="{% static "vendor/select2-bootstrap4-theme/select2-bootstrap4.min.css" %}">
             {% else %}
-                {% render_field field class="form-control" placeholder=field.label %}
+                {% if field.field.disabled %}
+                    {% render_field field class="form-control-plaintext" placeholder=field.label %}
+                {% elif form.is_bound %}
+                    {% if field.errors %}
+                        {% render_field field class="form-control is-invalid" placeholder=field.label %}
+                        {% for error in field.errors %}
+                            <div class="invalid-feedback">
+                                {{ error }}
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        {% render_field field class="form-control is-valid" placeholder=field.label %}
+                    {% endif %}
+                {% else %}
+                    {% render_field field class="form-control" placeholder=field.label %}
+                {% endif %}
             {% endif %}
-        {% endif %}
 
-        {% if field.help_text %}
-            <small class="form-text text-muted">{{ field.help_text }}</small>
-        {% endif %}
-    </div>
+            {% if field.help_text %}
+                <small class="form-text text-muted">{{ field.help_text }}</small>
+            {% endif %}
+        </div>
+    {% endif %}
 </div>

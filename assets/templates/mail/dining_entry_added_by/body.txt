@@ -3,7 +3,7 @@ Hi {{user.first_name}}
 
 {{entry.created_by}} has just added you to the following dining list:
 Date: {{dining_list.date}}
-By: {{dining_list|short_owners_string}}
+By: {{dining_list.owners.all|join:", "}}
 On behalf of: {{dining_list.association}}
 
 You can view the dining list here: {{ site_uri }}{{ dining_list.get_absolute_url }}

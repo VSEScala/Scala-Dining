@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+
+
+{% block content %}
+    <nav>
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                {% with d=payment.dining_list.date %}
+                    <a href="{% url 'day_view' year=d.year month=d.month day=d.day %}">
+                        {{ d|date:"SHORT_DATE_FORMAT" }}
+                    </a>
+                {% endwith %}
+            </li>
+            <li class="breadcrumb-item">
+                <a href="{{ payment.dining_list.get_absolute_url }}">Dining list</a>
+            </li>
+            <li class="breadcrumb-item active">Groceries payment</li>
+        </ol>
+    </nav>
+    <h3>Groceries payment</h3>
+
+{% endblock %}

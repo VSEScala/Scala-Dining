@@ -1,17 +1,16 @@
 {% extends 'base.html' %}
 
 {% block content %}
-
     <h2>Dining history</h2>
 
     <ul class="nav nav-tabs mb-3">
         <li class="nav-item">
-            <a class="nav-link{% block tab_joined %}{% endblock %}"
+            <a class="nav-link {% block tab_joined %}{% endblock %}"
                href="{% url 'history_lists' %}">Joined lists
             </a>
         </li>
         <li class="nav-item">
-            <a class="nav-link{% block tab_claimed %}{% endblock %}"
+            <a class="nav-link {% block tab_claimed %}{% endblock %}"
                href="{% url 'history_claimed_lists' %}">Owned lists</a>
         </li>
     </ul>

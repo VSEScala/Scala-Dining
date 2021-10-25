@@ -1,204 +1,108 @@
 {% extends 'dining_lists/dining_slot.html' %}
 {% load dining_tags %}
+{% load credit_tags %}
+{% load humanize %}
 
 {% block tab_info %}active{% endblock %}
 
 {% block details %}
-    <div class="row">
-        {# Primary information #}
-        <div class="col-md-10">
-            {# Dish #}
-            <h3>{{ dining_list.dish }}</h3>
-            {# Owners #}
-            <div class="row">
-                <div class="col-3">Owners:</div>
-                <div class="col-9">
-                    {% if not dining_list.owners.exists %}
-                        There are no owners
-                    {% else %}
-                        {{ dining_list.owners.all|join:", " }}
-                    {% endif %}
-                </div>
-            </div>
-
-            {# Association #}
-            <div class="row">
-                <div class="col-3">Association:</div>
-                <div class="col-9">{{ dining_list.association }}</div>
-            </div>
-
-            {# Serve time #}
-            <div class="row mt-3">
-                <div class="col-3">Served at:</div>
-                <div class="col-9">
-                    {{ dining_list.date }}<br>
-                    <span class="h5">{{ dining_list.serve_time|date:"H:i" }}</span>
-                </div>
-            </div>
-
-            {# Dining cost #}
-            {% if dining_list.dining_cost %}
-                <div class="row mt-3">
-                    <div class="col-3">
-                        Meal cost:
-                    </div>
-                    <div class="col-9">
-                        &euro; {{ dining_list.dining_cost }}
-                        {% if dining_list.payment_link %}
-                            <br><a href="{{ dining_list.payment_link }}">{{ dining_list.payment_link }}</a>
-                        {% else %}
-                            <br><span>Pay at one of the dining list owners</span>
-                        {% endif %}
-                    </div>
-                </div>
-            {% elif dining_list.payment_link %}
-                <div class="row mt-3">
-                    <div class="col-3">
-                        Meal payment:
-                    </div>
-                    <div class="col-9">
-                        <a href="{{ dining_list.payment_link }}">{{ dining_list.payment_link }}</a>
-                    </div>
-                </div>
-            {% endif %}
+    <p>
+        <a href="{% url 'day_view' day=dining_list.date.day month=dining_list.date.month year=dining_list.date.year %}">
+            ← Back to overview
+        </a>
+    </p>
+    {% if dining_list|is_owner:user and dining_list.is_adjustable %}
+        <a class="btn btn-primary mb-3" href="{% url 'slot_change' pk=dining_list.pk %}">
+            <i class="fas fa-edit"></i> Edit
+        </a>
+        <a class="btn btn-secondary mb-3" href="{% url 'groceries:payment-create' pk=dining_list.pk %}">
+            <i class="fas fa-receipt"></i> Create groceries payment
+        </a>
+    {% endif %}
+    {% if dining_list.is_cancelled %}
+        <div class="alert alert-warning">
+            This dining list is cancelled. The provided reason was: '{{ dining_list.cancelled_reason }}'.
         </div>
-
-        {# Association image #}
-        <div class="col-md-2 d-none d-md-flex">
-            {# (Image is in separate div so that it is inside of the column padding) #}
-            {% if dining_list.association.image %}
-                <!-- This has been dropped on request of the board
-                <div class="slot_image w-100" style="background-image: url({{ dining_list.association.image.url }});">
-                </div>
-                -->
-            {% endif %}
+    {% endif %}
+    <div class="row mb-3">
+        <div class="col-md-2">
+            <strong>
+                <i class="fas fa-user fa-fw"></i> Cook{{ dining_list.owners.count|pluralize }}
+            </strong>
+        </div>
+        <div class="col-md-10">{{ dining_list.owners.all|join:", " }}<br><small>{{ dining_list.association }}</small></div>
+    </div>
+    <div class="row mb-3">
+        <div class="col-md-2"><strong><i class="fas fa-clock fa-fw"></i> Dinner time</strong></div>
+        <div class="col-md-10">{{ dining_list.date|naturalday|capfirst }} {{ dining_list.serve_time }}</div>
+    </div>
+    <div class="row mb-3">
+        <div class="col-md-2"><strong><i class="fas fa-utensils fa-fw"></i> Dish</strong></div>
+        <div class="col-md-10">{{ dining_list.dish }}</div>
+    </div>
+    <div class="row mb-3">
+        <div class="col-md-2"><strong>{# <i class="fas fa-euro-sign fa-fw"></i> #} Kitchen cost</strong></div>
+        <div class="col-md-10">{{ dining_list.kitchen_cost|euro }}<br><small>Automatically subtracted</small>
+        </div>
+    </div>
+    <div class="row mb-3">
+        <div class="col-md-2"><strong><i class="fas fa-users fa-fw"></i> Diners</strong></div>
+        <div class="col-md-10">
+            {{ dining_list.entries.count }}<br>
+            <small>Maximum: {{ dining_list.max_diners }}</small>
         </div>
     </div>
 
-    {# Change buttons #}
-    {% if dining_list|is_owner:user %}
-        <div class="row mt-3">
-            <div class="col-md">
-                {% url 'slot_change' day=date.day month=date.month year=date.year identifier=dining_list.association.slug as url %}
-                <a class="btn btn-primary btn-block" href="{{ url }}">
-                    <i class="fas fa-tools"></i> Change information
-                </a>
-            </div>
-            {% if dining_list|is_owner:user and dining_list.diners.count < dining_list.min_diners %}
-                {# The min_diners check is only performed here and not while a list is actually deleted, so it's #}
-                {# possible to delete a list even if there are more diners than min_diners XD #}
-                <div class="col-md">
-                    {% url "slot_delete" year=date.year month=date.month day=date.day identifier=dining_list.association.slug as url %}
-                    <a href="{{ url }}" class="btn btn-outline-danger btn-block">
-                        <i class="fas fa-trash-alt"></i> Remove dining list
-                    </a>
-                </div>
-            {% endif %}
-        </div>
-    {% endif %}
-
-    <hr>
 
     {# Current user status #}
-    {% if dining_list|has_joined:user %}
-        <div class="alert alert-success">You are on this list</div>
-    {% elif dining_list|can_join:user %}
-        <div class="alert alert-warning">You are not on the dining list</div>
-    {% else %}
-        <div class="alert alert-danger">
-            You are not on this list and can't join: {{ dining_list|cant_join_reason:user }}
-        </div>
-    {% endif %}
+    {% if user_entry %}
+        <div class="card border-success mb-3">
+            <div class="card-body">
+                <h5 class="card-title">You are on the list</h5>
 
-    {# Join/leave/add others buttons #}
-    <div class="row mt-3">
-        {# Join/leave #}
-        <div class="col-md-6">
-            {% with entry=dining_list|get_entry:user %}
-                {% if entry %}
+                {% with entry=dining_list|get_entry:user %}
                     {% if entry|can_delete_entry:user %}
-                        <form method="post" action="{% url 'entry_delete' pk=entry.pk %}?next={{ request.path_info }}">
+                        <form method="post" action="{% url 'entry_delete' pk=entry.pk %}"
+                              style="display: inline-block;">
                             {% csrf_token %}
-                            <button type="submit" class="btn btn-block btn-outline-warning">Sign out</button>
+                            <button type="submit" class="btn btn-primary">Sign out</button>
                         </form>
                     {% endif %}
-                {% elif dining_list|can_join:user %}
-                    {% url 'entry_add' day=date.day month=date.month year=date.year identifier=dining_list.association.slug as url%}
-                    <form method="post" action="{{ url }}?next={{ request.path_info }}">
+                {% endwith %}
+                {% if dining_list|can_add_others:user %}
+                    <a href="{% url 'entry_add' pk=dining_list.pk %}"
+                       class="btn btn-secondary">Add someone else</a>
+                {% endif %}
+
+            </div>
+        </div>
+    {% else %}
+        <div class="card border-warning mb-3">
+            <div class="card-body">
+                <h5 class="card-title">You are not on the dining list</h5>
+                {% if dining_list|can_join:user %}
+                    {% if dining_list.sign_up_deadline %}
+                        <p class="card-text">Sign up
+                            before {{ dining_list.sign_up_deadline|naturalday }} {{ dining_list.sign_up_deadline|date:"TIME_FORMAT" }}</p>
+                    {% endif %}
+
+                    <form method="post"
+                          action="{% url 'entry_add' pk=dining_list.pk %}"
+                          style="display: inline-block;">
                         {% csrf_token %}
                         <input type="hidden" name="user" value="{{ user.pk }}">
-                        <button type="submit" class="btn btn-block btn-primary">Sign up</button>
+                        <button type="submit" class="btn btn-primary">Sign up</button>
                     </form>
+                {% else %}
+                    <p class="card-text">{{ dining_list|cant_join_reason:user }}</p>
                 {% endif %}
-            {% endwith %}
-        </div>
-        {# Add others #}
-        <div class="col-md-6">
-            {% if dining_list|can_add_others:user %}
-                {% url 'entry_add' day=date.day month=date.month year=date.year identifier=dining_list.association.slug as url %}
-                <a href="{{ url }}" class="btn btn-outline-primary btn-block mt-1 mt-md-0">Add others</a>
-            {% endif %}
-        </div>
-    </div>
-
-    <hr>
-
-    {# Extra container to have the same outlining as above using col-md-10 #}
-    <div class="row">
-        <div class="col-md-10">
-
-            {# Sign up deadline #}
-            <div class="row">
-                {% if dining_list.is_open %}
-                    <div class="col-3">
-                        Open till:
-                    </div>
-                    <div class="col-9">
-                        <span class="h5">
-                            {% if dining_list.sign_up_deadline.date == dining_list.date %}
-                                {{ dining_list.sign_up_deadline |date:"H:i" }}
-                            {% else %}
-                                {{ dining_list.sign_up_deadline |date:"l H:i" }}
-                            {% endif %}
-                        </span>
-                    </div>
-                {% elif dining_list.is_adjustable %}
-                    <div class="col-9 offset-3">
-                        Dining list is closed, contact one of the owners if you want to join
-                    </div>
+                {% if dining_list|can_add_others:user %}
+                    <a href="{% url 'entry_add' pk=dining_list.pk %}"
+                       class="btn btn-secondary">Add someone else</a>
                 {% endif %}
             </div>
-
-            {# Number of diners #}
-            <div class="row mt-3">
-                <div class="col-3">Diners:</div>
-                <div class="col-3">
-                    <span class="h5">{{ dining_list.dining_entries.count }}</span> / {{ dining_list.max_diners }}
-                </div>
-                <div class="col-6">
-                    {% if number_of_allergies > 0 %}
-                        {{ number_of_allergies }} {{ number_of_allergies|pluralize:"has an allergy,have allergies" }}
-                    {% endif %}
-                </div>
-            </div>
-
-            {# Minimum number of diners #}
-            {% if dining_list.dining_entries.count < dining_list.min_diners %}
-                <div class="row mt-3">
-                    <div class="col-3">Minimum diners:</div>
-                    <div class="col-9">{{ dining_list.min_diners }}</div>
-                </div>
-            {% endif %}
-
-            {# Kitchen cost #}
-            <div class="row mt-3">
-                <div class="col-3">Kitchen cost</div>
-                <div class="col-9">
-                    € {{ dining_list.kitchen_cost }} <span class="small">(automatically subtracted)</span>
-                </div>
-            </div>
         </div>
-    </div>
+    {% endif %}
 
     <hr>
 
@@ -208,8 +112,7 @@
     {% endfor %}
 
     {# New comment form #}
-    {% url 'slot_details' day=date.day month=date.month year=date.year identifier=dining_list.association.slug as url %}
-    <form method="post" action="{{ url }}">
+    <form method="post" action="{% url 'slot_details' pk=dining_list.pk %}">
         {% if form.errors %}
             <div class="alert alert-dismissable alert-warning mb-1">
                 <button type="button" class="close" data-dismiss="alert">×</button>

@@ -12,7 +12,8 @@ from userdetails.models import User, Association
 # Form fields which are used in transaction forms
 USER_FORM_FIELD = forms.ModelChoiceField(User.objects.all(),
                                          required=False,
-                                         widget=ModelSelect2(url='people_autocomplete'),
+                                         widget=ModelSelect2(url='people_autocomplete',
+                                                             attrs={'data-minimum-input-length': '1'}),
                                          label="User")
 ASSOCIATION_FORM_FIELD = forms.ModelChoiceField(Association.objects.all(),
                                                 required=False,
@@ -197,32 +198,3 @@ class ClearOpenExpensesForm(forms.Form):
             for tx in self.transactions:
                 tx.description = desc
                 tx.save()
-
-
-# Todo! This form is currently not used, it can be removed
-class AccountPickerForm(forms.Form):
-    """Form that enables the user to choose any account of any type."""
-
-    user = USER_FORM_FIELD
-    association = ASSOCIATION_FORM_FIELD
-    special = SPECIAL_FORM_FIELD
-
-    def clean(self):
-        cleaned_data = super().clean()
-        fields = (bool(cleaned_data['user']), bool(cleaned_data['association']), bool(cleaned_data['special']))
-        if sum(fields) != 1:
-            raise ValidationError("Select 1 of the fields.")
-        return super().clean()
-
-    def get_account(self) -> Account:
-        """Returns the account that was picked."""
-        user = self.cleaned_data['user']
-        if user:
-            return user.account
-        association = self.cleaned_data['association']
-        if association:
-            return association.account
-        special = self.cleaned_data['special']
-        if special:
-            return special
-        raise RuntimeError

@@ -15,7 +15,9 @@ class TransactionListView(LoginRequiredMixin, ListView):
     paginate_by = 20
 
     def get_queryset(self):
-        return Transaction.objects.filter_account(self.request.user.account).order_by('-moment')
+        # Cancelled transactions are omitted on this page. We could add an additional
+        # option for the user to view cancelled transactions.
+        return Transaction.objects.filter_valid().filter_account(self.request.user.account).order_by('-moment')
 
 
 class TransactionCSVView(LoginRequiredMixin, View):

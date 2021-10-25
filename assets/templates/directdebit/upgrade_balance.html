@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    <h2>Direct debit upgrade</h2>
+    <p>
+        When you upgrade your balance using direct debit you will be invoiced later for the upgraded amount.
+        This is only possible for certain associations, for instance in Quadrivium this is done using the
+        Q-bill/Q-rekening.
+    </p>
+
+    <form action="{% url 'upgrade-balance' %}" method="post">
+        {% csrf_token %}
+        {% include 'snippets/bootstrap_form.html' with horizontal=True %}
+        <button type="submit" class="btn btn-primary">Upgrade</button>
+    </form>
+
+{% endblock %}

@@ -6,7 +6,22 @@ from django.utils.functional import cached_property
 
 
 class User(AbstractUser):
+    # Email override to make it unique and required
     email = models.EmailField("email address", unique=True)
+
+    # 'dietary requirements' seems to be the most common terminology according to
+    # https://interpersonal.stackexchange.com/questions/18928/what-is-the-etiquette-for-asking-whether-someone-has-a-special-diet
+    dietary_requirements = models.CharField(
+        max_length=100,
+        blank=True,
+        help_text="E.g. gluten or vegetarian. Leave empty if not applicable.",
+        verbose_name="food allergies or preferences"
+    )
+    allow_grocery_payments = models.BooleanField(
+        default=True,
+        help_text="Whether to allow automatic grocery payments from your account balance."
+                  " You will always be notified and can always undo these transactions.",
+    )
 
     def __str__(self):
         return "{} {}".format(self.first_name, self.last_name).strip() or "@{}".format(self.username)
@@ -66,13 +81,19 @@ class User(AbstractUser):
     def get_verified_memberships(self):
         return self.usermembership_set.filter(is_verified=True)
 
+    # Todo: deprecated
     def has_min_balance_exception(self):
         """Whether this user is allowed unlimited debt.
 
         For this to hold, the association membership must be verified.
         """
         exceptions = [membership.association.has_min_exception for membership in self.get_verified_memberships()]
-        return True in exceptions
+        return any(exceptions)
+
+    def can_use_direct_debit(self) -> bool:
+        """Returns true of user is member of an association which allows direct debit."""
+        return Association.objects.filter(usermembership__in=self.get_verified_memberships(),
+                                          allow_direct_debit=True).exists()
 
 
 class Association(Group):
@@ -81,8 +102,12 @@ class Association(Group):
     icon_image = models.ImageField(blank=True, null=True)
     is_choosable = models.BooleanField(default=True,
                                        help_text="If checked, this association can be chosen as membership by users.")
-    has_min_exception = models.BooleanField(default=False,
-                                            help_text="If checked, this association has an exception to the minimum balance.")
+    allow_direct_debit = models.BooleanField(
+        default=False,
+        help_text="If checked, members can upgrade their balance using a direct debit transaction.")
+    direct_debit_name = models.CharField(blank=True,
+                                         max_length=100,
+                                         help_text="For instance Q-rekening in the case of Quadrivium.")
     social_app = models.ForeignKey(SocialApp, on_delete=models.PROTECT, null=True, blank=True,
                                    help_text="A user automatically becomes member of the association "
                                              "if they sign up using this social app.")

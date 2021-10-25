@@ -1,12 +1,11 @@
 from allauth.account.views import LoginView
 from django.urls import path, include
 
-from userdetails.views import RegisterView, DiningJoinHistoryView, DiningClaimHistoryView, PeopleAutocompleteView
+from userdetails import views
 from userdetails.views_association import AssociationTransactionListView, AssociationTransactionsCSVView, \
     MembersOverview, \
     MembersEditView, AssociationOverview, AssociationSettingsView, SiteDiningView, SiteCreditView, \
     AutoCreateNegativeCreditsView, AssociationTransactionAddView, SiteTransactionView, SiteCreditDetailView
-from userdetails.views_user_settings import SettingsProfileView
 
 urlpatterns = [
     path('association/<slug:association_name>/', include([
@@ -29,18 +28,16 @@ urlpatterns = [
     ])),
 
     path('statistics/', include([
-        path('joined/', DiningJoinHistoryView.as_view(), name='history_lists'),
-        path('joined/<int:page>/', DiningJoinHistoryView.as_view(), name='history_lists'),
-        path('claimed/', DiningClaimHistoryView.as_view(), name='history_claimed_lists'),
-        path('claimed/<int:page>/', DiningClaimHistoryView.as_view(), name='history_claimed_lists'),
+        path('joined/', views.DiningJoinHistoryView.as_view(), name='history_lists'),
+        path('claimed/', views.DiningClaimHistoryView.as_view(), name='history_claimed_lists'),
     ])),
 
-    path('settings/', SettingsProfileView.as_view(), name='settings_account'),
+    path('settings/', views.SettingsProfileView.as_view(), name='settings_account'),
 
     # Override allauth login and sign up page with our registration page
     path('login/', LoginView.as_view(), name='account_login'),
-    path('signup/', RegisterView.as_view(), name='account_signup'),
+    path('signup/', views.RegisterView.as_view(), name='account_signup'),
 
-    path('people-autocomplete/', PeopleAutocompleteView.as_view(), name='people_autocomplete'),
+    path('people-autocomplete/', views.PeopleAutocompleteView.as_view(), name='people_autocomplete'),
 
 ]

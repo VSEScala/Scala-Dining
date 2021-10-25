@@ -3,24 +3,22 @@ from decimal import Decimal
 
 from django.conf import settings
 from django.core.exceptions import ValidationError, MultipleObjectsReturned
-from django.core.validators import MinValueValidator, MaxValueValidator
+from django.core.validators import MinValueValidator
 from django.db import models
 from django.db.models import Sum
 from django.utils import timezone
+from django.utils.formats import date_format
 
 from creditmanagement.models import Transaction
 from general.models import AbstractVisitTracker
 from userdetails.models import User, Association
 
 
-class UserDiningSettings(models.Model):
-    """Contains setting related to the dining lists and use of the dining lists."""
-    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    allergies = models.CharField(max_length=100, blank=True, help_text="Leave empty if not applicable.",
-                                 verbose_name="allergies or dietary restrictions")
+class ActiveDiningListManager(models.Manager):
+    def get_queryset(self):
+        # Only return non-cancelled dining lists
+        return super().get_queryset().filter(cancelled_reason='')
 
-
-class DiningListManager(models.Manager):
     def available_slots(self, date):
         """Returns the number of available slots on the given date."""
         # Get slots occupied by announcements
@@ -32,7 +30,7 @@ class DiningListManager(models.Manager):
 class DiningList(models.Model):
     """A single dining list (slot) model.
 
-    The following fields may not be changed after creation: kitchen_cost, min_diners/max_diners!
+    The following fields may not be changed after creation: kitchen_cost!
     """
     date = models.DateField()
 
@@ -45,33 +43,27 @@ class DiningList(models.Model):
     sign_up_deadline = models.DateTimeField(help_text="The time before users need to sign up.")
     serve_time = models.TimeField(default=time(18, 00))
 
-    dish = models.CharField(default="", max_length=100, blank=True, help_text="The dish made")
+    dish = models.CharField(default="", max_length=100, blank=True)
     # The days adjustable is implemented to prevent adjustment in credits or aid due to a deletion of a user account.
     adjustable_duration = models.DurationField(
         default=settings.TRANSACTION_PENDING_DURATION,
-        help_text="The amount of time the dining list can be adjusted after its date")
+        help_text="How long a dining list can be adjusted after its date.")
     # Todo: implement limit in the views.
     limit_signups_to_association_only = models.BooleanField(
-        default=False, help_text="Whether only members of the given association can sign up")
+        default=False, help_text="Whether only members of the given association can sign up.")
 
     kitchen_cost = models.DecimalField(decimal_places=2, verbose_name="kitchen cost per person", max_digits=10,
                                        default=settings.KITCHEN_COST, validators=[MinValueValidator(Decimal('0.00'))])
 
-    dining_cost = models.DecimalField(decimal_places=2, verbose_name="dinner cost per person", max_digits=5,
-                                      blank=True, null=True, default=None,
-                                      validators=[MinValueValidator(Decimal('0.00'))])
-
-    auto_pay = models.BooleanField(default=False)
-
-    payment_link = models.CharField(blank=True, max_length=100, help_text="Link for payment, e.g. a Tikkie link.")
-
-    # min_diners can be set to a negative value. Is not really problematic though
-    min_diners = models.IntegerField(default=4, validators=[MaxValueValidator(settings.MAX_SLOT_DINER_MINIMUM)])
-    max_diners = models.IntegerField(default=20, validators=[MinValueValidator(settings.MIN_SLOT_DINER_MAXIMUM)])
+    max_diners = models.IntegerField(default=20, validators=[MinValueValidator(1)])
 
     diners = models.ManyToManyField(User, through='DiningEntry', through_fields=('dining_list', 'user'))
 
-    objects = DiningListManager()
+    # If not empty, the dining list is cancelled!
+    cancelled_reason = models.CharField(blank=True, max_length=100)
+
+    objects = models.Manager()
+    active = ActiveDiningListManager()
 
     def is_owner(self, user: User) -> bool:
         """Returns whether given user has all rights to this dining list.
@@ -81,10 +73,17 @@ class DiningList(models.Model):
         """
         return self.owners.filter(pk=user.pk).exists()
 
-    def is_adjustable(self):
-        """Whether the dining list has not expired and can still be modified."""
+    def is_expired(self):
         days_since_date = (self.date + self.adjustable_duration)
-        return days_since_date >= timezone.now().date()
+        return days_since_date < timezone.now().date()
+
+    def is_adjustable(self):
+        """Whether the dining list can be modified.
+
+        A dining list can no longer be modified if it has been expired or
+        cancelled.
+        """
+        return not self.is_expired() and not self.is_cancelled()
 
     is_adjustable.boolean = True
 
@@ -107,21 +106,20 @@ class DiningList(models.Model):
         return self.diners.count() < self.max_diners
 
     def __str__(self):
-        return "{} {}".format(self.date, self.association)
+        # Let's format date using SHORT_DATE_FORMAT so that it's consistent with other places
+        return "{} {}".format(date_format(self.date, format="SHORT_DATE_FORMAT"), self.association)
 
     def get_absolute_url(self):
         from django.shortcuts import reverse
-        slug = self.association.slug
-        d = self.date
-        return reverse('slot_details', kwargs={'year': d.year, 'month': d.month, 'day': d.day, 'identifier': slug})
+        return reverse('slot_details', kwargs={'pk': self.pk})
 
     def internal_dining_entries(self):
         """All dining entries that are not for external people."""
-        return DiningEntryUser.objects.filter(dining_list=self)
+        return DiningEntry.objects.internal().filter(dining_list=self)
 
     def external_dining_entries(self):
-        """All dining entries that are not for external people."""
-        return DiningEntryExternal.objects.filter(dining_list=self)
+        """All dining entries that are for external people."""
+        return DiningEntry.objects.external().filter(dining_list=self)
 
     def clean_fields(self, exclude=None):
         super().clean_fields(exclude=exclude)
@@ -131,70 +129,57 @@ class DiningList(models.Model):
                 raise ValidationError(
                     {'sign_up_deadline': ["Sign up deadline can't be later than the day dinner is served"]})
 
+    def is_cancelled(self):
+        return bool(self.cancelled_reason)
+
+
+class DiningEntryManager(models.Manager):
+    def internal(self):
+        return self.filter(external_name="")
+
+    def external(self):
+        return self.exclude(external_name="")
+
 
 class DiningEntry(models.Model):
     """Represents an entry on a dining list."""
 
-    dining_list = models.ForeignKey(DiningList, on_delete=models.PROTECT, related_name='dining_entries')
+    dining_list = models.ForeignKey(DiningList, on_delete=models.PROTECT, related_name='entries')
     # This is the person who is responsible for the kitchen cost, it will be the same as the transaction source
     user = models.ForeignKey(User, on_delete=models.PROTECT)
     created_by = models.ForeignKey(User, on_delete=models.PROTECT, related_name='created_dining_entries')
-    # The transaction that belongs to this entry
+    # The kitchen transaction that belongs to this entry
     transaction = models.OneToOneField(Transaction, on_delete=models.PROTECT, null=True, blank=True)
 
-    has_paid = models.BooleanField(default=False)
+    # If a name is provided, this entry is external
+    external_name = models.CharField(max_length=100, blank=True)
 
-    def get_subclass(self):
-        """Return an instance of the correct subclass, either DiningEntryUser or DiningEntryExternal."""
-        try:
-            return self.diningentryuser
-        except DiningEntryUser.DoesNotExist:
-            pass
-        try:
-            return self.diningentryexternal
-        except DiningEntryExternal.DoesNotExist:
-            pass
-        raise RuntimeError("Invalid DiningEntry")
-
-    def get_name(self):
-        """Return name of diner."""
-        return self.user.get_full_name()
-
-    def is_internal(self):
-        return True
-
-    def is_external(self):
-        return not self.is_internal()
-
-    def __str__(self):
-        return "{}: {}".format(self.dining_list.date, self.get_name())
-
-
-class DiningWork(models.Model):
-    # Define the unique id name to prevent conflicts with DiningEntry
-    w_id = models.AutoField(primary_key=True)
-
-    # Add the stats
+    # Work/help stats
     has_shopped = models.BooleanField(default=False)
     has_cooked = models.BooleanField(default=False)
     has_cleaned = models.BooleanField(default=False)
 
-
-class DiningEntryUser(DiningEntry, DiningWork):
-    def clean(self):
-        if not self.pk and hasattr(self, 'user') and hasattr(self, 'dining_list'):
-            if DiningEntryUser.objects.filter(user=self.user, dining_list=self.dining_list).exists():
-                raise ValidationError("User is already on the dining list")
-
-
-class DiningEntryExternal(DiningEntry):
-    name = models.CharField(max_length=100)
+    objects = DiningEntryManager()
 
     def get_name(self):
-        return self.name
+        """Return name of diner."""
+        return self.external_name or self.user.get_full_name()
 
     def is_internal(self):
-        return False
+        return not self.is_external()
+
+    def is_external(self):
+        return bool(self.external_name)
+
+    def __str__(self):
+        return "{}: {}".format(self.dining_list.date, self.get_name())
+
+    def clean(self):
+        if not self.pk:
+            # Entry is being created, check if user is not already on the dining list
+            if self.is_internal():
+                if DiningEntry.objects.internal().filter(user=self.user, dining_list=self.dining_list).exists():
+                    raise ValidationError("User is already on the dining list")
 
 
 class DiningComment(models.Model):

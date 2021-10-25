@@ -11,7 +11,13 @@ from userdetails.models import Association, User
 
 
 class Account(models.Model):
-    """Money account which can be used as a transaction source or target."""
+    """Money account which can be used as a transaction source or target.
+
+    SQL note: it's a bit cleaner to have Account as a base entity and have
+    foreign key columns on User and Association entities to the Account entity
+    (the other way around as how it's now). That way the Account table won't be
+    full of NULL values. We could change this.
+    """
 
     # An account can only have one of user or association or special
     user = models.OneToOneField(User, on_delete=models.PROTECT, null=True)
@@ -103,7 +109,9 @@ class TransactionQuerySet2(QuerySet):
 
 class Transaction(models.Model):
     # We do not enforce that source != target because those rows are not harmful,
-    #  balance is not affected when source == target.
+    # balance is not affected when source == target.
+    #
+    # ForeignKey fields have a database index by default.
     source = models.ForeignKey(Account, on_delete=models.PROTECT, related_name='transaction_source_set')
     target = models.ForeignKey(Account, on_delete=models.PROTECT, related_name='transaction_target_set')
     # Amount can only be (strictly) positive

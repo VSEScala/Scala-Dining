@@ -31,12 +31,21 @@
                         </a>
                         {# A slightly larger min-width to add space between the text and icons #}
                         <div class="dropdown-menu dropdown-menu-right" style="min-width: 10.5rem;">
+                            {% if user.can_use_direct_debit %}
+                                <a class="dropdown-item {{ justify }}" href="{% url 'upgrade-balance' %}">
+                                    Upgrade balance <i class="fas fa-angle-double-up fa-fw"></i>
+                                </a>
+                            {% endif %}
                             <a class="dropdown-item {{ justify }}" href="{% url 'history_lists' %}">
                                 History <i class="fas fa-history fa-fw"></i>
+                            </a>
+                            <a class="dropdown-item {{ justify }}" href="{% url 'groceries:overview' %}">
+                                Grocery payments <i class="fas fa-receipt fa-fw ml-1"></i>
                             </a>
                             <a class="dropdown-item {{ justify }}" href="{% url 'credits:transaction_list' %}">
                                 Transactions <i class="fas fa-euro-sign fa-fw"></i>
                             </a>
+                            <div class="dropdown-divider"></div>
                             <a class="dropdown-item {{ justify }}" href="{% url 'settings_account' %}">
                                 Settings <i class="fas fa-cog fa-fw"></i>
                             </a>

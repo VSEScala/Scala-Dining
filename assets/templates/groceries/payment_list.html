@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+{% load credit_tags %}
+
+{% block content %}
+    <h2>Grocery payments</h2>
+    <h4>Payer</h4>
+    <table class="table">
+        <thead>
+        <tr>
+            <th scope="col">Date</th>
+            <th scope="col">Amount</th>
+            <th scope="col">Paid</th>
+            <th scope="col"></th>
+            {# Buttons for payment info and cancellation #}
+        </tr>
+        </thead>
+        {% for payment in payer %}
+            <tr class="position-relative">
+                <td>
+                    <a href="{{ payment.dining_list.get_absolute_url }}" class="stretched-link">
+                        {{ payment.dining_list.date|date:"SHORT_DATE_FORMAT" }}
+                    </a>
+                </td>
+            </tr>
+        {% endfor %}
+    </table>
+    <h4>Payee</h4>
+    <table class="table">
+        <thead>
+        <tr>
+            <th scope="col">Date</th>
+            <th scope="col">Total amount</th>
+            <th scope="col">Paid</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for payment in payee %}
+            <tr class="position-relative">
+                <td>
+                    <a href="{% url 'groceries:payment-detail' pk=payment.pk %}" class="stretched-link">
+                        {{ payment.dining_list.date|date:"SHORT_DATE_FORMAT" }}
+                    </a>
+                </td>
+                <td>{{ payment.total_cost|euro }}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+
+{% endblock %}

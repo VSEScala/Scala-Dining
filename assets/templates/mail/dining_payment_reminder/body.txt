@@ -4,7 +4,7 @@ Hi {{user.first_name}}
 You recently dined with the following dining_list:
 Date: {{dining_list.date}}
 Dish: {{dining_list.dish}}
-By: {{dining_list|short_owners_string}}
+By: {{dining_list.owners.all|join:", "}}
 On behalf of: {{dining_list.association}}
 
 {% if is_reminder %}However, according to our administration, you have not yet paid for the meal itself.{%endif%}

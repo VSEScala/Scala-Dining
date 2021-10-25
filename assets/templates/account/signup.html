@@ -2,56 +2,30 @@
 {% load static %}
 
 {% block content %}
-    <div class="row width-max-lg text-size-md-5">
-        <div class="col-12">
-            <form method="post">
-                {% csrf_token %}
-
-                <div class="">
-                    <h3>Account specifications</h3>
-                    {% include "snippets/bootstrap_form.html" with form=account_form horizontal=True %}
-
-                    <h3>Personal information</h3>
-                    {% include "snippets/bootstrap_form.html" with form=account_detail_form horizontal=True %}
-
-                    <h3>Memberships</h3>
-                    {% include "account/snippet_associations_form.html" with form=associationlink_form horizontal=True %}
-
-                    <p>
-                        <span class="text-danger">*</span> required
-                    </p>
-
-                    <h3>Terms of service</h3>
-                    <p class="offset-sm-2 col-sm-10">
-                        We care for your privacy, though due to the nature of the service we will openly display
-                        your name on the dining lists you subscribe on. For full details check our
-                        <a target="_blank" rel="noopener noreferrer" href="{% static "files/Scala Dining App - Privacy Policy 8-4-17.pdf" %}">Privacy policy</a>.<br>
-                        By using the site, you are automatically agreeing to the
-                        <a target="_blank" rel="noopener noreferrer" href="{% static "files/Scala Dining App - User Agreement 8-4-17.pdf" %}">User Agreement</a>.<br>
-                    </p>
-                    <br>
-
-                    <label for="accept_rules" class="row m-0">
-
-                        <div class="col-1 col-sm-2 p-2">
-                            <input type="checkbox" id="accept_rules" required="required" class=""/>
-                            <div class="checkbox"></div>
-                        </div>
-                        <div class="col-11 col-sm-10">
-                            I understand and accept both the privacy and the user agreement.
-                        </div>
-
-                    </label>
-
-
-                    <br>
-                    <br>
-                </div>
-                <input type="submit" value="Register" class="btn btn-block btn-primary">
-                <br>
-                <br>
-                <br>
-            </form>
+    <form method="post" action="{% url 'account_signup' %}">
+        {% csrf_token %}
+        <h3>Account specifications</h3>
+        {% include "snippets/bootstrap_form.html" with form=account_form horizontal=True %}
+        <h3>Memberships</h3>
+        {% include "account/snippet_associations_form.html" with form=associationlink_form horizontal=True %}
+        <p><span class="text-danger">*</span> required</p>
+        <h3>Terms of service</h3>
+        <p>
+            We care for your privacy, though due to the nature of the service we will openly display
+            your name on the dining lists you subscribe on. For full details check our
+            <a target="_blank" rel="noopener noreferrer"
+               href="{% static "files/Scala Dining App - Privacy Policy 8-4-17.pdf" %}">privacy policy</a>.
+            By using the site, you automatically agree to the
+            <a target="_blank" rel="noopener noreferrer"
+               href="{% static "files/Scala Dining App - User Agreement 8-4-17.pdf" %}">user agreement</a>.
+        </p>
+        {# This is not checked server-side (but that's probably fine) #}
+        <div class="custom-control custom-checkbox mb-3">
+            <input type="checkbox" class="custom-control-input" id="tosCheck" required="required">
+            <label class="custom-control-label" for="tosCheck">
+                I understand and accept both the privacy and the user agreement.
+            </label>
         </div>
-    </div>
+        <button type="submit" class="btn btn-block btn-primary">Register</button>
+    </form>
 {% endblock %}

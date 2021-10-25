@@ -1,42 +1,24 @@
 from django import forms
 from django.conf import settings
-from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth.forms import UserCreationForm, UsernameField
 from django.core.exceptions import ValidationError
 from django.db.models import Q
 from django.forms import ModelForm
 from django.utils import timezone
 
-from dining.models import UserDiningSettings
 from userdetails.models import User, Association, UserMembership
 
 
-class RegisterUserForm(UserCreationForm):
+class CreateUserForm(UserCreationForm):
     class Meta:
         model = User
-        fields = ('username', 'password1', 'password2', 'email')
+        fields = ('username', 'password1', 'password2', 'email', 'first_name', 'last_name', 'dietary_requirements')
+        field_classes = {'username': UsernameField}  # This adds some HTML attributes for semantics
 
-
-class RegisterUserDetails(forms.ModelForm):
-    first_name = forms.CharField(max_length=40, required=True)
-    last_name = forms.CharField(max_length=40, required=True)
-    allergies = forms.CharField(max_length=100, required=False, help_text="Max 100 characters, leave empty if none")
-
-    class Meta:
-        model = User
-        fields = ['first_name', 'last_name', 'allergies']
-
-    def save_as(self, user):
-        user.first_name = self.cleaned_data.get('first_name')
-        user.last_name = self.cleaned_data.get('last_name')
-        user.userdiningsettings.allergies = self.cleaned_data.get('allergies')
-        user.save()
-        user.userdiningsettings.save()
-
-
-class DiningProfileForm(ModelForm):
-    class Meta:
-        model = UserDiningSettings
-        fields = ['allergies']
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['first_name'].required = True
+        self.fields['last_name'].required = True
 
 
 class UserForm(ModelForm):
@@ -44,7 +26,7 @@ class UserForm(ModelForm):
 
     class Meta:
         model = User
-        fields = ['username', 'name', 'email']
+        fields = ('username', 'name', 'email', 'dietary_requirements', 'allow_grocery_payments')
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -127,7 +109,7 @@ class AssociationLinkField(forms.BooleanField):
 class AssociationLinkForm(forms.Form):
 
     def __init__(self, user, *args, **kwargs):
-        super(AssociationLinkForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
         self.user = user
 

@@ -1,0 +1,19 @@
+{% extends 'dining_lists/dining_slot.html' %}
+
+{% block details %}
+    <p>
+        Are you sure to cancel the dining list on <strong>{{ dining_list.date }}</strong> for the
+        association <strong>{{ dining_list.association }}</strong>? All
+        <strong>{{ dining_list.entries.count }}</strong> currently subscribed diners will have the
+        kitchen costs refunded and will get notified.
+    </p>
+    <form method="post">
+        {% csrf_token %}
+        {% include "snippets/bootstrap_form.html" with form=form horizontal=True %}
+        <button type="submit" class="btn btn-warning">
+            <i class="fas fa-ban"></i> Cancel dining list
+        </button>
+
+        <a href="{% url "slot_details" pk=dining_list.pk %}" class="btn">Go back</a>
+    </form>
+{% endblock %}

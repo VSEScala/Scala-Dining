@@ -13,7 +13,7 @@
         <tbody>
         {% for tx in object_list %}
             <tr {% if tx.is_cancelled %}style="text-decoration: line-through;"{% endif %}>
-                <td>{{ tx.moment }}</td>
+                <td>{{ tx.moment|date:"SHORT_DATETIME_FORMAT" }}</td>
                 <td>
                     {% if tx.source == account_self %}
                         {{ tx.target }}

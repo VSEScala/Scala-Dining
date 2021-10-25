@@ -2,32 +2,28 @@
 
 {% block tab_allergy %}active{% endblock %}
 
-{% block details%}
-    <div class="row">
-        <div class="col-12 table-responsive">
-            <table class="table table-hover">
-                {# Table header #}
-                <thead>
-                <tr class="">
-                    <td style="min-width: 10rem">Name</td>
-                    <td style="min-width: 15rem">Allergy</td>
-                </tr>
-                </thead>
+{% block details %}
+    <div class="table-responsive">
+        <table class="table table-hover">
+            <thead>
+            <tr>
+                <th scope="col" style="min-width: 10rem">Name</th>
+                <th scope="col" style="min-width: 15rem">Allergy or preference</th>
+            </tr>
+            </thead>
 
-                <tbody>
-                {# Table rows #}
-                {% for entry in allergy_entries %}
+            <tbody>
+            {% for entry in entries %}
                 <tr>
                     <td>
                         {{ entry.user }}
                     </td>
                     <td>
-                        {{ entry.user.userdiningsettings.allergies }}
+                        {{ entry.user.dietary_requirements }}
                     </td>
                 </tr>
-                {% endfor %}
-                </tbody>
-            </table>
-        </div>
+            {% endfor %}
+            </tbody>
+        </table>
     </div>
 {% endblock details %}
