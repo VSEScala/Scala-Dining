@@ -88,9 +88,6 @@ class DiningList(models.Model):
     is_adjustable.boolean = True
 
     def clean(self):
-        # Validate dining list can be changed
-        if self.pk and not self.is_adjustable():
-            raise ValidationError("The dining list is not adjustable", code='closed')
         # Set sign up deadline if it hasn't been set already
         if not self.sign_up_deadline:
             loc_time = timezone.datetime.combine(self.date, settings.DINING_LIST_CLOSURE_TIME)

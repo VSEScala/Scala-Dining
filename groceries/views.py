@@ -4,13 +4,13 @@ from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.core.exceptions import ValidationError, BadRequest
 from django.db import transaction
 from django.forms import DecimalField
-from django.shortcuts import redirect
+from django.shortcuts import redirect, get_object_or_404
 from django.views.generic import TemplateView
 from django.views.generic.detail import DetailView
 
 from dining.views import DiningListEditMixin
 from groceries.forms import PaymentCreateForm
-from groceries.models import Payment
+from groceries.models import Payment, PaymentEntry
 
 
 class PaymentsView(LoginRequiredMixin, TemplateView):
@@ -18,11 +18,10 @@ class PaymentsView(LoginRequiredMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        payments = Payment.objects.order_by('-created_at')
         context.update({
-            'payer': payments.exclude(receiver=self.request.user).filter(entries__user=self.request.user,
-                                                                         entries__external_name=""),
-            'payee': payments.filter(receiver=self.request.user),
+            'pay_entries': PaymentEntry.objects.filter(user=self.request.user, external_name="").exclude(
+                payment__receiver=self.request.user).order_by('-payment__created_at'),
+            'receive_payments': Payment.objects.filter(receiver=self.request.user).order_by('-created_at'),
         })
         return context
 
@@ -92,3 +91,17 @@ class PaymentDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         # Can only use this page if user is receiver
         payment = self.get_object()  # type: Payment
         return payment.receiver == self.request.user
+
+    def post(self, request, *args, **kwargs):
+        payment = self.get_object()
+        entry = get_object_or_404(PaymentEntry,
+                                  id=request.POST.get('entry_id'),
+                                  payment=payment,  # Can only get entry for this payment
+                                  transaction=None)  # And there should be no transaction (bc then paid is always True)
+        paid = request.POST.get('paid')
+        if paid == 'true':
+            entry.paid = True
+        elif paid == 'false':
+            entry.paid = False
+        entry.save()
+        return redirect('groceries:payment-detail', pk=payment.pk)

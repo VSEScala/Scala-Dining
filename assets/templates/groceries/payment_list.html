@@ -3,8 +3,8 @@
 
 {% block content %}
     <h2>Grocery payments</h2>
-    <h4>Payer</h4>
-    <table class="table">
+    <h4>Payments</h4>
+    <table class="table" id="payEntries">
         <thead>
         <tr>
             <th scope="col">Date</th>
@@ -14,17 +14,83 @@
             {# Buttons for payment info and cancellation #}
         </tr>
         </thead>
-        {% for payment in payer %}
+        {% for entry in pay_entries %}
             <tr class="position-relative">
+                <td>{{ entry.payment.dining_list.date|date:"SHORT_DATE_FORMAT" }}</td>
+                <td>{{ entry.payment.cost_pp|euro }}</td>
                 <td>
-                    <a href="{{ payment.dining_list.get_absolute_url }}" class="stretched-link">
-                        {{ payment.dining_list.date|date:"SHORT_DATE_FORMAT" }}
-                    </a>
+                    {% if entry.paid %}
+                        <span class="text-success"><i class="fas fa-check-circle"></i> Paid</span>
+                    {% else %}
+                        <span class="text-danger"><i class="fas fa-times-circle"></i> Not paid</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <button type="button" class="btn btn-primary btn-sm stretched-link float-right"
+                            data-toggle="collapse"
+                            data-target="#payEntry{{ entry.pk }}">
+                        <i class="fas fa-chevron-down"></i> Payment info
+                    </button>
+                </td>
+            </tr>
+            <tr>
+                <td colspan="4" class="p-0 border-0">{# Remove padding+border to make it 'invisible' until expanded #}
+                    <div class="collapse" id="payEntry{{ entry.pk }}" data-parent="#payEntries">
+                        <div class="card mb-1">
+                            <div class="card-body">
+                                {% if entry.transaction %}
+                                    <p class="card-text text-success">
+                                        <em>You have automatically paid using your account balance</em>
+                                    </p>
+                                    <button type="button" class="btn btn-warning mb-3 btn-sm">
+                                        <i class="fas fa-ban"></i>
+                                        Cancel automatic payment
+                                    </button>
+                                {% endif %}
+
+                                <div class="row mb-3">
+                                    <div class="col-md-2"><strong>Receiver</strong></div>
+                                    <div class="col-md-10">{{ entry.payment.receiver.get_full_name }}</div>
+                                </div>
+                                <div class="row mb-3">
+                                    <div class="col-md-2"><strong>Payment link</strong></div>
+                                    <div class="col-md-10">
+                                        {% if entry.payment.payment_link %}
+                                            <a href="{{ entry.payment.payment_link }}" target="_blank">
+                                                {{ entry.payment.payment_link }}
+                                            </a>
+                                        {% else %}-{% endif %}
+                                    </div>
+                                </div>
+                                <div class="row mb-3">
+                                    <div class="col-md-2"><strong>Phone number</strong></div>
+                                    <div class="col-md-10">{{ entry.payment.phone_number|default:"-" }}</div>
+                                </div>
+                                <div class="row mb-3">
+                                    <div class="col-md-2"><strong>E-mail</strong></div>
+                                    <div class="col-md-10">
+                                        {% if entry.payment.include_email %}
+                                            <a href="mailto:{{ entry.payment.receiver.email }}">
+                                                {{ entry.payment.receiver.email }}
+                                            </a>
+                                        {% else %}-{% endif %}
+                                    </div>
+                                </div>
+                                <div class="row mb-3">
+                                    <div class="col-md-2"><strong>Remarks</strong></div>
+                                    <div class="col-md-10">{{ entry.payment.remarks|default:"-" }}</div>
+                                </div>
+                                <a href="{{ entry.payment.dining_list.get_absolute_url }}" class="card-link">
+                                    View dining list
+                                </a>
+                            </div>
+                        </div>
+                    </div>
                 </td>
             </tr>
         {% endfor %}
     </table>
-    <h4>Payee</h4>
+    <h4>Reimbursements</h4>
     <table class="table">
         <thead>
         <tr>
@@ -34,7 +100,7 @@
         </tr>
         </thead>
         <tbody>
-        {% for payment in payee %}
+        {% for payment in receive_payments %}
             <tr class="position-relative">
                 <td>
                     <a href="{% url 'groceries:payment-detail' pk=payment.pk %}" class="stretched-link">
@@ -42,6 +108,9 @@
                     </a>
                 </td>
                 <td>{{ payment.total_cost|euro }}</td>
+                <td class="text-{% if payment.paid.count == payment.entries.count %}success{% else %}warning{% endif %}">
+                    {{ payment.paid.count }} / {{ payment.entries.count }}
+                </td>
             </tr>
         {% endfor %}
         </tbody>

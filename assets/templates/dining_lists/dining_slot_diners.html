@@ -48,7 +48,7 @@
                               action="{% url 'slot_list' pk=dining_list.pk %}"
                               class="d-inline-block">
                             {% csrf_token %}
-                            <input type="hidden" name="entry_id" value="{{ entry.id }}">
+                            <input type="hidden" name="entry_id" value="{{ entry.pk }}">
                             <div class="btn-group">
                                 <button type="submit"
                                         name="action"

@@ -41,6 +41,10 @@ class Payment(models.Model):
 
     created_at = models.DateTimeField(default=timezone.now)
 
+    def paid(self):
+        """Returns a QuerySet of paid entries."""
+        return self.entries.filter(paid=True)
+
 
 class PaymentEntry(models.Model):
     payment = models.ForeignKey(Payment, on_delete=models.PROTECT, related_name='entries')

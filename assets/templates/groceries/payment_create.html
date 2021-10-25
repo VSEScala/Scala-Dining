@@ -63,7 +63,7 @@
         <h4>Payment info</h4>
         <p>
             Provide payment info for the people that can't be automatically charged. Contact info is optional but
-            can be helpful for diners to reach you for payment issues.
+            can be helpful in case of payment issues.
             The info will be remembered for the next time you create a payment.
         </p>
         <form action="{% url 'groceries:payment-create' pk=dining_list.pk %}?total_cost={{ request.GET.total_cost }}"
