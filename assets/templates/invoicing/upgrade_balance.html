@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    <h3>Upgrade using invoice</h3>
+    <p>
+        When you upgrade your balance this way you will be invoiced later for the upgraded amount!
+        This is only possible for the following associations:
+    </p>
+    <ul>
+        {% for association in eligible_associations %}
+            <li>{{ association.name }}: {{ association.invoicing_method }}</li>
+        {% endfor %}
+    </ul>
+
+    <form action="{% url 'invoicing-upgrade' %}" method="post">
+        {% csrf_token %}
+        {% include 'snippets/bootstrap_form.html' with horizontal=True %}
+        <button type="submit" class="btn btn-primary">Upgrade</button>
+    </form>
+
+{% endblock %}

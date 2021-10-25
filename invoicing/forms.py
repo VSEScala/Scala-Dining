@@ -3,8 +3,7 @@ from decimal import Decimal
 from django import forms
 
 from creditmanagement.models import Account
-from directdebit.models import DirectDebitTransaction
-from userdetails.models import Association
+from invoicing.models import InvoicedTransaction
 
 
 class UpgradeBalanceForm(forms.ModelForm):
@@ -19,7 +18,7 @@ class UpgradeBalanceForm(forms.ModelForm):
     amount = forms.TypedChoiceField(coerce=Decimal, choices=AMOUNT_CHOICES)
 
     class Meta:
-        model = DirectDebitTransaction
+        model = InvoicedTransaction
         fields = ('source',)
         labels = {
             'source': 'Association',
@@ -33,9 +32,9 @@ class UpgradeBalanceForm(forms.ModelForm):
             association__usermembership__in=user.get_verified_memberships())
 
     def save(self, commit=True):
-        tx = super().save(commit=False)  # type: DirectDebitTransaction
+        tx = super().save(commit=False)  # type: InvoicedTransaction
         tx.amount = self.cleaned_data['amount']
-        tx.description = "Direct debit {}".format(tx.source.association.direct_debit_name)
+        tx.description = "Invoiced using {}".format(tx.source.association.invoicing_method)
         if commit:
             tx.save()
         return tx

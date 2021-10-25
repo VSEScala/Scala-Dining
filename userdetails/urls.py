@@ -5,14 +5,13 @@ from userdetails import views
 from userdetails.views_association import AssociationTransactionListView, AssociationTransactionsCSVView, \
     MembersOverview, \
     MembersEditView, AssociationOverview, AssociationSettingsView, SiteDiningView, SiteCreditView, \
-    AutoCreateNegativeCreditsView, AssociationTransactionAddView, SiteTransactionView, SiteCreditDetailView
+    AssociationTransactionAddView, SiteTransactionView, SiteCreditDetailView
 
 urlpatterns = [
     path('association/<slug:association_name>/', include([
         path('', AssociationOverview.as_view(), name='association_overview'),
         path('transactions/', include([
             path('', AssociationTransactionListView.as_view(), name='association_credits'),
-            path('process_negatives/', AutoCreateNegativeCreditsView.as_view(), name='association_process_negatives'),
             path('csv/', AssociationTransactionsCSVView.as_view(), name='association_transactions_csv'),
             path('add/', AssociationTransactionAddView.as_view(), name='association_transaction_add'),
         ])),

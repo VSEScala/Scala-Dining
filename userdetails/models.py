@@ -81,19 +81,10 @@ class User(AbstractUser):
     def get_verified_memberships(self):
         return self.usermembership_set.filter(is_verified=True)
 
-    # Todo: deprecated
-    def has_min_balance_exception(self):
-        """Whether this user is allowed unlimited debt.
-
-        For this to hold, the association membership must be verified.
-        """
-        exceptions = [membership.association.has_min_exception for membership in self.get_verified_memberships()]
-        return any(exceptions)
-
-    def can_use_direct_debit(self) -> bool:
-        """Returns true of user is member of an association which allows direct debit."""
+    def can_use_invoicing(self) -> bool:
+        """Returns true of user is member of an association which allows invoicing."""
         return Association.objects.filter(usermembership__in=self.get_verified_memberships(),
-                                          allow_direct_debit=True).exists()
+                                          allow_invoicing=True).exists()
 
 
 class Association(Group):
@@ -102,12 +93,14 @@ class Association(Group):
     icon_image = models.ImageField(blank=True, null=True)
     is_choosable = models.BooleanField(default=True,
                                        help_text="If checked, this association can be chosen as membership by users.")
-    allow_direct_debit = models.BooleanField(
+    allow_invoicing = models.BooleanField(
         default=False,
-        help_text="If checked, members can upgrade their balance using a direct debit transaction.")
-    direct_debit_name = models.CharField(blank=True,
-                                         max_length=100,
-                                         help_text="For instance Q-rekening in the case of Quadrivium.")
+        help_text="If checked, members can upgrade their balance by having the association invoice them.")
+    invoicing_method = models.CharField(
+        blank=True,
+        max_length=100,
+        help_text="How members will be invoiced. For instance 'Q-rekening' in the case of Quadrivium.")
+
     social_app = models.ForeignKey(SocialApp, on_delete=models.PROTECT, null=True, blank=True,
                                    help_text="A user automatically becomes member of the association "
                                              "if they sign up using this social app.")

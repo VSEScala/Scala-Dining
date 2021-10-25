@@ -11,8 +11,16 @@
         </li>
         <li class="nav-item">
             <a class="nav-link{% block tab_credits %}{% endblock %}"
-               href="{% url 'association_credits' association_name=association.slug %}">Credits</a>
+               href="{% url 'association_credits' association_name=association.slug %}">Transactions</a>
         </li>
+        {% if association.allow_invoicing %}
+            <li class="nav-item">
+                <a href="{% url 'invoicing-reports' association_name=association.slug %}"
+                   class="nav-link {% block tab_invoicing %}{% endblock %}">
+                    Invoicing
+                </a>
+            </li>
+        {% endif %}
         <li class="nav-item">
             <a class="nav-link{% block tab_members %}{% endblock %}"
                href="{% url 'association_members' association_name=association.slug %}">Members</a>

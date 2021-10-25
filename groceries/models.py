@@ -42,7 +42,6 @@ class Payment(models.Model):
     created_at = models.DateTimeField(default=timezone.now)
 
 
-
 class PaymentEntry(models.Model):
     payment = models.ForeignKey(Payment, on_delete=models.PROTECT, related_name='entries')
     user = models.ForeignKey(User, on_delete=models.PROTECT)

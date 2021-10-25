@@ -4,7 +4,6 @@ from typing import List
 from django import forms
 from django.core.exceptions import ValidationError
 from django.db import transaction
-from django.forms import HiddenInput
 
 from creditmanagement.models import Transaction
 from groceries.models import Payment
@@ -33,10 +32,9 @@ class PaymentCreateForm(forms.ModelForm):
         users = [x for x in users if x != payment.receiver]
         # User should allow payments
         users = [x for x in users if x.allow_grocery_payments]
-        # Balance should be sufficient, unless user has an exception
-        # Todo: do we
+        # Balance should be sufficient
         cost_pp = self.get_cost_per_person()
-        users = [x for x in users if x.has_min_balance_exception() or x.account.get_balance() >= cost_pp]
+        users = [x for x in users if x.account.get_balance() >= cost_pp]
         return users
 
     def get_cost_per_person(self) -> Decimal:

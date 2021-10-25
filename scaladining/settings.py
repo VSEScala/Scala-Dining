@@ -49,7 +49,7 @@ INSTALLED_APPS = [
     'creditmanagement.apps.CreditManagementConfig',
     'general.apps.GeneralConfig',
     'groceries.apps.GroceriesConfig',
-    'directdebit.apps.DirectDebitConfig',
+    'invoicing.apps.InvoicingConfig',
     'scaladining.apps.MyAdminConfig',
 
     'allauth.account',  # This needs to be before userdetails due to admin.site.unregister
@@ -131,7 +131,7 @@ TIME_ZONE = 'Europe/Amsterdam'
 USE_TZ = True
 # This imports Dutch date/time formats but turns off localization and internationalization so that dates use English
 # names for months/weekdays, but Dutch format.
-from django.conf.locale.nl.formats import *
+from django.conf.locale.nl.formats import *  # noqa: E402,F401,F403
 
 # Use English format for numbers because the Dutch format is just stupid
 DECIMAL_SEPARATOR = '.'

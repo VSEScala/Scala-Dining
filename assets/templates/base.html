@@ -31,8 +31,8 @@
                         </a>
                         {# A slightly larger min-width to add space between the text and icons #}
                         <div class="dropdown-menu dropdown-menu-right" style="min-width: 10.5rem;">
-                            {% if user.can_use_direct_debit %}
-                                <a class="dropdown-item {{ justify }}" href="{% url 'upgrade-balance' %}">
+                            {% if user.can_use_invoicing %}
+                                <a class="dropdown-item {{ justify }}" href="{% url 'invoicing-upgrade' %}">
                                     Upgrade balance <i class="fas fa-angle-double-up fa-fw"></i>
                                 </a>
                             {% endif %}

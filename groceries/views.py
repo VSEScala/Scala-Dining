@@ -1,11 +1,10 @@
-from decimal import Decimal, ROUND_UP
+from decimal import Decimal
 
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.core.exceptions import ValidationError, BadRequest
 from django.db import transaction
 from django.forms import DecimalField
 from django.shortcuts import redirect
-# Create your views here.
 from django.views.generic import TemplateView
 from django.views.generic.detail import DetailView
 

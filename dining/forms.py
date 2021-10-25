@@ -87,8 +87,7 @@ class CreateSlotForm(ServeTimeCheckMixin, forms.ModelForm):
             raise ValidationError("All dining slots are already occupied on this day")
 
         # Check if user has enough money to claim a slot
-        min_balance_exception = creator.has_min_balance_exception()
-        if not min_balance_exception and creator.account.get_balance() < settings.MINIMUM_BALANCE_FOR_DINING_SLOT_CLAIM:
+        if creator.account.get_balance() < settings.MINIMUM_BALANCE_FOR_DINING_SLOT_CLAIM:
             raise ValidationError("Your balance is too low to claim a slot")
 
         # Check if user does not already own another dining list this day
@@ -175,7 +174,7 @@ class DiningEntryInternalCreateForm(forms.ModelForm):
                 raise ValidationError("Dining list is limited to members only", code='members_only')
 
         # User balance check
-        if not user.has_min_balance_exception() and user.account.get_balance() < settings.MINIMUM_BALANCE_FOR_DINING_SIGN_UP:
+        if user.account.get_balance() < settings.MINIMUM_BALANCE_FOR_DINING_SIGN_UP:
             raise ValidationError("The balance of the user is too low to add", code='nomoneyzz')
 
         return cleaned_data

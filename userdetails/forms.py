@@ -159,4 +159,15 @@ class AssociationLinkForm(forms.Form):
 class AssociationSettingsForm(forms.ModelForm):
     class Meta:
         model = Association
-        fields = ['balance_update_instructions']
+        fields = ('balance_update_instructions', 'invoicing_method')
+        help_texts = {
+            'invoicing_method': "How members will be invoiced. Only applicable if association can invoice members."
+                                " For instance 'Q-rekening' in the case of Quadrivium.",
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if not self.instance.allow_invoicing:
+            self.fields['invoicing_method'].disabled = True
+        else:
+            self.fields['invoicing_method'].required = True

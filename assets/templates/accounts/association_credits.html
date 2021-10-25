@@ -11,12 +11,6 @@
         <a class="btn btn-primary" href="{% url 'association_transaction_add' association_name=association.slug %}">
             <i class="fas fa-plus"></i> Money transfer
         </a>
-        {% if association.has_min_exception %}
-            <a href="{% url 'association_process_negatives' association_name=association.slug %}"
-               class="btn btn-secondary">
-                Autocorrect negative credits
-            </a>
-        {% endif %}
         <a href="{% url 'association_transactions_csv' association_name=association.slug %}"
            class="btn btn-secondary">
             <i class="fa fa-file-export"></i> Download CSV

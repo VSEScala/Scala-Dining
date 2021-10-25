@@ -13,7 +13,7 @@ from django.views import View
 from django.views.generic import ListView, TemplateView, FormView, DetailView
 
 from creditmanagement.csv import write_transactions_csv
-from creditmanagement.forms import ClearOpenExpensesForm, SiteWideTransactionForm
+from creditmanagement.forms import SiteWideTransactionForm
 from creditmanagement.models import Transaction, Account
 from creditmanagement.views import TransactionFormView
 from dining.models import DiningList, DiningEntry
@@ -22,6 +22,7 @@ from userdetails.forms import AssociationSettingsForm
 from userdetails.models import UserMembership, Association, User
 
 
+# Todo: rewrite using SingleObjectMixin and UserPassesTestMixin
 class AssociationBoardMixin:
     """Gathers association data and verifies that the user is a board member."""
     association = None
@@ -65,34 +66,6 @@ class AssociationTransactionAddView(LoginRequiredMixin, AssociationBoardMixin, T
 
     def get_success_url(self):
         return reverse('association_credits', kwargs={'association_name': self.kwargs.get('association_name')})
-
-
-class AutoCreateNegativeCreditsView(LoginRequiredMixin, AssociationBoardMixin, FormView):
-    template_name = "accounts/association_correct_negatives.html"
-    form_class = ClearOpenExpensesForm
-
-    def get_form_kwargs(self):
-        # This view is only meant for associations with a min credit exception
-        if not self.association.has_min_exception:
-            raise PermissionDenied
-        kwargs = super().get_form_kwargs()
-        kwargs['association'] = self.association
-        kwargs['user'] = self.request.user
-        return kwargs
-
-    def form_valid(self, form):
-        form.save()
-        messages.success(self.request, "Member credits have successfully been processed")
-        return super().form_valid(form)
-
-    def get_success_url(self):
-        return reverse('association_credits', kwargs={'association_name': self.association.slug})
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        # Sum all transaction amounts
-        context['transactions_sum'] = sum(tx.amount for tx in context['form'].transactions)
-        return context
 
 
 class AssociationTransactionsCSVView(LoginRequiredMixin, AssociationBoardMixin, View):
@@ -172,9 +145,8 @@ class AssociationSettingsView(AssociationBoardMixin, TemplateView):
     template_name = "accounts/association_settings.html"
 
     def get_context_data(self, **kwargs):
-        context = super(AssociationSettingsView, self).get_context_data(**kwargs)
+        context = super().get_context_data(**kwargs)
         context['form'] = AssociationSettingsForm(instance=self.association)
-
         return context
 
     def post(self, request, association_name=None):

@@ -166,6 +166,7 @@ class SiteWideTransactionForm(forms.ModelForm):
         return instance
 
 
+# TODO: this form is not being used anymore and can be removed
 class ClearOpenExpensesForm(forms.Form):
     """Creates transactions for all members of this association who are negative."""
 

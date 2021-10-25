@@ -73,17 +73,6 @@ class CreateSlotFormTestCase(TestCase):
                                    created_by=self.user1)
         self.assertFalse(self.form.is_valid())
 
-    def test_insufficient_balance_exception(self):
-        Transaction.objects.create(source=self.user1.account,
-                                   target=self.association1.account,
-                                   amount=Decimal('99'),
-                                   created_by=self.user1)
-        # Make user member of another association that has the exception
-        association = Association.objects.create(name='Q', has_min_exception=True)
-        UserMembership.objects.create(related_user=self.user1, association=association, is_verified=True,
-                                      verified_on=timezone.now())
-        self.assertTrue(self.form.is_valid())
-
     def test_serve_time_too_late(self):
         # Actually tests a different class, but put here for convenience, to test it via the CreateSlotForm class
         self.form_data['serve_time'] = '23:30'

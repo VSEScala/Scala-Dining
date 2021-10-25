@@ -89,17 +89,6 @@ class DiningEntryInternalCreateFormTestCase(TestCase):
         self.assertFalse(self.form.is_valid())
         self.assertTrue(self.form.has_error(NON_FIELD_ERRORS, 'nomoneyzz'))
 
-    def test_balance_too_low_exception(self):
-        # Make user member of association with exception
-        assoc = Association.objects.create(slug='ankie4president', name='PvdD', has_min_exception=True)
-        UserMembership.objects.create(related_user=self.user2, association=assoc, is_verified=True,
-                                      verified_on=timezone.now())
-        Transaction.objects.create(source=self.user2.account,
-                                   target=self.association.account,
-                                   amount=Decimal('99'),
-                                   created_by=self.user2)
-        self.assertTrue(self.form.is_valid())
-
     # Todo: fix test
     # def test_invalid_user(self):
     #     self.post_data['user'] = '100'

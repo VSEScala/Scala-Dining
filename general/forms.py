@@ -1,10 +1,6 @@
-import json
-
 from django import forms
-from django.core import serializers
-from django.core.exceptions import NON_FIELD_ERRORS, ValidationError
+from django.core.exceptions import ValidationError
 from django.utils import timezone
-from django.utils.safestring import mark_safe
 
 
 class DateRangeForm(forms.Form):
@@ -27,6 +23,5 @@ class DateRangeForm(forms.Form):
         if date_start and date_end and date_start > date_end:
             raise ValidationError("The end date is further in the past than the starting date")
         return cleaned_data
-
 
 # Here stood the following earlier: https://github.com/frnhr/django-concurrenflict
