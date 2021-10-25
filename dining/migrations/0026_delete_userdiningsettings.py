@@ -7,6 +7,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ('dining', '0025_auto_20211023_0053'),
+        ('userdetails', '0022_move_allergies'),  # This ensures allergies have been copied over before the model is deleted
     ]
 
     operations = [

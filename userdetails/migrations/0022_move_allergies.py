@@ -5,11 +5,7 @@ from django.db import migrations
 
 
 def move_forward(apps, schema_editor):
-    try:
-        UserDiningSettings = apps.get_model('dining', 'UserDiningSettings')
-    except LookupError:
-        warnings.warn("LookupError for UserDiningSettings. This is fine if this is a new deployment.")
-        return
+    UserDiningSettings = apps.get_model('dining', 'UserDiningSettings')
 
     for obj in UserDiningSettings.objects.all():
         user = obj.user
@@ -24,7 +20,7 @@ def move_forward(apps, schema_editor):
 class Migration(migrations.Migration):
     dependencies = [
         ('userdetails', '0021_auto_20211023_1509'),
-        ('dining', '0025_auto_20211023_0053'),
+        ('dining', '0025_auto_20211023_0053'),  # For UserDiningSettings
     ]
 
     operations = [
