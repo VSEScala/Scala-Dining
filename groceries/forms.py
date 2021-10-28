@@ -85,10 +85,13 @@ class PaymentCreateForm(forms.ModelForm):
                     else:
                         tx = None
 
+                    # Users with a transaction and the receiver have paid=True
+                    paid = bool(tx) or (entry.is_internal() and entry.user == payment.receiver)
+
                     payment.entries.create(
                         user=entry.user,
                         external_name=entry.external_name,
-                        paid=bool(tx),
+                        paid=paid,
                         transaction=tx,
                     )
         return payment

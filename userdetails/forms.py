@@ -2,8 +2,6 @@ from django import forms
 from django.conf import settings
 from django.contrib.auth.forms import UserCreationForm, UsernameField
 from django.core.exceptions import ValidationError
-from django.db.models import Q
-from django.forms import ModelForm
 from django.utils import timezone
 
 from userdetails.models import User, Association, UserMembership
@@ -21,7 +19,7 @@ class CreateUserForm(UserCreationForm):
         self.fields['last_name'].required = True
 
 
-class UserForm(ModelForm):
+class UserForm(forms.ModelForm):
     name = forms.CharField(required=False)
 
     class Meta:
@@ -42,18 +40,15 @@ class AssociationLinkField(forms.BooleanField):
     Can also indicate current validation state and auto-sets initial value.
     """
 
-    def __init__(self, user, association, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, user: User, association: Association, *args, **kwargs):
+        super().__init__(*args, initial=False, required=False, label=association.name, **kwargs)
 
-        self.initial = False
-        self.required = False
-        self.label = association.name
         self.user = user
         self.association = association
         self.membership = None
 
         # Find the membership, if any
-        if user is not None:
+        if user:
             try:
                 self.membership = association.usermembership_set.get(related_user=user)
                 self.initial = self.membership.is_member()
@@ -72,11 +67,8 @@ class AssociationLinkField(forms.BooleanField):
                                 settings.DURATION_AFTER_MEMBERSHIP_REJECTION > timezone.now():
                             # The user has been verified not to be a member to recently (prevent spamming)
                             self.disabled = True
-
             except UserMembership.DoesNotExist:
                 pass
-        if association is None:
-            raise ValueError("Association can not be None")
 
     def verified(self):
         if self.membership is None:
@@ -108,16 +100,16 @@ class AssociationLinkField(forms.BooleanField):
 
 class AssociationLinkForm(forms.Form):
 
-    def __init__(self, user, *args, **kwargs):
+    def __init__(self, *args, user=None, **kwargs):
         super().__init__(*args, **kwargs)
 
         self.user = user
 
-        if user is None:
-            associations = Association.objects.filter(is_choosable=True)
-        else:
-            associations = Association.objects.filter(
-                Q(is_choosable=True) | (Q(is_choosable=False) & Q(usermembership__related_user=user))).order_by('slug')
+        associations = Association.objects.filter(is_choosable=True)
+        if user:
+            # Adds non choosable associations the user is a member of
+            associations |= Association.objects.filter(usermembership__related_user=user)
+        associations = associations.order_by('slug')
 
         # Get all associations and make a checkbox field
         for association in associations:
@@ -131,7 +123,7 @@ class AssociationLinkForm(forms.Form):
         has_association = True in self.cleaned_data.values()
 
         if not has_association:
-            raise ValidationError("At least one association needs to be chosen")
+            raise ValidationError("At least one association needs to be chosen.")
 
         return cleaned_data
 

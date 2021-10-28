@@ -1,3 +1,4 @@
+{% load humanize %}
 {% load dining_tags %}
 
 <div class="card border-{% if dining_list|has_joined:user %}success{% else %}primary{% endif %} mb-3">
@@ -18,11 +19,20 @@
             <i class="fas fa-clock fa-fw"></i>
             {{ dining_list.serve_time }}
         </p>
-        {% if dining_list|has_joined:user %}
-            <p class="card-text text-success">You are signed up</p>
-        {% endif %}
+        {# Cancelled, joined, open or closed #}
         {% if dining_list.is_cancelled %}
             <p class="card-text text-warning"><i class="fas fa-ban fa-fw"></i> Dining list is cancelled</p>
+        {% elif dining_list|has_joined:user %}
+            <p class="card-text text-success">You are signed up</p>
+        {% elif dining_list.is_open %}
+            <p class="card-text text-success">
+                {# I learned something interesting here, you should apparently never convert a datetime to a date or time: #}
+                {# https://docs.djangoproject.com/en/3.2/topics/i18n/timezones/#troubleshooting #}
+                Dining list open till {{ dining_list.sign_up_deadline|naturalday }}
+                {{ dining_list.sign_up_deadline|date:"TIME_FORMAT" }}
+            </p>
+        {% else %}
+            <p class="card-text text-danger">Dining list is closed</p>
         {% endif %}
     </div>
 </div>

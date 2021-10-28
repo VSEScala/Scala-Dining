@@ -189,3 +189,5 @@ DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
 # Use it for instance when running a staging deployment, to notify the users
 # about this.
 SITE_NOTICE = env.str('SITE_NOTICE', default='Development version')
+
+BREADCRUMB_NAV = env.bool('BREADCRUMB_NAV', default=True)

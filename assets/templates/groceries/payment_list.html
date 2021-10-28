@@ -4,7 +4,7 @@
 {% block content %}
     <h2>Grocery payments</h2>
     <h4>Payments</h4>
-    <table class="table" id="payEntries">
+    <table class="table table-hover" id="payEntries">
         <thead>
         <tr>
             <th scope="col">Date</th>
@@ -52,34 +52,38 @@
                                     <div class="col-md-2"><strong>Receiver</strong></div>
                                     <div class="col-md-10">{{ entry.payment.receiver.get_full_name }}</div>
                                 </div>
-                                <div class="row mb-3">
-                                    <div class="col-md-2"><strong>Payment link</strong></div>
-                                    <div class="col-md-10">
-                                        {% if entry.payment.payment_link %}
+                                {% if entry.payment.payment_link %}
+                                    <div class="row mb-3">
+                                        <div class="col-md-2"><strong>Payment link</strong></div>
+                                        <div class="col-md-10">
                                             <a href="{{ entry.payment.payment_link }}" target="_blank">
                                                 {{ entry.payment.payment_link }}
                                             </a>
-                                        {% else %}-{% endif %}
+                                        </div>
                                     </div>
-                                </div>
-                                <div class="row mb-3">
-                                    <div class="col-md-2"><strong>Phone number</strong></div>
-                                    <div class="col-md-10">{{ entry.payment.phone_number|default:"-" }}</div>
-                                </div>
-                                <div class="row mb-3">
-                                    <div class="col-md-2"><strong>E-mail</strong></div>
-                                    <div class="col-md-10">
-                                        {% if entry.payment.include_email %}
+                                {% endif %}
+                                {% if entry.payment.phone_number %}
+                                    <div class="row mb-3">
+                                        <div class="col-md-2"><strong>Phone number</strong></div>
+                                        <div class="col-md-10">{{ entry.payment.phone_number }}</div>
+                                    </div>
+                                {% endif %}
+                                {% if entry.payment.include_email %}
+                                    <div class="row mb-3">
+                                        <div class="col-md-2"><strong>E-mail</strong></div>
+                                        <div class="col-md-10">
                                             <a href="mailto:{{ entry.payment.receiver.email }}">
                                                 {{ entry.payment.receiver.email }}
                                             </a>
-                                        {% else %}-{% endif %}
+                                        </div>
                                     </div>
-                                </div>
-                                <div class="row mb-3">
-                                    <div class="col-md-2"><strong>Remarks</strong></div>
-                                    <div class="col-md-10">{{ entry.payment.remarks|default:"-" }}</div>
-                                </div>
+                                {% endif %}
+                                {% if entry.payment.remarks %}
+                                    <div class="row mb-3">
+                                        <div class="col-md-2"><strong>Remarks</strong></div>
+                                        <div class="col-md-10">{{ entry.payment.remarks }}</div>
+                                    </div>
+                                {% endif %}
                                 <a href="{{ entry.payment.dining_list.get_absolute_url }}" class="card-link">
                                     View dining list
                                 </a>
@@ -91,7 +95,7 @@
         {% endfor %}
     </table>
     <h4>Reimbursements</h4>
-    <table class="table">
+    <table class="table table-hover">
         <thead>
         <tr>
             <th scope="col">Date</th>

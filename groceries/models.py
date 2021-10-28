@@ -54,5 +54,14 @@ class PaymentEntry(models.Model):
     paid = models.BooleanField(default=False)
     transaction = models.ForeignKey(Transaction, on_delete=models.PROTECT, null=True)
 
+    class Meta:
+        ordering = ['external_name', 'user__first_name', 'user__last_name']
+
     def is_external(self):
         return bool(self.external_name)
+
+    def is_internal(self):
+        return not self.is_external()
+
+    def is_receiver(self):
+        return self.is_internal() and self.user == self.payment.receiver

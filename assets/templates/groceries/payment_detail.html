@@ -48,7 +48,7 @@
         <div class="col-sm-10">{{ payment.remarks|default:"-" }}</div>
     </div>
     <h4>Diners</h4>
-    <table class="table">
+    <table class="table table-hover" style="table-layout: fixed;">
         <thead>
         <tr>
             <th scope="col">Diner</th>
@@ -58,37 +58,40 @@
         </thead>
         <tbody>
         {% for entry in payment.entries.all %}
-            <tr>
+            <tr class="position-relative">
                 <td>
                     {% if entry.is_external %}
                         {{ entry.external_name }} <span class="badge badge-secondary">External diner</span>
                     {% else %}{{ entry.user }}{% endif %}
-                </td>
-                <td>
-                    {% if entry.paid %}
-                        <span class="text-success"><i class="fas fa-check-circle"></i> Paid</span>
-                    {% else %}
-                        <span class="text-danger"><i class="fas fa-times-circle"></i> Not paid</span>
+                    {% if entry.is_receiver %}
+                        <span class="badge badge-secondary">Receiver</span>
                     {% endif %}
                 </td>
                 <td>
-                    {% if entry.transaction %}
-                        <button type="button" disabled class="btn btn-outline-success btn-sm">Paid automatically</button>
-                    {% else %}
-                        <form method="post" action="{% url 'groceries:payment-detail' pk=payment.pk %}"
-                              class="d-inline-block">
-                            {% csrf_token %}
-                            <input type="hidden" name="entry_id" value="{{ entry.pk }}">
+                    {% if not entry.is_receiver %}
                         {% if entry.paid %}
-                            <button type="submit" name="paid" value="false" class="btn btn-outline-danger btn-sm">
-                            Set not paid
-                            </button>
+                            <span class="text-success"><i class="fas fa-check-circle"></i> Paid</span>
                         {% else %}
-                            <button type="submit" name="paid" value="true" class="btn btn-outline-success btn-sm">
-                            Set paid
-                            </button>
+                            <span class="text-danger"><i class="fas fa-times-circle"></i> Not paid</span>
                         {% endif %}
-                        </form>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if not entry.is_receiver %}
+                        {% if entry.transaction %}
+                            <span class="text-secondary">Paid automatically</span>
+                        {% else %}
+                            <form method="post" action="{% url 'groceries:payment-detail' pk=payment.pk %}"
+                                  class="d-inline-block">
+                                {% csrf_token %}
+                                <input type="hidden" name="entry_id" value="{{ entry.pk }}">
+                                <button type="submit" name="paid"
+                                        value="{% if entry.paid %}false{% else %}true{% endif %}"
+                                        class="btn btn-secondary btn-sm stretched-link">
+                                    Toggle
+                                </button>
+                            </form>
+                        {% endif %}
                     {% endif %}
                 </td>
             </tr>

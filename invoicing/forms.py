@@ -27,9 +27,13 @@ class UpgradeBalanceForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # Determine eligible associations using the target user
+        # 1. User must be verified member
+        # 2. Association must allow invoicing
         user = self.instance.target.user
         self.fields['source'].queryset = Account.objects.filter(
-            association__usermembership__in=user.get_verified_memberships())
+            association__usermembership__in=user.get_verified_memberships(),
+            association__allow_invoicing=True,
+        )
 
     def save(self, commit=True):
         tx = super().save(commit=False)  # type: InvoicedTransaction

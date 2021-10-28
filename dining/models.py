@@ -3,7 +3,7 @@ from decimal import Decimal
 
 from django.conf import settings
 from django.core.exceptions import ValidationError, MultipleObjectsReturned
-from django.core.validators import MinValueValidator
+from django.core.validators import MinValueValidator, MaxValueValidator
 from django.db import models
 from django.db.models import Sum
 from django.utils import timezone
@@ -41,7 +41,10 @@ class DiningList(models.Model):
                                     help_text='Owners can manage the dining list.')
 
     sign_up_deadline = models.DateTimeField(help_text="The time before users need to sign up.")
-    serve_time = models.TimeField(default=time(18, 00))
+    serve_time = models.TimeField(
+        default=time(18, 00),
+        validators=[MinValueValidator(settings.KITCHEN_USE_START_TIME, message="Kitchen can't be used this early."),
+                    MaxValueValidator(settings.KITCHEN_USE_END_TIME, message="Kitchen can't be used this late.")])
 
     dish = models.CharField(default="", max_length=100, blank=True)
     # The days adjustable is implemented to prevent adjustment in credits or aid due to a deletion of a user account.
@@ -124,7 +127,7 @@ class DiningList(models.Model):
         if not exclude or 'sign_up_deadline' not in exclude:
             if self.sign_up_deadline and self.sign_up_deadline.date() > self.date:
                 raise ValidationError(
-                    {'sign_up_deadline': ["Sign up deadline can't be later than the day dinner is served"]})
+                    {'sign_up_deadline': "Sign up deadline can't be later than the day dinner is served."})
 
     def is_cancelled(self):
         return bool(self.cancelled_reason)

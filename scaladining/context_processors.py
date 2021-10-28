@@ -6,4 +6,5 @@ def dining(request):
     return {
         'MINIMUM_BALANCE_FOR_DINING_SIGN_UP': settings.MINIMUM_BALANCE_FOR_DINING_SIGN_UP,
         'SITE_NOTICE': settings.SITE_NOTICE,
+        'BREADCRUMB_NAV': settings.BREADCRUMB_NAV,
     }

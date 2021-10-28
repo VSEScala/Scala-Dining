@@ -1,9 +1,25 @@
 {% extends 'dining_lists/dining_slot.html' %}
 
 {% block details %}
-    <p>
-        <a href="{{ dining_list.get_absolute_url }}">← Back to dining list</a>
-    </p>
+    {% if BREADCRUMB_NAV %}
+        <nav>
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item">
+                    <a href="{% url 'day_view' year=dining_list.date.year month=dining_list.date.month day=dining_list.date.day %}">
+                        {{ dining_list.date|date:"SHORT_DATE_FORMAT" }}
+                    </a>
+                </li>
+                <li class="breadcrumb-item">
+                    <a href="{{ dining_list.get_absolute_url }}">Dining list</a>
+                </li>
+                <li class="breadcrumb-item active">Edit</li>
+            </ol>
+        </nav>
+    {% else %}
+        <p>
+            <a href="{{ dining_list.get_absolute_url }}">← Back to dining list</a>
+        </p>
+    {% endif %}
     <h3>Edit dining list</h3>
     <form method="post" id="infoForm">
         {% csrf_token %}

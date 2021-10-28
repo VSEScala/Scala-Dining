@@ -6,15 +6,35 @@
 {% block tab_info %}active{% endblock %}
 
 {% block details %}
-    <p>
-        <a href="{% url 'day_view' day=dining_list.date.day month=dining_list.date.month year=dining_list.date.year %}">
-            ← Back to overview
-        </a>
-    </p>
+    {% if BREADCRUMB_NAV %}
+        <nav>
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item">
+                    <a href="{% url 'day_view' year=dining_list.date.year month=dining_list.date.month day=dining_list.date.day %}">
+                        {{ dining_list.date|date:"SHORT_DATE_FORMAT" }}
+                    </a>
+                </li>
+                <li class="breadcrumb-item active">Dining list</li>
+            </ol>
+        </nav>
+    {% else %}
+        <p>
+            <a href="{% url 'day_view' day=dining_list.date.day month=dining_list.date.month year=dining_list.date.year %}">
+                ← Back to overview
+            </a>
+        </p>
+    {% endif %}
     {% if dining_list|is_owner:user and dining_list.is_adjustable %}
         <a class="btn btn-primary mb-3" href="{% url 'slot_change' pk=dining_list.pk %}">
             <i class="fas fa-edit"></i> Edit
         </a>
+        {#        {% if dining_list.is_open %}#}
+        {#            <form class="d-inline-block" method="post" action="{% url 'slot_change' pk=dining_list.pk %}">#}
+        {#                {% csrf_token %}#}
+        {#                <input type="hidden" name="sign_up_deadline" value="{% now "SHORT_DATETIME_FORMAT" %}">#}
+        {#                <button type="submit" class="btn btn-danger mb-3">Close now</button>#}
+        {#            </form>#}
+        {#        {% endif %}#}
         <a class="btn btn-secondary mb-3" href="{% url 'groceries:payment-create' pk=dining_list.pk %}">
             <i class="fas fa-receipt"></i> Create groceries payment
         </a>
@@ -30,7 +50,8 @@
                 <i class="fas fa-user fa-fw"></i> Cook{{ dining_list.owners.count|pluralize }}
             </strong>
         </div>
-        <div class="col-md-10">{{ dining_list.owners.all|join:", " }}<br><small>{{ dining_list.association }}</small></div>
+        <div class="col-md-10">{{ dining_list.owners.all|join:", " }}<br><small>{{ dining_list.association }}</small>
+        </div>
     </div>
     <div class="row mb-3">
         <div class="col-md-2"><strong><i class="fas fa-clock fa-fw"></i> Dinner time</strong></div>
@@ -52,23 +73,43 @@
             <small>Maximum: {{ dining_list.max_diners }}</small>
         </div>
     </div>
+    {% if dining_list.is_open %}
+        <p class="text-success">
+            Dining list open till {{ dining_list.sign_up_deadline|naturalday }}
+            {{ dining_list.sign_up_deadline|date:"TIME_FORMAT" }}
+        </p>
+    {% else %}
+        <p class="text-danger">Dining list is closed</p>
+    {% endif %}
 
+    {# Current user status 2 #}
+    {#    <div class="card mb-3 border-{% if user_entry %}success{% else %}warning{% endif %}">#}
+    {#        <div class="card-body">#}
+    {#            <h5 class="card-title">#}
+    {#                {% if user_entry %}You are on the list{% else %}You are not on the dining list{% endif %}#}
+    {#            </h5>#}
+    {# Sign in/out buttons #}
+    {#            {% if dining_list.is_adjustable %}#}
+    {##}
+    {#        {% endif %}#}
+    {#        </div>#}
+    {#    </div>#}
 
     {# Current user status #}
+    {# Todo: I don't really like the use of template tags here which use the form for retrieving the reason. #}
+    {# It's probably better to have it more explicit, without the need of the form. #}
     {% if user_entry %}
         <div class="card border-success mb-3">
             <div class="card-body">
-                <h5 class="card-title">You are on the list</h5>
+                <h5 class="card-title card-text">You are on the list</h5>
 
-                {% with entry=dining_list|get_entry:user %}
-                    {% if entry|can_delete_entry:user %}
-                        <form method="post" action="{% url 'entry_delete' pk=entry.pk %}"
-                              style="display: inline-block;">
-                            {% csrf_token %}
-                            <button type="submit" class="btn btn-primary">Sign out</button>
-                        </form>
-                    {% endif %}
-                {% endwith %}
+                {% if user_entry|can_delete_entry:user %}
+                    <form method="post" action="{% url 'entry_delete' pk=user_entry.pk %}"
+                          style="display: inline-block;">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-primary">Sign out</button>
+                    </form>
+                {% endif %}
                 {% if dining_list|can_add_others:user %}
                     <a href="{% url 'entry_add' pk=dining_list.pk %}"
                        class="btn btn-secondary">Add someone else</a>
@@ -79,13 +120,8 @@
     {% else %}
         <div class="card border-warning mb-3">
             <div class="card-body">
-                <h5 class="card-title">You are not on the dining list</h5>
+                <h5 class="card-title card-text">You are not on the dining list</h5>
                 {% if dining_list|can_join:user %}
-                    {% if dining_list.sign_up_deadline %}
-                        <p class="card-text">Sign up
-                            before {{ dining_list.sign_up_deadline|naturalday }} {{ dining_list.sign_up_deadline|date:"TIME_FORMAT" }}</p>
-                    {% endif %}
-
                     <form method="post"
                           action="{% url 'entry_add' pk=dining_list.pk %}"
                           style="display: inline-block;">

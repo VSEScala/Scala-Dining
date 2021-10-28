@@ -1,21 +1,13 @@
 {% extends 'base.html' %}
 
-{% block title %}Scala Dining {{ date }}{% endblock %}
-
 {% block content %}
-    <div class="col-12 row p-0 m-0">
-        <div class="offset-2 text-center col-8 ">
-            {# To specify the date format, see https://docs.djangoproject.com/en/2.1/ref/settings/#date-format #}
-            {{ date }}
-        </div>
+    <div class="text-center">
+        <h4>{{ date|date:"l j N Y" }}</h4>
     </div>
-
-    <div>
-        <h3>Create new dining list</h3>
-        <form method="post">
-            {% csrf_token %}
-            {% include "snippets/bootstrap_form.html" with form=slot_form horizontal=True %}
-            <input type="submit" value="Create dining slot" class="btn btn-block btn-primary"/>
-        </form>
-    </div>
+    <h3>Create new dining list</h3>
+    <form method="post" action="{% url 'new_slot' year=date.year month=date.month day=date.day %}">
+        {% csrf_token %}
+        {% include "snippets/bootstrap_form.html" with form=slot_form horizontal=True %}
+        <input type="submit" value="Create dining slot" class="btn btn-block btn-primary"/>
+    </form>
 {% endblock %}

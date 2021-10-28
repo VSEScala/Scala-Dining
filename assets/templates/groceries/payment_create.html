@@ -2,19 +2,21 @@
 {% load credit_tags %}
 
 {% block content %}
-    <nav>
-        <ol class="breadcrumb">
-            <li class="breadcrumb-item">
-                <a href="{% url 'day_view' year=dining_list.date.year month=dining_list.date.month day=dining_list.date.day %}">
-                    {{ dining_list.date|date:"SHORT_DATE_FORMAT" }}
-                </a>
-            </li>
-            <li class="breadcrumb-item">
-                <a href="{{ dining_list.get_absolute_url }}">Dining list</a>
-            </li>
-            <li class="breadcrumb-item active">Groceries payment</li>
-        </ol>
-    </nav>
+    {% if BREADCRUMB_NAV %}
+        <nav>
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item">
+                    <a href="{% url 'day_view' year=dining_list.date.year month=dining_list.date.month day=dining_list.date.day %}">
+                        {{ dining_list.date|date:"SHORT_DATE_FORMAT" }}
+                    </a>
+                </li>
+                <li class="breadcrumb-item">
+                    <a href="{{ dining_list.get_absolute_url }}">Dining list</a>
+                </li>
+                <li class="breadcrumb-item active">Groceries payment</li>
+            </ol>
+        </nav>
+    {% endif %}
     <h3>Settle groceries cost</h3>
     {% if not form %}
         <p>
@@ -75,7 +77,7 @@
             <p>
                 The diners you select below will be automatically charged from their account balance to your account
                 balance. People with insufficient balance or who have disabled grocery payments cannot be automatically
-                charged.
+                charged, indicated by <span class="badge badge-secondary">Can't be charged</span>.
             </p>
             {# We render the automatic charge field manually #}
             {% with chargeable=form.chargeable %}

@@ -367,23 +367,20 @@ class DiningListChangeView(LoginRequiredMixin, DiningListEditMixin, TemplateView
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        dining_list = self.get_object()
-
         context.update({
-            'form': DiningInfoForm(instance=dining_list),
+            'form': DiningInfoForm(instance=self.get_object()),
         })
         return context
 
     def post(self, request, *args, **kwargs):
-        context = self.get_context_data(**kwargs)
         dining_list = self.get_object()
 
         form = DiningInfoForm(request.POST, instance=dining_list)
-
         if form.is_valid():
             form.save()
             return redirect(dining_list)
 
+        context = self.get_context_data(**kwargs)
         context.update({
             'form': form,
         })

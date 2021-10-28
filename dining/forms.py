@@ -15,31 +15,27 @@ from general.util import SelectWithDisabled
 from userdetails.models import Association, UserMembership, User
 
 
-def _clean_form(form):
-    """Cleans the given form by validating it and throwing ValidationError if it is not valid."""
-    if not form.is_valid():
-        validation_errors = []
-        for field, errors in form.errors.items():
-            validation_errors.extend(["{}: {}".format(field, error) for error in errors])
-        raise ValidationError(validation_errors)
+class CreateSlotForm(forms.ModelForm):
+    # SIGN_UP_DEADLINE_CHOICES = (
+    #     ('', 'Keep open until I manually close'),
+    #     ('15:00', '15:00'),
+    #     ('15:30', '15:30'),
+    #     ('16:00', '16:00'),
+    #     ('16:30', '16:30'),
+    #     ('17:00', '17:00'),
+    #     ('17:30', '17:30'),
+    # )
+    # sign_up_deadline = forms.TypedChoiceField(coerce=time,
+    #                                           choices=SIGN_UP_DEADLINE_CHOICES,
+    #                                           help_text="You can always change this later.",
+    #                                           initial='15:30')
 
-
-class ServeTimeCheckMixin:
-    """Mixin which gives errors on the serve_time if it is not within the kitchen opening hours."""
-
-    def clean_serve_time(self):
-        serve_time = self.cleaned_data['serve_time']
-        if serve_time < settings.KITCHEN_USE_START_TIME:
-            raise ValidationError("Kitchen can't be used this early")
-        if serve_time > settings.KITCHEN_USE_END_TIME:
-            raise ValidationError("Kitchen can't be used this late")
-        return serve_time
-
-
-class CreateSlotForm(ServeTimeCheckMixin, forms.ModelForm):
     class Meta:
         model = DiningList
         fields = ('dish', 'association', 'max_diners', 'serve_time')
+        widgets = {
+            'serve_time': forms.TimeInput(format='%H:%M'),
+        }
 
     def __init__(self, creator: User, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -105,31 +101,39 @@ class CreateSlotForm(ServeTimeCheckMixin, forms.ModelForm):
         return cleaned_data
 
     def save(self, commit=True):
-        instance = super().save(commit=commit)
+        instance = super().save(commit=False)  # type: DiningList
+        # TODO: set sign up deadline
+
         if commit:
+            instance.save()
             # Make creator owner
             instance.owners.add(self.creator)
 
-            # Create dining entry for creator
+            # Create dining entry for creator.
+            #
+            # This needs to be executed using the form to make sure that the
+            # kitchen cost transaction is created as well.
             user = self.creator
             entry_form = DiningEntryInternalCreateForm({'user': str(user.pk)},
                                                        instance=DiningEntry(created_by=user, dining_list=instance))
             if entry_form.is_valid():
                 entry_form.save()
             else:
-                # The form can actually become invalid when the user's balance is insufficient,
-                # in which case the dining list will be created but the user won't be signed up
-                # (not very ideal, should probably fix this).
+                # Signing up might fail if there is a balance issue but that only occurs when
+                # MINIMUM_BALANCE_FOR_DINING_SIGN_UP and MINIMUM_BALANCE_FOR_DINING_SLOT_CLAIM
+                # are not equal.
                 warnings.warn("Couldn't create dining entry while creating dining list")
         return instance
 
 
-class DiningInfoForm(ServeTimeCheckMixin, forms.ModelForm):
+class DiningInfoForm(forms.ModelForm):
     class Meta:
         model = DiningList
         fields = ('owners', 'dish', 'serve_time', 'max_diners', 'sign_up_deadline')
         widgets = {
             'owners': ModelSelect2Multiple(url='people_autocomplete', attrs={'data-minimum-input-length': '1'}),
+            'serve_time': forms.TimeInput(format='%H:%M'),
+            'sign_up_deadline': forms.DateTimeInput(format='%d-%m-%Y %H:%M')
         }
 
 

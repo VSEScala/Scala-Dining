@@ -19,13 +19,13 @@ class RegisterView(TemplateView):
         context = super().get_context_data(**kwargs)
         context.update({
             'account_form': CreateUserForm(),
-            'associationlink_form': AssociationLinkForm(None),
+            'associationlink_form': AssociationLinkForm(),
         })
         return context
 
     def post(self, request, *args, **kwargs):
         user_form = CreateUserForm(request.POST)
-        associationlink_form = AssociationLinkForm(None, request.POST)
+        associationlink_form = AssociationLinkForm(data=request.POST)
 
         if user_form.is_valid() and associationlink_form.is_valid():
             # User is valid, safe it to the server
@@ -88,13 +88,13 @@ class SettingsProfileView(LoginRequiredMixin, TemplateView):
         context = super().get_context_data(**kwargs)
         context.update({
             'user_form': UserForm(instance=self.request.user),
-            'association_links_form': AssociationLinkForm(self.request.user),
+            'association_links_form': AssociationLinkForm(user=self.request.user),
         })
         return context
 
     def post(self, request, *args, **kwargs):
         user_form = UserForm(request.POST, instance=self.request.user)
-        association_links_form = AssociationLinkForm(self.request.user, request.POST)
+        association_links_form = AssociationLinkForm(user=self.request.user, data=request.POST)
 
         if user_form.is_valid() and association_links_form.is_valid():
             with transaction.atomic():

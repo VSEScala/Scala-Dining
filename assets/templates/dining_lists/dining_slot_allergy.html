@@ -3,6 +3,21 @@
 {% block tab_allergy %}active{% endblock %}
 
 {% block details %}
+    {% if BREADCRUMB_NAV %}
+        <nav>
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item">
+                    <a href="{% url 'day_view' year=dining_list.date.year month=dining_list.date.month day=dining_list.date.day %}">
+                        {{ dining_list.date|date:"SHORT_DATE_FORMAT" }}
+                    </a>
+                </li>
+                <li class="breadcrumb-item">
+                    <a href="{{ dining_list.get_absolute_url }}">Dining list</a>
+                </li>
+                <li class="breadcrumb-item active">Allergies</li>
+            </ol>
+        </nav>
+    {% endif %}
     <div class="table-responsive">
         <table class="table table-hover">
             <thead>
