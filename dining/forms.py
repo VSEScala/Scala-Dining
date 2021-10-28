@@ -122,7 +122,7 @@ class CreateSlotForm(forms.ModelForm):
                 # Signing up might fail if there is a balance issue but that only occurs when
                 # MINIMUM_BALANCE_FOR_DINING_SIGN_UP and MINIMUM_BALANCE_FOR_DINING_SLOT_CLAIM
                 # are not equal.
-                warnings.warn("Couldn't create dining entry while creating dining list")
+                raise RuntimeError("Couldn't create dining entry while creating dining list", entry_form.errors)
         return instance
 
 

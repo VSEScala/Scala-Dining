@@ -36,7 +36,7 @@
         {#            </form>#}
         {#        {% endif %}#}
         <a class="btn btn-secondary mb-3" href="{% url 'groceries:payment-create' pk=dining_list.pk %}">
-            <i class="fas fa-receipt"></i> Create groceries payment
+            <i class="fas fa-receipt"></i> Reimburse groceries
         </a>
     {% endif %}
     {% if dining_list.is_cancelled %}
@@ -54,12 +54,12 @@
         </div>
     </div>
     <div class="row mb-3">
-        <div class="col-md-2"><strong><i class="fas fa-clock fa-fw"></i> Dinner time</strong></div>
-        <div class="col-md-10">{{ dining_list.date|naturalday|capfirst }} {{ dining_list.serve_time }}</div>
-    </div>
-    <div class="row mb-3">
         <div class="col-md-2"><strong><i class="fas fa-utensils fa-fw"></i> Dish</strong></div>
         <div class="col-md-10">{{ dining_list.dish }}</div>
+    </div>
+    <div class="row mb-3">
+        <div class="col-md-2"><strong><i class="fas fa-clock fa-fw"></i> Dinner time</strong></div>
+        <div class="col-md-10">{{ dining_list.date|naturalday|capfirst }} {{ dining_list.serve_time }}</div>
     </div>
     <div class="row mb-3">
         <div class="col-md-2"><strong>{# <i class="fas fa-euro-sign fa-fw"></i> #} Kitchen cost</strong></div>

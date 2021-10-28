@@ -18,6 +18,12 @@
 <body>
 {% if SITE_NOTICE %}
     <div class="w-100 text-center p-1 bg-warning text-dark">{{ SITE_NOTICE }}</div>
+    <div id="belowSiteNotice"></div>
+    <script>
+        document.addEventListener('DOMContentLoaded', (event) => {
+            document.getElementById("belowSiteNotice").scrollIntoView();
+        });
+    </script>
 {% endif %}
 {% block body %}{% endblock %}
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/js/bootstrap.bundle.min.js"

@@ -17,7 +17,7 @@
             </ol>
         </nav>
     {% endif %}
-    <h3>Settle groceries cost</h3>
+    <h2>Settle groceries cost</h2>
     {% if not form %}
         <p>
             Specify the total groceries cost first, on the next page you can specify the other info.
@@ -62,18 +62,36 @@
                        value="{{ form.get_cost_per_person|euro }}">
             </div>
         </div>
-        <h4>Payment info</h4>
-        <p>
-            Provide payment info for the people that can't be automatically charged. Contact info is optional but
-            can be helpful in case of payment issues.
-            The info will be remembered for the next time you create a payment.
-        </p>
         <form action="{% url 'groceries:payment-create' pk=dining_list.pk %}?total_cost={{ request.GET.total_cost }}"
               method="post">
             {% csrf_token %}
-            {# Only render the first 4 payment info fields, the other fields are rendered below #}
-            {% include 'snippets/bootstrap_form.html' with horizontal=True fields=form.visible_fields|slice:":4" %}
-            <h4>Automatic charge</h4>
+            <h3>Payment info</h3>
+            <p>
+                Provide payment info for the people that can't be automatically charged.
+                The info will be remembered for the next time you create a payment.
+            </p>
+            {# Only render the payment info fields, the other fields are rendered below #}
+            {% include 'snippets/bootstrap_form.html' with horizontal=True fields=form.visible_fields|slice:":2" %}
+            <h3>Contact info</h3>
+            <p>
+                Helpful in case of payment issues, change it in <a href="{% url 'settings_account' %}">account
+                settings</a>.
+            </p>
+            <div class="form-group row">
+                <label for="email" class="col-sm-2 col-form-label">E-mail address</label>
+                <div class="col-sm-10">
+                    <input type="text" readonly class="form-control-plaintext" id="email"
+                           value="{% if user.email_public %}{{ user.email }}{% else %}-{% endif %}">
+                </div>
+            </div>
+            <div class="form-group row">
+                <label for="phoneNumber" class="col-sm-2 col-form-label">Phone number</label>
+                <div class="col-sm-10">
+                    <input type="text" readonly class="form-control-plaintext" id="phoneNumber"
+                           value="{{ user.phone_number|default:"-" }}">
+                </div>
+            </div>
+            <h3>Automatic charge</h3>
             <p>
                 The diners you select below will be automatically charged from their account balance to your account
                 balance. People with insufficient balance or who have disabled grocery payments cannot be automatically

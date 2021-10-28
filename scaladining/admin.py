@@ -9,6 +9,9 @@ class MyAdminSite(AdminSite):
     # index_title = "Site administration"
 
     def has_permission(self, request):
-        """Whether the request user has access to the admin site."""
-        # Need to check for anonymous user because she doesn't have the has_admin_site_access method
-        return not request.user.is_anonymous and request.user.has_admin_site_access()
+        """Whether the request user has access to the admin site.
+
+        We don't use the staff/permissions system, instead a user simply has
+        access whenever they are superuser.
+        """
+        return request.user.is_active and request.user.is_superuser

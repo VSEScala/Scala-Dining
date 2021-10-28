@@ -1,6 +1,21 @@
 {% extends 'dining_lists/dining_slot.html' %}
 
 {% block details %}
+    {% if BREADCRUMB_NAV %}
+        <nav>
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item">
+                    <a href="{% url 'day_view' year=dining_list.date.year month=dining_list.date.month day=dining_list.date.day %}">
+                        {{ dining_list.date|date:"SHORT_DATE_FORMAT" }}
+                    </a>
+                </li>
+                <li class="breadcrumb-item">
+                    <a href="{{ dining_list.get_absolute_url }}">Dining list</a>
+                </li>
+                <li class="breadcrumb-item active">Cancel</li>
+            </ol>
+        </nav>
+    {% endif %}
     <p>
         Are you sure to cancel the dining list on <strong>{{ dining_list.date }}</strong> for the
         association <strong>{{ dining_list.association }}</strong>? All

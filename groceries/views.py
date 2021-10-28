@@ -53,8 +53,6 @@ class PaymentCreateView(LoginRequiredMixin, DiningListEditMixin, TemplateView):
             if previous:
                 initial = {
                     'payment_link': previous.payment_link,
-                    'phone_number': previous.phone_number,
-                    'include_email': previous.include_email,
                     'remarks': previous.remarks,
                 }
             else:

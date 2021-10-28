@@ -3,11 +3,12 @@ from django.contrib.auth.models import AbstractUser, Group
 from django.db import models
 from django.utils import timezone
 from django.utils.functional import cached_property
+from phonenumber_field.modelfields import PhoneNumberField
 
 
 class User(AbstractUser):
     # Email override to make it unique and required
-    email = models.EmailField("email address", unique=True)
+    email = models.EmailField("e-mail address", unique=True)
 
     # 'dietary requirements' seems to be the most common terminology according to
     # https://interpersonal.stackexchange.com/questions/18928/what-is-the-etiquette-for-asking-whether-someone-has-a-special-diet
@@ -23,6 +24,14 @@ class User(AbstractUser):
                   " You will always be notified and can always undo these transactions.",
     )
 
+    # Lets use PhoneNumberField instead of CharField so that the user gets a phone number input widget
+    # and it's checked for errors, as well as it prevents abuse of the field for non-phone number data.
+    phone_number = PhoneNumberField(blank=True, help_text="If given, will be visible to other diners on the same list.")
+    email_public = models.BooleanField(
+        'e-mail public',
+        default=False,
+        help_text="If selected, your e-mail address will be visible to other diners on the same list.")
+
     def __str__(self):
         return "{} {}".format(self.first_name, self.last_name).strip() or "@{}".format(self.username)
 
@@ -34,6 +43,8 @@ class User(AbstractUser):
             if membership.is_verified:
                 return True
         return False
+
+    is_verified.boolean = True
 
     @cached_property
     def boards(self):
@@ -57,18 +68,6 @@ class User(AbstractUser):
     def requires_information_rules(self):
         from general.views import RulesPageView
         return RulesPageView.has_new_update(self)
-
-    def has_any_perm(self):
-        """Returns true if the user has one or more permissions."""
-        for group in self.groups.all():
-            if group.permissions.count() > 0:
-                return True
-        if self.user_permissions.count() > 0:
-            return True
-        return False
-
-    def has_admin_site_access(self):
-        return self.is_active and (self.has_any_perm() or self.is_superuser)
 
     def is_board_of(self, association_id):
         """Returns if user is a board member of association identified by given id."""
@@ -106,6 +105,9 @@ class Association(Group):
                                              "if they sign up using this social app.")
     balance_update_instructions = models.TextField(max_length=512, default="to be defined")
     has_site_stats_access = models.BooleanField(default=False)
+
+    class Meta:
+        ordering = ('slug',)
 
     @cached_property
     def requires_action(self):

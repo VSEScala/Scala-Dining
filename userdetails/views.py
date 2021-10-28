@@ -87,7 +87,7 @@ class SettingsProfileView(LoginRequiredMixin, TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context.update({
-            'user_form': UserForm(instance=self.request.user),
+            'form': UserForm(instance=self.request.user),
             'association_links_form': AssociationLinkForm(user=self.request.user),
         })
         return context
@@ -104,7 +104,7 @@ class SettingsProfileView(LoginRequiredMixin, TemplateView):
 
         context = self.get_context_data()
         context.update({
-            'user_form': user_form,
+            'form': user_form,
             'association_links_form': association_links_form,
         })
         return self.render_to_response(context)

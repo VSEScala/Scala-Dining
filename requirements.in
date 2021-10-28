@@ -5,3 +5,4 @@ django-autocomplete-light
 environs[django]
 whitenoise  # Used for static files in production
 Pillow  # This one can possibly be removed
+django-phonenumber-field[phonenumbers]

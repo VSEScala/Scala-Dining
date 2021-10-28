@@ -27,6 +27,7 @@
                 <th scope="col">Name</th>
                 <th scope="col">Help stats</th>
                 <th scope="col"></th>
+                <th scope="col"></th>
             </tr>
             </thead>
 
@@ -65,29 +66,41 @@
                             {% csrf_token %}
                             <input type="hidden" name="entry_id" value="{{ entry.pk }}">
                             <div class="btn-group">
-                                <button type="submit"
-                                        name="action"
+                                <button type="submit" name="action" {% if not can_edit_stats %}disabled{% endif %}
                                         value="shopped_{% if entry.has_shopped %}false{% else %}true{% endif %}"
-                                        {% if not can_edit_stats %}disabled{% endif %}
                                         class="btn btn-sm {% if entry.has_shopped %}btn-primary{% else %}btn-outline-primary{% endif %}">
                                     Shop
                                 </button>
-                                <button type="submit"
-                                        name="action"
+                                <button type="submit" name="action" {% if not can_edit_stats %}disabled{% endif %}
                                         value="cooked_{% if entry.has_cooked %}false{% else %}true{% endif %}"
-                                        {% if not can_edit_stats %}disabled{% endif %}
                                         class="btn btn-sm {% if entry.has_cooked %}btn-primary{% else %}btn-outline-primary{% endif %}">
                                     Cook
                                 </button>
-                                <button type="submit"
-                                        name="action"
+                                <button type="submit" name="action" {% if not can_edit_stats %}disabled{% endif %}
                                         value="cleaned_{% if entry.has_cleaned %}false{% else %}true{% endif %}"
-                                        {% if not can_edit_stats %}disabled{% endif %}
                                         class="btn btn-sm {% if entry.has_cleaned %}btn-primary{% else %}btn-outline-primary{% endif %}">
                                     Clean
                                 </button>
                             </div>
                         </form>
+                    </td>
+                    <td>
+                        {# Contact info is only visible to those that are signed up #}
+                        {% if show_contact_info and entry.is_internal %}
+                            {% if entry.user.phone_number or entry.user.email_public %}
+                                <button type="button" class="btn btn-secondary btn-sm btn-block" data-toggle="popover"
+                                        data-html="true"
+                                        {# Please look away #}
+                                        data-content="{% if entry.user.email_public %}<p class='mb-0'>E-mail address:
+                                        <a href='mailto:{{ entry.user.email }}'>{{ entry.user.email }}</a>
+                                        </p>{% endif %}{% if entry.user.phone_number %}<p class='mb-0'>Phone
+                                        number: <a href='tel:{{ entry.user.phone_number }}'
+                                        >{{ entry.user.phone_number }}</a></p>{% endif %}">
+                                    <i class="fas fa-address-card"></i>
+                                    <span class="sr-only">Contact info</span>
+                                </button>
+                            {% endif %}
+                        {% endif %}
                     </td>
                     <td>
                         {% if entry|can_delete_entry:user %}
@@ -106,4 +119,9 @@
             </tbody>
         </table>
     </div>
+    <script>
+        $(function () {
+            $('[data-toggle="popover"]').popover()
+        })
+    </script>
 {% endblock details %}

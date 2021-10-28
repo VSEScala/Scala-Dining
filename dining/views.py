@@ -158,15 +158,15 @@ class NewSlotView(LoginRequiredMixin, DayMixin, TemplateView):
         return context
 
     def post(self, request, *args, **kwargs):
-        context = self.get_context_data()
+        form = CreateSlotForm(request.user, data=request.POST, instance=DiningList(date=self.date))
 
-        context['slot_form'] = CreateSlotForm(request.user, request.POST, instance=DiningList(date=self.date))
-
-        if context['slot_form'].is_valid():
-            dining_list = context['slot_form'].save()
-            messages.success(request, "You successfully created a new dining list")
+        if form.is_valid():
+            dining_list = form.save()
             return redirect(dining_list)
-
+        context = self.get_context_data()
+        context.update({
+            'slot_form': form,
+        })
         return self.render_to_response(context)
 
 
@@ -286,10 +286,13 @@ class SlotListView(LoginRequiredMixin, DiningListMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        dining_list = self.get_object()  # type: DiningList
+        dl = self.get_object()  # type: DiningList
         context.update({
-            'entries': dining_list.entries.order_by('user__first_name', 'user__last_name'),
-            'can_edit_stats': dining_list.is_owner(self.request.user) and dining_list.is_adjustable(),
+            'entries': dl.entries.order_by('user__first_name', 'user__last_name'),
+            'can_edit_stats': dl.is_owner(self.request.user) and dl.is_adjustable(),
+            # Contact info is visible to diners and owners
+            'show_contact_info': (self.request.user in dl.diners.all()) or dl.is_owner(self.request.user),
+
         })
         return context
 

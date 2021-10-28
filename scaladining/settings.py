@@ -61,6 +61,7 @@ INSTALLED_APPS = [
     'allauth',
     'allauth.socialaccount',
     'allauthproviders.quadrivium',
+    'phonenumber_field',
 ]
 
 MIDDLEWARE = [
@@ -139,6 +140,7 @@ THOUSAND_SEPARATOR = ','
 USE_L10N = False
 USE_I18N = False
 USE_THOUSAND_SEPARATOR = True
+PHONENUMBER_DEFAULT_REGION = 'NL'
 
 AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
@@ -188,6 +190,6 @@ DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
 #
 # Use it for instance when running a staging deployment, to notify the users
 # about this.
-SITE_NOTICE = env.str('SITE_NOTICE', default='Development version')
+SITE_NOTICE = env.str('SITE_NOTICE', default='')
 
 BREADCRUMB_NAV = env.bool('BREADCRUMB_NAV', default=True)

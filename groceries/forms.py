@@ -20,7 +20,7 @@ class PaymentCreateForm(forms.ModelForm):
 
     class Meta:
         model = Payment
-        fields = ('payment_link', 'phone_number', 'include_email', 'remarks')
+        fields = ('payment_link', 'remarks')
 
     def chargeable(self) -> List[User]:
         """Returns a list of dining entries that can be charged."""

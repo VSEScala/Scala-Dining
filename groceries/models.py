@@ -29,12 +29,6 @@ class Payment(models.Model):
         blank=True,
         help_text="E.g. Tikkie or ING Payment Request."
                   " Tip: use a payment link with variable amount, then you won't need to change it the next time.")
-    phone_number = models.CharField(max_length=100,
-                                    blank=True,
-                                    help_text="This makes it easier to contact you for payment issues.")
-    include_email = models.BooleanField('include e-mail',
-                                        default=True,
-                                        help_text="Include your account e-mail address in the message to all diners.")
     remarks = models.CharField(max_length=200,
                                blank=True,
                                help_text="For instance an IBAN number if you can't provide a payment link.")

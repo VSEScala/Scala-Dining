@@ -62,13 +62,13 @@
                                         </div>
                                     </div>
                                 {% endif %}
-                                {% if entry.payment.phone_number %}
+                                {% if entry.payment.receiver.phone_number %}
                                     <div class="row mb-3">
                                         <div class="col-md-2"><strong>Phone number</strong></div>
-                                        <div class="col-md-10">{{ entry.payment.phone_number }}</div>
+                                        <div class="col-md-10">{{ entry.payment.receiver.phone_number }}</div>
                                     </div>
                                 {% endif %}
-                                {% if entry.payment.include_email %}
+                                {% if entry.payment.receiver.email_public %}
                                     <div class="row mb-3">
                                         <div class="col-md-2"><strong>E-mail</strong></div>
                                         <div class="col-md-10">

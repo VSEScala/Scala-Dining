@@ -24,7 +24,11 @@ class UserForm(forms.ModelForm):
 
     class Meta:
         model = User
-        fields = ('username', 'name', 'email', 'dietary_requirements', 'allow_grocery_payments')
+        fields = ('username', 'name', 'email', 'dietary_requirements', 'allow_grocery_payments', 'email_public',
+                  'phone_number')
+        labels = {
+            'email_public': 'E-mail visible'
+        }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -32,6 +36,7 @@ class UserForm(forms.ModelForm):
         self.fields['name'].initial = str(self.instance)
         self.fields['name'].help_text = "Contact the site administrator if you want to change your name."
         self.fields['email'].disabled = True
+        self.fields['email'].required = False  # This hides the asterisks
 
 
 class AssociationLinkField(forms.BooleanField):
