@@ -49,7 +49,7 @@ class PaymentEntry(models.Model):
     transaction = models.ForeignKey(Transaction, on_delete=models.PROTECT, null=True)
 
     class Meta:
-        ordering = ['external_name', 'user__first_name', 'user__last_name']
+        ordering = ('external_name', 'user__first_name', 'user__last_name')
 
     def is_external(self):
         return bool(self.external_name)

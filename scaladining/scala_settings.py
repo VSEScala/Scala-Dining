@@ -21,8 +21,7 @@ MINIMUM_BALANCE_FOR_DINING_SLOT_CLAIM = Decimal('-2.00') + KITCHEN_COST
 # The duration that pending transactions should last
 TRANSACTION_PENDING_DURATION = timedelta(days=2)
 
-# Membership change settings
-DURATION_AFTER_MEMBERSHIP_CONFIRMATION = timedelta(days=30)
-DURATION_AFTER_MEMBERSHIP_REJECTION = timedelta(days=30)
+# How long a membership change is disabled after a verify or reject action
+MEMBERSHIP_FREEZE_PERIOD = timedelta(days=30)
 
 DOMAIN_NAME = "dining.studentencultuur.nl"

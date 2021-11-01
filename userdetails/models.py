@@ -1,4 +1,5 @@
 from allauth.socialaccount.models import SocialApp
+from django.conf import settings
 from django.contrib.auth.models import AbstractUser, Group
 from django.db import models
 from django.utils import timezone
@@ -40,7 +41,7 @@ class User(AbstractUser):
         links = UserMembership.objects.filter(related_user=self)
 
         for membership in links:
-            if membership.is_verified:
+            if membership.is_verified():
                 return True
         return False
 
@@ -78,7 +79,7 @@ class User(AbstractUser):
         return self.get_verified_memberships().filter(association=association).exists()
 
     def get_verified_memberships(self):
-        return self.usermembership_set.filter(is_verified=True)
+        return self.usermembership_set.filter(verified_state=True)
 
     def can_use_invoicing(self) -> bool:
         """Returns true of user is member of an association which allows invoicing."""
@@ -115,10 +116,11 @@ class Association(Group):
 
         Used for display of notifications on the site.
         """
-        return self.has_new_member_requests()
+        return self.member_requests().exists()
 
-    def has_new_member_requests(self):
-        return UserMembership.objects.filter(association=self, verified_on__isnull=True).exists()
+    def member_requests(self):
+        """Returns a QuerySet of pending membership requests."""
+        return UserMembership.objects.filter(association=self, verified_state=None)
 
 
 class UserMembership(models.Model):
@@ -126,28 +128,30 @@ class UserMembership(models.Model):
 
     related_user = models.ForeignKey(User, on_delete=models.CASCADE)
     association = models.ForeignKey(Association, on_delete=models.CASCADE)
-    is_verified = models.BooleanField(default=False)
-    verified_on = models.DateTimeField(blank=True, null=True, default=None)
+    # True=verified, False=rejected, None=pending (not yet verified or rejected)
+    verified_state = models.BooleanField(null=True)
+    verified_last_change = models.DateTimeField(null=True)
     created_on = models.DateTimeField(default=timezone.now)
 
-    def get_verified_state(self):
-        if self.is_verified:
-            return True
-        if self.verified_on is not None:
-            return False
-        return None
+    def is_verified(self):
+        return self.verified_state is True
 
-    def is_member(self):
-        if not self.is_verified and self.verified_on:
-            # It is not verified, but has verification date, so is rejected
-            return False
-        return True
+    def is_rejected(self):
+        return self.verified_state is False
+
+    def is_pending(self):
+        return self.verified_state is None
 
     def __str__(self):
         return "{user} - {association}".format(user=self.related_user, association=self.association)
 
-    def set_verified(self, verified):
-        """Sets the verified state to the value of verified (True or False) and set verified_on to now and save."""
-        self.is_verified = verified
-        self.verified_on = timezone.now()
+    def set_verified(self, state=True):
+        self.verified_state = state
+        self.verified_last_change = timezone.now()
         self.save()
+
+    def is_frozen(self):
+        """A membership is frozen, i.e. can't be changed, if it was verified or rejected too recently."""
+        if not self.verified_last_change:
+            return False
+        return timezone.now() - self.verified_last_change < settings.MEMBERSHIP_FREEZE_PERIOD

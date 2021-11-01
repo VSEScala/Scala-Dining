@@ -5,9 +5,11 @@
     <form method="post" action="{% url 'account_signup' %}">
         {% csrf_token %}
         <h3>Account specifications</h3>
-        {% include "snippets/bootstrap_form.html" with form=account_form horizontal=True %}
+        {% include "snippets/bootstrap_form.html" with fields=form.visible_fields|slice:":3" horizontal=True %}
+        <h3>Personal details</h3>
+        {% include "snippets/bootstrap_form.html" with fields=form.visible_fields|slice:"3:7" horizontal=True %}
         <h3>Memberships</h3>
-        {% include "account/snippet_associations_form.html" with form=associationlink_form horizontal=True %}
+        {% include "snippets/bootstrap_form.html" with fields=form.visible_fields|slice:"7:8" horizontal=True %}
         <p><span class="text-danger">*</span> required</p>
         <h3>Terms of service</h3>
         <p>

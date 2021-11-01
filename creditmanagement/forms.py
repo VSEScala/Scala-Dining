@@ -164,38 +164,3 @@ class SiteWideTransactionForm(forms.ModelForm):
                     send_templated_mail('mail/transaction_created', source.user, {'transaction': instance}, request)
 
         return instance
-
-
-# TODO: this form is not being used anymore and can be removed
-class ClearOpenExpensesForm(forms.Form):
-    """Creates transactions for all members of this association who are negative."""
-
-    description = forms.CharField(max_length=150, help_text="Is displayed on each user's transaction overview, "
-                                                            "e.g. in the case of Quadrivium it could be 'Q-rekening'.")
-
-    def __init__(self, *args, association=None, user=None, **kwargs):
-        # Calculate and create the transactions that need to be applied
-
-        # Get all verified members. Probably nicer to create a helper method for this.
-        members = User.objects.filter(usermembership__association=association, usermembership__is_verified=True)
-        self.transactions = []
-        for m in members:
-            balance = m.account.get_balance()
-            if balance < 0:
-                # Construct a transaction for each member with negative balance
-                tx = Transaction(source=association.account,
-                                 target=m.account,
-                                 amount=-balance,
-                                 created_by=user)  # Description needs to be set later
-                self.transactions.append(tx)
-        super().__init__(*args, **kwargs)
-
-    def save(self):
-        """Saves the transactions to the database."""
-        if not self.is_valid():
-            raise RuntimeError
-        desc = self.cleaned_data.get('description')
-        with transaction.atomic():
-            for tx in self.transactions:
-                tx.description = desc
-                tx.save()

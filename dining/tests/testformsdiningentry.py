@@ -72,8 +72,7 @@ class DiningEntryInternalCreateFormTestCase(TestCase):
 
     def test_limited_to_association_is_member(self):
         self.dining_list.limit_signups_to_association_only = True
-        UserMembership.objects.create(related_user=self.user2, association=self.association,
-                                      is_verified=True, verified_on=timezone.now())
+        UserMembership.objects.create(related_user=self.user2, association=self.association, verified_state=True)
         self.assertTrue(self.form.is_valid())
 
     def test_limited_to_association_is_not_member(self):

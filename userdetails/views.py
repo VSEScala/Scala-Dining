@@ -5,43 +5,23 @@ from django.db import transaction
 from django.db.models import Value
 from django.db.models.functions import Concat
 from django.shortcuts import redirect
-from django.views.generic import TemplateView, ListView
+from django.urls import reverse_lazy
+from django.views.generic import TemplateView, ListView, FormView
 
 from dining.models import DiningList, DiningEntry
-from userdetails.forms import CreateUserForm, AssociationLinkForm, UserForm
+from userdetails.forms import CreateUserForm, UserForm, MembershipForm
 from userdetails.models import User
 
 
-class RegisterView(TemplateView):
+class RegisterView(FormView):
     template_name = "account/signup.html"
+    form_class = CreateUserForm
+    success_url = reverse_lazy('index')
 
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context.update({
-            'account_form': CreateUserForm(),
-            'associationlink_form': AssociationLinkForm(),
-        })
-        return context
-
-    def post(self, request, *args, **kwargs):
-        user_form = CreateUserForm(request.POST)
-        associationlink_form = AssociationLinkForm(data=request.POST)
-
-        if user_form.is_valid() and associationlink_form.is_valid():
-            # User is valid, safe it to the server
-            with transaction.atomic():
-                user = user_form.save()
-                associationlink_form.save(user=user)
-
-            login(request, user, backend='django.contrib.auth.backends.ModelBackend')
-            return redirect('index')
-
-        context = self.get_context_data()
-        context.update({
-            'account_form': user_form,
-            'associationlink_form': associationlink_form,
-        })
-        return self.render_to_response(context)
+    def form_valid(self, form):
+        user = form.save()
+        login(self.request, user, backend='django.contrib.auth.backends.ModelBackend')
+        return super().form_valid(form)
 
 
 class DiningJoinHistoryView(LoginRequiredMixin, ListView):
@@ -88,23 +68,23 @@ class SettingsProfileView(LoginRequiredMixin, TemplateView):
         context = super().get_context_data(**kwargs)
         context.update({
             'form': UserForm(instance=self.request.user),
-            'association_links_form': AssociationLinkForm(user=self.request.user),
+            'association_links_form': MembershipForm(self.request.user),
         })
         return context
 
     def post(self, request, *args, **kwargs):
         user_form = UserForm(request.POST, instance=self.request.user)
-        association_links_form = AssociationLinkForm(user=self.request.user, data=request.POST)
+        membership_form = MembershipForm(self.request.user, data=request.POST)
 
-        if user_form.is_valid() and association_links_form.is_valid():
+        if user_form.is_valid() and membership_form.is_valid():
             with transaction.atomic():
                 user_form.save()
-                association_links_form.save()
+                membership_form.save()
             return redirect('settings_account')
 
         context = self.get_context_data()
         context.update({
             'form': user_form,
-            'association_links_form': association_links_form,
+            'association_links_form': membership_form,
         })
         return self.render_to_response(context)

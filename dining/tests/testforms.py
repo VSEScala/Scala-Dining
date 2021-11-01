@@ -14,8 +14,7 @@ class CreateSlotFormTestCase(TestCase):
     def setUp(self):
         self.association1 = Association.objects.create(name="Quadrivium")
         self.user1 = User.objects.create_user('jan')
-        UserMembership.objects.create(related_user=self.user1, association=self.association1, is_verified=True,
-                                      verified_on=timezone.now())
+        UserMembership.objects.create(related_user=self.user1, association=self.association1, verified_state=True)
         # Date two days in the future
         self.dining_date = timezone.now().date() + timedelta(days=2)
         self.form_data = {'dish': 'Kwark', 'association': str(self.association1.pk), 'max_diners': '18',

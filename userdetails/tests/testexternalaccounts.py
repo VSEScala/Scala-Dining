@@ -25,7 +25,7 @@ class CreateMembershipTestCase(TestCase):
         membership = UserMembership.objects.create(related_user=self.user, association=self.association)
         _create_membership(self.social_account, None)
         membership.refresh_from_db()
-        self.assertTrue(membership.is_verified)
+        self.assertTrue(membership.is_verified())
 
     def test_no_linked_associations(self):
         self.association.social_app = None

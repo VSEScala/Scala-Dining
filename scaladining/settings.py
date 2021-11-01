@@ -95,6 +95,9 @@ TEMPLATES = [
     },
 ]
 
+# If debug is enabled and IP is in this list, SQL queries will be shown in the JS console.
+INTERNAL_IPS = env.list('INTERNAL_IPS', default='')
+
 WSGI_APPLICATION = 'scaladining.wsgi.application'
 
 LOGIN_REDIRECT_URL = '/'

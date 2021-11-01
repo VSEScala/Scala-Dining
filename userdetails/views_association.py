@@ -30,7 +30,7 @@ class AssociationBoardMixin:
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['association'] = self.association
-        context['notify_overview'] = self.association.has_new_member_requests()
+        context['notify_overview'] = self.association.member_requests().exists()
         return context
 
     def dispatch(self, request, *args, **kwargs):
@@ -85,8 +85,7 @@ class MembersOverview(LoginRequiredMixin, AssociationBoardMixin, ListView):
     paginate_by = 50
 
     def get_queryset(self):
-        return User.objects.filter(
-            Q(usermembership__association=self.association) & Q(usermembership__is_verified=True))
+        return User.objects.filter(usermembership__association=self.association, usermembership__verified_state=True)
 
 
 class AssociationOverview(LoginRequiredMixin, AssociationBoardMixin, TemplateView):
@@ -94,8 +93,9 @@ class AssociationOverview(LoginRequiredMixin, AssociationBoardMixin, TemplateVie
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['pending_memberships'] = UserMembership.objects.filter(association=self.association,
-                                                                       verified_on__isnull=True)
+        context.update({
+            'pending_memberships': self.association.member_requests()
+        })
         return context
 
 
@@ -104,8 +104,8 @@ class MembersEditView(LoginRequiredMixin, AssociationBoardMixin, ListView):
     paginate_by = 50
 
     def get_queryset(self):
-        return UserMembership.objects.filter(Q(association=self.association)).order_by('is_verified', 'verified_on',
-                                                                                       'created_on')
+        return UserMembership.objects.filter(
+            association=self.association).order_by('-verified_state', '-verified_last_change', '-created_on')
 
     def _alter_state(self, verified, id):
         """Alter the state of the given user membership.
@@ -115,13 +115,10 @@ class MembersEditView(LoginRequiredMixin, AssociationBoardMixin, ListView):
         """
         membership = UserMembership.objects.get(id=id)
         if verified == "yes":
-            if membership.is_verified:
-                return
-            membership.set_verified(True)
+            membership.set_verified(state=True)
         elif verified == "no":
-            if not membership.is_verified and membership.verified_on is not None:
-                return
-            membership.set_verified(False)
+            membership.set_verified(state=False)
+        membership.save()
 
     def post(self, request, *args, **kwargs):
         # Todo: there is no check on ID, i.e. any passed ID will work. I suggest switching to FormSets.
@@ -180,7 +177,7 @@ class SiteDiningView(AssociationBoardMixin, AssociationHasSiteAccessMixin, DateR
                 cooked_for = DiningEntry.objects.filter(
                     dining_list__association=association,
                     dining_list__in=dining_lists)
-                memberships = UserMembership.objects.filter(association=association, is_verified=True)
+                memberships = UserMembership.objects.filter(association=association, verified_state=True)
                 members = User.objects.filter(usermembership__in=memberships)
 
                 cooked_for_own = cooked_for.filter(user__in=members)
@@ -198,7 +195,7 @@ class SiteDiningView(AssociationBoardMixin, AssociationHasSiteAccessMixin, DateR
                 dining_entry_count=Count('diningentry'))
 
             for user in users:
-                memberships = UserMembership.objects.filter(is_verified=True, related_user=user)
+                memberships = UserMembership.objects.filter(verified_state=True, related_user=user)
                 if memberships:
                     user_weight = user.dining_entry_count / memberships.count()
 

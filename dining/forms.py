@@ -5,7 +5,7 @@ from dal_select2.widgets import ModelSelect2, ModelSelect2Multiple
 from django import forms
 from django.conf import settings
 from django.db import transaction
-from django.db.models import OuterRef, Exists
+from django.db.models import OuterRef, Exists, Q
 from django.forms import ValidationError
 from django.utils import timezone
 
@@ -42,11 +42,10 @@ class CreateSlotForm(forms.ModelForm):
 
         self.creator = creator
 
-        # Get associations that the user is a member of (not necessarily verified)
-        associations = Association.objects.filter(usermembership__related_user=creator)
-        denied_memberships = UserMembership.objects.filter(related_user=creator, is_verified=False,
-                                                           verified_on__isnull=False)
-        associations = associations.exclude(usermembership__in=denied_memberships)
+        # Get associations that the user is a member of, with verified_state=True or verified_state=None
+        associations = Association.objects.filter(
+            Q(usermembership__related_user=creator),
+            Q(usermembership__verified_state=True) | Q(usermembership__verified_state=None))
 
         # Filter out unavailable associations (those that have a dining list already on this day)
         dining_lists = DiningList.active.filter(date=self.instance.date, association=OuterRef('pk'))
