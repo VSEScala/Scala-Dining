@@ -2,6 +2,7 @@ from django import forms
 from django.contrib.auth.forms import UserCreationForm, UsernameField
 from django.core.exceptions import ValidationError
 from django.db import transaction
+from django.db.models import Q
 
 from userdetails.models import User, Association, UserMembership
 
@@ -64,11 +65,11 @@ class MembershipForm(forms.Form):
 
         # Get choosable associations and associations the user is already a member of
         #
-        # Note: need to use 'union' and not the | (OR) operator, because
-        # 'union' picks distinct values while the | operator returns a lot of
-        # duplicate associations resulting in a slow page load (lot of queries).
-        own_associations = Association.objects.filter(usermembership__related_user=user)
-        associations = Association.objects.filter(is_choosable=True).union(own_associations).order_by('slug')
+        # Note: 'distinct' is necessary because otherwise there will be a large
+        # number of duplicate associations returned, resulting in a slow page
+        # load.
+        associations = Association.objects.filter(
+            Q(is_choosable=True) | Q(usermembership__related_user=user)).distinct().order_by('slug')
 
         # Create fields for each association
         for association in associations:

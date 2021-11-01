@@ -1,4 +1,3 @@
-import warnings
 from decimal import Decimal
 
 from dal_select2.widgets import ModelSelect2, ModelSelect2Multiple
@@ -12,7 +11,7 @@ from django.utils import timezone
 from creditmanagement.models import Transaction, Account
 from dining.models import DiningList, DiningComment, DiningEntry
 from general.util import SelectWithDisabled
-from userdetails.models import Association, UserMembership, User
+from userdetails.models import Association, User
 
 
 class CreateSlotForm(forms.ModelForm):

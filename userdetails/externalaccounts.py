@@ -1,11 +1,8 @@
-import warnings
-
 from allauth.account.signals import user_signed_up
 from allauth.socialaccount.adapter import DefaultSocialAccountAdapter
 from allauth.socialaccount.signals import social_account_added
 from django.dispatch import receiver
 from django.urls import reverse
-from django.utils import timezone
 
 from userdetails.models import Association, UserMembership
 

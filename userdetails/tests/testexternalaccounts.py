@@ -30,5 +30,5 @@ class CreateMembershipTestCase(TestCase):
     def test_no_linked_associations(self):
         self.association.social_app = None
         self.association.save()
-        with self.assertWarns(UserWarning):
+        with self.assertRaises(RuntimeError):
             _create_membership(self.social_account, None)
