@@ -34,20 +34,20 @@ class AccountTypeListFilter(admin.SimpleListFilter):
 
 @admin.register(Account)
 class AccountAdmin(admin.ModelAdmin):
-    """The account admin enables viewing of accounts with their balance."""
+    """The account admin enables viewing of accounts with their balance.
+
+    Adding or deleting accounts in the back-end is allowed and is not very
+    risky (only accounts with no transactions can be deleted). _Changing_ an
+    account however is *very risky* thus should never be possible, because then
+    you could change the user or association linked to the account.
+    """
 
     ordering = ('special', 'association__name', 'user__first_name', 'user__last_name')
     list_display = ('__str__', 'get_balance', 'negative_since')
     list_filter = (AccountTypeListFilter,)
     search_fields = ('user__first_name', 'user__last_name', 'user__username', 'association__name', 'special')
 
-    def has_add_permission(self, request):
-        return False
-
     def has_change_permission(self, request, obj=None):
-        return False
-
-    def has_delete_permission(self, request, obj=None):
         return False
 
 
