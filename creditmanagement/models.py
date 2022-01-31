@@ -4,10 +4,16 @@ from typing import Union, Optional
 
 from django.core.validators import MinValueValidator
 from django.db import models
-from django.db.models import QuerySet, Sum, Q
+from django.db.models import Sum, Q
 from django.utils import timezone
 
 from userdetails.models import Association, User
+
+
+class AccountQuerySet(models.QuerySet):
+    def balance(self):
+        """Annotates the QuerySet with a balance column."""
+        raise NotImplementedError
 
 
 class Account(models.Model):
@@ -92,12 +98,12 @@ class Account(models.Model):
         """Returns the description (when this is a bookkeeping account)."""
         return self.SPECIAL_ACCOUNT_DESCRIPTION[self.special]
 
-    def get_transactions(self) -> QuerySet:
+    def get_transactions(self) -> models.QuerySet:
         """Returns all transactions with this account as source or target."""
         return Transaction.objects.filter_account(self)
 
 
-class TransactionQuerySet2(QuerySet):
+class TransactionQuerySet(models.QuerySet):
     def filter_valid(self):
         """Filters transactions that have not been cancelled."""
         return self.filter(cancelled__isnull=True)
@@ -143,7 +149,7 @@ class Transaction(models.Model):
                                      null=True,
                                      related_name='transaction_cancelled_set')
 
-    objects = TransactionQuerySet2.as_manager()
+    objects = TransactionQuerySet.as_manager()
 
     def cancel(self, user: User):
         """Sets the transaction as cancelled.

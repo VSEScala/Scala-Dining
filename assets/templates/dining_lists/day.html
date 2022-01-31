@@ -4,13 +4,6 @@
 {% load dining_tags %}
 
 {% block content %}
-    {% if BREADCRUMB_NAV %}
-        <nav>
-            <ol class="breadcrumb">
-                <li class="breadcrumb-item active">{{ date|date:"SHORT_DATE_FORMAT" }}</li>
-            </ol>
-        </nav>
-    {% endif %}
     <div class="row mb-3">
         {# Button toolbar #}
         <div class="col-lg-4">

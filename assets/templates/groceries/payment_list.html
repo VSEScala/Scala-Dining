@@ -39,13 +39,22 @@
                         <div class="card mb-1">
                             <div class="card-body">
                                 {% if entry.transaction %}
-                                    <p class="card-text text-success">
-                                        <em>You have automatically paid using your account balance</em>
-                                    </p>
-                                    <button type="button" class="btn btn-warning mb-3 btn-sm">
-                                        <i class="fas fa-ban"></i>
-                                        Cancel automatic payment
-                                    </button>
+                                    <p class="card-text text-success">You have paid using your account balance</p>
+                                {% elif entry.paid %}
+                                    <p class="card-text text-success">You have paid</p>
+                                {% else %}
+                                    <form method="post" class="form-inline mb-3" action="todo">
+                                        {% csrf_token %}
+                                        <div class="form-group">
+                                            <button type="submit" class="btn btn-primary btn-sm mr-1">
+                                                Pay using account balance
+                                            </button>
+                                            <small class="text-muted">
+                                                {{ entry.payment.cost_pp|euro }} will be transferred from your account
+                                                balance to {{ entry.payment.receiver.first_name }}'s.
+                                            </small>
+                                        </div>
+                                    </form>
                                 {% endif %}
 
                                 <div class="row mb-3">

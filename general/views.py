@@ -70,7 +70,7 @@ class HelpPageView(TemplateView):
     template_name = "general/help_layout.html"
 
     def get_context_data(self, **kwargs):
-        """Loads app build date from file."""
+        """Loads app build info from environment."""
         context = super().get_context_data(**kwargs)
 
         build_date = getenv('BUILD_TIMESTAMP')

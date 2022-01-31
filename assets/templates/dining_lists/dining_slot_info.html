@@ -24,20 +24,24 @@
             </a>
         </p>
     {% endif %}
-    {% if dining_list|is_owner:user and dining_list.is_adjustable %}
-        <a class="btn btn-primary mb-3" href="{% url 'slot_change' pk=dining_list.pk %}">
-            <i class="fas fa-edit"></i> Edit
-        </a>
-        {#        {% if dining_list.is_open %}#}
-        {#            <form class="d-inline-block" method="post" action="{% url 'slot_change' pk=dining_list.pk %}">#}
-        {#                {% csrf_token %}#}
-        {#                <input type="hidden" name="sign_up_deadline" value="{% now "SHORT_DATETIME_FORMAT" %}">#}
-        {#                <button type="submit" class="btn btn-danger mb-3">Close now</button>#}
-        {#            </form>#}
-        {#        {% endif %}#}
-        <a class="btn btn-secondary mb-3" href="{% url 'groceries:payment-create' pk=dining_list.pk %}">
-            <i class="fas fa-receipt"></i> Reimburse groceries
-        </a>
+    {% if dining_list|is_owner:user %}
+        <div class="mb-3">
+            {% if dining_list.is_adjustable %}
+                <a class="btn btn-primary" href="{% url 'slot_change' pk=dining_list.pk %}">
+                    <i class="fas fa-edit"></i> Edit
+                </a>
+            {% endif %}
+            {#        {% if dining_list.is_open %}#}
+            {#            <form class="d-inline-block" method="post" action="{% url 'slot_change' pk=dining_list.pk %}">#}
+            {#                {% csrf_token %}#}
+            {#                <input type="hidden" name="sign_up_deadline" value="{% now "SHORT_DATETIME_FORMAT" %}">#}
+            {#                <button type="submit" class="btn btn-danger mb-3">Close now</button>#}
+            {#            </form>#}
+            {#        {% endif %}#}
+            <a class="btn btn-secondary" href="{% url 'groceries:payment-create' pk=dining_list.pk %}">
+                <i class="fas fa-receipt"></i> Reimburse groceries
+            </a>
+        </div>
     {% endif %}
     {% if dining_list.is_cancelled %}
         <div class="alert alert-warning">

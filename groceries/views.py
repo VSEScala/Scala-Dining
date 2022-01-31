@@ -8,7 +8,7 @@ from django.shortcuts import redirect, get_object_or_404
 from django.views.generic import TemplateView
 from django.views.generic.detail import DetailView
 
-from dining.views import DiningListEditMixin
+from dining.views import DiningListMixin
 from groceries.forms import PaymentCreateForm
 from groceries.models import Payment, PaymentEntry
 
@@ -26,9 +26,17 @@ class PaymentsView(LoginRequiredMixin, TemplateView):
         return context
 
 
-# Borrowing the DiningListEditMixin here (to make sure only owners can create a payment)
-class PaymentCreateView(LoginRequiredMixin, DiningListEditMixin, TemplateView):
+class PaymentCreateView(LoginRequiredMixin, UserPassesTestMixin, DiningListMixin, TemplateView):
     template_name = 'groceries/payment_create.html'
+
+    def test_func(self):
+        # Business-rule: a dining list owner can always create a reimbursement,
+        # even if the dining list is no longer adjustable.
+        #
+        # This is fine because the payer (not the receiver) always has to
+        # initiate the payment.
+        dining_list = self.get_object()  # type: DiningList
+        return dining_list.is_owner(self.request.user)
 
     def has_cost(self) -> bool:
         """Returns if a total cost value is provided by the user."""

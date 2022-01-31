@@ -19,8 +19,8 @@ class Payment(models.Model):
                                      decimal_places=2,
                                      validators=[MinValueValidator(Decimal('0.01'))])
     # Cost per person can be derived from total cost (not the other way around
-    # because rounding took place). However let's store it anyway in case we
-    # later want to change how cost_pp is derived from total cost.
+    # because rounding took place). However let's store it separately anyway in
+    # case we later want to change how cost_pp is derived from total cost.
     cost_pp = models.DecimalField('groceries cost per person',
                                   max_digits=8,
                                   decimal_places=2,
