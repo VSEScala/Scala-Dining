@@ -11,11 +11,17 @@ from userdetails.models import Association, User
 
 
 class Account(models.Model):
-    """Money account which can be used as a transaction source or target."""
+    """Money account which can be used as a transaction source or target.
+
+    About deletion: an account can be deleted *as long as* there are no
+    transactions created for the account. This is implemented by user and
+    association having on_delete=CASCADE and Transaction.source/target having
+    on_delete=PROTECT.
+    """
 
     # An account can only have one of user or association or special
-    user = models.OneToOneField(User, on_delete=models.PROTECT, null=True)
-    association = models.OneToOneField(Association, on_delete=models.PROTECT, null=True)
+    user = models.OneToOneField(User, on_delete=models.CASCADE, null=True)
+    association = models.OneToOneField(Association, on_delete=models.CASCADE, null=True)
 
     # Special accounts are used for bookkeeping
     # (The special accounts listed here are automatically created using a receiver.)
