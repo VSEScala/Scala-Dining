@@ -12,9 +12,9 @@
             Contact info is visible to everyone who joins the same dining lists as you.
             Leave empty if for privacy reasons you don't want to share your contact info.
         </p>
-        {% include "snippets/bootstrap_form.html" with fields=form.visible_fields|slice:"5:7" horizontal=True %}
+        {% include "snippets/bootstrap_form.html" with fields=form.visible_fields|slice:"4:6" horizontal=True %}
         <h3>Dining</h3>
-        {% include "snippets/bootstrap_form.html" with fields=form.visible_fields|slice:"3:5" horizontal=True %}
+        {% include "snippets/bootstrap_form.html" with fields=form.visible_fields|slice:"3:4" horizontal=True %}
         <h3>Memberships</h3>
         {% include "account/snippet_associations_form.html" with form=association_links_form %}
         <button type="submit" class="btn btn-primary btn-block">Save</button>

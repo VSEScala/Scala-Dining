@@ -1,20 +1,28 @@
 {% extends 'base.html' %}
 
 {% block content %}
-    <h3>Upgrade using invoice</h3>
+    <h3>Upgrade using direct debit</h3>
     <p>
-        When you upgrade your balance this way you will be invoiced later for the upgraded amount!
-        This is only possible for the following associations:
+        You are member of an association which allows instantaneous upgrading.
+        You will be debited later for the amount you upgrade here, via the method laid out by your association.
+        The eligible associations are:
     </p>
     <ul>
         {% for association in eligible_associations %}
-            <li>{{ association.name }}: {{ association.invoicing_method }}</li>
+            <li>{{ association.name }}: {{ association.invoicing_description }}</li>
         {% endfor %}
     </ul>
 
     <form action="{% url 'invoicing-upgrade' %}" method="post">
         {% csrf_token %}
         {% include 'snippets/bootstrap_form.html' with horizontal=True %}
+        <div class="custom-control custom-checkbox mb-3">
+            <input type="checkbox" class="custom-control-input" id="confirmCheck" required>
+            <label class="custom-control-label" for="confirmCheck">
+                I allow my association to debit the specified amount from my bank account
+                <span class="text-danger">*</span>
+            </label>
+        </div>
         <button type="submit" class="btn btn-primary">Upgrade</button>
     </form>
 

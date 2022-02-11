@@ -42,7 +42,7 @@
         <div class="col-lg-4 mt-3 mt-lg-0 d-flex flex-column justify-content-center align-items-center">
             {# During weekend, next Monday is bold. If we don't want that, use 'today' instead of 'upcoming' here #}
             <h4 class="my-0 {% if date.upcoming == date %}font-weight-bold{% endif %}">
-                {{ date|date:"l j N Y" }}
+                {{ date|date:DOW_DATE_FORMAT }}
             </h4>
         </div>
     </div>

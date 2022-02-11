@@ -5,7 +5,7 @@
 
 {% block details %}
     <p>
-        Association balance: <strong>{{ association.account.get_balance|euro }}</strong>
+        Association balance: <strong>{{ association.account.balance|euro }}</strong>
     </p>
     <p>
         <a class="btn btn-primary" href="{% url 'association_transaction_add' association_name=association.slug %}">

@@ -19,11 +19,6 @@ class User(AbstractUser):
         help_text="E.g. gluten or vegetarian. Leave empty if not applicable.",
         verbose_name="food allergies or preferences"
     )
-    allow_grocery_payments = models.BooleanField(
-        default=True,
-        help_text="Whether to allow automatic grocery payments from your account balance."
-                  " You will always be notified and can always undo these transactions.",
-    )
 
     # Lets use PhoneNumberField instead of CharField so that the user gets a phone number input widget
     # and it's checked for errors, as well as it prevents abuse of the field for non-phone number data.
@@ -97,9 +92,15 @@ class Association(Group):
         default=False,
         help_text="If checked, members can upgrade their balance by having the association invoice them.")
     invoicing_method = models.CharField(
+        'invoicing method name',
         blank=True,
         max_length=100,
-        help_text="How members will be invoiced. For instance 'Q-rekening' in the case of Quadrivium.")
+        help_text="Name of the invoicing method. For instance 'Q-bill' in the case of Quadrivium.")
+    invoicing_description = models.TextField(
+        blank=True,
+        help_text='Description of how members will be invoiced. For Q-bill it will be something like '
+                  '"twice a year the amount will be deducted from your bank account using direct debit."',
+    )
 
     social_app = models.ForeignKey(SocialApp, on_delete=models.PROTECT, null=True, blank=True,
                                    help_text="A user automatically becomes member of the association "

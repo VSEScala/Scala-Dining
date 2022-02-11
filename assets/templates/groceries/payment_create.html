@@ -2,51 +2,21 @@
 {% load credit_tags %}
 
 {% block content %}
-    {% if BREADCRUMB_NAV %}
-        <nav>
-            <ol class="breadcrumb">
-                <li class="breadcrumb-item">
-                    <a href="{% url 'day_view' year=dining_list.date.year month=dining_list.date.month day=dining_list.date.day %}">
-                        {{ dining_list.date|date:"SHORT_DATE_FORMAT" }}
-                    </a>
-                </li>
-                <li class="breadcrumb-item">
-                    <a href="{{ dining_list.get_absolute_url }}">Dining list</a>
-                </li>
-                <li class="breadcrumb-item active">Groceries payment</li>
-            </ol>
-        </nav>
-    {% endif %}
-    <h2>Settle groceries cost</h2>
-    {% if not form %}
-        <p>
-            Specify the total groceries cost first, on the next page you can specify the other info.
-        </p>
-        <form action="{% url 'groceries:payment-create' pk=dining_list.pk %}" method="get">
-            <div class="form-group row">
-                <label for="totalCost" class="col-sm-2 col-form-label">
-                    Groceries cost <span class="text-danger">*</span>
-                </label>
-                <div class="col-sm-10">
-                    <input type="number" name="total_cost" step="0.01" min="0.01" placeholder="Groceries cost"
-                           class="form-control"
-                           required id="totalCost">
-                </div>
-            </div>
-            <button type="submit" class="btn btn-primary">Next <i class="fas fa-chevron-right"></i></button>
-        </form>
-
-    {% else %}
-        {# Todo: maybe add some help text here? #}
-        <div class="form-group row">
-            <label for="totalCost" class="col-sm-2 col-form-label">Total cost</label>
-            <div class="col-sm-10">
-                <input type="text" readonly class="form-control-plaintext" id="totalCost"
-                       value="{{ form.instance.total_cost|euro }}">
-                <small class="form-text text-muted"><a
-                        href="{% url 'groceries:payment-create' pk=dining_list.pk %}">Change</a></small>
-            </div>
-        </div>
+    <p><a href="{{ dining_list.get_absolute_url }}">← Back to dining list</a></p>
+    <h2>Split grocery costs</h2>
+    <p>
+        If you paid for groceries, use this page to split the costs over all diners.
+        Fill in price and payment info; when you submit the form all diners will be informed and
+        given the option to pay you directly from their account balance to yours,
+        or using the payment info you provided.
+    </p>
+    <p>
+        <strong>Multiple grocery shoppers?</strong> If you're not the only one who bought groceries, the other
+        person can also create a split for their own part.
+    </p>
+    <form action="{% url 'groceries:payment-create' pk=dining_list.pk %}" method="post">
+        {% csrf_token %}
+        {% include 'snippets/bootstrap_form.html' with horizontal=True fields=form.visible_fields|slice:"0:1" %}
         <div class="form-group row">
             <label for="nrDiners" class="col-sm-2 col-form-label">Number of diners</label>
             <div class="col-sm-10">
@@ -58,77 +28,54 @@
         <div class="form-group row">
             <label for="costPP" class="col-sm-2 col-form-label">Cost per person</label>
             <div class="col-sm-10">
-                <input type="text" readonly class="form-control-plaintext" id="costPP"
-                       value="{{ form.get_cost_per_person|euro }}">
+                <input type="text" readonly class="form-control-plaintext" id="costPP" value="-">
+                <small class="form-text text-muted">Total cost divided by number of diners, rounded up.</small>
             </div>
         </div>
-        <form action="{% url 'groceries:payment-create' pk=dining_list.pk %}?total_cost={{ request.GET.total_cost }}"
-              method="post">
-            {% csrf_token %}
-            <h3>Payment info</h3>
-            <p>
-                Provide payment info for the people that can't be automatically charged.
-                The info will be remembered for the next time you create a payment.
-            </p>
-            {# Only render the payment info fields, the other fields are rendered below #}
-            {% include 'snippets/bootstrap_form.html' with horizontal=True fields=form.visible_fields|slice:":2" %}
-            <h3>Contact info</h3>
-            <p>
-                Helpful in case of payment issues, change it in <a href="{% url 'settings_account' %}">account
-                settings</a>.
-            </p>
-            <div class="form-group row">
-                <label for="email" class="col-sm-2 col-form-label">E-mail address</label>
-                <div class="col-sm-10">
-                    <input type="text" readonly class="form-control-plaintext" id="email"
-                           value="{% if user.email_public %}{{ user.email }}{% else %}-{% endif %}">
-                </div>
+        <h3>Payment info</h3>
+        <p>
+            Provide payment info for the people who prefer not to pay using their account balance.
+            The info will be remembered for the next time you create a payment.
+        </p>
+        {# Only render the payment info fields #}
+        {% include 'snippets/bootstrap_form.html' with horizontal=True fields=form.visible_fields|slice:"1:4" %}
+        <h3>Contact info</h3>
+        <p>
+            Helpful in case of payment issues, change it in <a href="{% url 'settings_account' %}">account
+            settings</a>.
+        </p>
+        <div class="form-group row">
+            <label for="email" class="col-sm-2 col-form-label">E-mail address</label>
+            <div class="col-sm-10">
+                <input type="text" readonly class="form-control-plaintext" id="email"
+                       value="{% if user.email_public %}{{ user.email }}{% else %}-{% endif %}">
             </div>
-            <div class="form-group row">
-                <label for="phoneNumber" class="col-sm-2 col-form-label">Phone number</label>
-                <div class="col-sm-10">
-                    <input type="text" readonly class="form-control-plaintext" id="phoneNumber"
-                           value="{{ user.phone_number|default:"-" }}">
-                </div>
+        </div>
+        <div class="form-group row">
+            <label for="phoneNumber" class="col-sm-2 col-form-label">Phone number</label>
+            <div class="col-sm-10">
+                <input type="text" readonly class="form-control-plaintext" id="phoneNumber"
+                       value="{{ user.phone_number|default:"-" }}">
             </div>
-            <h3>Automatic charge</h3>
-            <div class="alert alert-info">
-                <em>Dev note: I think it might be a good idea to remove this in favor of having diners pay explicitly,
-                    with a button click.</em>
-            </div>
-            <p>
-                The diners you select below will be automatically charged from their account balance to your account
-                balance. People with insufficient balance or who have disabled grocery payments cannot be automatically
-                charged, indicated by <span class="badge badge-secondary">Can't be charged</span>.
-            </p>
-            {# We render the automatic charge field manually #}
-            {% with chargeable=form.chargeable %}
-                {% for entry in entries %}
-                    <div class="custom-control custom-checkbox">
-                        {# User entries who can't be charged will be disabled, else it will be checked by default #}
-                        <input type="checkbox" class="custom-control-input"
-                               id="autoCharge{{ forloop.counter0 }}"
-                               {% if entry.is_internal and entry.user in chargeable %}checked{% else %}disabled{% endif %}
-                               name="automatic_charge" value="{{ entry.user.pk }}">
-                        <label class="custom-control-label" for="autoCharge{{ forloop.counter0 }}">
-                            {{ entry.get_name }}
-                            {% if entry.is_external %}
-                                <span class="badge badge-secondary">External diner</span>
-                            {% elif entry.user == user %}
-                                <span class="badge badge-secondary">You</span>
-                            {% elif entry.user not in chargeable %}
-                                <span class="badge badge-secondary">Can't be charged</span>
-                            {% endif %}
-                        </label>
-                    </div>
-                {% endfor %}
-            {% endwith %}
-            {% if form.is_bound %}{# Also render the errors for the field #}
-                {% for error in form.automatic_charge.errors %}
-                    <div><small class="text-danger">{{ error }}</small></div>
-                {% endfor %}
-            {% endif %}
-            <button type="submit" class="btn btn-primary mt-3">Create groceries payment</button>
-        </form>
-    {% endif %}
+        </div>
+        <button type="submit" class="btn btn-primary mt-3">Create groceries payment</button>
+    </form>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Ugly as hell
+            let totalCost = document.getElementById('id_total_cost');
+            let costPP = document.getElementById('costPP');
+
+            function setCostPP() {
+                if (totalCost.value === '') {
+                    costPP.value = '-';
+                } else {
+                    costPP.value = '€' + (Math.ceil(totalCost.value / {{ dining_list.diners.count }} * 100) / 100).toFixed(2);
+                }
+            }
+
+            totalCost.addEventListener('input', setCostPP);
+            setCostPP();  // Execute once at page load, in case the value was prefilled (e.g. for bound form)
+        });
+    </script>
 {% endblock %}

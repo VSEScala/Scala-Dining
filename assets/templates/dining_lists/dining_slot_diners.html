@@ -85,7 +85,7 @@
                         </form>
                     </td>
                     <td>
-                        {# Contact info is only visible to those that are signed up #}
+                        {# Contact info is only visible to those that are signed up (show_contact_info) #}
                         {% if show_contact_info and entry.is_internal %}
                             {% if entry.user.phone_number or entry.user.email_public %}
                                 <button type="button" class="btn btn-secondary btn-sm btn-block" data-toggle="popover"

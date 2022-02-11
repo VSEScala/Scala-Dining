@@ -3,22 +3,12 @@
 
 
 {% block content %}
-    <nav>
-        <ol class="breadcrumb">
-            <li class="breadcrumb-item">
-                {% with d=payment.dining_list.date %}
-                    <a href="{% url 'day_view' year=d.year month=d.month day=d.day %}">
-                        {{ d|date:"SHORT_DATE_FORMAT" }}
-                    </a>
-                {% endwith %}
-            </li>
-            <li class="breadcrumb-item">
-                <a href="{{ payment.dining_list.get_absolute_url }}">Dining list</a>
-            </li>
-            <li class="breadcrumb-item active">Groceries payment</li>
-        </ol>
-    </nav>
-    <h2>Groceries payment</h2>
+    <p><a href="{% url 'groceries:overview' %}">← Grocery splits overview</a></p>
+    <h2>Grocery split</h2>
+    <div class="row mb-3">
+        <div class="col-sm-2"><strong><i class="fas fa-utensils fa-fw"></i> Dining list</strong></div>
+        <div class="col-sm-10"><a href="{{ payment.dining_list.get_absolute_url }}">{{ payment.dining_list.date|date:"SHORT_DATE_FORMAT" }}</a></div>
+    </div>
     <div class="row mb-3">
         <div class="col-sm-2"><strong>Cost</strong></div>
         <div class="col-sm-10">{{ payment.total_cost|euro }}</div>
@@ -40,7 +30,17 @@
         <div class="col-sm-10">{{ payment.remarks|default:"-" }}</div>
     </div>
     <h3>Diners</h3>
-    <table class="table table-hover" style="table-layout: fixed;">
+    <p>
+        Diners who paid using a transaction from their account balance to yours are automatically marked as paid.
+        You can find the transaction in the <a href="{% url 'credits:transaction_list' %}">transactions overview</a>.
+        If you need to undo such an automatic transaction, create a reversed
+        <a href="{% url 'credits:transaction_add' %}">money transfer</a> from your account to theirs, or
+        just pay the person back in cash.
+    </p>
+    <p>
+
+    </p>
+    <table class="table" style="table-layout: fixed;">
         <thead>
         <tr>
             <th scope="col">Diner</th>
@@ -50,11 +50,27 @@
         </thead>
         <tbody>
         {% for entry in payment.entries.all %}
-            <tr class="position-relative">
+            <tr>
                 <td>
                     {% if entry.is_external %}
                         {{ entry.external_name }} <span class="badge badge-secondary">External diner</span>
-                    {% else %}{{ entry.user }}{% endif %}
+                    {% else %}
+                        {{ entry.user }}
+                        {# Contact info #}
+                        {% if entry.user.phone_number or entry.user.email_public %}
+                            <button type="button" class="btn btn-secondary btn-sm" data-toggle="popover"
+                                    data-html="true"
+                                    {# Please look away #}
+                                    data-content="{% if entry.user.email_public %}<p class='mb-0'>E-mail address:
+                                    <a href='mailto:{{ entry.user.email }}'>{{ entry.user.email }}</a>
+                                    </p>{% endif %}{% if entry.user.phone_number %}<p class='mb-0'>Phone
+                                    number: <a href='tel:{{ entry.user.phone_number }}'
+                                    >{{ entry.user.phone_number }}</a></p>{% endif %}">
+                                <i class="fas fa-address-card"></i>
+                                <span class="sr-only">Contact info</span>
+                            </button>
+                        {% endif %}
+                    {% endif %}
                     {% if entry.is_receiver %}
                         <span class="badge badge-secondary">Receiver</span>
                     {% endif %}
@@ -71,7 +87,7 @@
                 <td>
                     {% if not entry.is_receiver %}
                         {% if entry.transaction %}
-                            <span class="text-secondary">Paid automatically</span>
+                            <span class="text-secondary">Paid with account balance</span>
                         {% else %}
                             <form method="post" action="{% url 'groceries:payment-detail' pk=payment.pk %}"
                                   class="d-inline-block">
@@ -79,8 +95,8 @@
                                 <input type="hidden" name="entry_id" value="{{ entry.pk }}">
                                 <button type="submit" name="paid"
                                         value="{% if entry.paid %}false{% else %}true{% endif %}"
-                                        class="btn btn-secondary btn-sm stretched-link">
-                                    Toggle
+                                        class="btn btn-{% if entry.paid %}warning{% else %}primary{% endif %} btn-sm">
+                                    {% if entry.paid %}Set not paid{% else %}Set paid{% endif %}
                                 </button>
                             </form>
                         {% endif %}
@@ -91,6 +107,9 @@
         </tbody>
     </table>
 
-    <button type="button" class="btn btn-warning mb-3"><i class="fas fa-ban"></i> Cancel</button>
-    <p>Cancelling a groceries payment will refund all automatic charges.</p>
+    <script>
+        $(function () {
+            $('[data-toggle="popover"]').popover()
+        })
+    </script>
 {% endblock %}

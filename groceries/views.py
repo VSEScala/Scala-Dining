@@ -4,10 +4,13 @@ from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.core.exceptions import ValidationError, BadRequest
 from django.db import transaction
 from django.forms import DecimalField
+from django.http import HttpResponseForbidden
 from django.shortcuts import redirect, get_object_or_404
+from django.views import View
 from django.views.generic import TemplateView
-from django.views.generic.detail import DetailView
+from django.views.generic.detail import DetailView, SingleObjectMixin
 
+from creditmanagement.models import Transaction
 from dining.views import DiningListMixin
 from groceries.forms import PaymentCreateForm
 from groceries.models import Payment, PaymentEntry
@@ -38,47 +41,29 @@ class PaymentCreateView(LoginRequiredMixin, UserPassesTestMixin, DiningListMixin
         dining_list = self.get_object()  # type: DiningList
         return dining_list.is_owner(self.request.user)
 
-    def has_cost(self) -> bool:
-        """Returns if a total cost value is provided by the user."""
-        return 'total_cost' in self.request.GET
-
-    def get_total_cost(self) -> Decimal:
-        """Validates and returns the total cost from the GET parameters."""
-        # Use a DecimalField to let Django do the validation for us
-        field = DecimalField(min_value=Decimal('0.01'), max_digits=8, decimal_places=2)
-        try:
-            return field.clean(self.request.GET['total_cost'])
-        except ValidationError as e:
-            raise BadRequest(e)
-
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         dining_list = self.get_object()
 
-        if self.has_cost():
-            # Use earlier payment for initial info
-            previous = Payment.objects.filter(receiver=self.request.user).order_by('created_at').last()
-            if previous:
-                initial = {
-                    'payment_link': previous.payment_link,
-                    'remarks': previous.remarks,
-                }
-            else:
-                initial = None
+        # Use earlier payment for initial info
+        previous = Payment.objects.filter(receiver=self.request.user).order_by('created_at').last()
+        if previous:
+            initial = {
+                'payment_link': previous.payment_link,
+                'remarks': previous.remarks,
+            }
+        else:
+            initial = None
 
-            context.update({
-                'form': PaymentCreateForm(instance=Payment(dining_list=dining_list, receiver=self.request.user,
-                                                           total_cost=self.get_total_cost()), initial=initial),
-                'entries': dining_list.entries.order_by('external_name', 'user__first_name', 'user__last_name')
-            })
+        context.update({
+            'form': PaymentCreateForm(instance=Payment(dining_list=dining_list, receiver=self.request.user),
+                                      initial=initial),
+        })
         return context
 
     def post(self, request, *args, **kwargs):
-        if not self.has_cost():
-            raise BadRequest("Cost unknown")
         form = PaymentCreateForm(data=request.POST,
-                                 instance=Payment(dining_list=self.get_object(), receiver=self.request.user,
-                                                  total_cost=self.get_total_cost()))
+                                 instance=Payment(dining_list=self.get_object(), receiver=self.request.user))
         if form.is_valid():
             with transaction.atomic():
                 payment = form.save()
@@ -111,3 +96,36 @@ class PaymentDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
             entry.paid = False
         entry.save()
         return redirect('groceries:payment-detail', pk=payment.pk)
+
+
+class PayView(LoginRequiredMixin, SingleObjectMixin, View):
+    """POSTing to this view will create a payment transaction for the current user for given Payment.
+
+    Does not allow GET method.
+    """
+    model = Payment
+
+    def post(self, request, *args, **kwargs):
+        payment = self.get_object()  # type: Payment
+        # Find the entry on the payment for current user, make sure that it has paid=False and no transaction
+        entry = get_object_or_404(PaymentEntry, payment=payment, user=request.user, external_name="", paid=False,
+                                  transaction=None)
+        # Check balance
+        #
+        # This has a race condition but that's probably not an issue in practice
+        if request.user.account.balance < payment.cost_pp:
+            return HttpResponseForbidden("Balance insufficient")
+
+        with transaction.atomic():
+            # Create payment transaction
+            tx = Transaction.objects.create(source=request.user.account,
+                                            target=payment.receiver.account,
+                                            amount=payment.cost_pp,
+                                            description="Groceries payment for {}".format(payment.dining_list),
+                                            created_by=request.user)
+            # Update entry
+            entry.paid = True
+            entry.transaction = tx
+            entry.save()
+            # TODO send mail to receiver to notify them that diner paid
+        return redirect('groceries:overview')

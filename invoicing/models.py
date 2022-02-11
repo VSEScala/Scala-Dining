@@ -10,8 +10,8 @@ class InvoiceReportQuerySet(models.QuerySet):
         tx = InvoicedTransaction.objects.filter(report=OuterRef('pk'))
         return self.annotate(
             association=Subquery(tx.values('source__association')[:1]),
-            oldest=Subquery(tx.order_by('-moment').values('moment')[:1]),
-            newest=Subquery(tx.order_by('moment').values('moment')[:1]),
+            oldest=Subquery(tx.order_by('moment').values('moment')[:1]),
+            newest=Subquery(tx.order_by('-moment').values('moment')[:1]),
         )
 
 

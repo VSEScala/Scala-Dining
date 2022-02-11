@@ -2,8 +2,9 @@
 {% load credit_tags %}
 
 {% block content %}
-    <h2>Grocery payments</h2>
-    <h3>Payments</h3>
+    <h2>Grocery splits</h2>
+    <h4>Payments</h4>
+    <p>These are grocery costs that you have to pay back to the person who did the shopping.</p>
     <table class="table table-hover" id="payEntries">
         <thead>
         <tr>
@@ -12,9 +13,12 @@
             <th scope="col">Paid</th>
             <th scope="col"></th>
             {# Buttons for payment info and cancellation #}
+
         </tr>
         </thead>
+        <tbody>
         {% for entry in pay_entries %}
+            {# Payment row #}
             <tr class="position-relative">
                 <td>{{ entry.payment.dining_list.date|date:"SHORT_DATE_FORMAT" }}</td>
                 <td>{{ entry.payment.cost_pp|euro }}</td>
@@ -28,14 +32,15 @@
                 <td>
                     <button type="button" class="btn btn-primary btn-sm stretched-link float-right"
                             data-toggle="collapse"
-                            data-target="#payEntry{{ entry.pk }}">
+                            data-target="#payEntry{{ forloop.counter }}">
                         <i class="fas fa-chevron-down"></i> Payment info
                     </button>
                 </td>
             </tr>
             <tr>
                 <td colspan="4" class="p-0 border-0">{# Remove padding+border to make it 'invisible' until expanded #}
-                    <div class="collapse" id="payEntry{{ entry.pk }}" data-parent="#payEntries">
+                    {# Payment card #}
+                    <div class="collapse" id="payEntry{{ forloop.counter }}" data-parent="#payEntries">
                         <div class="card mb-1">
                             <div class="card-body">
                                 {% if entry.transaction %}
@@ -43,18 +48,16 @@
                                 {% elif entry.paid %}
                                     <p class="card-text text-success">You have paid</p>
                                 {% else %}
-                                    <form method="post" class="form-inline mb-3" action="todo">
-                                        {% csrf_token %}
-                                        <div class="form-group">
-                                            <button type="submit" class="btn btn-primary btn-sm mr-1">
-                                                Pay using account balance
-                                            </button>
-                                            <small class="text-muted">
-                                                {{ entry.payment.cost_pp|euro }} will be transferred from your account
-                                                balance to {{ entry.payment.receiver.first_name }}'s.
-                                            </small>
-                                        </div>
-                                    </form>
+                                    <button type="button" class="btn btn-primary btn-sm mr-1" data-toggle="modal"
+                                            data-target="#txConfirm{{ forloop.counter }}">
+                                        Pay using account balance
+                                    </button>
+                                    <p>
+                                        <small class="text-muted">
+                                            You will be asked for confirmation. If you already paid using other means,
+                                            ask the receiver to change the status to paid.
+                                        </small>
+                                    </p>
                                 {% endif %}
 
                                 <div class="row mb-3">
@@ -63,7 +66,8 @@
                                 </div>
                                 {% if entry.payment.payment_link %}
                                     <div class="row mb-3">
-                                        <div class="col-md-2"><strong>Payment link</strong></div>
+                                        <div class="col-md-2"><strong><i class="fas fa-link fa-fw"></i> Payment
+                                            link</strong></div>
                                         <div class="col-md-10">
                                             <a href="{{ entry.payment.payment_link }}" target="_blank">
                                                 {{ entry.payment.payment_link }}
@@ -74,7 +78,8 @@
                                 {% if entry.payment.receiver.phone_number %}
                                     <div class="row mb-3">
                                         <div class="col-md-2"><strong>Phone number</strong></div>
-                                        <div class="col-md-10">{{ entry.payment.receiver.phone_number }}</div>
+                                        <div class="col-md-10"><a href="tel:{{ entry.payment.receiver.phone_number }}">
+                                            {{ entry.payment.receiver.phone_number }}</a></div>
                                     </div>
                                 {% endif %}
                                 {% if entry.payment.receiver.email_public %}
@@ -99,11 +104,47 @@
                             </div>
                         </div>
                     </div>
+                    {# Transaction confirm modal #}
+                    <div class="modal fade" id="txConfirm{{ forloop.counter }}" tabindex="-1">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">Pay using account balance</h5>
+                                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                                </div>
+                                <div class="modal-body">
+                                    <p>
+                                        {{ entry.payment.cost_pp|euro }} will be deducted from your account balance and
+                                        transferred to {{ entry.payment.receiver.first_name }}'s account.
+                                        The transaction can only be undone by the receiving party.
+                                        Are you sure?
+                                    </p>
+                                    {% if user.account.balance < entry.payment.cost_pp %}
+                                        <p class="text-danger">
+                                            Your balance is insufficient, deposit money into your account.</p>
+                                    {% endif %}
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                                    <form method="post" action="{% url 'groceries:pay' pk=entry.payment.pk %}">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-primary"
+                                                {% if user.account.balance < entry.payment.cost_pp %}disabled{% endif %}>
+                                            Create transaction
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </td>
             </tr>
         {% endfor %}
+        </tbody>
     </table>
-    <h3>Reimbursements</h3>
+    <h4>Reimbursements</h4>
+    <p>If you did some grocery shopping and split the amount over all diners, these reimbursements will show up
+        here.</p>
     <table class="table table-hover">
         <thead>
         <tr>

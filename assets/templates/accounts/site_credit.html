@@ -22,7 +22,7 @@
             {% for a in associations %}
                 <tr>
                     <td>{{ a.name }}</td>
-                    <td>{{ a.account.get_balance }}</td>
+                    <td>{{ a.account.balance }}</td>
                 </tr>
             {% endfor %}
             </tbody>
@@ -50,11 +50,12 @@
                         <br>
                         <small class="text-muted">{{ a.get_special_description }}</small>
                         <br>
+                        {# TODO fixme #}
                         <a href="{% url 'association_site_credit_detail' association_name=association.slug slug=a.special %}">
                             Account details
                         </a>
                     </td>
-                    <td>{{ a.get_balance }}</td>
+                    <td>{{ a.balance }}</td>
                 </tr>
             {% endfor %}
             </tbody>

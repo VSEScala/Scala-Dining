@@ -6,6 +6,7 @@ from django.core.validators import MinValueValidator
 from django.db import models
 from django.db.models import Sum, Q
 from django.utils import timezone
+from django.utils.functional import cached_property
 
 from userdetails.models import Association, User
 
@@ -47,15 +48,14 @@ class Account(models.Model):
     }
     special = models.CharField(max_length=30, unique=True, null=True, default=None, choices=SPECIAL_ACCOUNTS)
 
-    def get_balance(self) -> Decimal:
+    @cached_property
+    def balance(self) -> Decimal:
         tx = Transaction.objects.filter_valid()
         # 2 separate queries for the source and target sums
         # If there are no rows, the value will be made 0.00
         source_sum = tx.filter(source=self).aggregate(sum=Sum('amount'))['sum'] or Decimal('0.00')
         target_sum = tx.filter(target=self).aggregate(sum=Sum('amount'))['sum'] or Decimal('0.00')
         return target_sum - source_sum
-
-    get_balance.short_description = "Balance"  # (used in admin site)
 
     def get_entity(self) -> Union[User, Association, None]:
         """Returns the user or association for this account.
@@ -74,7 +74,7 @@ class Account(models.Model):
         Returns:
             The computed date or None if the user balance is positive.
         """
-        balance = self.get_balance()
+        balance = self.balance
         if balance >= 0:
             # balance is already positive, return nothing
             return None

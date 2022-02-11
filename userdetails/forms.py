@@ -38,8 +38,7 @@ class UserForm(forms.ModelForm):
 
     class Meta:
         model = User
-        fields = ('username', 'name', 'email', 'dietary_requirements', 'allow_grocery_payments', 'email_public',
-                  'phone_number')
+        fields = ('username', 'name', 'email', 'dietary_requirements', 'email_public', 'phone_number')
         labels = {
             'email_public': 'E-mail visible'
         }
@@ -115,15 +114,20 @@ class MembershipForm(forms.Form):
 class AssociationSettingsForm(forms.ModelForm):
     class Meta:
         model = Association
-        fields = ('balance_update_instructions', 'invoicing_method')
+        fields = ('balance_update_instructions', 'invoicing_method', 'invoicing_description')
         help_texts = {
-            'invoicing_method': "How members will be invoiced. Only applicable if association can invoice members."
+            'invoicing_method': "Name of the invoicing method. Only applicable if association can invoice members."
                                 " For instance 'Q-rekening' in the case of Quadrivium.",
+        }
+        widgets = {
+            'invoicing_description': forms.TextInput,
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         if not self.instance.allow_invoicing:
             self.fields['invoicing_method'].disabled = True
+            self.fields['invoicing_description'].disabled = True
         else:
             self.fields['invoicing_method'].required = True
+            self.fields['invoicing_description'].required = True

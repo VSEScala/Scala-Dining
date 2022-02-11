@@ -6,24 +6,11 @@
 {% block tab_info %}active{% endblock %}
 
 {% block details %}
-    {% if BREADCRUMB_NAV %}
-        <nav>
-            <ol class="breadcrumb">
-                <li class="breadcrumb-item">
-                    <a href="{% url 'day_view' year=dining_list.date.year month=dining_list.date.month day=dining_list.date.day %}">
-                        {{ dining_list.date|date:"SHORT_DATE_FORMAT" }}
-                    </a>
-                </li>
-                <li class="breadcrumb-item active">Dining list</li>
-            </ol>
-        </nav>
-    {% else %}
-        <p>
-            <a href="{% url 'day_view' day=dining_list.date.day month=dining_list.date.month year=dining_list.date.year %}">
-                ← Back to overview
-            </a>
-        </p>
-    {% endif %}
+    <p>
+        <a href="{% url 'day_view' day=dining_list.date.day month=dining_list.date.month year=dining_list.date.year %}">
+            ← Back to day view
+        </a>
+    </p>
     {% if dining_list|is_owner:user %}
         <div class="mb-3">
             {% if dining_list.is_adjustable %}
@@ -39,7 +26,7 @@
             {#            </form>#}
             {#        {% endif %}#}
             <a class="btn btn-secondary" href="{% url 'groceries:payment-create' pk=dining_list.pk %}">
-                <i class="fas fa-receipt"></i> Reimburse groceries
+                <i class="fas fa-receipt"></i> Split grocery costs
             </a>
         </div>
     {% endif %}
@@ -63,7 +50,7 @@
     </div>
     <div class="row mb-3">
         <div class="col-md-2"><strong><i class="fas fa-clock fa-fw"></i> Dinner time</strong></div>
-        <div class="col-md-10">{{ dining_list.date|naturalday|capfirst }} {{ dining_list.serve_time }}</div>
+        <div class="col-md-10">{{ dining_list.date|naturalday:DOW_DATE_FORMAT|capfirst }} {{ dining_list.serve_time }}</div>
     </div>
     <div class="row mb-3">
         <div class="col-md-2"><strong>{# <i class="fas fa-euro-sign fa-fw"></i> #} Kitchen cost</strong></div>
@@ -79,7 +66,7 @@
     </div>
     {% if dining_list.is_open %}
         <p class="text-success">
-            Dining list open till {{ dining_list.sign_up_deadline|naturalday }}
+            Open till {{ dining_list.sign_up_deadline|naturalday:DOW_DATE_FORMAT }}
             {{ dining_list.sign_up_deadline|date:"TIME_FORMAT" }}
         </p>
     {% else %}

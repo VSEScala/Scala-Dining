@@ -136,6 +136,8 @@ USE_TZ = True
 # This imports Dutch date/time formats but turns off localization and internationalization so that dates use English
 # names for months/weekdays, but Dutch format.
 from django.conf.locale.nl.formats import *  # noqa: E402,F401,F403
+# Custom date format that includes day of week (it's the same as DATE_FORMAT with 'l' prepended)
+DOW_DATE_FORMAT = 'l j F Y'
 
 # Use English format for numbers because the Dutch format is just stupid
 DECIMAL_SEPARATOR = '.'
@@ -194,5 +196,3 @@ DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
 # Use it for instance when running a staging deployment, to notify the users
 # about this.
 SITE_NOTICE = env.str('SITE_NOTICE', default='')
-
-BREADCRUMB_NAV = env.bool('BREADCRUMB_NAV', default=True)

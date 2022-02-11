@@ -12,7 +12,6 @@ class UpgradeBalanceForm(forms.ModelForm):
         ('0.50', '€0.50'),
         ('2.00', '€2.00'),
         ('5.00', '€5.00'),
-        ('10.00', '€10.00'),
     )
 
     amount = forms.TypedChoiceField(coerce=Decimal, choices=AMOUNT_CHOICES)
@@ -38,7 +37,7 @@ class UpgradeBalanceForm(forms.ModelForm):
     def save(self, commit=True):
         tx = super().save(commit=False)  # type: InvoicedTransaction
         tx.amount = self.cleaned_data['amount']
-        tx.description = "Invoiced using {}".format(tx.source.association.invoicing_method)
+        tx.description = "Deposit using {}".format(tx.source.association.invoicing_method)
         if commit:
             tx.save()
         return tx
