@@ -1,11 +1,16 @@
 import csv
+from datetime import datetime
+from io import StringIO
+from time import time
+from urllib.parse import quote
 
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
+from django.core.exceptions import BadRequest
 from django.db import transaction
-from django.db.models import Sum
 from django.http import HttpResponse
 from django.shortcuts import redirect
-from django.urls import reverse_lazy
+from django.urls import reverse_lazy, reverse
+from django.utils import timezone
 from django.views import View
 from django.views.generic import FormView, TemplateView
 from django.views.generic.detail import SingleObjectMixin
@@ -49,41 +54,79 @@ class ReportsView(LoginRequiredMixin, AssociationBoardMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        # This subquery is to annotate reports with their first transaction time, for ordering
         context.update({
-            'unreported': InvoicedTransaction.objects.filter(source__association=self.association,
-                                                             report=None),
-            'reports': InvoiceReport.objects.annotate_tx_info().filter(
-                association=self.association).order_by('-oldest'),
+            'reports': InvoiceReport.objects.filter(association=self.association).order_by('-created_at'),
         })
         return context
 
+    # def post(self, request, *args, **kwargs):
+    #     # Posting will create a new report
+    #     txs = InvoicedTransaction.objects.filter(source__association=self.association, report=None)
+    #     if txs:
+    #         # Only create report if there are transactions
+    #         with transaction.atomic():
+    #             report = InvoiceReport.objects.create()
+    #             report.transactions.add(*txs)
+    #     return redirect('invoicing-reports', association_name=self.association.slug)
+
+
+class CreateReportView(LoginRequiredMixin, AssociationBoardMixin, TemplateView):
+    """Shows a table of debtors and amounts, and allows to create a new report.
+
+    This view only fetches transactions that are before the timestamp given in
+    the GET query parameter. This makes sure that the fetched transactions will
+    always be exactly the same when POSTing or refreshing, even if a new
+    transaction was created in the meantime.
+    """
+    template_name = 'invoicing/report_create.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        amounts = self.get_transactions().group_users()
+
+        # Construct CSV as a long string
+        with StringIO() as output:
+            writer = csv.writer(output)
+            writer.writerow(['username', 'name', 'email', 'amount_to_invoice'])
+            for r in amounts:
+                writer.writerow([r['username'], f"{r['first_name']} {r['last_name']}", r['email'], r['total_amount']])
+            contents = output.getvalue()
+
+        context.update({
+            'amounts': amounts,
+            # Data URL, pretty cool thing (https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/Data_URIs)
+            'csv_uri': quote(contents),
+        })
+        return context
+
+    def get_transactions(self):
+        """Returns the uncleared transactions."""
+        try:
+            before = int(self.request.GET['before'])
+        except (KeyError, ValueError):
+            raise BadRequest("'before' parameter is invalid or missing")
+        before = datetime.fromtimestamp(before, tz=timezone.utc)
+        return InvoicedTransaction.objects.filter(source__association=self.association, report=None, moment__lt=before)
+
+    def get(self, request, *args, **kwargs):
+        if 'before' not in request.GET:
+            # 'before' is not given, add it to the URL
+            new_url = '{}?before={}'.format(
+                reverse('invoicing-new-report', kwargs={'association_name': self.association.slug}),
+                int(time()) - 2)  # Timestamp of 2 seconds ago (exact time doesn't matter as long as it's in the past)
+            return redirect(new_url)
+
+        return self.render_to_response(self.get_context_data(**kwargs))
+
     def post(self, request, *args, **kwargs):
-        # Posting will create a new report
-        txs = InvoicedTransaction.objects.filter(source__association=self.association, report=None)
+        # Posting will clear the transactions
+        txs = self.get_transactions()
+        # Only create report if there are transactions
         if txs:
-            # Only create report if there are transactions
             with transaction.atomic():
-                report = InvoiceReport.objects.create()
+                report = InvoiceReport.objects.create(created_by=request.user, association=self.association)
                 report.transactions.add(*txs)
         return redirect('invoicing-reports', association_name=self.association.slug)
-
-
-def report_csv(file, report: InvoiceReport):
-    """Writes a report CSV file to the given file object."""
-    writer = csv.writer(file)
-    writer.writerow(['name', 'email', 'amount_to_invoice'])
-
-    # Group by target (user) and sum amounts
-    #
-    # For summing, it's not checked if there are cancelled transactions, but there shouldn't be anyway
-    rows = report.transactions.values('target',
-                                      'target__user__first_name',
-                                      'target__user__last_name',
-                                      'target__user__email').annotate(total_amount=Sum('amount'))
-    for r in rows:
-        name = "{} {}".format(r['target__user__first_name'], r['target__user__last_name'])
-        writer.writerow([name, r['target__user__email'], r['total_amount']])
 
 
 class ReportDownloadView(LoginRequiredMixin, UserPassesTestMixin, SingleObjectMixin, View):
@@ -91,10 +134,22 @@ class ReportDownloadView(LoginRequiredMixin, UserPassesTestMixin, SingleObjectMi
 
     def test_func(self):
         # Can only download if board member
-        return self.request.user.is_board_of(self.get_object().get_association().pk)
+        return self.request.user.is_board_of(self.get_object().association.pk)
+
+    def write_csv(self, file):
+        """Writes a report CSV file to the given file object."""
+        writer = csv.writer(file)
+        writer.writerow(['username', 'name', 'email', 'amount_to_invoice'])
+
+        report = self.get_object()  # type: InvoiceReport
+        for r in report.transactions.group_users():
+            writer.writerow([r['username'],
+                             f"{r['first_name']} {r['last_name']}".strip(),
+                             r['email'],
+                             r['total_amount']])
 
     def get(self, request, *args, **kwargs):
         response = HttpResponse(content_type='text/csv')
         response['Content-Disposition'] = 'attachment; filename="invoice_report.csv"'
-        report_csv(response, self.get_object())
+        self.write_csv(response)
         return response

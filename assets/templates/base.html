@@ -61,7 +61,7 @@
                                 <a class="dropdown-item {{ justify }}"
                                    href="{% url 'association_overview' association_name=association.slug %}">
                                     <span>
-                                        {{ association.slug }}
+                                        {{ association.slug|capfirst }}
                                         {% if association.requires_action %}
                                             <span class="badge badge-pill badge-warning">!</span>
                                         {% endif %}

@@ -1,13 +1,10 @@
 from decimal import Decimal, ROUND_UP
-from typing import List
 
 from django import forms
 from django.core.exceptions import ValidationError
 from django.db import transaction
 
-from creditmanagement.models import Transaction
 from groceries.models import Payment
-from userdetails.models import User
 
 
 class PaymentCreateForm(forms.ModelForm):

@@ -148,6 +148,10 @@ class Transaction(models.Model):
     # This cancelled column is risky, one might forget to filter out cancelled
     # transactions when calculating balance. We might need to filter those out
     # by default.
+
+    # TODO: Note 4, added later (Feb 2022)
+    #   This cancel column is only used for kitchen cost transactions and let's keep it that way.
+    #   I want to get rid of it, in favor of always explicitly creating a reverse transaction.
     cancelled = models.DateTimeField(null=True)
     cancelled_by = models.ForeignKey(User,
                                      on_delete=models.PROTECT,

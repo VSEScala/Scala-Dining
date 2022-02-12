@@ -1,44 +1,40 @@
 {% extends 'accounts/associations_base.html' %}
+{% load credit_tags %}
 
 {% block tab_invoicing %}active{% endblock %}
 
 {% block details %}
     <p>
-        Diners in your association can upgrade their balance using invoicing.
-        Your association is responsible for actually invoicing your members!
-        This page allows you to create reports with the amounts to invoice.
+        Diners in your association can deposit money in their account balance unconditionally.
+        When they do this, the amount will be taken from the balance of your association!
+        <em>Your association is responsible for collecting this money back from your members.</em>
+        For Quadrivium this would be done using the Q-bill.
+        The button below will show the people who need to be debited and the amounts.
     </p>
-
     <p>
-        There are currently <strong>{{ unreported.count }}</strong> new transactions which haven't been invoiced yet.
-        Click the button below to create a new report with these transactions.
-    </p>
-    <form action="{% url 'invoicing-reports' association_name=association.slug %}" method="post">
-        {% csrf_token %}
-        <button type="submit" class="btn btn-primary" {% if unreported.count == 0 %}disabled{% endif %}>
-            Create invoice report
-        </button>
-    </form>
-    <h4 class="mt-3">Reports created in the past</h4>
-    <table class="table table-hover">
+    <a href="{% url 'invoicing-new-report' association_name=association.slug %}" class="btn btn-primary">
+        View debtors and amounts
+    </a></p>
+    <h3 class="text-muted">Debits cleared in the past</h3>
+    <p class="text-muted">This money has already been collected.</p>
+    <table class="table table-sm text-muted">
         <thead>
         <tr>
-            <th scope="col">Period</th>
-            <th scope="col">Nr. of transactions</th>
+            <th scope="col">Date</th>
+            <th scope="col">Cleared by</th>
+            <th scope="col">Total amount</th>
             <th scope="col">Download</th>
         </tr>
         </thead>
         <tbody>
         {% for report in reports %}
-            <tr class="position-relative">
+            <tr>
                 {# Time is omitted here for clarity #}
+                <td>{{ report.created_at|date:"SHORT_DATETIME_FORMAT" }}</td>
+                <td>{{ report.created_by }}</td>
+                <td>{{ report.total_amount|euro }}</td>
                 <td>
-                    {{ report.oldest|date:"SHORT_DATE_FORMAT" }}
-                    – {{ report.newest|date:"SHORT_DATE_FORMAT" }}
-                </td>
-                <td>{{ report.transactions.count }}</td>
-                <td>
-                    <a href="{% url 'invoicing-report-download' pk=report.pk %}" class="stretched-link">
+                    <a href="{% url 'invoicing-report-download' pk=report.pk %}">
                         Download report
                     </a>
                 </td>

@@ -1,9 +1,5 @@
-from decimal import Decimal
-
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
-from django.core.exceptions import ValidationError, BadRequest
 from django.db import transaction
-from django.forms import DecimalField
 from django.http import HttpResponseForbidden
 from django.shortcuts import redirect, get_object_or_404
 from django.views import View
@@ -11,6 +7,7 @@ from django.views.generic import TemplateView
 from django.views.generic.detail import DetailView, SingleObjectMixin
 
 from creditmanagement.models import Transaction
+from dining.models import DiningList
 from dining.views import DiningListMixin
 from groceries.forms import PaymentCreateForm
 from groceries.models import Payment, PaymentEntry
