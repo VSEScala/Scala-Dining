@@ -55,16 +55,6 @@ class User(AbstractUser):
                 return True
         return False
 
-    @cached_property
-    def requires_information_updates(self):
-        from general.views import SiteUpdateView
-        return SiteUpdateView.has_new_update(self)
-
-    @cached_property
-    def requires_information_rules(self):
-        from general.views import RulesPageView
-        return RulesPageView.has_new_update(self)
-
     def is_board_of(self, association_id):
         """Returns if user is a board member of association identified by given id."""
         return self.groups.filter(id=association_id).exists()

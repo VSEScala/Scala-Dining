@@ -18,10 +18,6 @@
     }
 }
 
-/* Fix for strange background behavior in Chrome */
-body {
-    background-color: #212121;
-}
 
 /* CSS corrections for Select2 */
 .select2-container {
@@ -29,4 +25,12 @@ body {
 }
 .select2-selection {
     background-color: #fff;
+}
+
+
+/**
+ * Bootstrap table row vertical centering
+ */
+.table td {
+    vertical-align: middle;
 }

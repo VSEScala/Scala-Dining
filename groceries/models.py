@@ -27,16 +27,14 @@ class Payment(models.Model):
                                   validators=[MinValueValidator(Decimal('0.01'))])
     payment_link = models.URLField(
         blank=True,
-        help_text="E.g. Tikkie or ING Payment Request."
-                  " Tip: use a payment link with variable amount, then you won't need to create a new link next time.")
+        help_text="E.g. Tikkie or ING Payment Request.")
     remarks = models.CharField(max_length=200,
                                blank=True,
                                help_text="For instance an IBAN number if you can't provide a payment link.")
     allow_transaction = models.BooleanField(
-        'allow payment using a transaction to your account balance',
+        'enable payment to your account balance',
         default=True,
-        help_text="If you only want to receive payments in cash, e.g. via the payment link, uncheck this option."
-                  " This will hide the option to pay via people's account balance.")
+        help_text="If you only want to receive payments in cash, e.g. via the payment link, uncheck this.")
 
     created_at = models.DateTimeField(default=timezone.now)
 

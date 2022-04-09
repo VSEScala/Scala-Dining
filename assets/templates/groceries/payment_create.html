@@ -6,13 +6,6 @@
     <h2>Split grocery costs</h2>
     <p>
         If you paid for groceries, use this page to split the costs over all diners.
-        Fill in price and payment info; when you submit the form all diners will be informed and
-        given the option to pay you directly from their account balance to yours,
-        or using the payment info you provided.
-    </p>
-    <p>
-        <strong>Multiple grocery shoppers?</strong> If you're not the only one who bought groceries, the other
-        person can also create a split for their own part.
     </p>
     <form action="{% url 'groceries:payment-create' pk=dining_list.pk %}" method="post">
         {% csrf_token %}
@@ -34,15 +27,31 @@
         </div>
         <h3>Payment info</h3>
         <p>
-            Provide payment info for the people who prefer not to pay using their account balance.
+            All diners will be notified with the provided payment info.
             The info will be remembered for the next time you create a payment.
         </p>
         {# Only render the payment info fields #}
-        {% include 'snippets/bootstrap_form.html' with horizontal=True fields=form.visible_fields|slice:"1:4" %}
+        {% include 'snippets/bootstrap_form.html' with horizontal=True fields=form.visible_fields|slice:"1:3" %}
+        <div class="card mb-3">
+            <div class="card-body">
+                <p class="card-text">
+                    <span class="badge badge-info">New</span>
+                    It is now possible to let people pay from their site account balance to yours. If you enable this
+                    option, diners with sufficient balance can choose to transfer the money from their account
+                    balance to yours. It will then automatically be marked as paid. You can use the money for a next
+                    time or withdraw it.
+                </p>
+                <p class="card-text">
+                    The option is provided just as convenient alternative, diners can always choose to pay via other
+                    means instead.
+                </p>
+            </div>
+        </div>
+        {% include 'snippets/bootstrap_form.html' with horizontal=True fields=form.visible_fields|slice:"3:4" %}
         <h3>Contact info</h3>
         <p>
-            Helpful in case of payment issues, change it in <a href="{% url 'settings_account' %}">account
-            settings</a>.
+            Providing your contact info is helpful in case of payment issues, change it in
+            <a href="{% url 'settings_account' %}">account settings</a>.
         </p>
         <div class="form-group row">
             <label for="email" class="col-sm-2 col-form-label">E-mail address</label>

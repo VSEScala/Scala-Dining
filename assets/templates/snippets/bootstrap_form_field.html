@@ -13,6 +13,8 @@
         {% include 'snippets/bootstrapform/checkboxinput.html' %}
     {% elif field|widget_type == "checkboxselectmultiple" %}
         {% include 'snippets/bootstrapform/checkboxselectmultiple.html' %}
+    {% elif field|widget_type == "radioselect" %}
+        {% include 'snippets/bootstrapform/radioselect.html' %}
     {% elif field|widget_type == "modelselect2" or field|widget_type == "modelselect2multiple" %}
         {% include 'snippets/bootstrapform/modelselect2.html' %}
     {% else %}

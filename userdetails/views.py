@@ -29,8 +29,7 @@ class DiningJoinHistoryView(LoginRequiredMixin, ListView):
     paginate_by = 20
 
     def get_queryset(self):
-        return DiningEntry.objects.internal().filter(user=self.request.user,
-                                                     dining_list__cancelled_reason="").order_by('-dining_list__date')
+        return DiningEntry.objects.internal().filter(user=self.request.user).order_by('-dining_list__date')
 
 
 class DiningClaimHistoryView(LoginRequiredMixin, ListView):
@@ -38,7 +37,7 @@ class DiningClaimHistoryView(LoginRequiredMixin, ListView):
     paginate_by = 20
 
     def get_queryset(self):
-        return DiningList.active.filter(owners=self.request.user).order_by('-date')
+        return DiningList.objects.filter(owners=self.request.user).order_by('-date')
 
 
 class PeopleAutocompleteView(LoginRequiredMixin, Select2QuerySetView):

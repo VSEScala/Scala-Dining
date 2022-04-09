@@ -23,7 +23,8 @@ class DiningEntryAdmin(admin.ModelAdmin):
 class DiningListAdmin(admin.ModelAdmin):
     list_display = ('date', 'association', 'dish', 'is_adjustable')
     list_filter = ('association', 'date')
-    readonly_fields = ('date', 'diners', 'association')
+    # readonly_fields = ('date', 'diners', 'association')
+    filter_horizontal = ('owners',)
 
 
 @admin.register(DiningDayAnnouncement)

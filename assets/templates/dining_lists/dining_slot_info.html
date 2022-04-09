@@ -15,7 +15,7 @@
         <div class="mb-3">
             {% if dining_list.is_adjustable %}
                 <a class="btn btn-primary" href="{% url 'slot_change' pk=dining_list.pk %}">
-                    <i class="fas fa-edit"></i> Edit
+                    <i class="fas fa-edit"></i> Edit details
                 </a>
             {% endif %}
             {#        {% if dining_list.is_open %}#}
@@ -28,11 +28,6 @@
             <a class="btn btn-secondary" href="{% url 'groceries:payment-create' pk=dining_list.pk %}">
                 <i class="fas fa-receipt"></i> Split grocery costs
             </a>
-        </div>
-    {% endif %}
-    {% if dining_list.is_cancelled %}
-        <div class="alert alert-warning">
-            This dining list is cancelled. The provided reason was: '{{ dining_list.cancelled_reason }}'.
         </div>
     {% endif %}
     <div class="row mb-3">

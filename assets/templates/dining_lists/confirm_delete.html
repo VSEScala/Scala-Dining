@@ -1,0 +1,26 @@
+{% extends 'dining_lists/dining_slot.html' %}
+
+{% block details %}
+    <p>
+        <a href="{% url 'slot_change' pk=dining_list.pk %}">← Back to editing</a>
+    </p>
+    <h3>Delete dining list</h3>
+    {% if dining_list.diners.exists or dining_list.payment_set.exists %}
+        <p><em>Dining list can't be deleted because it has diners or grocery splits</em></p>
+        <button type="button" class="btn btn-danger" disabled>
+            <i class="fas fa-trash"></i> Delete dining list
+        </button>
+    {% else %}
+        <p>
+            Are you sure you want to delete the dining list on <strong>{{ dining_list.date }}</strong> for the
+            association <strong>{{ dining_list.association }}</strong>?
+        </p>
+        <form method="post" action="{% url 'slot_delete' pk=dining_list.pk %}">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-danger"
+                    {% if dining_list.diners.exists or dining_list.payment_set.exists %}disabled{% endif %}>
+                <i class="fas fa-trash"></i> Delete dining list
+            </button>
+        </form>
+    {% endif %}
+{% endblock %}

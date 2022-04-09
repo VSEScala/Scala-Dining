@@ -10,7 +10,6 @@ from django.utils import timezone
 
 from creditmanagement.models import Transaction, Account
 from dining.models import DiningList, DiningComment, DiningEntry
-from general.util import SelectWithDisabled
 from userdetails.models import Association, User
 
 
@@ -41,52 +40,34 @@ class CreateSlotForm(forms.ModelForm):
 
         self.creator = creator
 
-        # Get associations that the user is a member of, with verified_state=True or verified_state=None
-        associations = Association.objects.filter(
-            Q(usermembership__related_user=creator),
-            Q(usermembership__verified_state=True) | Q(usermembership__verified_state=None))
+        # Only allow associations that the user is a *verified* member of
+        associations = Association.objects.filter(usermembership__in=creator.get_verified_memberships())
 
         # Filter out unavailable associations (those that have a dining list already on this day)
-        dining_lists = DiningList.active.filter(date=self.instance.date, association=OuterRef('pk'))
+        dining_lists = DiningList.objects.filter(date=self.instance.date, association=OuterRef('pk'))
         available = associations.annotate(occupied=Exists(dining_lists)).filter(occupied=False)
-        unavailable = associations.annotate(occupied=Exists(dining_lists)).filter(occupied=True)
+        self.fields['association'].queryset = available
 
-        if unavailable.exists():
-            help_text = "Some of your associations are not available since they already have a dining list for this date."
-        else:
-            help_text = ""
+        # Explanation if not all associations are available
+        if associations.count() != available.count():
+            txt = "Some of your associations are not available because they already have a dining list on this date."
+            self.fields['association'].help_text = txt
 
-        widget = SelectWithDisabled(disabled_choices=[(a.pk, a.name) for a in unavailable])
-
-        self.fields['association'] = forms.ModelChoiceField(queryset=available, widget=widget, help_text=help_text)
-
+        # Preselect if only 1 association is available
         if len(available) == 1:
             self.initial['association'] = available[0].pk
             self.fields['association'].disabled = True
-
-        if associations.count() == 0:
-            # Ready an error message as the user is not a member of any of the associations and thus can not create a slot
-            self.cleaned_data = {}
-            self.add_error(None,
-                           ValidationError(
-                               "You are not a member of any association and thus can not claim a dining list"))
 
     def clean(self):
         # Note: uniqueness for date+association is implicitly enforced using the association form field
         cleaned_data = super().clean()
 
-        creator = self.creator
-
-        if DiningList.active.available_slots(self.instance.date) <= 0:
+        if DiningList.objects.available_slots(self.instance.date) <= 0:
             raise ValidationError("All dining slots are already occupied on this day")
 
         # Check if user has enough money to claim a slot
-        if creator.account.balance < settings.MINIMUM_BALANCE_FOR_DINING_SLOT_CLAIM:
+        if self.creator.account.balance < settings.MINIMUM_BALANCE_FOR_DINING_SLOT_CLAIM:
             raise ValidationError("Your balance is too low to claim a slot")
-
-        # Check if user does not already own another dining list this day
-        if DiningList.active.filter(date=self.instance.date, owners=creator).exists():
-            raise ValidationError("User already owns a dining list on this day")
 
         # If date is valid
         if self.instance.date < timezone.now().date():
@@ -251,36 +232,6 @@ class DiningEntryDeleteForm(forms.Form):
                 tx.cancel(self.deleter)
                 tx.save()
             self.entry.delete()
-
-
-class DiningListCancelForm(forms.ModelForm):
-    """Cancels a dining list and refunds kitchen costs.
-
-    Note that grocery payments will not be refunded by this form (at the moment).
-    """
-
-    class Meta:
-        model = DiningList
-        fields = ('cancelled_reason',)
-        labels = {'cancelled_reason': 'Reason', }
-
-    def __init__(self, cancelled_by, **kwargs):
-        super().__init__(**kwargs)
-        self.cancelled_by = cancelled_by
-        self.fields['cancelled_reason'].required = True
-
-    def save(self, commit=True):
-        dining_list = super().save(commit=False)
-        if commit:
-            with transaction.atomic():
-                # Refund transactions
-                txs = Transaction.objects.filter(diningentry__dining_list=dining_list)
-                for tx in txs:
-                    tx.cancel(self.cancelled_by)
-                    tx.save()
-                dining_list.save()
-
-        return dining_list
 
 
 class DiningCommentForm(forms.ModelForm):

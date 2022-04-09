@@ -8,35 +8,42 @@ from invoicing.models import InvoicedTransaction
 
 class UpgradeBalanceForm(forms.ModelForm):
     # Todo: change the amount and source fields to a radio buttons widget, because that's more appropriate here.
-    AMOUNT_CHOICES = (
-        ('0.50', '€0.50'),
-        ('2.00', '€2.00'),
-        ('5.00', '€5.00'),
-    )
 
-    amount = forms.TypedChoiceField(coerce=Decimal, choices=AMOUNT_CHOICES)
+    # amount = forms.TypedChoiceField(coerce=Decimal, choices=AMOUNT_CHOICES)
 
     class Meta:
+        AMOUNT_CHOICES = (
+            ('0.50', '€0.50'),
+            ('2.00', '€2.00'),
+            ('5.00', '€5.00'),
+        )
+
         model = InvoicedTransaction
-        fields = ('source',)
+        fields = ('source', 'amount')
         labels = {
             'source': 'Association',
+        }
+        widgets = {
+            'source': forms.RadioSelect,
+            'amount': forms.RadioSelect(choices=AMOUNT_CHOICES),
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # Determine eligible associations using the target user
+        #
         # 1. User must be verified member
         # 2. Association must allow invoicing
         user = self.instance.target.user
-        self.fields['source'].queryset = Account.objects.filter(
+        qs = Account.objects.filter(
             association__usermembership__in=user.get_verified_memberships(),
             association__allow_invoicing=True,
         )
+        self.fields['source'].queryset = qs
+        self.initial['source'] = qs.first()
 
     def save(self, commit=True):
         tx = super().save(commit=False)  # type: InvoicedTransaction
-        tx.amount = self.cleaned_data['amount']
         tx.description = "Deposit using {}".format(tx.source.association.invoicing_method)
         if commit:
             tx.save()

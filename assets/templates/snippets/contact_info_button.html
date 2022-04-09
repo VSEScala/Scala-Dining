@@ -1,0 +1,17 @@
+{# Requires arguments: #}
+{# - user #}
+{% if user.phone_number or user.email_public %}
+    <button type="button" id="contact{{ user.pk }}" class="btn btn-secondary btn-sm" data-toggle="popover"
+            data-html="true" data-placement="bottom"
+            data-content="
+{% if user.email_public %}<div>E-mail address: <a href='mailto:{{ user.email }}'>{{ user.email }}</a></div>{% endif %}
+{% if user.phone_number %}<div>Phone number: <a href='tel:{{ user.phone_number }}'>{{ user.phone_number }}</a></div>{% endif %}">
+        <i class="fas fa-address-card"></i>
+        <span class="sr-only">Contact info</span>
+    </button>
+    <script>
+        $(function () {
+            $('#contact{{ user.pk }}').popover();
+        });
+    </script>
+{% endif %}

@@ -168,7 +168,7 @@ class SiteDiningView(AssociationBoardMixin, AssociationHasSiteAccessMixin, DateR
         context = super().get_context_data(**kwargs)
 
         if self.date_range_form.is_valid():
-            dining_lists = DiningList.active.filter(date__gte=self.date_start, date__lte=self.date_end)
+            dining_lists = DiningList.objects.filter(date__gte=self.date_start, date__lte=self.date_end)
             association_stats = {}
 
             # Get general data for each association

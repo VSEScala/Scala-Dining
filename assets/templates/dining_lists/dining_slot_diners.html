@@ -5,123 +5,96 @@
 {% block tab_list %}active{% endblock %}
 
 {% block details %}
-    {% if BREADCRUMB_NAV %}
-        <nav>
-            <ol class="breadcrumb">
-                <li class="breadcrumb-item">
-                    <a href="{% url 'day_view' year=dining_list.date.year month=dining_list.date.month day=dining_list.date.day %}">
-                        {{ dining_list.date|date:"SHORT_DATE_FORMAT" }}
-                    </a>
-                </li>
-                <li class="breadcrumb-item">
-                    <a href="{{ dining_list.get_absolute_url }}">Dining list</a>
-                </li>
-                <li class="breadcrumb-item active">Diners</li>
-            </ol>
-        </nav>
-    {% endif %}
-    <div class="table-responsive">
-        <table class="table">
-            <thead>
-            <tr>
-                <th scope="col">Name</th>
-                <th scope="col">Help stats</th>
-                <th scope="col"></th>
-                <th scope="col"></th>
-            </tr>
-            </thead>
-
-            <tbody>
-            {% for entry in entries %}
-                <tr>
-                    <td>
-                        <div class="d-flex justify-content-between align-items-center">
-                            <span>
-                                {{ entry.get_name }}
-                                {% if entry.is_external %}
-                                    <small class="font-italic">added by {{ entry.created_by }}</small>
+    <p>
+        <a href="{% url 'day_view' day=dining_list.date.day month=dining_list.date.month year=dining_list.date.year %}">
+            ← Back to day view
+        </a>
+    </p>
+    <ul class="list-group">
+        {% for entry in entries %}
+            <li class="list-group-item">
+                <div class="d-flex justify-content-between align-items-center">
+                    <span>
+                        {{ entry.get_name }}
+                        {# Contact info (only visible if signed up) #}
+                        {% if show_contact_info and entry.is_internal %}
+                            {% include 'snippets/contact_info_button.html' with user=entry.user id=entry.pk %}
+                        {% endif %}
+                    </span>
+                    <span>
+                        {# External badge #}
+                        {% if entry.is_external %}
+                            <span class="badge badge-secondary">External diner</span>
+                        {% endif %}
+                        {# Membership icons #}
+                        {% if entry.is_internal %}
+                            {% for membership in entry.user.get_verified_memberships %}
+                                {% if membership.association.icon_image %}
+                                    <i class="membership_icon">
+                                            <img src="{{ membership.association.icon_image.url }}"
+                                                 alt="{{ membership.association.slug }}">
+                                        </i>
+                                {% else %}
+                                    <i>{{ membership.association.slug|slice:":1" }}</i>
                                 {% endif %}
-                            </span>
-                            {% if entry.is_internal %}
-                                <span>
-                                    {% for membership in entry.user.get_verified_memberships %}
-                                        {% if membership.association.icon_image %}
-                                            <i class="membership_icon">
-                                                <img src="{{ membership.association.icon_image.url }}"
-                                                     alt="{{ membership.association.slug }}">
-                                            </i>
-                                        {% else %}
-                                            <i>{{ membership.association.slug|slice:":1" }}</i>
-                                        {% endif %}
-                                    {% endfor %}
-                                </span>
-                            {% endif %}
-                        </div>
-                    </td>
-                    <td>
-                        {# Note: before external entries didn't have work stats, but it's actually not an issue to include them #}
-                        <form method="post"
-                              action="{% url 'slot_list' pk=dining_list.pk %}"
-                              class="d-inline-block">
+                            {% endfor %}
+                        {% endif %}
+                    </span>
+                </div>
+                {% if entry.is_internal and entry.user.dietary_requirements %}
+                    <div class="text-warning">
+                        <i class="fas fa-circle-exclamation"></i> {{ entry.user.dietary_requirements }}
+                    </div>
+                {% endif %}
+                <div>
+                    {# Help stats #}
+                    {% if can_edit_stats %}
+                        {# Render as buttons #}
+                        <form method="post" action="{% url 'slot_list' pk=dining_list.pk %}?controls=1" class="d-inline-block">
                             {% csrf_token %}
                             <input type="hidden" name="entry_id" value="{{ entry.pk }}">
-                            <div class="btn-group">
-                                <button type="submit" name="action" {% if not can_edit_stats %}disabled{% endif %}
+                            <div class="btn-group btn-group-sm">
+                                <button type="submit" name="action"
                                         value="shopped_{% if entry.has_shopped %}false{% else %}true{% endif %}"
                                         class="btn btn-sm {% if entry.has_shopped %}btn-primary{% else %}btn-outline-primary{% endif %}">
-                                    Shop
+                                    <i class="fas fa-shopping-bag"></i> Shopped
                                 </button>
-                                <button type="submit" name="action" {% if not can_edit_stats %}disabled{% endif %}
+                                <button type="submit" name="action"
                                         value="cooked_{% if entry.has_cooked %}false{% else %}true{% endif %}"
                                         class="btn btn-sm {% if entry.has_cooked %}btn-primary{% else %}btn-outline-primary{% endif %}">
-                                    Cook
+                                    <i class="fas fa-utensils"></i> Cooked
                                 </button>
-                                <button type="submit" name="action" {% if not can_edit_stats %}disabled{% endif %}
+                                <button type="submit" name="action"
                                         value="cleaned_{% if entry.has_cleaned %}false{% else %}true{% endif %}"
                                         class="btn btn-sm {% if entry.has_cleaned %}btn-primary{% else %}btn-outline-primary{% endif %}">
-                                    Clean
+                                    <i class="fas fa-soap"></i> Cleaned
                                 </button>
                             </div>
                         </form>
-                    </td>
-                    <td>
-                        {# Contact info is only visible to those that are signed up (show_contact_info) #}
-                        {% if show_contact_info and entry.is_internal %}
-                            {% if entry.user.phone_number or entry.user.email_public %}
-                                <button type="button" class="btn btn-secondary btn-sm btn-block" data-toggle="popover"
-                                        data-html="true"
-                                        {# Please look away #}
-                                        data-content="{% if entry.user.email_public %}<p class='mb-0'>E-mail address:
-                                        <a href='mailto:{{ entry.user.email }}'>{{ entry.user.email }}</a>
-                                        </p>{% endif %}{% if entry.user.phone_number %}<p class='mb-0'>Phone
-                                        number: <a href='tel:{{ entry.user.phone_number }}'
-                                        >{{ entry.user.phone_number }}</a></p>{% endif %}">
-                                    <i class="fas fa-address-card"></i>
-                                    <span class="sr-only">Contact info</span>
-                                </button>
-                            {% endif %}
+                    {% else %}
+                        {# Render as badges #}
+                        {% if entry.has_shopped %}
+                            <span class="badge badge-info"><i class="fas fa-shopping-bag"></i> Shopped</span>
                         {% endif %}
-                    </td>
-                    <td>
-                        {% if entry|can_delete_entry:user %}
-                            <form method="post"
-                                  action="{% url "entry_delete" pk=entry.pk %}">
-                                {% csrf_token %}
-                                <button type="submit" class="btn btn-sm btn-danger btn-block">
-                                    <i class="fas fa-trash"></i>
-                                    <span class="sr-only">Delete entry</span>
-                                </button>
-                            </form>
+                        {% if entry.has_cooked %}
+                            <span class="badge badge-info"><i class="fas fa-utensils"></i> Cooked</span>
                         {% endif %}
-                    </td>
-                </tr>
-            {% endfor %}
-            </tbody>
-        </table>
-    </div>
-    <script>
-        $(function () {
-            $('[data-toggle="popover"]').popover()
-        })
-    </script>
+                        {% if entry.has_cleaned %}
+                            <span class="badge badge-info"><i class="fas fa-soap"></i> Cleaned</span>
+                        {% endif %}
+                    {% endif %}
+                    {# Delete button #}
+                    {% if entry|can_delete_entry:user %}
+                        <form method="post" action="{% url "entry_delete" pk=entry.pk %}" class="d-inline-block">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-sm btn-danger">
+                                <i class="fas fa-trash"></i>
+                                <span class="sr-only">Delete entry</span>
+                            </button>
+                        </form>
+                    {% endif %}
+                </div>
+            </li>
+        {% endfor %}
+    </ul>
 {% endblock details %}

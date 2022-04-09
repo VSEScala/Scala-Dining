@@ -14,17 +14,13 @@ from general.models import AbstractVisitTracker
 from userdetails.models import User, Association
 
 
-class ActiveDiningListManager(models.Manager):
-    def get_queryset(self):
-        # Only return non-cancelled dining lists
-        return super().get_queryset().filter(cancelled_reason='')
-
+class DiningListManager(models.Manager):
     def available_slots(self, date):
         """Returns the number of available slots on the given date."""
         # Get slots occupied by announcements
         announce_slots = DiningDayAnnouncement.objects.filter(date=date).aggregate(Sum('slots_occupy'))
         announce_slots = 0 if announce_slots['slots_occupy__sum'] is None else announce_slots['slots_occupy__sum']
-        return settings.MAX_SLOT_NUMBER - len(self.filter(date=date)) - announce_slots
+        return settings.MAX_SLOT_NUMBER - self.filter(date=date).count() - announce_slots
 
 
 class DiningList(models.Model):
@@ -57,16 +53,11 @@ class DiningList(models.Model):
 
     kitchen_cost = models.DecimalField(decimal_places=2, verbose_name="kitchen cost per person", max_digits=10,
                                        default=settings.KITCHEN_COST, validators=[MinValueValidator(Decimal('0.00'))])
-
-    max_diners = models.IntegerField(default=20, validators=[MinValueValidator(1)])
-
+    # Minimum value of 0 should be fine (minimum of 1 might be more intuitive but 0 makes it possible to close the list)
+    max_diners = models.IntegerField(default=20, validators=[MinValueValidator(0)])
     diners = models.ManyToManyField(User, through='DiningEntry', through_fields=('dining_list', 'user'))
 
-    # If not empty, the dining list is cancelled!
-    cancelled_reason = models.CharField(blank=True, max_length=100)
-
-    objects = models.Manager()
-    active = ActiveDiningListManager()
+    objects = DiningListManager()
 
     def is_owner(self, user: User) -> bool:
         """Returns whether given user has all rights to this dining list.
@@ -81,12 +72,8 @@ class DiningList(models.Model):
         return days_since_date < timezone.now().date()
 
     def is_adjustable(self):
-        """Whether the dining list can be modified.
-
-        A dining list can no longer be modified if it has been expired or
-        cancelled.
-        """
-        return not self.is_expired() and not self.is_cancelled()
+        """Returns if the dining list is not expired."""
+        return not self.is_expired()
 
     is_adjustable.boolean = True
 
@@ -129,9 +116,6 @@ class DiningList(models.Model):
                 raise ValidationError(
                     {'sign_up_deadline': "Sign up deadline can't be later than the day dinner is served."})
 
-    def is_cancelled(self):
-        return bool(self.cancelled_reason)
-
 
 class DiningEntryManager(models.Manager):
     def internal(self):
@@ -160,6 +144,9 @@ class DiningEntry(models.Model):
     has_cleaned = models.BooleanField(default=False)
 
     objects = DiningEntryManager()
+
+    class Meta:
+        verbose_name_plural = 'dining entries'
 
     def get_name(self):
         """Return name of diner."""

@@ -34,13 +34,6 @@ class BaseSequencedDate(date):
         """Returns True if the given date is in the sequence of this class, False otherwise."""
         return cls.upcoming(d) == d
 
-    @classmethod
-    def fromdate(cls, d):
-        """Creates an instance using any date instance, raises ValueError when given date is not in the sequence."""
-        if not cls.in_sequence(d):
-            raise ValueError("Date is not in the sequence")
-        return cls(d.year, d.month, d.day)
-
 
 class WeekdaySequencedDate(BaseSequencedDate):
     """Sequence consisting of all weekdays but not weekends."""

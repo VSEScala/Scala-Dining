@@ -1,21 +1,21 @@
 import csv
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.core.exceptions import NON_FIELD_ERRORS, PermissionDenied
-from django.db import transaction
 from django.db.models import Q, Count
 from django.http import Http404, HttpResponseForbidden, HttpResponse
 from django.shortcuts import redirect, get_object_or_404
 from django.urls import reverse
 from django.utils import timezone
-from django.views.generic import TemplateView, View
+from django.views.generic import TemplateView, View, DeleteView
 from django.views.generic.detail import SingleObjectMixin
 
 from dining.datesequence import sequenced_date
 from dining.forms import CreateSlotForm, DiningEntryInternalCreateForm, DiningEntryExternalCreateForm, \
-    DiningEntryDeleteForm, DiningCommentForm, DiningInfoForm, DiningListCancelForm
+    DiningEntryDeleteForm, DiningCommentForm, DiningInfoForm
 from dining.models import DiningList, DiningDayAnnouncement, DiningCommentVisitTracker, DiningEntry
 from general.mail_control import send_templated_mail
 from userdetails.models import User, Association
@@ -41,12 +41,8 @@ class DayMixin:
     def init_date(self):
         """Fetches the date from the request arguments."""
         if self.date:
-            # Already initialized
-            return
-        try:
-            self.date = sequenced_date.fromdate(date(self.kwargs['year'], self.kwargs['month'], self.kwargs['day']))
-        except ValueError:
-            raise Http404('Invalid date')
+            return  # Already initialized
+        self.date = sequenced_date(self.kwargs['year'], self.kwargs['month'], self.kwargs['day'])
 
     def dispatch(self, request, *args, **kwargs):
         """Initializes date before get/post is called."""
@@ -69,10 +65,14 @@ class DayView(LoginRequiredMixin, DayMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        now = timezone.now()
         context.update({
-            'dining_lists': DiningList.active.filter(date=self.date),
-            'cancelled_dining_lists': DiningList.objects.filter(date=self.date).exclude(cancelled_reason=''),
+            'dining_lists': DiningList.objects.filter(date=self.date),
             'announcements': DiningDayAnnouncement.objects.filter(date=self.date),
+            'available_slots': DiningList.objects.available_slots(self.date),
+            # Whether this day is in the future
+            'creation_open': self.date > now.date() or (
+                    self.date == now.date() and settings.DINING_SLOT_CLAIM_CLOSURE_TIME < now.time()),
         })
         return context
 
@@ -372,6 +372,11 @@ class DiningListChangeView(LoginRequiredMixin, DiningListEditMixin, TemplateView
         context = super().get_context_data(**kwargs)
         context.update({
             'form': DiningInfoForm(instance=self.get_object()),
+            # Sign up deadline preset buttons
+            'deadline_presets': {
+                'closed': timezone.now(),
+                'open for 15 minutes': timezone.now() + timedelta(minutes=15),
+            }
         })
         return context
 
@@ -390,28 +395,9 @@ class DiningListChangeView(LoginRequiredMixin, DiningListEditMixin, TemplateView
         return self.render_to_response(context)
 
 
-class DiningListCancelView(LoginRequiredMixin, DiningListEditMixin, TemplateView):
-    template_name = "dining_lists/cancel.html"
+class DiningListDeleteView(LoginRequiredMixin, DiningListEditMixin, DeleteView):
+    template_name = 'dining_lists/confirm_delete.html'
 
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context.update({
-            'form': DiningListCancelForm(self.request.user, instance=self.get_object()),
-        })
-        return context
-
-    def post(self, request, *args, **kwargs):
-        form = DiningListCancelForm(request.user, instance=self.get_object(), data=request.POST)
-        if form.is_valid():
-            # This is in an atomic block to prevent saving if unable to send a mail about it
-            with transaction.atomic():
-                dining_list = form.save()  # type: DiningList
-                send_templated_mail('mail/dining_list_cancelled',
-                                    dining_list.diners.all(),
-                                    {'dining_list': dining_list},
-                                    request)
-            d = dining_list.date
-            return redirect('day_view', year=d.year, month=d.month, day=d.day)
-        context = self.get_context_data()
-        context['form'] = form
-        return self.render_to_response(context)
+    def get_success_url(self):
+        d = self.object.date  # type: date
+        return reverse('day_view', kwargs={'year': d.year, 'month': d.month, 'day': d.day})

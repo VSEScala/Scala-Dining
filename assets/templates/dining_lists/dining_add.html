@@ -2,7 +2,7 @@
 
 {% block content %}
     <div class="text-center">
-        <h4>{{ date|date:"l j N Y" }}</h4>
+        <h4>{{ date|date:DOW_DATE_FORMAT }}</h4>
     </div>
     <h3>Create new dining list</h3>
     <form method="post" action="{% url 'new_slot' year=date.year month=date.month day=date.day %}">

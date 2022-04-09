@@ -1,37 +1,57 @@
 {% extends 'dining_lists/dining_slot.html' %}
 
 {% block details %}
-    {% if BREADCRUMB_NAV %}
-        <nav>
-            <ol class="breadcrumb">
-                <li class="breadcrumb-item">
-                    <a href="{% url 'day_view' year=dining_list.date.year month=dining_list.date.month day=dining_list.date.day %}">
-                        {{ dining_list.date|date:"SHORT_DATE_FORMAT" }}
-                    </a>
-                </li>
-                <li class="breadcrumb-item">
-                    <a href="{{ dining_list.get_absolute_url }}">Dining list</a>
-                </li>
-                <li class="breadcrumb-item active">Edit</li>
-            </ol>
-        </nav>
-    {% else %}
-        <p>
-            <a href="{{ dining_list.get_absolute_url }}">← Back to dining list</a>
-        </p>
-    {% endif %}
+    <p>
+        <a href="{{ dining_list.get_absolute_url }}">← Back to dining list</a>
+    </p>
     <h3>Edit dining list</h3>
-    <form method="post" id="infoForm">
+    <form method="post" id="infoForm" action="{% url 'slot_change' pk=dining_list.pk %}">
         {% csrf_token %}
         {% include "snippets/bootstrap_form.html" with horizontal=True %}
-        <button type="submit" class="btn btn-primary">Save</button>
-        <a href="{% url "slot_delete" pk=dining_list.pk %}" class="btn btn-warning float-right">
-            <i class="fas fa-ban"></i> Cancel dining list
-        </a>
-    </form>
+        <div class="form-group row">
+            <div class="col-sm-10 offset-sm-2">
+                Set sign up deadline as
+                <span id="deadlinePresets">
+                    {% for name, val in deadline_presets.items %}
+                        <button type="button" class="btn btn-sm btn-secondary"
+                                data-val="{{ val|date:"SHORT_DATETIME_FORMAT" }}">{{ name }}</button>
+                    {% endfor %}
+                </span>
+                <button type="button" class="btn btn-sm btn-secondary" id="deadlineReset">reset</button>
+            </div>
+            <script>
+                document.addEventListener('DOMContentLoaded', function () {
+                    let field = document.getElementById('id_sign_up_deadline');
+                    let presets = document.getElementById('deadlinePresets').getElementsByTagName('button');
+                    let initial = field.value;
+                    let reset = document.getElementById('deadlineReset');
 
-    {# Check if current user is owner, else show warning message #}
+                    for (let i = 0; i < presets.length; i++) {
+                        presets.item(i).addEventListener('click', function (e) {
+                            field.value = e.target.dataset.val;
+                        });
+                    }
+                    reset.addEventListener('click', function () {
+                        field.value = initial;
+                    });
+                });
+            </script>
+        </div>
+        <button type="submit" class="btn btn-primary mb-3">Save</button>
+    </form>
+    <p>
+        <strong>Need to cancel?</strong> Remove all diners and close the dining list (you don't have to delete it)
+    </p>
+
+    <p>
+        <a href="{% url 'slot_delete' pk=dining_list.pk %}" class="btn btn-danger">
+            <i class="fas fa-trash"></i> Delete dining list
+        </a>
+{#        {% if dining_list.diners.exists %}#}
+{#            <small class="text-muted">Dining list can't be deleted because there are diners signed up</small>{% endif %}#}
+    </p>
     <script>
+        {# Check if current user is owner, else show warning message #}
         document.getElementById('infoForm').addEventListener('submit', function (event) {
             let selectedOptions = document.getElementById('id_info-owners').selectedOptions;
             for (let i = 0; i < selectedOptions.length; i++) {

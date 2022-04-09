@@ -3,8 +3,12 @@
 
 {% block content %}
     <h2>Grocery splits</h2>
-    <h4>Payments</h4>
-    <p>These are grocery costs that you have to pay back to the person who did the shopping.</p>
+    {% if not request.GET.all %}
+        <p>Splits older than a month are hidden. <a href="{% url 'groceries:overview' %}?all=1">View all</a></p>
+        {% else %}
+        <p><a href="{% url 'groceries:overview' %}">Hide splits older than a month</a></p>
+    {% endif %}
+    <h5>Payments</h5>
     <table class="table table-hover" id="payEntries">
         <thead>
         <tr>
@@ -12,8 +16,6 @@
             <th scope="col">Amount</th>
             <th scope="col">Paid</th>
             <th scope="col"></th>
-            {# Buttons for payment info and cancellation #}
-
         </tr>
         </thead>
         <tbody>
@@ -142,9 +144,7 @@
         {% endfor %}
         </tbody>
     </table>
-    <h4>Reimbursements</h4>
-    <p>If you did some grocery shopping and split the amount over all diners, these reimbursements will show up
-        here.</p>
+    <h5>Reimbursements</h5>
     <table class="table table-hover">
         <thead>
         <tr>

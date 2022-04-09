@@ -19,10 +19,12 @@
             <i class="fas fa-clock fa-fw"></i>
             {{ dining_list.serve_time }}
         </p>
-        {# Cancelled, joined, open or closed #}
-        {% if dining_list.is_cancelled %}
-            <p class="card-text text-warning"><i class="fas fa-ban fa-fw"></i> Dining list is cancelled</p>
-        {% elif dining_list|has_joined:user %}
+        <p class="card-text">
+            <i class="fas fa-users fa-fw"></i>
+            {{ dining_list.diners.count }} / {{ dining_list.max_diners }}
+        </p>
+        {# Joined, open or closed #}
+        {% if dining_list|has_joined:user %}
             <p class="card-text text-success">You are signed up</p>
         {% elif dining_list.is_open %}
             <p class="card-text text-success">

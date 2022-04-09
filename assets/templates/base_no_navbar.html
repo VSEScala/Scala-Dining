@@ -1,12 +1,11 @@
-{% load static %}<!doctype html>
+{% load static %}<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootswatch@4.6.0/dist/darkly/bootstrap.min.css"
           integrity="sha256-CETRC0luEnm32Z1z91BT8xqiKfIzbspZ64YCq3T63xk=" crossorigin="anonymous">
-    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.8.1/css/all.css"
-          integrity="sha384-50oBUHEmvpQ+1lW4y57PTFmhCaXp0ML5d60M1M7uH2+nqUivzIebhndOJK28anvf" crossorigin="anonymous">
+    <link href="{% static 'fontawesomefree/css/all.min.css' %}" rel="stylesheet" type="text/css">
     <link rel="stylesheet" href="{% static 'css/custom.css' %}">
     {% block head %}{% endblock %}
     <title>{% block title %}Scala Dining{% endblock %}</title>

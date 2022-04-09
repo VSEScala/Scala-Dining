@@ -1,7 +1,11 @@
+from datetime import timedelta
+
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.db import transaction
 from django.http import HttpResponseForbidden
 from django.shortcuts import redirect, get_object_or_404
+from django.urls import reverse
+from django.utils import timezone
 from django.views import View
 from django.views.generic import TemplateView
 from django.views.generic.detail import DetailView, SingleObjectMixin
@@ -18,10 +22,19 @@ class PaymentsView(LoginRequiredMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+
+        # Only pick payments not older than a month
+        if 'all' not in self.request.GET:
+            payments = Payment.objects.filter(created_at__gt=timezone.now() - timedelta(days=31))
+        else:
+            payments = Payment.objects.all()
+
         context.update({
-            'pay_entries': PaymentEntry.objects.filter(user=self.request.user, external_name="").exclude(
-                payment__receiver=self.request.user).order_by('-payment__created_at'),
-            'receive_payments': Payment.objects.filter(receiver=self.request.user).order_by('-created_at'),
+            'pay_entries': PaymentEntry.objects.filter(
+                user=self.request.user,
+                external_name="",
+                payment__in=payments).exclude(payment__receiver=self.request.user).order_by('-payment__created_at'),
+            'receive_payments': payments.filter(receiver=self.request.user).order_by('-created_at'),
         })
         return context
 
@@ -92,7 +105,8 @@ class PaymentDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         elif paid == 'false':
             entry.paid = False
         entry.save()
-        return redirect('groceries:payment-detail', pk=payment.pk)
+        # Jump to table
+        return redirect(reverse('groceries:payment-detail', kwargs={'pk': payment.pk}) + '#dinerTable')
 
 
 class PayView(LoginRequiredMixin, SingleObjectMixin, View):

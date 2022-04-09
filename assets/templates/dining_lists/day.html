@@ -73,46 +73,11 @@
         {% include 'dining_lists/snippet_diningslot.html' %}
     {% endfor %}
 
-    {% if cancelled_dining_lists %}
-        <div class="accordion mb-3" id="cancelledAccordion">
-            <div class="card">
-                <div class="card-header">
-                    <h2 class="mb-0">
-                        <button class="btn btn-link btn-block text-left" type="button" data-toggle="collapse"
-                                data-target="#cancelledLists">
-                            Cancelled dining lists
-                        </button>
-                    </h2>
-                </div>
-
-                <div id="cancelledLists" class="collapse" data-parent="#cancelledAccordion">
-                    <div class="card-body">
-                        <div class="mb-n3">
-                            {# This mb-n3 div negates the bottom margin of the dining list snippet. #}
-                            {# It needs to be as separate div inside the card-body div. #}
-                            {% for dining_list in cancelled_dining_lists %}
-                                {% include 'dining_lists/snippet_diningslot.html' %}
-                            {% endfor %}
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+    {# Create new button #}
+    {% if creation_open %}
+        <a href="{% url 'new_slot' year=date.year month=date.month day=date.day %}"
+           class="btn btn-block btn-primary {% if not available_slots %}disabled{% endif %}">
+            {% if available_slots %}Create a new dining list{% else %}No slots available{% endif %}
+        </a>
     {% endif %}
-
-    {% if date|dining_list_creation_open %}
-        {% if user|can_create_dining_list:date %}
-            <a href="{% url 'new_slot' year=date.year month=date.month day=date.day %}"
-               class="btn btn-block btn-primary">
-                Create a new dining list
-            </a>
-        {% else %}
-            <a href="{% url 'new_slot' year=date.year month=date.month day=date.day %}"
-               class="btn btn-block btn-primary disabled">
-                Can't create a new dining list:
-                {{ user|cant_create_dining_list_reason:date }}
-            </a>
-        {% endif %}
-    {% endif %}
-
 {% endblock %}

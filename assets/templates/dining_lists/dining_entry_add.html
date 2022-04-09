@@ -1,30 +1,18 @@
 {% extends 'dining_lists/dining_slot.html' %}
 
 {% block details %}
-    {% if BREADCRUMB_NAV %}
-        <nav>
-            <ol class="breadcrumb">
-                <li class="breadcrumb-item">
-                    <a href="{% url 'day_view' year=dining_list.date.year month=dining_list.date.month day=dining_list.date.day %}">
-                        {{ dining_list.date|date:"SHORT_DATE_FORMAT" }}
-                    </a>
-                </li>
-                <li class="breadcrumb-item">
-                    <a href="{{ dining_list.get_absolute_url }}">Dining list</a>
-                </li>
-                <li class="breadcrumb-item active">Add diner</li>
-            </ol>
-        </nav>
-    {% endif %}
-
+    <p>
+        <a href="{% url 'slot_details' pk=dining_list.pk %}">
+            ← Back to dining list
+        </a>
+    </p>
     <h3>Add someone else</h3>
 
     <div class="row">
         <div class="col-sm mb-3">
             <h4>Existing user</h4>
             <p>Dining cost is subtracted from the other user's account</p>
-            {% url "entry_add" day=date.day month=date.month year=date.year identifier=dining_list.association.slug as url %}
-            <form action="{{ url }}" method="post">
+            <form action="{% url 'entry_add' pk=dining_list.pk %}" method="post">
                 {% csrf_token %}
                 {% include "snippets/bootstrap_form.html" with form=user_form %}
                 <button type="submit" class="btn btn-block btn-primary">Add user</button>
@@ -34,8 +22,7 @@
         <div class="col-sm">
             <h4>External diner</h4>
             <p>Dining cost is subtracted from your own account</p>
-            {% url "entry_add" day=date.day month=date.month year=date.year identifier=dining_list.association.slug as url %}
-            <form action="{{ url }}" method="post">
+            <form action="{% url 'entry_add' pk=dining_list.pk %}" method="post">
                 {% csrf_token %}
                 {% include "snippets/bootstrap_form.html" with form=external_form %}
                 <button type="submit" class="btn btn-block btn-primary" name="add_external">Add external diner</button>

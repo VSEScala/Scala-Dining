@@ -32,15 +32,11 @@
     <h3>Diners</h3>
     <p>
         Diners who paid using a transaction from their account balance to yours are automatically marked as paid.
-        You can find the transaction in the <a href="{% url 'credits:transaction_list' %}">transactions overview</a>.
-        If you need to undo such an automatic transaction, create a reversed
+        If you need to undo an automatic transaction, create a reversed
         <a href="{% url 'credits:transaction_add' %}">money transfer</a> from your account to theirs, or
         just pay the person back in cash.
     </p>
-    <p>
-
-    </p>
-    <table class="table" style="table-layout: fixed;">
+    <table class="table" style="table-layout: fixed;" id="dinerTable">
         <thead>
         <tr>
             <th scope="col">Diner</th>
@@ -57,19 +53,7 @@
                     {% else %}
                         {{ entry.user }}
                         {# Contact info #}
-                        {% if entry.user.phone_number or entry.user.email_public %}
-                            <button type="button" class="btn btn-secondary btn-sm" data-toggle="popover"
-                                    data-html="true"
-                                    {# Please look away #}
-                                    data-content="{% if entry.user.email_public %}<p class='mb-0'>E-mail address:
-                                    <a href='mailto:{{ entry.user.email }}'>{{ entry.user.email }}</a>
-                                    </p>{% endif %}{% if entry.user.phone_number %}<p class='mb-0'>Phone
-                                    number: <a href='tel:{{ entry.user.phone_number }}'
-                                    >{{ entry.user.phone_number }}</a></p>{% endif %}">
-                                <i class="fas fa-address-card"></i>
-                                <span class="sr-only">Contact info</span>
-                            </button>
-                        {% endif %}
+                        {% include 'snippets/contact_info_button.html' with user=entry.user %}
                     {% endif %}
                     {% if entry.is_receiver %}
                         <span class="badge badge-secondary">Receiver</span>
@@ -106,10 +90,4 @@
         {% endfor %}
         </tbody>
     </table>
-
-    <script>
-        $(function () {
-            $('[data-toggle="popover"]').popover()
-        })
-    </script>
 {% endblock %}
