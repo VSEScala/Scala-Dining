@@ -13,6 +13,7 @@ from django.views.generic.detail import DetailView, SingleObjectMixin
 from creditmanagement.models import Transaction
 from dining.models import DiningList
 from dining.views import DiningListMixin
+from general.mail_control import send_templated_mail
 from groceries.forms import PaymentCreateForm
 from groceries.models import Payment, PaymentEntry
 
@@ -76,8 +77,19 @@ class PaymentCreateView(LoginRequiredMixin, UserPassesTestMixin, DiningListMixin
                                  instance=Payment(dining_list=self.get_object(), receiver=self.request.user))
         if form.is_valid():
             with transaction.atomic():
-                payment = form.save()
-                # TODO: send mail
+                payment = form.save()  # type: Payment
+
+                # Send mail to all internal users
+                internals = [e.user for e in payment.entries.filter(external_name="")]
+                send_templated_mail('mail/payment_entry_created', internals, {'payment': payment}, request)
+
+                # Send different mail to externals
+                for e in payment.entries.exclude(external_name=""):
+                    send_templated_mail(
+                        'mail/payment_entry_created_external',
+                        e.user,
+                        {'payment': payment, 'entry': e},
+                        request)
             return redirect('groceries:payment-detail', pk=payment.pk)
 
         context = self.get_context_data()
@@ -118,9 +130,15 @@ class PayView(LoginRequiredMixin, SingleObjectMixin, View):
 
     def post(self, request, *args, **kwargs):
         payment = self.get_object()  # type: Payment
+
+        # Check if transactions are allowed
+        if not payment.allow_transaction:
+            return HttpResponseForbidden("Automatic transactions not allowed")
+
         # Find the entry on the payment for current user, make sure that it has paid=False and no transaction
         entry = get_object_or_404(PaymentEntry, payment=payment, user=request.user, external_name="", paid=False,
                                   transaction=None)
+
         # Check balance
         #
         # This has a race condition but that's probably not an issue in practice
@@ -138,5 +156,10 @@ class PayView(LoginRequiredMixin, SingleObjectMixin, View):
             entry.paid = True
             entry.transaction = tx
             entry.save()
-            # TODO send mail to receiver to notify them that diner paid
+
+            # Send mail to receiver to notify them that diner paid
+            send_templated_mail('mail/payment_tx_created',
+                                payment.receiver,
+                                {'payment': payment, 'entry': entry},
+                                request)
         return redirect('groceries:overview')

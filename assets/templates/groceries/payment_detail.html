@@ -7,7 +7,9 @@
     <h2>Grocery split</h2>
     <div class="row mb-3">
         <div class="col-sm-2"><strong><i class="fas fa-utensils fa-fw"></i> Dining list</strong></div>
-        <div class="col-sm-10"><a href="{{ payment.dining_list.get_absolute_url }}">{{ payment.dining_list.date|date:"SHORT_DATE_FORMAT" }}</a></div>
+        <div class="col-sm-10"><a
+                href="{{ payment.dining_list.get_absolute_url }}">{{ payment.dining_list.date|date:"SHORT_DATE_FORMAT" }}</a>
+        </div>
     </div>
     <div class="row mb-3">
         <div class="col-sm-2"><strong>Cost</strong></div>
@@ -36,6 +38,9 @@
         <a href="{% url 'credits:transaction_add' %}">money transfer</a> from your account to theirs, or
         just pay the person back in cash.
     </p>
+    <p class="text-muted small">
+        Your own dining entry is not shown in the list because you are the recipient of the money.
+    </p>
     <table class="table" style="table-layout: fixed;" id="dinerTable">
         <thead>
         <tr>
@@ -55,35 +60,28 @@
                         {# Contact info #}
                         {% include 'snippets/contact_info_button.html' with user=entry.user %}
                     {% endif %}
-                    {% if entry.is_receiver %}
-                        <span class="badge badge-secondary">Receiver</span>
+                </td>
+                <td>
+                    {% if entry.paid %}
+                        <span class="text-success"><i class="fas fa-check-circle"></i> Paid</span>
+                    {% else %}
+                        <span class="text-danger"><i class="fas fa-times-circle"></i> Not paid</span>
                     {% endif %}
                 </td>
                 <td>
-                    {% if not entry.is_receiver %}
-                        {% if entry.paid %}
-                            <span class="text-success"><i class="fas fa-check-circle"></i> Paid</span>
-                        {% else %}
-                            <span class="text-danger"><i class="fas fa-times-circle"></i> Not paid</span>
-                        {% endif %}
-                    {% endif %}
-                </td>
-                <td>
-                    {% if not entry.is_receiver %}
-                        {% if entry.transaction %}
-                            <span class="text-secondary">Paid with account balance</span>
-                        {% else %}
-                            <form method="post" action="{% url 'groceries:payment-detail' pk=payment.pk %}"
-                                  class="d-inline-block">
-                                {% csrf_token %}
-                                <input type="hidden" name="entry_id" value="{{ entry.pk }}">
-                                <button type="submit" name="paid"
-                                        value="{% if entry.paid %}false{% else %}true{% endif %}"
-                                        class="btn btn-{% if entry.paid %}warning{% else %}primary{% endif %} btn-sm">
-                                    {% if entry.paid %}Set not paid{% else %}Set paid{% endif %}
-                                </button>
-                            </form>
-                        {% endif %}
+                    {% if entry.transaction %}
+                        <span class="text-secondary">Paid with account balance</span>
+                    {% else %}
+                        <form method="post" action="{% url 'groceries:payment-detail' pk=payment.pk %}"
+                              class="d-inline-block">
+                            {% csrf_token %}
+                            <input type="hidden" name="entry_id" value="{{ entry.pk }}">
+                            <button type="submit" name="paid"
+                                    value="{% if entry.paid %}false{% else %}true{% endif %}"
+                                    class="btn btn-{% if entry.paid %}warning{% else %}primary{% endif %} btn-sm">
+                                {% if entry.paid %}Set not paid{% else %}Set paid{% endif %}
+                            </button>
+                        </form>
                     {% endif %}
                 </td>
             </tr>

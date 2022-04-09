@@ -44,6 +44,10 @@ class Payment(models.Model):
 
 
 class PaymentEntry(models.Model):
+    """A user entry who needs to pay for a payment.
+
+    Note: we don't create an entry for the receiver, thus if a payment is for 6 diners, it has 5 entries.
+    """
     payment = models.ForeignKey(Payment, on_delete=models.PROTECT, related_name='entries')
     user = models.ForeignKey(User, on_delete=models.PROTECT)
     # Just like for dining list entries, external entries have to be reflected here as well
@@ -59,6 +63,3 @@ class PaymentEntry(models.Model):
 
     def is_internal(self):
         return not self.is_external()
-
-    def is_receiver(self):
-        return self.is_internal() and self.user == self.payment.receiver

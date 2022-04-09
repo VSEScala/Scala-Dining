@@ -6,7 +6,7 @@ from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.core.exceptions import NON_FIELD_ERRORS, PermissionDenied
 from django.db.models import Q, Count
-from django.http import Http404, HttpResponseForbidden, HttpResponse
+from django.http import HttpResponseForbidden, HttpResponse
 from django.shortcuts import redirect, get_object_or_404
 from django.urls import reverse
 from django.utils import timezone
@@ -72,7 +72,7 @@ class DayView(LoginRequiredMixin, DayMixin, TemplateView):
             'available_slots': DiningList.objects.available_slots(self.date),
             # Whether this day is in the future
             'creation_open': self.date > now.date() or (
-                    self.date == now.date() and settings.DINING_SLOT_CLAIM_CLOSURE_TIME < now.time()),
+                    self.date == now.date() and settings.DINING_SLOT_CLAIM_CLOSURE_TIME < now.time()),  # noqa: E126
         })
         return context
 

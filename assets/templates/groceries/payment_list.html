@@ -5,7 +5,7 @@
     <h2>Grocery splits</h2>
     {% if not request.GET.all %}
         <p>Splits older than a month are hidden. <a href="{% url 'groceries:overview' %}?all=1">View all</a></p>
-        {% else %}
+    {% else %}
         <p><a href="{% url 'groceries:overview' %}">Hide splits older than a month</a></p>
     {% endif %}
     <h5>Payments</h5>
@@ -45,23 +45,23 @@
                     <div class="collapse" id="payEntry{{ forloop.counter }}" data-parent="#payEntries">
                         <div class="card mb-1">
                             <div class="card-body">
+                                {# Notice on the current state of the payment #}
                                 {% if entry.transaction %}
                                     <p class="card-text text-success">You have paid using your account balance</p>
                                 {% elif entry.paid %}
                                     <p class="card-text text-success">You have paid</p>
                                 {% else %}
-                                    <button type="button" class="btn btn-primary btn-sm mr-1" data-toggle="modal"
-                                            data-target="#txConfirm{{ forloop.counter }}">
-                                        Pay using account balance
-                                    </button>
-                                    <p>
-                                        <small class="text-muted">
-                                            You will be asked for confirmation. If you already paid using other means,
-                                            ask the receiver to change the status to paid.
-                                        </small>
+                                    <p class="card-text text-danger">
+                                        You can pay using any of the methods provided below.
+                                        If you have already paid, ask the receiver to change the status to paid.
                                     </p>
+                                    {% if entry.payment.allow_transaction %}
+                                        <button type="button" class="btn btn-primary btn-sm mb-3" data-toggle="modal"
+                                                data-target="#txConfirm{{ forloop.counter }}">
+                                            Pay using account balance
+                                        </button>
+                                    {% endif %}
                                 {% endif %}
-
                                 <div class="row mb-3">
                                     <div class="col-md-2"><strong>Receiver</strong></div>
                                     <div class="col-md-10">{{ entry.payment.receiver.get_full_name }}</div>
@@ -118,12 +118,12 @@
                                     <p>
                                         {{ entry.payment.cost_pp|euro }} will be deducted from your account balance and
                                         transferred to {{ entry.payment.receiver.first_name }}'s account.
-                                        The transaction can only be undone by the receiving party.
                                         Are you sure?
                                     </p>
                                     {% if user.account.balance < entry.payment.cost_pp %}
                                         <p class="text-danger">
-                                            Your balance is insufficient, deposit money into your account.</p>
+                                            Your balance is insufficient, deposit money into your account.
+                                        </p>
                                     {% endif %}
                                 </div>
                                 <div class="modal-footer">

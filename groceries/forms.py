@@ -16,10 +16,7 @@ class PaymentCreateForm(forms.ModelForm):
         """Calculates cost per person using the total cost set on the Payment instance."""
         payment = self.instance  # type: Payment
         nr_diners = payment.dining_list.diners.count()
-        # Check division by 0
-        if nr_diners == 0:
-            raise ValueError("Division by 0")
-        cost_pp = payment.total_cost / nr_diners
+        cost_pp = payment.total_cost / nr_diners  # If nr_diners==0, this will raise exception
         # Round up to remove missing cents
         return cost_pp.quantize(Decimal('.01'), rounding=ROUND_UP)
 
@@ -40,10 +37,12 @@ class PaymentCreateForm(forms.ModelForm):
                 payment.save()
                 # Create the payment entries from dining entries
                 for entry in payment.dining_list.entries.all():
+                    if entry.is_internal() and entry.user == payment.receiver:
+                        # We do not create an entry for the receiver
+                        continue
                     payment.entries.create(
                         user=entry.user,
                         external_name=entry.external_name,
-                        # Paid is false except for the receiver, which has paid=True by default
-                        paid=entry.is_internal() and entry.user == payment.receiver,
+                        paid=False
                     )
         return payment

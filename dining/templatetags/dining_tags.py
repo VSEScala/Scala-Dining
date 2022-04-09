@@ -1,13 +1,7 @@
-import datetime
-from typing import Optional
-
 from django import template
-from django.conf import settings
-from django.utils import timezone
 
 from dining.forms import DiningEntryInternalCreateForm, DiningEntryDeleteForm
 from dining.models import DiningEntry, DiningList, DiningCommentVisitTracker
-from userdetails.models import User
 
 register = template.Library()
 

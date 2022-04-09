@@ -1,1 +1,0 @@
-Payment request for guest on dining list {{dining_list.date}}

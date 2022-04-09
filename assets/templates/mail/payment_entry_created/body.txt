@@ -1,0 +1,19 @@
+{% load credit_tags %}
+{{ payment.receiver }} has split the grocery costs of the dining list on {{ payment.dining_list.date|date:"SHORT_DATE_FORMAT" }}.
+{% block cta %}Please pay them for the groceries using the info below.{% endblock %}
+
+Receiver: {{ payment.receiver }}
+Cost per person: {{ payment.cost_pp|euro }} (total cost {{ payment.total_cost|euro }})
+Payment link: {{ payment.payment_link|default:"-" }}
+Remarks: {{ payment.remarks|default:"-" }}
+Dining list: {{ payment.dining_list.date|date:"SHORT_DATE_FORMAT" }} ({{ site_uri }}{{ payment.dining_list.get_absolute_url }})
+
+{% block pay_by_transaction %}{% if payment.allow_transaction %}You can pay directly using your account balance by visiting the following page:
+{{ site_uri }}{% url 'groceries:overview' %}
+
+{% endif %}{% endblock %}The receiver has provided the following contact info if you need to reach them:
+
+E-mail: {% if payment.receiver.email_public %}{{ payment.receiver.email }}{% else %}-{% endif %}
+Telephone number: {{ payment.receiver.telephone_number|default:"-" }}
+
+View all details here: {{ site_uri }}{% url 'groceries:overview' %}

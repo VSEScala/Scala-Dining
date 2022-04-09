@@ -2,9 +2,22 @@ from django.contrib.sites.shortcuts import get_current_site
 from django.core import mail
 from django.core.mail import EmailMultiAlternatives
 from django.http import HttpRequest
+from django.template import TemplateDoesNotExist
 from django.template.loader import render_to_string
 
 from userdetails.models import User
+
+
+"""Note about HTML mails:
+
+I'm not a big fan of HTML mails because they always look different in different
+clients (GMail, Outlook, Thunderbird), it's hard to get them right and the
+resulting HTML always looks messy. Instead I prefer text only, it looks a bit
+more dull but is much easier to maintain and the mails are shorter. To
+implement this, I made providing a HTML version optional in the function below.
+
+-- Maarten
+"""
 
 
 def get_mail_context(recipient: User, extra_context: dict = None, request: HttpRequest = None):
@@ -45,11 +58,16 @@ def send_templated_mail(template_dir: str, recipients, context: dict = None, req
         # Render templates
         context = get_mail_context(recipient, context, request)
         subject = render_to_string(template_dir + '/subject.txt', context=context, request=request).strip()
-        html_body = render_to_string(template_dir + '/body.html', context=context, request=request)
-        text_body = render_to_string(template_dir + '/body.txt', context=context, request=request)
+        # HTML is optional
+        try:
+            html_body = render_to_string(template_dir + '/body.html', context=context, request=request)
+        except TemplateDoesNotExist:
+            html_body = None
+        text_body = render_to_string(template_dir + '/body.txt', context=context, request=request).strip()
         # Create message
         message = EmailMultiAlternatives(subject=subject, body=text_body, to=[recipient.email])
-        message.attach_alternative(html_body, 'text/html')
+        if html_body:
+            message.attach_alternative(html_body, 'text/html')
         messages.append(message)
 
     # Send messages

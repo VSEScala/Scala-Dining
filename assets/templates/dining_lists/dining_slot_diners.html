@@ -42,11 +42,11 @@
                     </span>
                 </div>
                 {% if entry.is_internal and entry.user.dietary_requirements %}
-                    <div class="text-warning">
-                        <i class="fas fa-circle-exclamation"></i> {{ entry.user.dietary_requirements }}
+                    <div class="text-warning mt-1">
+                        <i class="fas fa-info-circle"></i> {{ entry.user.dietary_requirements }}
                     </div>
                 {% endif %}
-                <div>
+                <div class="mt-1">
                     {# Help stats #}
                     {% if can_edit_stats %}
                         {# Render as buttons #}

@@ -1,4 +1,4 @@
 {% load credit_tags %}
-{{ transaction.created_by }} has withdrawn {{ transaction.amount|euro }} from your Scala Dining account, with the description '{{ transaction.description }}'. If this is incorrect, please contact the site operator or a Scala board member as soon as possible.
+{{ transaction.created_by }} has withdrawn {{ transaction.amount|euro }} from your Scala Dining account, with the description '{{ transaction.description }}'. If this is incorrect, please contact the site operator or a Scala board member.
 
 To view the full transaction details, visit the transaction history page at {{ site_uri }}{% url 'credits:transaction_list' %}.

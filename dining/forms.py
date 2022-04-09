@@ -4,7 +4,7 @@ from dal_select2.widgets import ModelSelect2, ModelSelect2Multiple
 from django import forms
 from django.conf import settings
 from django.db import transaction
-from django.db.models import OuterRef, Exists, Q
+from django.db.models import OuterRef, Exists
 from django.forms import ValidationError
 from django.utils import timezone
 
@@ -81,7 +81,6 @@ class CreateSlotForm(forms.ModelForm):
 
     def save(self, commit=True):
         instance = super().save(commit=False)  # type: DiningList
-        # TODO: set sign up deadline
 
         if commit:
             instance.save()
