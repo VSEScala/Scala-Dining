@@ -64,7 +64,7 @@ class CustomUserAdmin(UserAdmin):
     fieldsets = (
         (None, {'fields': ('username', 'password')}),
         ('Personal info', {'fields': ('first_name', 'last_name', 'email')}),
-        ('Settings', {'fields': ('dietary_requirements', 'allow_grocery_payments', 'email_public', 'phone_number')}),
+        ('Settings', {'fields': ('dietary_requirements', 'email_public', 'phone_number')}),
         ('Permissions', {
             'fields': ('is_active', 'is_superuser'),
         }),

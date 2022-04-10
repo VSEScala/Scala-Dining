@@ -18,18 +18,12 @@
                     <i class="fas fa-edit"></i> Edit details
                 </a>
             {% endif %}
-            {#        {% if dining_list.is_open %}#}
-            {#            <form class="d-inline-block" method="post" action="{% url 'slot_change' pk=dining_list.pk %}">#}
-            {#                {% csrf_token %}#}
-            {#                <input type="hidden" name="sign_up_deadline" value="{% now "SHORT_DATETIME_FORMAT" %}">#}
-            {#                <button type="submit" class="btn btn-danger mb-3">Close now</button>#}
-            {#            </form>#}
-            {#        {% endif %}#}
             <a class="btn btn-secondary" href="{% url 'groceries:payment-create' pk=dining_list.pk %}">
                 <i class="fas fa-receipt"></i> Split grocery costs
             </a>
         </div>
     {% endif %}
+    {# TODO: add link to grocery cost payment if it exists #}
     <div class="row mb-3">
         <div class="col-md-2">
             <strong>
@@ -67,19 +61,6 @@
     {% else %}
         <p class="text-danger">Dining list is closed</p>
     {% endif %}
-
-    {# Current user status 2 #}
-    {#    <div class="card mb-3 border-{% if user_entry %}success{% else %}warning{% endif %}">#}
-    {#        <div class="card-body">#}
-    {#            <h5 class="card-title">#}
-    {#                {% if user_entry %}You are on the list{% else %}You are not on the dining list{% endif %}#}
-    {#            </h5>#}
-    {# Sign in/out buttons #}
-    {#            {% if dining_list.is_adjustable %}#}
-    {##}
-    {#        {% endif %}#}
-    {#        </div>#}
-    {#    </div>#}
 
     {# Current user status #}
     {# Todo: I don't really like the use of template tags here which use the form for retrieving the reason. #}

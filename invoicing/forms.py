@@ -5,10 +5,6 @@ from invoicing.models import InvoicedTransaction
 
 
 class UpgradeBalanceForm(forms.ModelForm):
-    # Todo: change the amount and source fields to a radio buttons widget, because that's more appropriate here.
-
-    # amount = forms.TypedChoiceField(coerce=Decimal, choices=AMOUNT_CHOICES)
-
     class Meta:
         AMOUNT_CHOICES = (
             ('0.50', '€0.50'),

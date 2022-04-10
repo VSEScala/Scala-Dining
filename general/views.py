@@ -1,6 +1,8 @@
 from datetime import datetime
 from os import getenv
 
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.core import mail
 from django.utils import timezone
 from django.views.generic import TemplateView
 
@@ -68,4 +70,22 @@ class UpgradeBalanceInstructionsView(TemplateView):
         else:
             context['other_associations'] = Association.objects.all()
 
+        return context
+
+
+class OutboxView(LoginRequiredMixin, TemplateView):
+    """This view returns the mail messages that have been sent and kept in memory."""
+    template_name = 'general/outbox.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        try:
+            outbox = mail.outbox
+        except AttributeError:
+            outbox = []
+
+        context.update({
+            'outbox': outbox,
+        })
         return context

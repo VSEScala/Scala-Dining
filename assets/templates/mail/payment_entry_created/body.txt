@@ -14,6 +14,6 @@ Dining list: {{ payment.dining_list.date|date:"SHORT_DATE_FORMAT" }} ({{ site_ur
 {% endif %}{% endblock %}The receiver has provided the following contact info if you need to reach them:
 
 E-mail: {% if payment.receiver.email_public %}{{ payment.receiver.email }}{% else %}-{% endif %}
-Telephone number: {{ payment.receiver.telephone_number|default:"-" }}
+Phone number: {{ payment.receiver.phone_number|default:"-" }}
 
 View all details here: {{ site_uri }}{% url 'groceries:overview' %}

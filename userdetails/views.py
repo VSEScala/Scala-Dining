@@ -59,8 +59,6 @@ class PeopleAutocompleteView(LoginRequiredMixin, Select2QuerySetView):
 
 
 class SettingsProfileView(LoginRequiredMixin, TemplateView):
-    # TODO: this page loads slowly and creates like >1000 queries on each page load
-    #   (according to connection.queries). Need to fix this!
     template_name = "account/settings/settings_account.html"
 
     def get_context_data(self, **kwargs):
