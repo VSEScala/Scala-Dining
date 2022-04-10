@@ -50,7 +50,8 @@
                     {# Help stats #}
                     {% if can_edit_stats %}
                         {# Render as buttons #}
-                        <form method="post" action="{% url 'slot_list' pk=dining_list.pk %}?controls=1" class="d-inline-block">
+                        <form method="post" action="{% url 'slot_list' pk=dining_list.pk %}"
+                              class="d-inline-block stats-form">
                             {% csrf_token %}
                             <input type="hidden" name="entry_id" value="{{ entry.pk }}">
                             <div class="btn-group btn-group-sm">
@@ -97,4 +98,31 @@
             </li>
         {% endfor %}
     </ul>
+    {# Script for remembering the scroll position whenever stats are changed #}
+    <script>
+        function storeScroll() {
+            /**
+             * Saves current scroll position.
+             */
+            sessionStorage.setItem('scroll', window.scrollY.toString());
+        }
+
+        function restoreScroll() {
+            /**
+             * Scrolls to a saved position, if any.
+             */
+            let scroll = sessionStorage.getItem('scroll');
+            if (scroll) {
+                window.scroll(0, parseFloat(scroll));
+            }
+            sessionStorage.removeItem('scroll');
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            restoreScroll();
+            document.querySelectorAll('.stats-form').forEach(function(form) {
+                form.addEventListener('submit', storeScroll);
+            });
+        });
+    </script>
 {% endblock details %}
