@@ -1,6 +1,7 @@
 from datetime import datetime
 from os import getenv
 
+from django.conf import settings
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core import mail
 from django.utils import timezone
@@ -79,7 +80,6 @@ class OutboxView(LoginRequiredMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-
         try:
             outbox = mail.outbox
         except AttributeError:
@@ -87,5 +87,7 @@ class OutboxView(LoginRequiredMixin, TemplateView):
 
         context.update({
             'outbox': outbox,
+            # True if the backend is configured correctly
+            'configured': settings.EMAIL_BACKEND == 'django.core.mail.backends.locmem.EmailBackend',
         })
         return context
