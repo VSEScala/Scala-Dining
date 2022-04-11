@@ -1,6 +1,5 @@
 {% load humanize %}
 {% load dining_tags %}
-
 <div class="card border-{% if dining_list|has_joined:user %}success{% else %}primary{% endif %} mb-3">
     <div class="card-body">
         <p class="card-text">
@@ -8,7 +7,8 @@
             {# but that didn't work together with Vimium Chrome extension. #}
             <a href="{% url 'slot_details' pk=dining_list.pk %}" class="stretched-link text-decoration-none text-reset">
                 <i class="fas fa-user fa-fw"></i>
-                {{ dining_list.owners.all|join:", " }}
+                {{ dining_list.owners.all|join:", " }}<br>
+                <small>{{ dining_list.association }}</small>
             </a>
         </p>
         <p class="card-text">

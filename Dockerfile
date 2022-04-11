@@ -6,9 +6,8 @@ ENV PYTHONUNBUFFERED=1
 WORKDIR /app/src
 
 # Install dependencies
-RUN pip install --no-cache-dir gunicorn psycopg2
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+COPY requirements requirements
+RUN pip install --no-cache-dir -r requirements/common.txt -r requirements/prod.txt
 
 COPY . .
 

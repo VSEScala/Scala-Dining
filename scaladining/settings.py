@@ -197,3 +197,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
 # Use it for instance when running a staging deployment, to notify the users
 # about this.
 SITE_NOTICE = env.str('SITE_NOTICE', default='')
+
+# TODO: we need to migrate from pytz to zoneinfo
+#  See: https://docs.djangoproject.com/en/4.0/releases/4.0/#zoneinfo-default-timezone-implementation
+USE_DEPRECATED_PYTZ = True

@@ -16,7 +16,7 @@
 </head>
 <body>
 {% if SITE_NOTICE %}
-    <div class="w-100 text-center p-1 bg-warning text-dark">{{ SITE_NOTICE }}</div>
+    <div class="w-100 text-center p-1 bg-warning text-dark">{{ SITE_NOTICE|safe }}</div>
     <div id="belowSiteNotice"></div>
     <script>
         document.addEventListener('DOMContentLoaded', (event) => {

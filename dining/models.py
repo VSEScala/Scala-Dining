@@ -1,4 +1,4 @@
-from datetime import time
+from datetime import time, timedelta
 from decimal import Decimal
 
 from django.conf import settings
@@ -45,7 +45,7 @@ class DiningList(models.Model):
     dish = models.CharField(default="", max_length=100, blank=True)
     # The days adjustable is implemented to prevent adjustment in credits or aid due to a deletion of a user account.
     adjustable_duration = models.DurationField(
-        default=settings.TRANSACTION_PENDING_DURATION,
+        default=timedelta(days=2),
         help_text="How long a dining list can be adjusted after its date.")
     # Todo: implement limit in the views.
     limit_signups_to_association_only = models.BooleanField(
