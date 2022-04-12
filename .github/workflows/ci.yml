@@ -13,14 +13,13 @@ jobs:
     - uses: actions/cache@v2
       with:
         path: ~/.cache/pip
-        # Match requirements.txt and dev-requirements.txt
-        key: ${{ runner.os }}-pip-${{ hashFiles('*requirements.txt') }}
+        key: ${{ runner.os }}-pip-${{ hashFiles('requirements/common.txt', 'requirements/dev.txt') }}
         restore-keys: |
           ${{ runner.os }}-pip-
     - name: Install dependencies
       run: |
-        pip install --upgrade pip setuptools wheel
-        pip install -r requirements.txt -r dev-requirements.txt
+#        pip install --upgrade pip setuptools wheel
+        pip install -r requirements/common.txt -r requirements/dev.txt
     - name: Lint
       run: |
         flake8
