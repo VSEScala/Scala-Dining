@@ -1,0 +1,89 @@
+{#{% extends 'base.html' %}#}
+{% extends 'dining_lists/dining_slot.html' %}
+
+{% load credit_tags %}
+
+{% block details %}
+    <p><a href="{{ dining_list.get_absolute_url }}">← Back to dining list</a></p>
+    <h3>Split grocery costs</h3>
+    <form action="{% url 'groceries:payment-create' pk=dining_list.pk %}" method="post">
+        {% csrf_token %}
+        {% include 'snippets/bootstrap_form.html' with horizontal=True fields=form.visible_fields|slice:"0:1" %}
+        <div class="form-group row">
+            <label for="nrDiners" class="col-sm-2 col-form-label">Number of diners</label>
+            <div class="col-sm-10">
+                <input type="text" readonly class="form-control-plaintext" id="nrDiners"
+                       value="{{ dining_list.diners.count }}">
+                <small class="form-text text-muted">To change, add or remove diners on the dining list.</small>
+            </div>
+        </div>
+        <div class="form-group row">
+            <label for="costPP" class="col-sm-2 col-form-label">Cost per person</label>
+            <div class="col-sm-10">
+                <input type="text" readonly class="form-control-plaintext" id="costPP" value="-">
+                <small class="form-text text-muted">Total cost divided by number of diners, rounded up.</small>
+            </div>
+        </div>
+        <h4>Payment info</h4>
+        <p>
+            All diners will be notified with the provided info.
+            The info will be remembered for the next time you create a payment.
+        </p>
+        {# Only render the payment info fields #}
+        {% include 'snippets/bootstrap_form.html' with horizontal=True fields=form.visible_fields|slice:"1:3" %}
+        <div class="card mb-3">
+            <div class="card-body">
+                <p class="card-text">
+                    <span class="badge badge-info">New</span>
+                    It is possible to let people pay from their account balance to yours. With this option enabled,
+                    diners with sufficient balance can choose to transfer the money from their account balance to yours.
+                    You can use the increased account balance to pay for dining lists in the future,
+                    or you can always withdraw the money from your account.
+                </p>
+                <p class="card-text">
+                    Diners do not have to pay from their account balance if they do not want to, they can always
+                    choose to pay via other means instead.
+                </p>
+            </div>
+        </div>
+        {% include 'snippets/bootstrap_form.html' with horizontal=True fields=form.visible_fields|slice:"3:4" %}
+        <h4>Contact info</h4>
+        <p>
+            Setting your contact info is helpful in case of payment issues, change it in
+            <a href="{% url 'settings_account' %}">account settings</a>.
+        </p>
+        <div class="form-group row">
+            <label for="email" class="col-sm-2 col-form-label">E-mail address</label>
+            <div class="col-sm-10">
+                <input type="text" readonly class="form-control-plaintext" id="email"
+                       value="{% if user.email_public %}{{ user.email }}{% else %}-{% endif %}">
+            </div>
+        </div>
+        <div class="form-group row">
+            <label for="phoneNumber" class="col-sm-2 col-form-label">Phone number</label>
+            <div class="col-sm-10">
+                <input type="text" readonly class="form-control-plaintext" id="phoneNumber"
+                       value="{{ user.phone_number|default:"-" }}">
+            </div>
+        </div>
+        <button type="submit" class="btn btn-primary mt-3">Create groceries payment</button>
+    </form>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Ugly as hell
+            let totalCost = document.getElementById('id_total_cost');
+            let costPP = document.getElementById('costPP');
+
+            function setCostPP() {
+                if (totalCost.value === '') {
+                    costPP.value = '-';
+                } else {
+                    costPP.value = '€' + (Math.ceil(totalCost.value / {{ dining_list.diners.count }} * 100) / 100).toFixed(2);
+                }
+            }
+
+            totalCost.addEventListener('input', setCostPP);
+            setCostPP();  // Execute once at page load, in case the value was prefilled (e.g. for bound form)
+        });
+    </script>
+{% endblock %}

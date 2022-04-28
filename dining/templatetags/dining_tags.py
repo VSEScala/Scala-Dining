@@ -1,13 +1,7 @@
-import datetime
-from typing import Optional
-
 from django import template
-from django.conf import settings
-from django.utils import timezone
 
-from dining.forms import DiningEntryUserCreateForm, DiningEntryDeleteForm
-from dining.models import DiningEntry, DiningEntryUser, DiningList
-from userdetails.models import User
+from dining.forms import DiningEntryInternalCreateForm, DiningEntryDeleteForm
+from dining.models import DiningEntry, DiningList, DiningCommentVisitTracker
 
 register = template.Library()
 
@@ -15,16 +9,16 @@ register = template.Library()
 @register.filter
 def can_join(dining_list, user):
     # Try creating an entry
-    entry = DiningEntryUser(dining_list=dining_list, created_by=user)
-    form = DiningEntryUserCreateForm({'user': str(user.pk)}, instance=entry)
+    entry = DiningEntry(dining_list=dining_list, created_by=user)
+    form = DiningEntryInternalCreateForm({'user': str(user.pk)}, instance=entry)
     return form.is_valid()
 
 
 @register.filter
 def cant_join_reason(dining_list, user):
     """Returns the reason why someone can't join (raises exception when they can join)."""
-    entry = DiningEntryUser(dining_list=dining_list, created_by=user)
-    form = DiningEntryUserCreateForm({'user': str(user.pk)}, instance=entry)
+    entry = DiningEntry(dining_list=dining_list, created_by=user)
+    form = DiningEntryInternalCreateForm({'user': str(user.pk)}, instance=entry)
     return form.non_field_errors()[0]
 
 
@@ -57,7 +51,7 @@ def can_delete_entry(entry, user):
 @register.filter
 def get_entry(dining_list, user):
     """Gets the user entry (not external) for given user."""
-    return DiningEntryUser.objects.filter(dining_list=dining_list, user=user).first()
+    return DiningEntry.objects.internal().filter(dining_list=dining_list, user=user).first()
 
 
 @register.filter
@@ -82,66 +76,15 @@ def is_owner(dining_list, user):
 
 
 @register.filter
-def dining_list_creation_open(date: datetime.date) -> bool:
-    """Returns whether dining list creation is open for given date.
-
-    The date must be in the future or time must be before closure time for
-    dining list creation to be open. Note that this doesn't mean that it's
-    possible to create a dining list, there might be other reasons why that is
-    still not possible.
-    """
-    if date < timezone.now().date():
-        return False
-    if date == timezone.now().date() and settings.DINING_SLOT_CLAIM_CLOSURE_TIME < timezone.now().time():
-        # Too late for today
-        return False
-    return True
+def comments_total(dining_list: DiningList) -> int:
+    return dining_list.diningcomment_set.count()
 
 
 @register.filter
-def can_create_dining_list(user: User, date: datetime.date) -> bool:
-    """Returns whether the user can create a dining list on the given date."""
-    cant_create = cant_create_dining_list_reason(user, date)
-    return dining_list_creation_open(date) and cant_create is None
-
-
-@register.filter
-def cant_create_dining_list_reason(user: User, date: datetime.date) -> Optional[str]:
-    """Returns why the user can't create a dining list.
-
-    When there is no reason found why a user can't create a dining list, the
-    function will return None. This doesn't check whether dining list creation
-    is open.
-    """
-    # Slots available
-    if DiningList.objects.available_slots(date) <= 0:
-        return "no slots available"
-
-    # User owns a dining list
-    if DiningList.objects.filter(date=date, owners=user).exists():
-        return "you already have a dining list for this day"
-
-    return None
-
-
-@register.filter
-def short_owners_string(dining_list: DiningList) -> str:
-    """Returns the names of all owners for display in short form.
-
-    For a larger number of owners, only the first name will be included.
-
-    Returns:
-        Names of the owners separated by ',' and 'and'
-    """
-    owners = dining_list.owners.all()
-
-    if len(owners) > 1:
-        names = [o.first_name for o in owners]
+def comments_unread(dining_list: DiningList, user) -> int:
+    # Get the amount of unread messages
+    view_time = DiningCommentVisitTracker.get_latest_visit(user=user, dining_list=dining_list)
+    if view_time is None:
+        return dining_list.diningcomment_set.count()
     else:
-        names = [o.get_full_name() for o in owners]
-
-    if len(names) >= 2:
-        # Join all but last names by ',' and put 'and' in front of last name
-        commaseparated = ', '.join(names[0:-1])
-        return '{} and {}'.format(commaseparated, names[-1])
-    return names[0]
+        return dining_list.diningcomment_set.filter(timestamp__gte=view_time).count()

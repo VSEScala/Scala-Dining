@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    <h3>Upgrade balance</h3>
+    <p>
+        You are member of an association that allows upgrading your balance upfront and paying later.
+        How the money will be collected depends on the association:
+    </p>
+    <ul>
+        {% for association in eligible_associations %}
+            <li><strong>{{ association.name }}</strong>: {{ association.invoicing_description }}</li>
+        {% endfor %}
+    </ul>
+
+    <form action="{% url 'invoicing-upgrade' %}" method="post">
+        {% csrf_token %}
+        {% include 'snippets/bootstrap_form.html' with horizontal=True %}
+        {# Confirm checkbox #}
+        <div class="form-group row">
+            <div class="col-sm-10 offset-sm-2">
+                <div class="custom-control custom-checkbox mb-3">
+                    <input type="checkbox" class="custom-control-input" id="confirmCheck" required>
+                    <label class="custom-control-label" for="confirmCheck">
+                        I allow my association to debit the specified amount from my bank account or collect the amount
+                        by other means <span class="text-danger">*</span>
+                    </label>
+                </div>
+            </div>
+        </div>
+        <button type="submit" class="btn btn-primary">Upgrade</button>
+    </form>
+
+{% endblock %}

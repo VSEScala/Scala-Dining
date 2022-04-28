@@ -1,0 +1,1 @@
+Grocery payment for dining list {{ payment.dining_list.date|date:"SHORT_DATE_FORMAT" }}

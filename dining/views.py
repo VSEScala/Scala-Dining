@@ -1,25 +1,22 @@
 import csv
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 
+from django.conf import settings
 from django.contrib import messages
-from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.core.exceptions import NON_FIELD_ERRORS, PermissionDenied
-from django.db import transaction
 from django.db.models import Q, Count
-from django.http import Http404, HttpResponseRedirect, HttpResponseForbidden, HttpResponse
+from django.http import HttpResponseForbidden, HttpResponse
 from django.shortcuts import redirect, get_object_or_404
 from django.urls import reverse
 from django.utils import timezone
-from django.utils.http import is_safe_url
-from django.views.generic import TemplateView, View
+from django.views.generic import TemplateView, View, DeleteView
 from django.views.generic.detail import SingleObjectMixin
-from django.views.generic.edit import DeleteView
 
 from dining.datesequence import sequenced_date
-from dining.forms import CreateSlotForm, DiningEntryUserCreateForm, DiningEntryExternalCreateForm, \
-    DiningEntryDeleteForm, DiningCommentForm, DiningInfoForm, DiningPaymentForm, DiningListDeleteForm
-from dining.models import DiningList, DiningDayAnnouncement, DiningCommentVisitTracker, DiningEntryExternal, \
-    DiningEntryUser, DiningEntry
+from dining.forms import CreateSlotForm, DiningEntryInternalCreateForm, DiningEntryExternalCreateForm, \
+    DiningEntryDeleteForm, DiningCommentForm, DiningInfoForm
+from dining.models import DiningList, DiningDayAnnouncement, DiningCommentVisitTracker, DiningEntry
 from general.mail_control import send_templated_mail
 from userdetails.models import User, Association
 
@@ -44,12 +41,8 @@ class DayMixin:
     def init_date(self):
         """Fetches the date from the request arguments."""
         if self.date:
-            # Already initialized
-            return
-        try:
-            self.date = sequenced_date.fromdate(date(self.kwargs['year'], self.kwargs['month'], self.kwargs['day']))
-        except ValueError:
-            raise Http404('Invalid date')
+            return  # Already initialized
+        self.date = sequenced_date(self.kwargs['year'], self.kwargs['month'], self.kwargs['day'])
 
     def dispatch(self, request, *args, **kwargs):
         """Initializes date before get/post is called."""
@@ -66,24 +59,21 @@ class DayMixin:
 
 
 class DayView(LoginRequiredMixin, DayMixin, TemplateView):
-    """Shows the dining lists on a given date.
+    """Shows the dining lists on a given date."""
 
-    Task:
-    -   display all occupied dining slots
-    -   allow for additional dining slots to be made if place is available
-    """
-
-    template_name = "dining_lists/dining_day.html"
+    template_name = "dining_lists/day.html"
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-
-        context['dining_lists'] = DiningList.objects.filter(date=self.date)
-        context['Announcements'] = DiningDayAnnouncement.objects.filter(date=self.date)
-
-        # Make the view clickable
-        context['interactive'] = True
-
+        now = timezone.now()
+        context.update({
+            'dining_lists': DiningList.objects.filter(date=self.date),
+            'announcements': DiningDayAnnouncement.objects.filter(date=self.date),
+            'available_slots': DiningList.objects.available_slots(self.date),
+            # Whether this day is in the future
+            'creation_open': self.date > now.date() or (
+                    self.date == now.date() and settings.DINING_SLOT_CLAIM_CLOSURE_TIME > now.time()),  # noqa: E126
+        })
         return context
 
 
@@ -168,77 +158,52 @@ class NewSlotView(LoginRequiredMixin, DayMixin, TemplateView):
         return context
 
     def post(self, request, *args, **kwargs):
-        context = self.get_context_data()
+        form = CreateSlotForm(request.user, data=request.POST, instance=DiningList(date=self.date))
 
-        context['slot_form'] = CreateSlotForm(request.user, request.POST, instance=DiningList(date=self.date))
-
-        if context['slot_form'].is_valid():
-            dining_list = context['slot_form'].save()
-            messages.success(request, "You successfully created a new dining list")
+        if form.is_valid():
+            dining_list = form.save()
             return redirect(dining_list)
-
+        context = self.get_context_data()
+        context.update({
+            'slot_form': form,
+        })
         return self.render_to_response(context)
 
 
-class DiningListMixin(DayMixin):
+class DiningListMixin(SingleObjectMixin):
     """Mixin for a dining list detail page."""
-
-    dining_list = None
-
-    def get_context_data(self, **kwargs):
-        context = super(DiningListMixin, self).get_context_data(**kwargs)
-        context['dining_list'] = self.dining_list
-        return context
-
-    def init_dining_list(self):
-        """Fetches the dining list using the request arguments."""
-        if self.dining_list:
-            # Already initialized
-            return
-        # Needs initialized date
-        self.init_date()
-        self.dining_list = get_object_or_404(DiningList, date=self.date, association__slug=self.kwargs['identifier'])
-
-    def dispatch(self, request, *args, **kwargs):
-        self.init_dining_list()
-        return super().dispatch(request, *args, **kwargs)
-
-    def reverse(self, *args, kwargs=None, **other_kwargs):
-        kwargs = kwargs or {}
-        kwargs['identifier'] = self.dining_list.association.slug
-        return super().reverse(*args, kwargs=kwargs, **other_kwargs)
-
-
-class UpdateSlotViewTrackerMixin:
-    """Sets comments_total and comments_unread context variables."""
+    model = DiningList
+    context_object_name = 'dining_list'
 
     def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        # Get the amount of messages
-        context['comments_total'] = self.dining_list.diningcomment_set.count()
-        # Get the amount of unread messages
-        view_time = DiningCommentVisitTracker.get_latest_visit(user=self.request.user, dining_list=self.dining_list)
-        if view_time is None:
-            context['comments_unread'] = context['comments_total']
-        else:
-            context['comments_unread'] = self.dining_list.diningcomment_set.filter(timestamp__gte=view_time).count()
+        self.object = self.get_object()
+        """This is apparently needed for SingleObjectMixin, see docs:
 
-        return context
+        > The base implementation of this method requires that the self.object attribute be set by the view (even if
+        > None). Be sure to do this if you are using this mixin without one of the built-in views that does so.
+        """
+        return super().get_context_data(**kwargs)
+
+
+class DiningListEditMixin(UserPassesTestMixin, DiningListMixin):
+    """Dining list mixin which makes a view only accessible if the dining list can be edited."""
+
+    def test_func(self):
+        # Checks if the user is owner and if the dining list is adjustable
+        dining_list = self.get_object()  # type: DiningList
+        return dining_list.is_owner(self.request.user) and dining_list.is_adjustable()
 
 
 # We use 2 different terminologies for the same thing, 'slot' and 'dining list'. We should get rid of 'slot'.
 
-class SlotMixin(LoginRequiredMixin, DiningListMixin, UpdateSlotViewTrackerMixin):
-    """Mixin for a dining list detail page."""
 
-
-class EntryAddView(SlotMixin, TemplateView):
+class EntryAddView(LoginRequiredMixin, DiningListMixin, TemplateView):
     template_name = "dining_lists/dining_entry_add.html"
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context.update({
-            'user_form': DiningEntryUserCreateForm(),
+            'user_form': DiningEntryInternalCreateForm(),
             'external_form': DiningEntryExternalCreateForm(),
         })
         return context
@@ -246,52 +211,46 @@ class EntryAddView(SlotMixin, TemplateView):
     def post(self, request, *args, **kwargs):
         # This post method always redirects, does not show the form again on validation errors, so that we don't have
         #  to write HTML for displaying these errors (they are already in a Django message).
+        dining_list = self.get_object()
 
         # Do form shenanigans
         if 'add_external' in request.POST:
-            entry = DiningEntryExternal(user=request.user, dining_list=self.dining_list, created_by=request.user)
-            form = DiningEntryExternalCreateForm(request.POST, instance=entry)
+            entry = DiningEntry(user=request.user, dining_list=dining_list, created_by=request.user)
+            form = DiningEntryExternalCreateForm(data=request.POST, instance=entry)
         else:
-            entry = DiningEntryUser(dining_list=self.dining_list, created_by=request.user)
-            form = DiningEntryUserCreateForm(request.POST, instance=entry)
+            entry = DiningEntry(dining_list=dining_list, created_by=request.user)
+            form = DiningEntryInternalCreateForm(data=request.POST, instance=entry)
 
         if form.is_valid():
             entry = form.save()
-            # Construct success message
-            if isinstance(entry, DiningEntryUser):
-                if entry.user == request.user:
-                    msg = "You successfully joined the dining list"
-                else:
-                    # Send mail to the diner
-                    send_templated_mail('mail/dining_entry_added_by',
-                                        entry.user,
-                                        context={'entry': entry, 'dining_list': entry.dining_list},
-                                        request=request)
-                    msg = "You successfully added {} to the dining list".format(entry.user.get_short_name())
-            else:
-                msg = "You successfully added {} to the dining list".format(entry.name)
-            messages.success(request, msg)
+
+            # Other existing user, send mail
+            if entry.is_internal() and entry.user != request.user:
+                send_templated_mail('mail/dining_entry_added_by',
+                                    entry.user,
+                                    context={'entry': entry, 'dining_list': entry.dining_list},
+                                    request=request)
+                messages.success(request,
+                                 "You successfully added {} to the dining list".format(entry.user.get_short_name()))
+
+            # External entry
+            if entry.is_external():
+                messages.success(request, "You successfully added {} to the dining list".format(entry.external_name))
         else:
             # Apply error messages
             for field, errors in form.errors.items():
                 for error in errors:
                     messages.error(request, "{}: {}".format(field, error) if field != NON_FIELD_ERRORS else error)
 
-        # Redirect to next if provided, else to the diner list if successful, else to self
-        next_url = request.GET.get('next')
-        if next_url and is_safe_url(next_url, request.get_host()):
-            return HttpResponseRedirect(next_url)
-        if form.is_valid():
-            # Todo: Check if user is on multiple dining lists today, then show warning?
-            return HttpResponseRedirect(self.reverse('slot_list'))
-        return HttpResponseRedirect(self.reverse('entry_add'))
+        # Always redirect to the dining list page
+        return redirect(dining_list)
 
 
 class EntryDeleteView(LoginRequiredMixin, SingleObjectMixin, View):
     model = DiningEntry
 
     def post(self, request, *args, **kwargs):
-        entry = self.get_object().get_subclass()
+        entry = self.get_object()
 
         # Process deletion
         form = DiningEntryDeleteForm(entry, request.user, {})
@@ -300,12 +259,11 @@ class EntryDeleteView(LoginRequiredMixin, SingleObjectMixin, View):
 
             # Success message
             if entry.is_internal() and entry.user == request.user:
-                success_msg = "You are removed from the dining list"
+                pass
             elif entry.is_external():
-                success_msg = "The external diner is removed from the dining list"
+                messages.success(request, "The external diner is removed from the dining list")
             else:
-                success_msg = "The user is removed from the dining list"
-            messages.success(request, success_msg)
+                messages.success(request, "The user is removed from the dining list")
 
             # Send a mail when someone else does the removal
             if entry.user != request.user:
@@ -319,314 +277,127 @@ class EntryDeleteView(LoginRequiredMixin, SingleObjectMixin, View):
             for error in form.non_field_errors():
                 messages.error(request, error)
 
-        # Go to next
-        next_url = request.GET.get('next')
-        if not next_url or not is_safe_url(next_url, request.get_host()):
-            next_url = entry.dining_list.get_absolute_url()
-
-        return HttpResponseRedirect(next_url)
+        # Go to dining list page
+        return redirect(entry.dining_list)
 
 
-class SlotListView(SlotMixin, TemplateView):
+class SlotListView(LoginRequiredMixin, DiningListMixin, TemplateView):
     template_name = "dining_lists/dining_slot_diners.html"
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        # Select related eliminates the extra queries during rendering of the template
-        entries = self.dining_list.dining_entries.select_related('user', 'diningentryuser', 'diningentryexternal')
-        entries = entries.order_by('user__first_name')
-        context['entries'] = entries
+        dl = self.get_object()  # type: DiningList
+        context.update({
+            'entries': dl.entries.order_by('user__first_name', 'user__last_name'),
+            'can_edit_stats': dl.is_owner(self.request.user) and dl.is_adjustable(),
+            # Contact info is visible to diners and owners
+            'show_contact_info': (self.request.user in dl.diners.all()) or dl.is_owner(self.request.user),
+
+        })
         return context
 
-    # Todo: fix complexity
-    def post(self, request, *args, **kwargs):  # noqa: C901
-        if not self.dining_list.is_owner(request.user):
+    def post(self, request, *args, **kwargs):
+        dining_list = self.get_object()  # type: DiningList
+
+        # To change help stats, the user needs to be owner and the list needs to be adjustable
+        if not dining_list.is_owner(request.user) or not dining_list.is_adjustable():
             raise PermissionDenied
 
-        # Check for edit conflict, not very elegant but this post method needs to be rewritten anyway
-        conflict = False
-        for entry in self.dining_list.dining_entries.all():
-            entry = entry.get_subclass()
-            if entry.is_internal():
-                initial_shop = request.POST.get('initial_entry{}_shop'.format(entry.pk))
-                if initial_shop and initial_shop != str(entry.has_shopped):
-                    conflict = True
-                    break
-                initial_cook = request.POST.get('initial_entry{}_cook'.format(entry.pk))
-                if initial_cook and initial_cook != str(entry.has_cooked):
-                    conflict = True
-                    break
-                initial_clean = request.POST.get('initial_entry{}_clean'.format(entry.pk))
-                if initial_clean and initial_clean != str(entry.has_cleaned):
-                    conflict = True
-                    break
-            initial_paid = request.POST.get('initial_entry{}_paid'.format(entry.pk))
-            if initial_paid and initial_paid != str(entry.has_paid):
-                conflict = True
-                break
-        if conflict:
-            messages.error(request, 'Someone else modified the stats while you were changing them, your changes have '
-                                    'not been saved. We apologize for the inconvenience')
-            return HttpResponseRedirect(self.reverse('slot_list'))
+        # Get the internal entry by ID, also provide the dining list to check that the entry belongs to this list
+        entry = get_object_or_404(DiningEntry, id=request.POST.get('entry_id'), dining_list=dining_list)
 
-        # Get all the keys in the post and put all relevant ones in a list
-        post_requests = []
-        for key in request.POST:
-            key = key.split(":")
-            if len(key) == 2:
-                post_requests.append(key)
+        # Apply action
+        action = request.POST.get('action')  # type: str
+        val = action.endswith('true')
+        if action.startswith('shopped'):
+            entry.has_shopped = val
+        elif action.startswith('cooked'):
+            entry.has_cooked = val
+        elif action.startswith('cleaned'):
+            entry.has_cleaned = val
 
-        # Process payment for all entries
-        entries = {}
-
-        # For all entries in the dining list, set the paid value to false
-        for entry in self.dining_list.dining_entries.all():
-            entry.has_paid = False
-            entries[str(entry.id)] = entry
-
-        # Go over all keys in the request containing has_paid, adjust the state on that object
-        for key in post_requests:
-            if key[1] == 'has_paid':
-                try:
-                    entries[key[0]].has_paid = True
-                except KeyError:
-                    # Entry doesn't exist any more
-                    pass
-
-        # save all has_paid values
-        for entry in entries.values():
-            entry.save()
-
-        # Adjust the help stats
-        entries = {}
-
-        # For all entries in the dining list, set the values to false
-        for entry in self.dining_list.internal_dining_entries():
-            entry.has_shopped = False
-            entry.has_cooked = False
-            entry.has_cleaned = False
-            entries[str(entry.id)] = entry
-
-        # Go over all keys in the request containing has_paid, adjust the state on that object
-        for key in post_requests:
-            try:
-                if key[1] == "has_shopped":
-                    entries[key[0]].has_shopped = True
-                elif key[1] == "has_cooked":
-                    entries[key[0]].has_cooked = True
-                elif key[1] == "has_cleaned":
-                    entries[key[0]].has_cleaned = True
-            except KeyError:
-                # Entry doesn't exist any more
-                pass
-
-        # save all has_paid values
-        for entry in entries.values():
-            entry.save()
-
-        return HttpResponseRedirect(self.reverse('slot_list'))
+        entry.save()
+        return redirect('slot_list', pk=dining_list.pk)
 
 
-class SlotInfoView(SlotMixin, TemplateView):
+class SlotInfoView(LoginRequiredMixin, DiningListMixin, TemplateView):
     template_name = "dining_lists/dining_slot_info.html"
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['comments'] = self.dining_list.diningcomment_set.order_by('-pinned_to_top', 'timestamp').all()
+        dining_list = self.get_object()  # type: DiningList
 
-        # Last visit
-        context['last_visited'] = DiningCommentVisitTracker.get_latest_visit(
-            user=self.request.user,
-            dining_list=self.dining_list,
-            update=True)
-
-        from django.db.models import CharField
-        from django.db.models.functions import Length
-        CharField.register_lookup(Length)
-        context['number_of_allergies'] = self.dining_list.internal_dining_entries().filter(
-            user__userdiningsettings__allergies__length__gte=1).count()
+        context.update({
+            'comments': dining_list.diningcomment_set.order_by('-pinned_to_top', 'timestamp').all(),
+            'user_entry': DiningEntry.objects.internal().filter(dining_list=dining_list,
+                                                                user=self.request.user).first(),
+            'last_visited': DiningCommentVisitTracker.get_latest_visit(user=self.request.user,
+                                                                       dining_list=dining_list,
+                                                                       update=True),
+        })
 
         return context
 
     def post(self, request, *args, **kwargs):
         context = self.get_context_data(**kwargs)
+        dining_list = self.get_object()
 
         # Add the comment
-        comment_form = DiningCommentForm(request.user, self.dining_list, data=request.POST)
+        comment_form = DiningCommentForm(request.user, dining_list, data=request.POST)
 
         if comment_form.is_valid():
             comment_form.save()
-            return HttpResponseRedirect(self.reverse('slot_details'))
+            return redirect('slot_details', pk=dining_list.pk)
         else:
             context['form'] = comment_form
             return self.render_to_response(context)
 
 
-class SlotAllergyView(SlotMixin, TemplateView):
+class SlotAllergyView(LoginRequiredMixin, DiningListMixin, TemplateView):
     template_name = "dining_lists/dining_slot_allergy.html"
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        from django.db.models import CharField
-        from django.db.models.functions import Length
-        CharField.register_lookup(Length)
-        context['allergy_entries'] = self.dining_list.internal_dining_entries().filter(
-            user__userdiningsettings__allergies__length__gte=1)
-
+        dining_list = self.get_object()
+        context.update({
+            'entries': dining_list.internal_dining_entries().exclude(user__dietary_requirements=""),
+        })
         return context
 
 
-class SlotOwnerMixin:
-    """Slot mixin extension that makes it only accessible for dining list owners."""
-
-    def dispatch(self, request, *args, **kwargs):
-        # Initialise dining list
-        self.init_dining_list()
-        # Check permission
-        if not self.dining_list.is_owner(request.user):
-            raise PermissionDenied
-        # Dispatch
-        return super().dispatch(request, *args, **kwargs)
-
-
-# Could possibly use the Django built-in FormView or ModelFormView in combination with FormSet
-class SlotInfoChangeView(SlotMixin, SlotOwnerMixin, TemplateView):
-    template_name = "dining_lists/dining_slot_info_alter.html"
+class DiningListChangeView(LoginRequiredMixin, DiningListEditMixin, TemplateView):
+    template_name = "dining_lists/change.html"
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-
         context.update({
-            'info_form': DiningInfoForm(instance=self.dining_list, prefix='info'),
-            'payment_form': DiningPaymentForm(instance=self.dining_list, prefix='payment'),
+            'form': DiningInfoForm(instance=self.get_object()),
+            # Sign up deadline preset buttons
+            'deadline_presets': {
+                'closed': timezone.now(),
+                'open for 15 minutes': timezone.now() + timedelta(minutes=15),
+            }
         })
         return context
 
     def post(self, request, *args, **kwargs):
+        dining_list = self.get_object()
+
+        form = DiningInfoForm(request.POST, instance=dining_list)
+        if form.is_valid():
+            form.save()
+            return redirect(dining_list)
+
         context = self.get_context_data(**kwargs)
-
-        """
-        ## Story time
-        This suffered from the most awesome bug. Earlier, one form would be saved if it was valid, even when the other
-        form wasn't valid. E.g. when the info form was not valid while the payment form is actually valid, the payment
-        form would get saved. However the payment form uses the same dining list instance as for the info form, and
-        invalid field values of the info form do get applied to the dining list instance, they are just normally not
-        saved in the database because the form would be invalid. However the payment form is valid and therefore saves
-        the dining list anyway, with the invalid field values.
-
-        An explicit include of only fields that were part of the form during saving prevented the bug from manifesting
-        (perhaps it was meant that way?).
-        """
-
-        info_form = DiningInfoForm(request.POST, instance=self.dining_list, prefix='info')
-        payment_form = DiningPaymentForm(request.POST, instance=self.dining_list, prefix='payment')
-
-        # Save and redirect if forms are valid, stay otherwise
-        if info_form.is_valid() and payment_form.is_valid():
-            info_form.save()
-            payment_form.save()
-            messages.success(request, "Changes successfully saved")
-
-            return HttpResponseRedirect(self.reverse('slot_details'))
-
         context.update({
-            'info_form': info_form,
-            'payment_form': payment_form,
+            'form': form,
         })
-
         return self.render_to_response(context)
 
 
-class SlotDeleteView(SlotMixin, SlotOwnerMixin, DeleteView):
-    """Page for slot deletion.
+class DiningListDeleteView(LoginRequiredMixin, DiningListEditMixin, DeleteView):
+    template_name = 'dining_lists/confirm_delete.html'
 
-    Page is only available for slot owners.
-    """
-    template_name = "dining_lists/dining_slot_delete.html"
-    context_object_name = "dining_list"
-
-    def get_object(self, queryset=None):
-        return self.dining_list
-
-    def delete(self, request, *args, **kwargs):
-        instance = self.get_object()
-        form = DiningListDeleteForm(request.user, instance)
-        if form.is_valid():
-            day_view_url = super(DiningListMixin, self).reverse("day_view")
-
-            # Evaluate the query to obtain diners before the dining list is removed from the database
-            to_notify = list(instance.diners.exclude(id=request.user.id))
-
-            # Get dining list with related fields, necessary for sending mail because then the object is no longer in db
-            dining_list = DiningList.objects.prefetch_related('owners', 'association').get(pk=instance.pk)
-
-            with transaction.atomic():
-                form.execute()
-
-                # Send mail to the people on the dining list
-                send_templated_mail('mail/dining_list_deleted',
-                                    to_notify,
-                                    {
-                                        'dining_list': dining_list,
-                                        'cancelled_by': request.user,
-                                        'day_view_url': day_view_url
-                                    },
-                                    request=request)
-
-            messages.success(request, "Dining list is deleted")
-
-            return HttpResponseRedirect(day_view_url)
-
-        # Could not delete
-        for error in form.non_field_errors():
-            messages.add_message(request, messages.ERROR, error)
-
-        return HttpResponseRedirect(self.reverse("slot_delete"))
-
-
-class SlotPaymentView(SlotMixin, SlotOwnerMixin, View):
-    """A view class that allows dining list owners to send payment reminders."""
-
-    def post(self, request, *args, **kwargs):
-        unpaid_user_entries = DiningEntryUser.objects.filter(dining_list=self.dining_list, has_paid=False)
-        unpaid_guest_entries = DiningEntryExternal.objects.filter(dining_list=self.dining_list, has_paid=False)
-
-        is_reminder = datetime.now().date() > self.dining_list.date  # ?? Please explain non-trivial operations
-
-        is_informed = False
-
-        context = {'dining_list': self.dining_list, 'reminder': request.user, 'is_reminder': is_reminder}
-
-        if unpaid_user_entries.count() > 0:
-            send_templated_mail('mail/dining_payment_reminder',
-                                User.objects.filter(diningentry__in=unpaid_user_entries),
-                                context=context,
-                                request=request)
-            is_informed = True
-
-        if unpaid_guest_entries.count() > 0:
-            for user in User.objects.filter(diningentry__in=unpaid_guest_entries).distinct():
-                guests = []
-
-                for external_entry in unpaid_guest_entries.filter(user=user):
-                    guests.append(external_entry.name)
-
-                # Call a different message if a the user added multiple guests who hadn't paid
-                # Things like this can also be done in the template
-                if len(guests) == 1:
-                    context["guest"] = guests[0]
-                    context["guests"] = None
-                else:
-                    context["guest"] = None
-                    context["guests"] = guests
-
-                send_templated_mail('mail/dining_payment_reminder_external', user, context, request)
-
-            is_informed = True
-
-        if is_informed:
-            messages.success(request, "Diners have been informed")
-        else:
-            messages.info(request, "There was nobody to inform, everybody has paid")
-
-        return HttpResponseRedirect(self.reverse('slot_details'))
+    def get_success_url(self):
+        d = self.object.date  # type: date
+        return reverse('day_view', kwargs={'year': d.year, 'month': d.month, 'day': d.day})

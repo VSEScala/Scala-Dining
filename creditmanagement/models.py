@@ -4,10 +4,17 @@ from typing import Union, Optional
 
 from django.core.validators import MinValueValidator
 from django.db import models
-from django.db.models import QuerySet, Sum, Q
+from django.db.models import Sum, Q
 from django.utils import timezone
+from django.utils.functional import cached_property
 
 from userdetails.models import Association, User
+
+
+class AccountQuerySet(models.QuerySet):
+    def balance(self):
+        """Annotates the QuerySet with a balance column."""
+        raise NotImplementedError
 
 
 class Account(models.Model):
@@ -17,6 +24,11 @@ class Account(models.Model):
     transactions created for the account. This is implemented by user and
     association having on_delete=CASCADE and Transaction.source/target having
     on_delete=PROTECT.
+
+    SQL note: it's a bit cleaner to have Account as a base entity and have
+    foreign key columns on User and Association entities to the Account entity
+    (the other way around as how it's now). That way the Account table won't be
+    full of NULL values. We could change this.
     """
 
     # An account can only have one of user or association or special
@@ -36,15 +48,14 @@ class Account(models.Model):
     }
     special = models.CharField(max_length=30, unique=True, null=True, default=None, choices=SPECIAL_ACCOUNTS)
 
-    def get_balance(self) -> Decimal:
+    @cached_property
+    def balance(self) -> Decimal:
         tx = Transaction.objects.filter_valid()
         # 2 separate queries for the source and target sums
         # If there are no rows, the value will be made 0.00
         source_sum = tx.filter(source=self).aggregate(sum=Sum('amount'))['sum'] or Decimal('0.00')
         target_sum = tx.filter(target=self).aggregate(sum=Sum('amount'))['sum'] or Decimal('0.00')
         return target_sum - source_sum
-
-    get_balance.short_description = "Balance"  # (used in admin site)
 
     def get_entity(self) -> Union[User, Association, None]:
         """Returns the user or association for this account.
@@ -63,7 +74,7 @@ class Account(models.Model):
         Returns:
             The computed date or None if the user balance is positive.
         """
-        balance = self.get_balance()
+        balance = self.balance
         if balance >= 0:
             # balance is already positive, return nothing
             return None
@@ -92,12 +103,12 @@ class Account(models.Model):
         """Returns the description (when this is a bookkeeping account)."""
         return self.SPECIAL_ACCOUNT_DESCRIPTION[self.special]
 
-    def get_transactions(self) -> QuerySet:
+    def get_transactions(self) -> models.QuerySet:
         """Returns all transactions with this account as source or target."""
         return Transaction.objects.filter_account(self)
 
 
-class TransactionQuerySet2(QuerySet):
+class TransactionQuerySet(models.QuerySet):
     def filter_valid(self):
         """Filters transactions that have not been cancelled."""
         return self.filter(cancelled__isnull=True)
@@ -109,7 +120,9 @@ class TransactionQuerySet2(QuerySet):
 
 class Transaction(models.Model):
     # We do not enforce that source != target because those rows are not harmful,
-    #  balance is not affected when source == target.
+    # balance is not affected when source == target.
+    #
+    # ForeignKey fields have a database index by default.
     source = models.ForeignKey(Account, on_delete=models.PROTECT, related_name='transaction_source_set')
     target = models.ForeignKey(Account, on_delete=models.PROTECT, related_name='transaction_target_set')
     # Amount can only be (strictly) positive
@@ -135,13 +148,17 @@ class Transaction(models.Model):
     # This cancelled column is risky, one might forget to filter out cancelled
     # transactions when calculating balance. We might need to filter those out
     # by default.
+
+    # TODO: Note 4, added later (Feb 2022)
+    #   This cancel column is only used for kitchen cost transactions and let's keep it that way.
+    #   I want to get rid of it, in favor of always explicitly creating a reverse transaction.
     cancelled = models.DateTimeField(null=True)
     cancelled_by = models.ForeignKey(User,
                                      on_delete=models.PROTECT,
                                      null=True,
                                      related_name='transaction_cancelled_set')
 
-    objects = TransactionQuerySet2.as_manager()
+    objects = TransactionQuerySet.as_manager()
 
     def cancel(self, user: User):
         """Sets the transaction as cancelled.

@@ -7,7 +7,7 @@
     <p>
         Account: <strong>{{ object }}</strong>
         ({% if object.association %}association{% elif object.user %}user{% else %}bookkeeping account{% endif %}).
-        Balance: <strong>{{ object.get_balance|euro }}</strong>.
+        Balance: <strong>{{ object.balance|euro }}</strong>.
     </p>
     {# We only handle and show the form if we're on page 1 #}
     {% if page_obj.number == 1 %}

@@ -1,0 +1,173 @@
+{% extends 'base.html' %}
+{% load credit_tags %}
+
+{% block content %}
+    <h2>Grocery splits</h2>
+    {% if not request.GET.all %}
+        <p>Splits older than a month are hidden. <a href="{% url 'groceries:overview' %}?all=1">View all</a></p>
+    {% else %}
+        <p><a href="{% url 'groceries:overview' %}">Hide splits older than a month</a></p>
+    {% endif %}
+    <h5>Payments</h5>
+    <table class="table table-hover" id="payEntries">
+        <thead>
+        <tr>
+            <th scope="col">Date</th>
+            <th scope="col">Amount</th>
+            <th scope="col">Paid</th>
+            <th scope="col"></th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for entry in pay_entries %}
+            {# Payment row #}
+            <tr class="position-relative">
+                <td>{{ entry.payment.dining_list.date|date:"SHORT_DATE_FORMAT" }}</td>
+                <td>{{ entry.payment.cost_pp|euro }}</td>
+                <td>
+                    {% if entry.paid %}
+                        <span class="text-success"><i class="fas fa-check-circle"></i> Paid</span>
+                    {% else %}
+                        <span class="text-danger"><i class="fas fa-times-circle"></i> Not paid</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <button type="button" class="btn btn-primary btn-sm stretched-link float-right"
+                            data-toggle="collapse"
+                            data-target="#payEntry{{ forloop.counter }}">
+                        <i class="fas fa-chevron-down"></i> Payment info
+                    </button>
+                </td>
+            </tr>
+            <tr>
+                <td colspan="4" class="p-0 border-0">{# Remove padding+border to make it 'invisible' until expanded #}
+                    {# Payment card #}
+                    <div class="collapse" id="payEntry{{ forloop.counter }}" data-parent="#payEntries">
+                        <div class="card mb-1">
+                            <div class="card-body">
+                                {# Notice on the current state of the payment #}
+                                {% if entry.transaction %}
+                                    <p class="card-text text-success">You have paid using your account balance</p>
+                                {% elif entry.paid %}
+                                    <p class="card-text text-success">You have paid</p>
+                                {% else %}
+                                    <p class="card-text text-danger">
+                                        You can pay using any of the methods provided below.
+                                        If you have already paid, ask the receiver to change the status to paid.
+                                    </p>
+                                    {% if entry.payment.allow_transaction %}
+                                        <button type="button" class="btn btn-primary btn-sm mb-3" data-toggle="modal"
+                                                data-target="#txConfirm{{ forloop.counter }}">
+                                            Pay using account balance
+                                        </button>
+                                    {% endif %}
+                                {% endif %}
+                                <div class="row mb-3">
+                                    <div class="col-md-2"><strong>Receiver</strong></div>
+                                    <div class="col-md-10">{{ entry.payment.receiver.get_full_name }}</div>
+                                </div>
+                                {% if entry.payment.payment_link %}
+                                    <div class="row mb-3">
+                                        <div class="col-md-2"><strong><i class="fas fa-link fa-fw"></i> Payment
+                                            link</strong></div>
+                                        <div class="col-md-10">
+                                            <a href="{{ entry.payment.payment_link }}" target="_blank">
+                                                {{ entry.payment.payment_link }}
+                                            </a>
+                                        </div>
+                                    </div>
+                                {% endif %}
+                                {% if entry.payment.receiver.phone_number %}
+                                    <div class="row mb-3">
+                                        <div class="col-md-2"><strong>Phone number</strong></div>
+                                        <div class="col-md-10"><a href="tel:{{ entry.payment.receiver.phone_number }}">
+                                            {{ entry.payment.receiver.phone_number }}</a></div>
+                                    </div>
+                                {% endif %}
+                                {% if entry.payment.receiver.email_public %}
+                                    <div class="row mb-3">
+                                        <div class="col-md-2"><strong>E-mail</strong></div>
+                                        <div class="col-md-10">
+                                            <a href="mailto:{{ entry.payment.receiver.email }}">
+                                                {{ entry.payment.receiver.email }}
+                                            </a>
+                                        </div>
+                                    </div>
+                                {% endif %}
+                                {% if entry.payment.remarks %}
+                                    <div class="row mb-3">
+                                        <div class="col-md-2"><strong>Remarks</strong></div>
+                                        <div class="col-md-10">{{ entry.payment.remarks }}</div>
+                                    </div>
+                                {% endif %}
+                                <a href="{{ entry.payment.dining_list.get_absolute_url }}" class="card-link">
+                                    View dining list
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    {# Transaction confirm modal #}
+                    <div class="modal fade" id="txConfirm{{ forloop.counter }}" tabindex="-1">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">Pay using account balance</h5>
+                                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                                </div>
+                                <div class="modal-body">
+                                    <p>
+                                        {{ entry.payment.cost_pp|euro }} will be deducted from your account balance and
+                                        transferred to {{ entry.payment.receiver.first_name }}'s account.
+                                        Are you sure?
+                                    </p>
+                                    {% if user.account.balance < entry.payment.cost_pp %}
+                                        <p class="text-danger">
+                                            Your balance is insufficient, deposit money into your account.
+                                        </p>
+                                    {% endif %}
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                                    <form method="post" action="{% url 'groceries:pay' pk=entry.payment.pk %}">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-primary"
+                                                {% if user.account.balance < entry.payment.cost_pp %}disabled{% endif %}>
+                                            Create transaction
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    <h5>Reimbursements</h5>
+    <table class="table table-hover">
+        <thead>
+        <tr>
+            <th scope="col">Date</th>
+            <th scope="col">Total amount</th>
+            <th scope="col">Paid</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for payment in receive_payments %}
+            <tr class="position-relative">
+                <td>
+                    <a href="{% url 'groceries:payment-detail' pk=payment.pk %}" class="stretched-link">
+                        {{ payment.dining_list.date|date:"SHORT_DATE_FORMAT" }}
+                    </a>
+                </td>
+                <td>{{ payment.total_cost|euro }}</td>
+                <td class="text-{% if payment.paid.count == payment.entries.count %}success{% else %}warning{% endif %}">
+                    {{ payment.paid.count }} / {{ payment.entries.count }}
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+
+{% endblock %}

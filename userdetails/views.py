@@ -1,60 +1,35 @@
 from dal_select2.views import Select2QuerySetView
 from django.contrib.auth import login
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.db import transaction
 from django.db.models import Value
 from django.db.models.functions import Concat
-from django.http import HttpResponseRedirect
-from django.urls import reverse
-from django.views.generic import TemplateView, ListView
+from django.shortcuts import redirect
+from django.urls import reverse_lazy
+from django.views.generic import TemplateView, ListView, FormView
 
-from dining.models import DiningEntryUser, DiningList
-from userdetails.forms import RegisterUserForm, RegisterUserDetails, AssociationLinkForm
+from dining.models import DiningList, DiningEntry
+from userdetails.forms import CreateUserForm, UserForm, MembershipForm
 from userdetails.models import User
 
 
-class RegisterView(TemplateView):
+class RegisterView(FormView):
     template_name = "account/signup.html"
+    form_class = CreateUserForm
+    success_url = reverse_lazy('index')
 
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context.update({
-            'account_form': RegisterUserForm(),
-            'account_detail_form': RegisterUserDetails(),
-            'associationlink_form': AssociationLinkForm(None),
-        })
-        return context
-
-    def post(self, request, *args, **kwargs):
-        account_form = RegisterUserForm(request.POST)
-        account_detail_form = RegisterUserDetails(request.POST)
-        associationlink_form = AssociationLinkForm(None, request.POST)
-
-        context = {
-            'account_form': account_form,
-            'account_detail_form': account_detail_form,
-            'associationlink_form': associationlink_form,
-        }
-
-        if account_form.is_valid() and account_detail_form.is_valid() and associationlink_form.is_valid():
-            # User is valid, safe it to the server
-            user = account_form.save()
-            user = User.objects.get(pk=user.pk)
-            account_detail_form.save_as(user)
-            associationlink_form.save(user=user)
-
-            login(request, user, backend='django.contrib.auth.backends.ModelBackend')
-            return HttpResponseRedirect(reverse('index'))
-
-        return self.render_to_response(context)
+    def form_valid(self, form):
+        user = form.save()
+        login(self.request, user, backend='django.contrib.auth.backends.ModelBackend')
+        return super().form_valid(form)
 
 
 class DiningJoinHistoryView(LoginRequiredMixin, ListView):
-    context = {}
     template_name = "accounts/user_history_joined.html"
     paginate_by = 20
 
     def get_queryset(self):
-        return DiningEntryUser.objects.filter(user=self.request.user).order_by('-dining_list__date')
+        return DiningEntry.objects.internal().filter(user=self.request.user).order_by('-dining_list__date')
 
 
 class DiningClaimHistoryView(LoginRequiredMixin, ListView):
@@ -81,3 +56,32 @@ class PeopleAutocompleteView(LoginRequiredMixin, Select2QuerySetView):
 
     def get_result_label(self, result):
         return result.get_full_name()
+
+
+class SettingsProfileView(LoginRequiredMixin, TemplateView):
+    template_name = "account/settings/settings_account.html"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.update({
+            'form': UserForm(instance=self.request.user),
+            'association_links_form': MembershipForm(self.request.user),
+        })
+        return context
+
+    def post(self, request, *args, **kwargs):
+        user_form = UserForm(request.POST, instance=self.request.user)
+        membership_form = MembershipForm(self.request.user, data=request.POST)
+
+        if user_form.is_valid() and membership_form.is_valid():
+            with transaction.atomic():
+                user_form.save()
+                membership_form.save()
+            return redirect('settings_account')
+
+        context = self.get_context_data()
+        context.update({
+            'form': user_form,
+            'association_links_form': membership_form,
+        })
+        return self.render_to_response(context)

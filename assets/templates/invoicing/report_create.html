@@ -1,0 +1,60 @@
+{% extends 'accounts/associations_base.html' %}
+{% load credit_tags %}
+
+{% block tab_invoicing %}active{% endblock %}
+
+{% block details %}
+    <p><a href="{% url 'invoicing-reports' association_name=association.slug %}">← Back to invoicing</a></p>
+    {#    <h3>Debtors</h3>#}
+    <h3>Debit instructions</h3>
+    <p>
+        Debit the exact amounts as shown on this page.
+        When you have collected the money or entered the amounts in your accounting software,
+        use the button at the bottom to clear all amounts on this page.
+    </p>
+    <p>
+        <em>Collect all amounts in 1 go, because amounts might change when you visit this page at a later
+            moment.</em>
+        Clearing using the button below will clear the exact amounts as shown on this page.
+    </p>
+    <p>
+        <a href="data:text/csv;charset=utf-8,{{ csv_uri }}" download="debtors.csv" class="btn btn-primary">Download
+            table as CSV</a>
+    </p>
+    <table class="table table-sm table-striped">
+        <thead>
+        <tr>
+            <th scope="col">Username</th>
+            <th scope="col">Name</th>
+            <th scope="col">E-mail</th>
+            <th scope="col">Total outstanding amount</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for row in amounts %}
+            <tr>
+                <td>{{ row.username }}</td>
+                <td>{{ row.first_name }} {{ row.last_name }}</td>
+                <td><a href="mailto:{{ row.email }}" target="_blank">{{ row.email }}</a></td>
+                <td>{{ row.total_amount|euro }}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    <div class="card">
+    <div class="card-body">
+    <h5 class="card-title">Clear amounts?</h5>
+    <form method="post"
+          action="{% url 'invoicing-new-report' association_name=association.slug %}?before={{ request.GET.before }}">
+        {% csrf_token %}
+        <div class="custom-control custom-checkbox">
+            <input type="checkbox" class="custom-control-input" id="confirmCheck" required>
+            <label class="custom-control-label" for="confirmCheck">
+                I have debited everyone in the table with the correct amount <span class="text-danger">*</span>
+            </label>
+        </div>
+        <button type="submit" class="btn btn-warning mt-3">Clear outstanding amounts</button>
+    </form>
+    </div>
+    </div>
+{% endblock %}

@@ -1,9 +1,13 @@
 {# Bootstrap 4 form #}
+
+{# Todo: a cleaner approach would be to use a separate include for the form header (hidden fields, non form errors, media) and the form fields #}
+{#      so that it's more natural to render a subset of fields. #}
 {% for hidden in form.hidden_fields %}{{ hidden }}{% endfor %}
 
 {% include 'snippets/bootstrap_form_non_field_errors.html' %}
 
-{% for field in form.visible_fields %}
+{# Can use the fields variable to only render a subset of fields #}
+{% for field in fields|default:form.visible_fields %}
     {% include 'snippets/bootstrap_form_field.html' %}
 {% endfor %}
 

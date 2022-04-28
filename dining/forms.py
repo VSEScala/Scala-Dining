@@ -1,180 +1,125 @@
-import warnings
-from decimal import Decimal, ROUND_UP
+from decimal import Decimal
 
 from dal_select2.widgets import ModelSelect2, ModelSelect2Multiple
 from django import forms
 from django.conf import settings
-from django.core.validators import MinValueValidator
 from django.db import transaction
 from django.db.models import OuterRef, Exists
 from django.forms import ValidationError
 from django.utils import timezone
 
 from creditmanagement.models import Transaction, Account
-from dining.models import DiningList, DiningEntryUser, DiningEntryExternal, DiningComment, DiningEntry
-from general.forms import ConcurrenflictFormMixin
-from general.util import SelectWithDisabled
-from userdetails.models import Association, UserMembership, User
+from dining.models import DiningList, DiningComment, DiningEntry
+from userdetails.models import Association, User
 
 
-def _clean_form(form):
-    """Cleans the given form by validating it and throwing ValidationError if it is not valid."""
-    if not form.is_valid():
-        validation_errors = []
-        for field, errors in form.errors.items():
-            validation_errors.extend(["{}: {}".format(field, error) for error in errors])
-        raise ValidationError(validation_errors)
+class CreateSlotForm(forms.ModelForm):
+    # SIGN_UP_DEADLINE_CHOICES = (
+    #     ('', 'Keep open until I manually close'),
+    #     ('15:00', '15:00'),
+    #     ('15:30', '15:30'),
+    #     ('16:00', '16:00'),
+    #     ('16:30', '16:30'),
+    #     ('17:00', '17:00'),
+    #     ('17:30', '17:30'),
+    # )
+    # sign_up_deadline = forms.TypedChoiceField(coerce=time,
+    #                                           choices=SIGN_UP_DEADLINE_CHOICES,
+    #                                           help_text="You can always change this later.",
+    #                                           initial='15:30')
 
-
-class ServeTimeCheckMixin:
-    """Mixin which gives errors on the serve_time if it is not within the kitchen opening hours."""
-
-    def clean_serve_time(self):
-        serve_time = self.cleaned_data['serve_time']
-        if serve_time < settings.KITCHEN_USE_START_TIME:
-            raise ValidationError("Kitchen can't be used this early")
-        if serve_time > settings.KITCHEN_USE_END_TIME:
-            raise ValidationError("Kitchen can't be used this late")
-        return serve_time
-
-
-class CreateSlotForm(ServeTimeCheckMixin, forms.ModelForm):
     class Meta:
         model = DiningList
         fields = ('dish', 'association', 'max_diners', 'serve_time')
+        widgets = {
+            'serve_time': forms.TimeInput(format='%H:%M'),
+        }
 
     def __init__(self, creator: User, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         self.creator = creator
 
-        # Get associations that the user is a member of (not necessarily verified)
-        associations = Association.objects.filter(usermembership__related_user=creator)
-        denied_memberships = UserMembership.objects.filter(related_user=creator, is_verified=False,
-                                                           verified_on__isnull=False)
-        associations = associations.exclude(usermembership__in=denied_memberships)
+        # Only allow associations that the user is a *verified* member of
+        associations = Association.objects.filter(usermembership__in=creator.get_verified_memberships())
 
         # Filter out unavailable associations (those that have a dining list already on this day)
         dining_lists = DiningList.objects.filter(date=self.instance.date, association=OuterRef('pk'))
         available = associations.annotate(occupied=Exists(dining_lists)).filter(occupied=False)
-        unavailable = associations.annotate(occupied=Exists(dining_lists)).filter(occupied=True)
+        self.fields['association'].queryset = available
 
-        if unavailable.exists():
-            help_text = "Some of your associations are not available since they already have a dining list for this date."
-        else:
-            help_text = ""
+        # Explanation if not all associations are available
+        if associations.count() != available.count():
+            txt = "Some of your associations are not available because they already have a dining list on this date."
+            self.fields['association'].help_text = txt
 
-        widget = SelectWithDisabled(disabled_choices=[(a.pk, a.name) for a in unavailable])
-
-        self.fields['association'] = forms.ModelChoiceField(queryset=available, widget=widget, help_text=help_text)
-
+        # Preselect if only 1 association is available
         if len(available) == 1:
             self.initial['association'] = available[0].pk
             self.fields['association'].disabled = True
-
-        if associations.count() == 0:
-            # Ready an error message as the user is not a member of any of the associations and thus can not create a slot
-            self.cleaned_data = {}
-            self.add_error(None,
-                           ValidationError(
-                               "You are not a member of any association and thus can not claim a dining list"))
 
     def clean(self):
         # Note: uniqueness for date+association is implicitly enforced using the association form field
         cleaned_data = super().clean()
 
-        creator = self.creator
-
         if DiningList.objects.available_slots(self.instance.date) <= 0:
             raise ValidationError("All dining slots are already occupied on this day")
 
         # Check if user has enough money to claim a slot
-        min_balance_exception = creator.has_min_balance_exception()
-        if not min_balance_exception and creator.account.get_balance() < settings.MINIMUM_BALANCE_FOR_DINING_SLOT_CLAIM:
+        if self.creator.account.balance < settings.MINIMUM_BALANCE_FOR_DINING_SLOT_CLAIM:
             raise ValidationError("Your balance is too low to claim a slot")
 
-        # Check if user does not already own another dining list this day
-        if DiningList.objects.filter(date=self.instance.date, owners=creator).exists():
-            raise ValidationError("User already owns a dining list on this day")
-
         # If date is valid
-        if self.instance.date < timezone.now().date():
+        now = timezone.now()
+        if self.instance.date < now.date():
             raise ValidationError("This date is in the past")
-        if self.instance.date == timezone.now().date() and timezone.now().time() > settings.DINING_SLOT_CLAIM_CLOSURE_TIME:
+        if self.instance.date == now.date() and now.time() > settings.DINING_SLOT_CLAIM_CLOSURE_TIME:
             raise ValidationError("It's too late to claim any dining slots")
-        if self.instance.date > timezone.now().date() + settings.DINING_SLOT_CLAIM_AHEAD:
+        if self.instance.date > now.date() + settings.DINING_SLOT_CLAIM_AHEAD:
             raise ValidationError("Dining list is too far in the future")
 
         return cleaned_data
 
     def save(self, commit=True):
-        instance = super().save(commit=commit)
+        instance = super().save(commit=False)  # type: DiningList
+
         if commit:
+            instance.save()
             # Make creator owner
             instance.owners.add(self.creator)
 
-            # Create dining entry for creator
+            # Create dining entry for creator.
+            #
+            # This needs to be executed using the form to make sure that the
+            # kitchen cost transaction is created as well.
             user = self.creator
-            entry_form = DiningEntryUserCreateForm({'user': str(user.pk)},
-                                                   instance=DiningEntryUser(created_by=user, dining_list=instance))
+            entry_form = DiningEntryInternalCreateForm({'user': str(user.pk)},
+                                                       instance=DiningEntry(created_by=user, dining_list=instance))
             if entry_form.is_valid():
                 entry_form.save()
             else:
-                warnings.warn("Couldn't create dining entry while creating dining list")
+                # Signing up might fail if there is a balance issue but that only occurs when
+                # MINIMUM_BALANCE_FOR_DINING_SIGN_UP and MINIMUM_BALANCE_FOR_DINING_SLOT_CLAIM
+                # are not equal.
+                raise RuntimeError("Couldn't create dining entry while creating dining list", entry_form.errors)
         return instance
 
 
-class DiningInfoForm(ConcurrenflictFormMixin, ServeTimeCheckMixin, forms.ModelForm):
+class DiningInfoForm(forms.ModelForm):
     class Meta:
         model = DiningList
-        fields = ['owners', 'dish', 'serve_time', 'min_diners', 'max_diners', 'sign_up_deadline']
+        fields = ('owners', 'dish', 'serve_time', 'max_diners', 'sign_up_deadline')
         widgets = {
             'owners': ModelSelect2Multiple(url='people_autocomplete', attrs={'data-minimum-input-length': '1'}),
+            'serve_time': forms.TimeInput(format='%H:%M'),
+            'sign_up_deadline': forms.DateTimeInput(format='%d-%m-%Y %H:%M')
         }
 
 
-class DiningPaymentForm(ConcurrenflictFormMixin, forms.ModelForm):
-    dinner_cost_total = forms.DecimalField(decimal_places=2, max_digits=5, required=False,
-                                           validators=[MinValueValidator(Decimal('0'))],
-                                           help_text='Only one of dinner cost total or dinner cost per person should '
-                                                     'be provided')
-
+class DiningEntryInternalCreateForm(forms.ModelForm):
     class Meta:
-        model = DiningList
-        fields = ['dinner_cost_total', 'dining_cost', 'payment_link']
-
-    def clean(self):
-        """This cleaning calculates the person dining cost from the total dining cost."""
-        cleaned_data = super().clean()
-        dinner_cost_total = cleaned_data.get('dinner_cost_total')
-        dining_cost = cleaned_data.get('dining_cost')
-
-        # Sanity check: do not allow both dinner cost total and dinner cost per person
-        if dinner_cost_total and dining_cost:
-            msg = "Please only provide either dinner cost total or dinner cost per person"
-            self.add_error('dinner_cost_total', msg)
-            self.add_error('dining_cost', msg)
-        elif dinner_cost_total:
-            # Total dinner cost provided: calculate dining cost per person and apply
-            if self.instance.diners.count() > 0:
-                cost = dinner_cost_total / self.instance.diners.count()
-            else:
-                raise ValidationError({
-                    'dinner_cost_total': "Can't calculate dinner cost per person as there are no diners"})
-
-            # Round up to remove missing cents
-            cost = Decimal(cost).quantize(Decimal('.01'), rounding=ROUND_UP)
-            cleaned_data.update({
-                'dinner_cost_total': None,
-                'dining_cost': cost,
-            })
-        return cleaned_data
-
-
-class DiningEntryUserCreateForm(forms.ModelForm):
-    class Meta:
-        model = DiningEntryUser
-        fields = ['user']
+        model = DiningEntry
+        fields = ('user',)
         widgets = {
             # User needs to type at least 1 character, could change it to 2
             'user': ModelSelect2(url='people_autocomplete', attrs={'data-minimum-input-length': '1'})
@@ -212,16 +157,16 @@ class DiningEntryUserCreateForm(forms.ModelForm):
                 raise ValidationError("Dining list is limited to members only", code='members_only')
 
         # User balance check
-        if not user.has_min_balance_exception() and user.account.get_balance() < settings.MINIMUM_BALANCE_FOR_DINING_SIGN_UP:
+        if user.account.balance < settings.MINIMUM_BALANCE_FOR_DINING_SIGN_UP:
             raise ValidationError("The balance of the user is too low to add", code='nomoneyzz')
 
         return cleaned_data
 
     def save(self, commit=True):
         """Creates a kitchen cost transaction and saves the entry."""
+        instance = super().save(commit=False)  # type: DiningEntry
         if commit:
             with transaction.atomic():
-                instance = super().save(commit=False)  # type: DiningEntry
                 amount = instance.dining_list.kitchen_cost
                 # Skip transaction if dining list is free
                 if amount != Decimal('0.00'):
@@ -232,15 +177,24 @@ class DiningEntryUserCreateForm(forms.ModelForm):
                                                     created_by=instance.created_by)
                     instance.transaction = tx
                 instance.save()
-                return instance
-
-        return super().save(commit)
+        return instance
 
 
-class DiningEntryExternalCreateForm(DiningEntryUserCreateForm):
+class DiningEntryExternalCreateForm(DiningEntryInternalCreateForm):
+    """Form for adding an external dining list entry.
+
+    This works the same way as for an internal entry, except the external_name
+    field is used in the form instead of the user field.
+    """
+
     class Meta:
-        model = DiningEntryExternal
-        fields = ['name']
+        model = DiningEntry
+        fields = ('external_name',)
+        labels = {'external_name': 'Name'}
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.fields['external_name'].required = True
 
     def get_user(self):
         return self.instance.user
@@ -280,53 +234,10 @@ class DiningEntryDeleteForm(forms.Form):
             self.entry.delete()
 
 
-class DiningListDeleteForm(forms.ModelForm):
-    """Allows deletion of a dining list with it's entries.
-
-    This will refund all kitchen costs.
-    """
-
-    class Meta:
-        model = DiningList
-        fields = []
-
-    def __init__(self, deleted_by, instance, **kwargs):
-        # Bind automatically on creation
-        super().__init__(instance=instance, data={}, **kwargs)
-        self.deleted_by = deleted_by
-        # Create entry delete forms
-        self.entry_delete_forms = [DiningEntryDeleteForm(entry, deleted_by, {}) for entry in
-                                   instance.dining_entries.all()]
-
-    def clean(self):
-        cleaned_data = super().clean()
-
-        # Optionally check min/max diners here
-
-        # Also validate all entry deletions
-        for entry_deletion in self.entry_delete_forms:
-            if not entry_deletion.is_valid():
-                raise ValidationError(entry_deletion.non_field_errors())
-
-        return cleaned_data
-
-    def execute(self):
-        """Deletes the dining list by first deleting the entries and after that deleting the dining list."""
-        # Check if validated
-        self.save(commit=False)
-
-        with transaction.atomic():
-            # Delete all entries (this will refund kitchen cost)
-            for entry_deletion in self.entry_delete_forms:
-                entry_deletion.execute()
-            # Delete dining list
-            self.instance.delete()
-
-
 class DiningCommentForm(forms.ModelForm):
     class Meta:
         model = DiningComment
-        fields = ['message']
+        fields = ('message',)
 
     def __init__(self, poster, dining_list, pinned=False, data=None, **kwargs):
         if data is not None:

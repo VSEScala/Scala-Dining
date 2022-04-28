@@ -43,7 +43,7 @@ class AccountAdmin(admin.ModelAdmin):
     """
 
     ordering = ('special', 'association__name', 'user__first_name', 'user__last_name')
-    list_display = ('__str__', 'get_balance', 'negative_since')
+    list_display = ('__str__', 'balance', 'negative_since')
     list_filter = (AccountTypeListFilter,)
     search_fields = ('user__first_name', 'user__last_name', 'user__username', 'association__name', 'special')
 

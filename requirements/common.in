@@ -1,0 +1,10 @@
+Django
+django-widget-tweaks
+django-allauth
+django-autocomplete-light
+environs[django]
+whitenoise  # Used for static files in production
+Pillow  # This one can possibly be removed
+django-phonenumber-field[phonenumbers]
+fontawesomefree==6.0.0
+pytz  # TODO: deprecated, this dependency should be removed when the code is updated for zoneinfo

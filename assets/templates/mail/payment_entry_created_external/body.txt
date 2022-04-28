@@ -1,0 +1,5 @@
+{% extends 'mail/payment_entry_created/body.txt' %}
+{% block cta %}You have added the external diner {{ entry.external_name }} to this list.
+Please ask them to pay for the groceries using the info below.{% endblock %}
+
+{% block pay_by_transaction %}{% endblock %}

@@ -5,9 +5,9 @@
     <td>{{ entry.related_user.email }}</td>
     <td>
         {% if entry.is_verified %}
-            Verified: {{ entry.verified_on|naturalday }}
-        {% elif entry.verified_on %}
-            Denied: {{ entry.verified_on|naturalday }}
+            Verified: {{ entry.verified_last_change|naturalday }}
+        {% elif entry.is_rejected %}
+            Denied: {{ entry.verified_last_change|naturalday }}
         {% else %}
             Requested: {{ entry.created_on|naturalday }}
         {% endif %}
@@ -23,7 +23,7 @@
     </td>
     {# Deny button #}
     <td>
-        {% if entry.is_verified or not entry.verified_on %}
+        {% if not entry.is_rejected %}
             <button type="submit" name="validate-no-{{ entry.id }}" class="btn btn-block btn-outline-danger">
                 <i class="fa fa-times-circle"></i>
             </button>

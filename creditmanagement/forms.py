@@ -12,7 +12,8 @@ from userdetails.models import User, Association
 # Form fields which are used in transaction forms
 USER_FORM_FIELD = forms.ModelChoiceField(User.objects.all(),
                                          required=False,
-                                         widget=ModelSelect2(url='people_autocomplete'),
+                                         widget=ModelSelect2(url='people_autocomplete',
+                                                             attrs={'data-minimum-input-length': '1'}),
                                          label="User")
 ASSOCIATION_FORM_FIELD = forms.ModelChoiceField(Association.objects.all(),
                                                 required=False,
@@ -85,9 +86,9 @@ class TransactionForm(forms.ModelForm):
 
         # Check balance!!
         # We block transactions made by this form that make a user account balance negative
-        # (Note that there's a race condition here, but it is not an issue in practice.)
+        # (There's a race condition here when balance changes after this check, but it is not an issue in practice.)
         source = self.instance.source  # type: Account
-        if source.user and source.get_balance() < cleaned_data.get('amount'):
+        if source.user and source.balance < cleaned_data.get('amount'):
             raise ValidationError("Your balance is insufficient.")
 
         return cleaned_data
@@ -163,66 +164,3 @@ class SiteWideTransactionForm(forms.ModelForm):
                     send_templated_mail('mail/transaction_created', source.user, {'transaction': instance}, request)
 
         return instance
-
-
-class ClearOpenExpensesForm(forms.Form):
-    """Creates transactions for all members of this association who are negative."""
-
-    description = forms.CharField(max_length=150, help_text="Is displayed on each user's transaction overview, "
-                                                            "e.g. in the case of Quadrivium it could be 'Q-rekening'.")
-
-    def __init__(self, *args, association=None, user=None, **kwargs):
-        # Calculate and create the transactions that need to be applied
-
-        # Get all verified members. Probably nicer to create a helper method for this.
-        members = User.objects.filter(usermembership__association=association, usermembership__is_verified=True)
-        self.transactions = []
-        for m in members:
-            balance = m.account.get_balance()
-            if balance < 0:
-                # Construct a transaction for each member with negative balance
-                tx = Transaction(source=association.account,
-                                 target=m.account,
-                                 amount=-balance,
-                                 created_by=user)  # Description needs to be set later
-                self.transactions.append(tx)
-        super().__init__(*args, **kwargs)
-
-    def save(self):
-        """Saves the transactions to the database."""
-        if not self.is_valid():
-            raise RuntimeError
-        desc = self.cleaned_data.get('description')
-        with transaction.atomic():
-            for tx in self.transactions:
-                tx.description = desc
-                tx.save()
-
-
-# Todo! This form is currently not used, it can be removed
-class AccountPickerForm(forms.Form):
-    """Form that enables the user to choose any account of any type."""
-
-    user = USER_FORM_FIELD
-    association = ASSOCIATION_FORM_FIELD
-    special = SPECIAL_FORM_FIELD
-
-    def clean(self):
-        cleaned_data = super().clean()
-        fields = (bool(cleaned_data['user']), bool(cleaned_data['association']), bool(cleaned_data['special']))
-        if sum(fields) != 1:
-            raise ValidationError("Select 1 of the fields.")
-        return super().clean()
-
-    def get_account(self) -> Account:
-        """Returns the account that was picked."""
-        user = self.cleaned_data['user']
-        if user:
-            return user.account
-        association = self.cleaned_data['association']
-        if association:
-            return association.account
-        special = self.cleaned_data['special']
-        if special:
-            return special
-        raise RuntimeError

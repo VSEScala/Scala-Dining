@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title></title>
+</head>
+<body>
+
+{% if not configured %}
+    <p>In-memory backend is not enabled</p>
+{% else %}
+    {% for email in outbox %}
+        <hr id="msg{{ forloop.counter }}">
+        <p>
+            Message {{ forloop.counter }} of {{ outbox|length }}
+            | <a href="#msg1">first</a>
+            | <a href="#msg{{ outbox|length }}">last</a>
+            {% if not forloop.first %}| <a href="#msg{{ forloop.counter|add:"-1" }}">previous</a>{% endif %}
+            {% if not forloop.last %}| <a href="#msg{{ forloop.counter|add:"1" }}">next</a>{% endif %}
+        </p>
+        <hr>
+        <pre>{{ email.message }}</pre>
+    {% empty %}
+        <p>Outbox is empty</p>
+    {% endfor %}
+{% endif %}
+
+</body>
+</html>

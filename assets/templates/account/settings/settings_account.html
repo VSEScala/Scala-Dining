@@ -5,14 +5,18 @@
 {% block details %}
     {# Username #}
     <form method="post" action="{% url 'settings_account' %}">
-        <h3>Account</h3>
         {% csrf_token %}
-        {% include "snippets/bootstrap_form.html" with form=user_form horizontal=True %}
+        {% include "snippets/bootstrap_form.html" with horizontal=True fields=form.visible_fields|slice:":3" %}
+        <h3>Contact info</h3>
+        <p>
+            Contact info is visible to everyone who joins the same dining lists as you.
+            Leave empty if for privacy reasons you don't want to share your contact info.
+        </p>
+        {% include "snippets/bootstrap_form.html" with fields=form.visible_fields|slice:"4:6" horizontal=True %}
         <h3>Dining</h3>
-        {% include "snippets/bootstrap_form.html" with form=dining_form horizontal=True %}
+        {% include "snippets/bootstrap_form.html" with fields=form.visible_fields|slice:"3:4" horizontal=True %}
         <h3>Memberships</h3>
         {% include "account/snippet_associations_form.html" with form=association_links_form %}
-        <p><button type="submit" name="user_submit" class="btn btn-primary btn-block">Save</button></p>
+        <button type="submit" class="btn btn-primary btn-block">Save</button>
     </form>
-
 {% endblock %}

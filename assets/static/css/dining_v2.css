@@ -1,47 +1,3 @@
-.slot_image{
-    background-size: contain;
-    background-repeat: no-repeat;
-    background-position: center;
-}
-
-.slot-back{
-    position: absolute;
-    background-color: transparent;
-
-    display: block;
-    width: 100%;
-    height:100%;
-    left: 0;
-    top: 0;
-}
-
-hr {
-    border-top: 1px solid #ccc;
-}
-
-.slot-signup, .slot-signed, .slot-unlist{
-    background-position: center;
-    -webkit-background-size: contain;
-    background-size: auto 75%;
-    background-repeat: no-repeat;
-}
-
-.slot-signup{
-    background-image: url("/static/images/sign_up_in.png");
-}
-
-.slot-signed{
-    background-image: url("/static/images/signed_in.png");
-}
-
-.slot-unlist{
-    background-image: url("/static/images/sign_up_out.png");
-}
-
-.diningentry:hover{
-    background-color: #254a9999;
-}
-
 .dining-nav {
     border-radius: 10px 10px 0 0 ;
 }
@@ -55,14 +11,4 @@ hr {
     height: 100%;
     filter: grayscale(100%);
     padding: 0 0.1em;
-}
-
-.collapser{
-    height:0;
-    overflow: hidden;
-    transition: all 0.3s ease;
-}
-
-input:checked + .collapser{
-    height:auto;
 }

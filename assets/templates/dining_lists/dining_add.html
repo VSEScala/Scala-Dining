@@ -1,21 +1,27 @@
 {% extends 'base.html' %}
 
-{% block title %}Scala Dining {{ date }}{% endblock %}
+{% block title %}{{ block.super }} {{ date|date:"SHORT_DATE_FORMAT" }}{% endblock %}
 
 {% block content %}
-    <div class="col-12 row p-0 m-0">
-        <div class="offset-2 text-center col-8 ">
-            {# To specify the date format, see https://docs.djangoproject.com/en/2.1/ref/settings/#date-format #}
-            {{ date }}
+    <p>
+        <a href="{% url 'day_view' day=date.day month=date.month year=date.year %}">
+            ← Back to day view
+        </a>
+    </p>
+    {#    <div class="text-center">#}
+    {#        <h4>{{ date|date:DOW_DATE_FORMAT }}</h4>#}
+    {#    </div>#}
+    <h3>New dining list</h3>
+    <form method="post" action="{% url 'new_slot' year=date.year month=date.month day=date.day %}">
+        {% csrf_token %}
+        <div class="form-group row">
+            <label for="date" class="col-sm-2 col-form-label">Date</label>
+            <div class="col-sm-10">
+                <input type="text" class="form-control-plaintext" id="date"
+                       value="{{ date|date:"SHORT_DATE_FORMAT" }}">
+            </div>
         </div>
-    </div>
-
-    <div>
-        <h3>Create new dining list</h3>
-        <form method="post">
-            {% csrf_token %}
-            {% include "snippets/bootstrap_form.html" with form=slot_form horizontal=True %}
-            <input type="submit" value="Create dining slot" class="btn btn-block btn-primary"/>
-        </form>
-    </div>
+        {% include "snippets/bootstrap_form.html" with form=slot_form horizontal=True %}
+        <input type="submit" value="Create dining list" class="btn btn-primary"/>
+    </form>
 {% endblock %}

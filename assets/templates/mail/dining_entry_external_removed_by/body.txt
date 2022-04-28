@@ -3,7 +3,7 @@ Hi {{ entry.user}}
 
 {{ remover }} has removed your guest {{entry.name}} from the following dining list:
 Date: {{dining_list.date}}
-By: {{dining_list|short_owners_string}}
+By: {{dining_list.owners.all|join:", "}}
 Association: {{dining_list.association}}
 
 {% if dining_list.is_open and dining_list.has_room %}

@@ -4,16 +4,15 @@ from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import PermissionDenied
 from django.core.paginator import Paginator
-from django.db.models import Q, Count, Sum
+from django.db.models import Count, Sum
 from django.http import HttpResponseRedirect, HttpResponse
 from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
-from django.utils.http import is_safe_url
 from django.views import View
 from django.views.generic import ListView, TemplateView, FormView, DetailView
 
 from creditmanagement.csv import write_transactions_csv
-from creditmanagement.forms import ClearOpenExpensesForm, SiteWideTransactionForm
+from creditmanagement.forms import SiteWideTransactionForm
 from creditmanagement.models import Transaction, Account
 from creditmanagement.views import TransactionFormView
 from dining.models import DiningList, DiningEntry
@@ -22,6 +21,7 @@ from userdetails.forms import AssociationSettingsForm
 from userdetails.models import UserMembership, Association, User
 
 
+# Todo: rewrite using SingleObjectMixin and UserPassesTestMixin
 class AssociationBoardMixin:
     """Gathers association data and verifies that the user is a board member."""
     association = None
@@ -29,7 +29,7 @@ class AssociationBoardMixin:
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['association'] = self.association
-        context['notify_overview'] = self.association.has_new_member_requests()
+        context['notify_overview'] = self.association.member_requests().exists()
         return context
 
     def dispatch(self, request, *args, **kwargs):
@@ -67,34 +67,6 @@ class AssociationTransactionAddView(LoginRequiredMixin, AssociationBoardMixin, T
         return reverse('association_credits', kwargs={'association_name': self.kwargs.get('association_name')})
 
 
-class AutoCreateNegativeCreditsView(LoginRequiredMixin, AssociationBoardMixin, FormView):
-    template_name = "accounts/association_correct_negatives.html"
-    form_class = ClearOpenExpensesForm
-
-    def get_form_kwargs(self):
-        # This view is only meant for associations with a min credit exception
-        if not self.association.has_min_exception:
-            raise PermissionDenied
-        kwargs = super().get_form_kwargs()
-        kwargs['association'] = self.association
-        kwargs['user'] = self.request.user
-        return kwargs
-
-    def form_valid(self, form):
-        form.save()
-        messages.success(self.request, "Member credits have successfully been processed")
-        return super().form_valid(form)
-
-    def get_success_url(self):
-        return reverse('association_credits', kwargs={'association_name': self.association.slug})
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        # Sum all transaction amounts
-        context['transactions_sum'] = sum(tx.amount for tx in context['form'].transactions)
-        return context
-
-
 class AssociationTransactionsCSVView(LoginRequiredMixin, AssociationBoardMixin, View):
     """Returns a CSV file with all transactions."""
 
@@ -112,8 +84,7 @@ class MembersOverview(LoginRequiredMixin, AssociationBoardMixin, ListView):
     paginate_by = 50
 
     def get_queryset(self):
-        return User.objects.filter(
-            Q(usermembership__association=self.association) & Q(usermembership__is_verified=True))
+        return User.objects.filter(usermembership__association=self.association, usermembership__verified_state=True)
 
 
 class AssociationOverview(LoginRequiredMixin, AssociationBoardMixin, TemplateView):
@@ -121,8 +92,9 @@ class AssociationOverview(LoginRequiredMixin, AssociationBoardMixin, TemplateVie
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['pending_memberships'] = UserMembership.objects.filter(association=self.association,
-                                                                       verified_on__isnull=True)
+        context.update({
+            'pending_memberships': self.association.member_requests()
+        })
         return context
 
 
@@ -131,8 +103,8 @@ class MembersEditView(LoginRequiredMixin, AssociationBoardMixin, ListView):
     paginate_by = 50
 
     def get_queryset(self):
-        return UserMembership.objects.filter(Q(association=self.association)).order_by('is_verified', 'verified_on',
-                                                                                       'created_on')
+        return UserMembership.objects.filter(
+            association=self.association).order_by('-verified_state', '-verified_last_change', '-created_on')
 
     def _alter_state(self, verified, id):
         """Alter the state of the given user membership.
@@ -142,13 +114,10 @@ class MembersEditView(LoginRequiredMixin, AssociationBoardMixin, ListView):
         """
         membership = UserMembership.objects.get(id=id)
         if verified == "yes":
-            if membership.is_verified:
-                return
-            membership.set_verified(True)
+            membership.set_verified(state=True)
         elif verified == "no":
-            if not membership.is_verified and membership.verified_on is not None:
-                return
-            membership.set_verified(False)
+            membership.set_verified(state=False)
+        membership.save()
 
     def post(self, request, *args, **kwargs):
         # Todo: there is no check on ID, i.e. any passed ID will work. I suggest switching to FormSets.
@@ -162,7 +131,10 @@ class MembersEditView(LoginRequiredMixin, AssociationBoardMixin, ListView):
 
         # If next is provided, put possible error messages on the messages system and redirect
         next = request.GET.get('next', None)
-        if next and is_safe_url(next, request.get_host()):
+        # TODO: sanitize next parameter
+        # if next and is_safe_url(next, request.get_host()):
+        #     return HttpResponseRedirect(next)
+        if next:
             return HttpResponseRedirect(next)
 
         return HttpResponseRedirect(request.path_info)
@@ -172,9 +144,8 @@ class AssociationSettingsView(AssociationBoardMixin, TemplateView):
     template_name = "accounts/association_settings.html"
 
     def get_context_data(self, **kwargs):
-        context = super(AssociationSettingsView, self).get_context_data(**kwargs)
+        context = super().get_context_data(**kwargs)
         context['form'] = AssociationSettingsForm(instance=self.association)
-
         return context
 
     def post(self, request, association_name=None):
@@ -208,7 +179,7 @@ class SiteDiningView(AssociationBoardMixin, AssociationHasSiteAccessMixin, DateR
                 cooked_for = DiningEntry.objects.filter(
                     dining_list__association=association,
                     dining_list__in=dining_lists)
-                memberships = UserMembership.objects.filter(association=association, is_verified=True)
+                memberships = UserMembership.objects.filter(association=association, verified_state=True)
                 members = User.objects.filter(usermembership__in=memberships)
 
                 cooked_for_own = cooked_for.filter(user__in=members)
@@ -226,7 +197,7 @@ class SiteDiningView(AssociationBoardMixin, AssociationHasSiteAccessMixin, DateR
                 dining_entry_count=Count('diningentry'))
 
             for user in users:
-                memberships = UserMembership.objects.filter(is_verified=True, related_user=user)
+                memberships = UserMembership.objects.filter(verified_state=True, related_user=user)
                 if memberships:
                     user_weight = user.dining_entry_count / memberships.count()
 

@@ -1,0 +1,92 @@
+{% extends 'base.html' %}
+{% load credit_tags %}
+
+
+{% block content %}
+    <p><a href="{% url 'groceries:overview' %}">← Grocery splits overview</a></p>
+    <h2>Grocery split</h2>
+    <div class="row mb-3">
+        <div class="col-sm-2"><strong><i class="fas fa-utensils fa-fw"></i> Dining list</strong></div>
+        <div class="col-sm-10"><a
+                href="{{ payment.dining_list.get_absolute_url }}">{{ payment.dining_list.date|date:"SHORT_DATE_FORMAT" }}</a>
+        </div>
+    </div>
+    <div class="row mb-3">
+        <div class="col-sm-2"><strong>Cost</strong></div>
+        <div class="col-sm-10">{{ payment.total_cost|euro }}</div>
+    </div>
+    <div class="row mb-3">
+    {# TODO: the entries count does not include the receiver, i.e. is 1 too low in case the receiver also joined #}
+        <div class="col-sm-2"><strong>Cost per person ({{ payment.entries.count }})</strong></div>
+        <div class="col-sm-10">{{ payment.cost_pp|euro }}</div>
+    </div>
+    <div class="row mb-3">
+        <div class="col-sm-2"><strong>Payment link</strong></div>
+        <div class="col-sm-10">
+            {% if payment.payment_link %}
+                <a href="{{ payment.payment_link }}" target="_blank">{{ payment.payment_link }}</a>
+            {% else %}-{% endif %}
+        </div>
+    </div>
+    <div class="row mb-3">
+        <div class="col-sm-2"><strong>Remarks</strong></div>
+        <div class="col-sm-10">{{ payment.remarks|default:"-" }}</div>
+    </div>
+    <h3>Diners</h3>
+    <p>
+        Diners who paid using a transaction from their account balance to yours are automatically marked as paid.
+        If you need to undo an automatic transaction, create a reversed
+        <a href="{% url 'credits:transaction_add' %}">money transfer</a> from your account to theirs, or
+        just pay the person back in cash.
+    </p>
+    <p class="text-muted small">
+        Your own dining entry is not shown in the list because you are the recipient of the money.
+    </p>
+    <table class="table" style="table-layout: fixed;" id="dinerTable">
+        <thead>
+        <tr>
+            <th scope="col">Diner</th>
+            <th scope="col">Paid</th>
+            <th scope="col">Change</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for entry in payment.entries.all %}
+            <tr>
+                <td>
+                    {% if entry.is_external %}
+                        {{ entry.external_name }} <span class="badge badge-secondary">External diner</span>
+                    {% else %}
+                        {{ entry.user }}
+                        {# Contact info #}
+                        {% include 'snippets/contact_info_button.html' with user=entry.user %}
+                    {% endif %}
+                </td>
+                <td>
+                    {% if entry.paid %}
+                        <span class="text-success"><i class="fas fa-check-circle"></i> Paid</span>
+                    {% else %}
+                        <span class="text-danger"><i class="fas fa-times-circle"></i> Not paid</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if entry.transaction %}
+                        <span class="text-secondary">Paid with account balance</span>
+                    {% else %}
+                        <form method="post" action="{% url 'groceries:payment-detail' pk=payment.pk %}"
+                              class="d-inline-block">
+                            {% csrf_token %}
+                            <input type="hidden" name="entry_id" value="{{ entry.pk }}">
+                            <button type="submit" name="paid"
+                                    value="{% if entry.paid %}false{% else %}true{% endif %}"
+                                    class="btn btn-{% if entry.paid %}warning{% else %}primary{% endif %} btn-sm">
+                                {% if entry.paid %}Set not paid{% else %}Set paid{% endif %}
+                            </button>
+                        </form>
+                    {% endif %}
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+{% endblock %}

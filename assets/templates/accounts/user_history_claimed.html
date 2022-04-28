@@ -1,31 +1,27 @@
 {% extends 'accounts/user_history_base.html' %}
 {% load dining_tags %}
 
-{% block title %}{{ request.user }} - Dining history {% endblock %}
-
-{% block tab_claimed %} active{% endblock %}
+{% block tab_claimed %}active{% endblock %}
 
 {% block details %}
     <div class="table-responsive">
         <table class="table table-hover">
-            {# Table header #}
             <thead>
-            <tr class="">
-                <td class="">Date</td>
-                <td class="">Dish</td>
-                <td class="">Association</td>
-                <td class=""># Diners</td>
-                <td class=""># Paid</td>
-                <td class="">Link</td>
+            <tr>
+                <th scope="col">Date</th>
+                <th scope="col">Dish</th>
+                <th scope="col">Association</th>
+                <th scope="col"># Diners</th>
             </tr>
             </thead>
 
             <tbody>
-            {# Table rows #}
             {% for entry in object_list %}
-                <tr>
+                <tr class="position-relative">
                     <td>
-                        {{ entry.date }}
+                        <a class="stretched-link" href="{{ entry.get_absolute_url }}">
+                            {{ entry.date|date:"SHORT_DATE_FORMAT" }}
+                        </a>
                     </td>
                     <td>
                         {{ entry.dish }}
@@ -35,16 +31,6 @@
                     </td>
                     <td>
                         {{ entry.diners.count }}
-                    </td>
-                    <td>
-                        {% with paid=entry|paid_count %}
-                            <span class="{% if paid < entry.diners.count %}text-warning{% endif %}">
-                                {{ paid }}
-                            </span>
-                        {% endwith %}
-                    </td>
-                    <td class="py-2">
-                        <a class="btn btn-outline-primary" href="{{ entry.get_absolute_url }}"><i class="fas fa-arrow-right"></i></a>
                     </td>
                 </tr>
             {% endfor %}

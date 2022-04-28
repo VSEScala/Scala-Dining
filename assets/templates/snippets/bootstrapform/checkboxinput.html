@@ -1,0 +1,27 @@
+{# Parameters: horizontal, form, field #}
+{% load widget_tweaks %}
+<div class="{% if horizontal %}col-sm-10 offset-sm-2{% endif %}">
+    <div class="custom-control custom-checkbox">
+        {% if form.is_bound %}
+            {% if field.errors %}
+                {% render_field field class="custom-control-input is-invalid" %}
+                {% for error in field.errors %}
+                    <div class="invalid-feedback">
+                        {{ error }}
+                    </div>
+                {% endfor %}
+            {% else %}
+                {% render_field field class="custom-control-input is-valid" %}
+            {% endif %}
+        {% else %}
+            {% render_field field class="custom-control-input" %}
+        {% endif %}
+        <label class="custom-control-label" for="{{ field.id_for_label }}">
+            {{ field.label }}
+            {% if field.field.required %}<span class="text-danger">*</span>{% endif %}
+        </label>
+    </div>
+    {% if field.help_text %}
+        <small class="form-text text-muted">{{ field.help_text }}</small>
+    {% endif %}
+</div>

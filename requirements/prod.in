@@ -1,0 +1,4 @@
+gunicorn
+# The Debian package libpq-dev is needed for pip-compile to work with psycopg2
+# See: https://github.com/jazzband/pip-tools/issues/1583
+psycopg2

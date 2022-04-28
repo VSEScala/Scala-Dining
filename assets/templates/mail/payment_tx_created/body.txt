@@ -1,0 +1,5 @@
+{% load credit_tags %}
+{{ entry.user }} has paid you for the grocery costs of the dining list on {{ payment.dining_list.date|date:"SHORT_DATE_FORMAT" }}, using their account balance.
+Your account balance has been increased with {{ payment.cost_pp|euro }}.
+
+View all payment details here: {{ site_uri }}{% url 'groceries:payment-detail' pk=payment.pk %}

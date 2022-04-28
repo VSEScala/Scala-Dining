@@ -48,6 +48,8 @@ INSTALLED_APPS = [
     'dining.apps.DiningConfig',
     'creditmanagement.apps.CreditManagementConfig',
     'general.apps.GeneralConfig',
+    'groceries.apps.GroceriesConfig',
+    'invoicing.apps.InvoicingConfig',
     'scaladining.apps.MyAdminConfig',
 
     'allauth.account',  # This needs to be before userdetails due to admin.site.unregister
@@ -59,6 +61,8 @@ INSTALLED_APPS = [
     'allauth',
     'allauth.socialaccount',
     'allauthproviders.quadrivium',
+    'phonenumber_field',
+    'fontawesomefree',
 ]
 
 MIDDLEWARE = [
@@ -86,11 +90,14 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
-                'scaladining.context_processors.scala'
+                'scaladining.context_processors.dining'
             ],
         },
     },
 ]
+
+# If debug is enabled and IP is in this list, SQL queries will be shown in the JS console.
+INTERNAL_IPS = env.list('INTERNAL_IPS', default='')
 
 WSGI_APPLICATION = 'scaladining.wsgi.application'
 
@@ -125,20 +132,21 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 # Internationalization
-
 TIME_ZONE = 'Europe/Amsterdam'
-
-# Automatic Dutch localization with English language is difficult,
-# so we'll set the date formats manually to Dutch style.
-DATE_FORMAT = 'l j F'  # Default: N j, Y
-SHORT_DATE_FORMAT = 'd-m-Y'  # Default: m/d/Y
-DATETIME_FORMAT = 'N j, Y, G:i'  # Default: N j, Y, P
-SHORT_DATETIME_FORMAT = 'd-m-Y G:i'  # Default: m/d/Y P
-
-USE_I18N = False
-USE_L10N = False
 USE_TZ = True
+# This imports Dutch date/time formats but turns off localization and internationalization so that dates use English
+# names for months/weekdays, but Dutch format.
+from django.conf.locale.nl.formats import *  # noqa: E402,F401,F403
+# Custom date format that includes day of week (it's the same as DATE_FORMAT with 'l' prepended)
+DOW_DATE_FORMAT = 'l j F Y'
+
+# Use English format for numbers because the Dutch format is just stupid
+DECIMAL_SEPARATOR = '.'
+THOUSAND_SEPARATOR = ','
+USE_L10N = False
+USE_I18N = False
 USE_THOUSAND_SEPARATOR = True
+PHONENUMBER_DEFAULT_REGION = 'NL'
 
 AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
@@ -183,3 +191,13 @@ if env.bool('DINING_COOKIE_SECURE', default=False):
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
+
+# The message given here will be shown at the top of every page.
+#
+# Use it for instance when running a staging deployment, to notify the users
+# about this.
+SITE_NOTICE = env.str('SITE_NOTICE', default='')
+
+# TODO: we need to migrate from pytz to zoneinfo
+#  See: https://docs.djangoproject.com/en/4.0/releases/4.0/#zoneinfo-default-timezone-implementation
+USE_DEPRECATED_PYTZ = True

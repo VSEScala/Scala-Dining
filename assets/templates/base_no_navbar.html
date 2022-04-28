@@ -1,15 +1,11 @@
-{% load static %}<!doctype html>
+{% load static %}<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    {# Bootstrap with Bootswatch Darkly theme #}
-    <link href="https://stackpath.bootstrapcdn.com/bootswatch/4.3.1/darkly/bootstrap.min.css" rel="stylesheet"
-          integrity="sha384-w+8Gqjk9Cuo6XH9HKHG5t5I1VR4YBNdPt/29vwgfZR485eoEJZ8rJRbm3TR32P6k" crossorigin="anonymous">
-    {# Font Awesome icons #}
-    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.8.1/css/all.css"
-          integrity="sha384-50oBUHEmvpQ+1lW4y57PTFmhCaXp0ML5d60M1M7uH2+nqUivzIebhndOJK28anvf" crossorigin="anonymous">
-    {# Own CSS customizations #}
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootswatch@4.6.0/dist/darkly/bootstrap.min.css"
+          integrity="sha256-CETRC0luEnm32Z1z91BT8xqiKfIzbspZ64YCq3T63xk=" crossorigin="anonymous">
+    <link href="{% static 'fontawesomefree/css/all.min.css' %}" rel="stylesheet" type="text/css">
     <link rel="stylesheet" href="{% static 'css/custom.css' %}">
     {% block head %}{% endblock %}
     <title>{% block title %}Scala Dining{% endblock %}</title>
@@ -19,13 +15,21 @@
     <script src="{% static 'admin/js/vendor/jquery/jquery.min.js' %}"></script>
 </head>
 <body>
+{% if SITE_NOTICE %}
+    <div class="w-100 text-center p-1 bg-warning text-dark">{{ SITE_NOTICE|safe }}</div>
+    <div id="belowSiteNotice"></div>
+    <script>
+        document.addEventListener('DOMContentLoaded', (event) => {
+            document.getElementById("belowSiteNotice").scrollIntoView();
+        });
+    </script>
+{% endif %}
 {% block body %}{% endblock %}
-{# Note: jQuery is already loaded in the head #}
-<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"
-        integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1"
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-Piv4xVNRyMGpqkS2by6br4gNJ7DXjqk09RmUpJ8jgGtD7zP9yug3goQfGII0yAns"
         crossorigin="anonymous"></script>
-<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"
-        integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM"
-        crossorigin="anonymous"></script>
+{% if debug %}
+    <script>console.log({{ sql_queries|safe }})</script>
+{% endif %}
 </body>
 </html>
