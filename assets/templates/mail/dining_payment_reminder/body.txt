@@ -1,5 +1,5 @@
 {% load dining_tags %}
-Hi {{user.first_name}}
+Hi {{recipient.first_name}}
 
 You recently dined with the following dining_list:
 Date: {{dining_list.date}}

@@ -1,5 +1,5 @@
 {% load dining_tags %}
-Hi {{ entry.user}}
+Hi {{ recipient.user}}
 
 {{ remover }} has removed you from the following dining list:
 Date: {{dining_list.date}}

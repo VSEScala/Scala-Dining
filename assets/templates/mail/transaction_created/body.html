@@ -2,6 +2,9 @@
 {% load credit_tags %}
 {% block content %}
     <p>
+        Hi {{ recipient.first_name }}
+    </p>
+    <p>
         {{ transaction.created_by }} has withdrawn {{ transaction.amount|euro }} from your Scala Dining account,
         with the description '{{ transaction.description }}'.
         If this is incorrect, please contact the site operator or a Scala board member as soon as possible.

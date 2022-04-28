@@ -1,5 +1,5 @@
 {% load dining_tags %}
-Hi {{ user.first_name }}
+Hi {{ recipient.first_name }}
 
 We regret to inform you that the following dining list has been cancelled.
 Date: {{dining_list.date}}

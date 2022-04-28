@@ -3,12 +3,12 @@
 
 {% block content %}
     <p>
-        Hi {{ user.first_name }}
+        Hi {{ recipient.first_name }}
     </p>
     <p>
-        {% if guest %} Your guest {{guest}} recently dined on the following dining_list:
+        {% if guests == 1 %} Your guest {{ guests|first }} recently dined on the following dining_list:
         {%else%}
-            You recently added  a couple of guests to the following dining list:
+            You recently added a couple of guests to the following dining list:
         {%endif%}
     </p>
     <table>
@@ -36,14 +36,14 @@
     <p>
         {% if is_reminder %}
             However, according to our administration,
-            {% if guest %} {{ guest }} has not paid for the meal yet.{% else %}
+            {% if guests == 1 %} {{ guests|first }} has not paid for the meal yet.{% else %}
                 Some of them have not yet paid for the meal yet.
             {% endif %}
         {% endif %}
     </p>
     <p>
-        {% if guest %}
-            {{ reminder }} kindly ask you to contact {{ guest }} and ask him to pay for the meal.
+        {% if guests == 1 %}
+            {{ reminder }} kindly ask you to contact {{ guests|first }} and ask him to pay for the meal.
         {% else %}
             {{ reminder }} kindly asks you to contact the following guests:
             <li>

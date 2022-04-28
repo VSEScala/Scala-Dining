@@ -16,7 +16,7 @@ def get_mail_context(recipient: User, extra_context: dict = None, request: HttpR
     return {
         'domain': current_site.domain,
         'site_name': current_site.name,
-        'user': recipient,
+        'recipient': recipient,
         'protocol': protocol,
         'site_uri': '{}://{}'.format(protocol, current_site.domain),
         **(extra_context or {}),
@@ -43,10 +43,10 @@ def send_templated_mail(template_dir: str, recipients, context: dict = None, req
     messages = []
     for recipient in recipients:
         # Render templates
-        context = get_mail_context(recipient, context, request)
-        subject = render_to_string(template_dir + '/subject.txt', context=context, request=request).strip()
-        html_body = render_to_string(template_dir + '/body.html', context=context, request=request)
-        text_body = render_to_string(template_dir + '/body.txt', context=context, request=request)
+        local_context = get_mail_context(recipient, context, request)
+        subject = render_to_string(template_dir + '/subject.txt', context=local_context, request=request).strip()
+        html_body = render_to_string(template_dir + '/body.html', context=local_context, request=request)
+        text_body = render_to_string(template_dir + '/body.txt', context=local_context, request=request)
         # Create message
         message = EmailMultiAlternatives(subject=subject, body=text_body, to=[recipient.email])
         message.attach_alternative(html_body, 'text/html')
