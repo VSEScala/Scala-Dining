@@ -1,12 +1,11 @@
-{% extends 'base.html' %}
+{#{% extends 'base.html' %}#}
+{% extends 'dining_lists/dining_slot.html' %}
+
 {% load credit_tags %}
 
-{% block content %}
+{% block details %}
     <p><a href="{{ dining_list.get_absolute_url }}">← Back to dining list</a></p>
-    <h2>Split grocery costs</h2>
-    <p>
-        If you paid for groceries, use this page to split the costs over all diners.
-    </p>
+    <h3>Split grocery costs</h3>
     <form action="{% url 'groceries:payment-create' pk=dining_list.pk %}" method="post">
         {% csrf_token %}
         {% include 'snippets/bootstrap_form.html' with horizontal=True fields=form.visible_fields|slice:"0:1" %}
@@ -25,9 +24,9 @@
                 <small class="form-text text-muted">Total cost divided by number of diners, rounded up.</small>
             </div>
         </div>
-        <h3>Payment info</h3>
+        <h4>Payment info</h4>
         <p>
-            All diners will be notified with the provided payment info.
+            All diners will be notified with the provided info.
             The info will be remembered for the next time you create a payment.
         </p>
         {# Only render the payment info fields #}
@@ -43,14 +42,14 @@
                 </p>
                 <p class="card-text">
                     Diners do not have to pay from their account balance if they do not want to, they can always
-                    pay via other means instead.
+                    choose to pay via other means instead.
                 </p>
             </div>
         </div>
         {% include 'snippets/bootstrap_form.html' with horizontal=True fields=form.visible_fields|slice:"3:4" %}
-        <h3>Contact info</h3>
+        <h4>Contact info</h4>
         <p>
-            Providing your contact info is helpful in case of payment issues, change it in
+            Setting your contact info is helpful in case of payment issues, change it in
             <a href="{% url 'settings_account' %}">account settings</a>.
         </p>
         <div class="form-group row">

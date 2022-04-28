@@ -3,6 +3,8 @@
 {% load humanize %}
 {% load dining_tags %}
 
+{% block title %}{{ block.super }} {{ date|date:"SHORT_DATE_FORMAT" }}{% endblock %}
+
 {% block content %}
     <div class="row mb-3">
         {# Button toolbar #}
@@ -12,7 +14,7 @@
                     {# (upcoming is a class method, i.e. not specific to the instance) #}
                     {% with u=date.upcoming %}
                         <a href="{% url 'day_view' day=u.day month=u.month year=u.year %}"
-                           class="btn btn-block btn-outline-primary">
+                           class="btn btn-block btn-outline-primary {% if u == date %}disabled{% endif %}">
                             {% if u == date.today %}Today{% else %}Upcoming{% endif %}
                         </a>
                     {% endwith %}

@@ -70,11 +70,12 @@ class CreateSlotForm(forms.ModelForm):
             raise ValidationError("Your balance is too low to claim a slot")
 
         # If date is valid
-        if self.instance.date < timezone.now().date():
+        now = timezone.now()
+        if self.instance.date < now.date():
             raise ValidationError("This date is in the past")
-        if self.instance.date == timezone.now().date() and timezone.now().time() > settings.DINING_SLOT_CLAIM_CLOSURE_TIME:
+        if self.instance.date == now.date() and now.time() > settings.DINING_SLOT_CLAIM_CLOSURE_TIME:
             raise ValidationError("It's too late to claim any dining slots")
-        if self.instance.date > timezone.now().date() + settings.DINING_SLOT_CLAIM_AHEAD:
+        if self.instance.date > now.date() + settings.DINING_SLOT_CLAIM_AHEAD:
             raise ValidationError("Dining list is too far in the future")
 
         return cleaned_data

@@ -6,6 +6,8 @@
     <link rel="stylesheet" href="{% static 'css/dining_v2.css' %}">
 {% endblock %}
 
+{% block title %}{{ block.super }} {{ dining_list.date|date:"SHORT_DATE_FORMAT" }}{% endblock %}
+
 {% block content %}
     {# Add space to bottom for the navigation tabs #}
     <div style="margin-bottom: 150px;">{% block details %}{% endblock details %}</div>

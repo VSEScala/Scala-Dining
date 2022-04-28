@@ -10,10 +10,10 @@ urlpatterns = [
         path('', DayView.as_view(), name='day_view'),
         path('add/', views.NewSlotView.as_view(), name='new_slot'),
     ])),
-    path('dininglists/<int:pk>/', include([
+    path('lists/<int:pk>/', include([
         path('', views.SlotInfoView.as_view(), name='slot_details'),
-        path('list/', views.SlotListView.as_view(), name='slot_list'),
-        path('allergy/', views.SlotAllergyView.as_view(), name='slot_allergy'),
+        path('diners/', views.SlotListView.as_view(), name='slot_list'),
+        path('allergies/', views.SlotAllergyView.as_view(), name='slot_allergy'),
         path('entry/add/', views.EntryAddView.as_view(), name='entry_add'),
         path('change/', views.DiningListChangeView.as_view(), name='slot_change'),
         path('delete/', views.DiningListDeleteView.as_view(), name='slot_delete'),

@@ -72,7 +72,7 @@ class DayView(LoginRequiredMixin, DayMixin, TemplateView):
             'available_slots': DiningList.objects.available_slots(self.date),
             # Whether this day is in the future
             'creation_open': self.date > now.date() or (
-                    self.date == now.date() and settings.DINING_SLOT_CLAIM_CLOSURE_TIME < now.time()),  # noqa: E126
+                    self.date == now.date() and settings.DINING_SLOT_CLAIM_CLOSURE_TIME > now.time()),  # noqa: E126
         })
         return context
 
