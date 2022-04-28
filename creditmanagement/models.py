@@ -20,8 +20,8 @@ class Account(models.Model):
     """
 
     # An account can only have one of user or association or special
-    user = models.OneToOneField(User, on_delete=models.CASCADE, null=True)
-    association = models.OneToOneField(Association, on_delete=models.CASCADE, null=True)
+    user = models.OneToOneField(User, on_delete=models.CASCADE, blank=True, null=True)
+    association = models.OneToOneField(Association, on_delete=models.CASCADE, blank=True, null=True)
 
     # Special accounts are used for bookkeeping
     # (The special accounts listed here are automatically created using a receiver.)
@@ -34,7 +34,7 @@ class Account(models.Model):
                         "The balance indicates the money that is payed for kitchen usage "
                         "(minus withdraws from this account).",
     }
-    special = models.CharField(max_length=30, unique=True, null=True, default=None, choices=SPECIAL_ACCOUNTS)
+    special = models.CharField(max_length=30, unique=True, blank=True, null=True, default=None, choices=SPECIAL_ACCOUNTS)
 
     def get_balance(self) -> Decimal:
         tx = Transaction.objects.filter_valid()
