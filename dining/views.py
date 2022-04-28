@@ -11,13 +11,13 @@ from django.shortcuts import redirect, get_object_or_404
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.http import is_safe_url
-from django.views.generic import TemplateView, View
+from django.views.generic import TemplateView, View, FormView
 from django.views.generic.detail import SingleObjectMixin
 from django.views.generic.edit import DeleteView
 
 from dining.datesequence import sequenced_date
 from dining.forms import CreateSlotForm, DiningEntryUserCreateForm, DiningEntryExternalCreateForm, \
-    DiningEntryDeleteForm, DiningCommentForm, DiningInfoForm, DiningPaymentForm, DiningListDeleteForm
+    DiningEntryDeleteForm, DiningCommentForm, DiningInfoForm, DiningPaymentForm, DiningListDeleteForm, SendReminderForm
 from dining.models import DiningList, DiningDayAnnouncement, DiningCommentVisitTracker, DiningEntryExternal, \
     DiningEntryUser, DiningEntry
 from general.mail_control import send_templated_mail
@@ -584,49 +584,68 @@ class SlotDeleteView(SlotMixin, SlotOwnerMixin, DeleteView):
         return HttpResponseRedirect(self.reverse("slot_delete"))
 
 
-class SlotPaymentView(SlotMixin, SlotOwnerMixin, View):
+class SlotPaymentView(SlotMixin, SlotOwnerMixin, FormView):
     """A view class that allows dining list owners to send payment reminders."""
+    form_class = SendReminderForm
 
-    def post(self, request, *args, **kwargs):
-        unpaid_user_entries = DiningEntryUser.objects.filter(dining_list=self.dining_list, has_paid=False)
-        unpaid_guest_entries = DiningEntryExternal.objects.filter(dining_list=self.dining_list, has_paid=False)
+    def get_form_kwargs(self):
+        kwargs = super(SlotPaymentView, self).get_form_kwargs()
+        kwargs['dining_list'] = self.dining_list
+        return kwargs
 
-        is_reminder = datetime.now().date() > self.dining_list.date  # ?? Please explain non-trivial operations
+    def get_success_url(self):
+        return self.reverse('slot_details')
 
-        is_informed = False
+    def form_invalid(self, form):
+        msg = f"Could not process request: {form.errors}"
+        messages.info(self.request, msg)
+        return HttpResponseRedirect(self.get_success_url())
 
-        context = {'dining_list': self.dining_list, 'reminder': request.user, 'is_reminder': is_reminder}
+    def form_valid(self, form):
+        form.send_reminder(self.request)
+        messages.success(self.request, "Diners have been informed")
+        return super(SlotPaymentView, self).form_valid(form)
 
-        if unpaid_user_entries.count() > 0:
-            send_templated_mail('mail/dining_payment_reminder',
-                                User.objects.filter(diningentry__in=unpaid_user_entries),
-                                context=context,
-                                request=request)
-            is_informed = True
-
-        if unpaid_guest_entries.count() > 0:
-            for user in User.objects.filter(diningentry__in=unpaid_guest_entries).distinct():
-                guests = []
-
-                for external_entry in unpaid_guest_entries.filter(user=user):
-                    guests.append(external_entry.name)
-
-                # Call a different message if a the user added multiple guests who hadn't paid
-                # Things like this can also be done in the template
-                if len(guests) == 1:
-                    context["guest"] = guests[0]
-                    context["guests"] = None
-                else:
-                    context["guest"] = None
-                    context["guests"] = guests
-
-                send_templated_mail('mail/dining_payment_reminder_external', user, context, request)
-
-            is_informed = True
-
-        if is_informed:
-            messages.success(request, "Diners have been informed")
-        else:
-            messages.info(request, "There was nobody to inform, everybody has paid")
-
-        return HttpResponseRedirect(self.reverse('slot_details'))
+    # def post(self, request, *args, **kwargs):
+    #     unpaid_user_entries = DiningEntryUser.objects.filter(dining_list=self.dining_list, has_paid=False)
+    #     unpaid_guest_entries = DiningEntryExternal.objects.filter(dining_list=self.dining_list, has_paid=False)
+    #
+    #     is_reminder = datetime.now().date() > self.dining_list.date  # ?? Please explain non-trivial operations
+    #
+    #     is_informed = False
+    #
+    #     context = {'dining_list': self.dining_list, 'reminder': request.user, 'is_reminder': is_reminder}
+    #
+    #     if unpaid_user_entries.count() > 0:
+    #         send_templated_mail('mail/dining_payment_reminder',
+    #                             User.objects.filter(diningentry__in=unpaid_user_entries),
+    #                             context=context,
+    #                             request=request)
+    #         is_informed = True
+    #
+    #     if unpaid_guest_entries.count() > 0:
+    #         for user in User.objects.filter(diningentry__in=unpaid_guest_entries).distinct():
+    #             guests = []
+    #
+    #             for external_entry in unpaid_guest_entries.filter(user=user):
+    #                 guests.append(external_entry.name)
+    #
+    #             # Call a different message if a the user added multiple guests who hadn't paid
+    #             # Things like this can also be done in the template
+    #             if len(guests) == 1:
+    #                 context["guest"] = guests[0]
+    #                 context["guests"] = None
+    #             else:
+    #                 context["guest"] = None
+    #                 context["guests"] = guests
+    #
+    #             send_templated_mail('mail/dining_payment_reminder_external', user, context, request)
+    #
+    #         is_informed = True
+    #
+    #     if is_informed:
+    #         messages.success(request, "Diners have been informed")
+    #     else:
+    #         messages.info(request, "There was nobody to inform, everybody has paid")
+    #
+    #     return HttpResponseRedirect(self.reverse('slot_details'))

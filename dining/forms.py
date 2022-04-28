@@ -1,4 +1,5 @@
 import warnings
+from datetime import date, datetime
 from decimal import Decimal, ROUND_UP
 
 from dal_select2.widgets import ModelSelect2, ModelSelect2Multiple
@@ -14,6 +15,7 @@ from creditmanagement.models import Transaction, Account
 from dining.models import DiningList, DiningEntryUser, DiningEntryExternal, DiningComment, DiningEntry
 from general.forms import ConcurrenflictFormMixin
 from general.util import SelectWithDisabled
+from general.mail_control import send_templated_mail
 from userdetails.models import Association, UserMembership, User
 
 
@@ -348,3 +350,42 @@ class DiningCommentForm(forms.ModelForm):
         self.instance.pinned_to_top = self.pinned
 
         super().save(*args, **kwargs)
+
+
+class SendReminderForm(forms.Form):
+
+    def __init__(self, *args, dining_list=None, **kwargs):
+        assert dining_list is not None
+        self.dining_list = dining_list
+        super(SendReminderForm, self).__init__(*args, **kwargs)
+
+    def clean(self):
+        # Verify that there are people to inform
+        if not DiningEntry.objects.filter(dining_list=self.dining_list, has_paid=False).exists():
+            raise ValidationError("There was nobody to inform, everybody has paid", code="all_paid")
+
+    def send_reminder(self, request=None):
+        assert request is not None
+        unpaid_user_entries = DiningEntryUser.objects.filter(dining_list=self.dining_list, has_paid=False)
+        unpaid_guest_entries = DiningEntryExternal.objects.filter(dining_list=self.dining_list, has_paid=False)
+
+        is_reminder = datetime.now().date() > self.dining_list.date  # ?? Please explain non-trivial operations
+
+        context = {'dining_list': self.dining_list, 'reminder': request.user, 'is_reminder': is_reminder}
+
+        if unpaid_user_entries.count() > 0:
+            send_templated_mail('mail/dining_payment_reminder',
+                                User.objects.filter(diningentry__in=unpaid_user_entries),
+                                context=context,
+                                request=request)
+
+        if unpaid_guest_entries.count() > 0:
+            for user in User.objects.filter(diningentry__in=unpaid_guest_entries).distinct():
+                guests = []
+
+                for external_entry in unpaid_guest_entries.filter(user=user):
+                    guests.append(external_entry.name)
+
+                context["guests"] = guests
+
+                send_templated_mail('mail/dining_payment_reminder_external', user, context, request)
