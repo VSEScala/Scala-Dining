@@ -1,0 +1,102 @@
+[
+    {
+        "model": "userdetails.user",
+        "pk": 1,
+        "fields": {
+            "password": "pbkdf2_sha256$150000$Ulspd9vTWA1k$yMErotUitFe7bv22eKF0vuQUz1WFfv3lGvfnJpPvlco=",
+            "last_login": "1970-01-01T12:00:00Z",
+            "is_superuser": true,
+            "username": "test_admin",
+            "first_name": "Ad",
+            "last_name": "Min",
+            "email": "admin@test.com",
+            "is_staff": true,
+            "is_active": true,
+            "date_joined": "1970-01-01T12:00:00Z",
+            "groups": [],
+            "user_permissions": []
+        }
+    },
+    {
+        "model": "userdetails.user",
+        "pk": 2,
+        "fields": {
+            "password": "pbkdf2_sha256$150000$FQNl6kahiWF9$UMJi+YpgjsAidu6lhrQen5qPyHVa2JBSH6Ve2/WKy/k=",
+            "last_login": "1970-01-01T12:00:00Z",
+            "is_superuser": false,
+            "username": "test_user",
+            "first_name": "John",
+            "last_name": "Cena",
+            "email": "johncena@test.com",
+            "is_staff": false,
+            "is_active": true,
+            "date_joined": "1970-01-01T12:00:00Z",
+            "groups": [],
+            "user_permissions": []
+        }
+    },
+    {
+        "model": "userdetails.user",
+        "pk": 3,
+        "fields": {
+            "password": "pbkdf2_sha256$150000$FQNl6kahiWF9$UMJi+YpgjsAidu6lhrQen5qPyHVa2JBSH6Ve2/WKy/k=",
+            "last_login": "1970-01-01T12:00:00Z",
+            "is_superuser": false,
+            "username": "test_user_2",
+            "first_name": "Sandra",
+            "last_name": "Bullock",
+            "email": "misscongeniality@test.com",
+            "is_staff": false,
+            "is_active": true,
+            "date_joined": "1970-01-01T12:00:00Z",
+            "groups": [],
+            "user_permissions": []
+        }
+    },
+    {
+        "model": "auth.group",
+        "pk": 1,
+        "fields": {
+            "name": "Scala"
+        }
+    },
+    {
+        "model": "userdetails.association",
+        "pk": 1,
+        "fields": {
+            "group_ptr_id": 1,
+            "slug": "scala"
+        }
+    },
+    {
+        "model": "auth.group",
+        "pk": 2,
+        "fields": {
+            "name": "Knights of the Kitchen Table"
+        }
+    },
+    {
+        "model": "userdetails.association",
+        "pk": 2,
+        "fields": {
+            "group_ptr_id": 2,
+            "slug": "knights"
+        }
+    },
+    {
+        "model": "auth.group",
+        "pk": 3,
+        "fields": {
+            "name": "Quadrivium"
+        }
+    },
+    {
+        "model": "userdetails.association",
+        "pk": 3,
+        "fields": {
+            "group_ptr_id": 3,
+            "slug": "quadrivium"
+        }
+    }
+
+]

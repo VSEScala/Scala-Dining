@@ -354,7 +354,7 @@ class DiningCommentForm(forms.ModelForm):
 
 class SendReminderForm(forms.Form):
 
-    def __init__(self, *args, dining_list=None, **kwargs):
+    def __init__(self, *args, dining_list:DiningList=None, **kwargs):
         assert dining_list is not None
         self.dining_list = dining_list
         super(SendReminderForm, self).__init__(*args, **kwargs)
@@ -363,6 +363,8 @@ class SendReminderForm(forms.Form):
         # Verify that there are people to inform
         if not DiningEntry.objects.filter(dining_list=self.dining_list, has_paid=False).exists():
             raise ValidationError("There was nobody to inform, everybody has paid", code="all_paid")
+        if self.dining_list.payment_link == "":
+            raise ValidationError("There was no payment url defined", code="payment_url_missing")
 
     def send_reminder(self, request=None):
         assert request is not None
@@ -388,4 +390,7 @@ class SendReminderForm(forms.Form):
 
                 context["guests"] = guests
 
-                send_templated_mail('mail/dining_payment_reminder_external', user, context, request)
+                send_templated_mail('mail/dining_payment_reminder_external',
+                                    user,
+                                    context=context.copy(),
+                                    request=request)

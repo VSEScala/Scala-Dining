@@ -3,11 +3,13 @@ from decimal import Decimal
 
 from django.test import TestCase
 from django.utils import timezone
+from django.http import HttpRequest
 
 from creditmanagement.models import Transaction
-from dining.forms import CreateSlotForm
-from dining.models import DiningList
+from dining.forms import CreateSlotForm, SendReminderForm
+from dining.models import DiningList, DiningEntryUser
 from userdetails.models import Association, User, UserMembership
+from utils.testing import TestPatchMixin, patch, FormValidityMixin
 
 
 class CreateSlotFormTestCase(TestCase):
@@ -93,3 +95,69 @@ class CreateSlotFormTestCase(TestCase):
         # Actually tests a different class, but put here for convenience, to test it via the CreateSlotForm class
         self.form_data['serve_time'] = '11:00'
         self.assertFalse(self.form.is_valid())
+
+
+class TestSendReminderForm(FormValidityMixin, TestPatchMixin, TestCase):
+    fixtures = ['base', 'dining_lists']
+    form_class = SendReminderForm
+
+    def get_form_kwargs(self, **kwargs):
+        kwargs.setdefault('dining_list', self.dining_list)
+        return super(TestSendReminderForm, self).get_form_kwargs(**kwargs)
+
+    def setUp(self):
+        self.dining_list = DiningList.objects.get(id=1)
+
+    def test_is_valid(self):
+        """ Tests that the form is normally valid"""
+        self.assertFormValid({})
+
+    def test_invalid_all_paid(self):
+        # Make all users paid
+        self.dining_list.dining_entries.update(has_paid=True)
+        self.assertFormHasError({}, code='all_paid')
+
+    def test_invalid_missing_payment_link(self):
+        self.dining_list.payment_link = ""
+        self.dining_list.save()
+        self.assertFormHasError({}, code='payment_url_missing')
+
+    @patch('dining.forms.send_templated_mail')
+    def test_mail_sending_users(self, mock_mail):
+
+        form = self.assertFormValid({})
+        request = HttpRequest()
+        request.user = User.objects.get(id=1)
+        form.send_reminder(request=request)
+
+        calls = self.assert_has_call(mock_mail, arg_1="mail/dining_payment_reminder")
+        # Assert that the correct number of recipients are documented
+        self.assertEqual(
+            len(calls[0]['args'][1]),
+            DiningEntryUser.objects.filter(
+                dining_list=self.dining_list,
+                has_paid=False,
+            ).count()
+        )
+
+        self.assertEqual(calls[0]['context']['dining_list'], self.dining_list)
+        self.assertEqual(calls[0]['context']['reminder'], User.objects.get(id=1))
+
+    @patch('dining.forms.send_templated_mail')
+    def test_mail_sending_external(self, mock_mail):
+        """ Tests handling of messaging for external guests added by a certain user"""
+
+        form = self.assertFormValid({})
+        request = HttpRequest()
+        request.user = User.objects.get(id=1)
+        form.send_reminder(request=request)
+
+        calls = self.assert_has_call(mock_mail, arg_1="mail/dining_payment_reminder_external")
+        self.assertEqual(len(calls), 2)  # ids 2 and 3 added unpaid guests
+
+        self.assertEqual(calls[0]['context']['dining_list'], self.dining_list)
+        self.assertEqual(calls[0]['context']['reminder'], User.objects.get(id=1))
+        self.assertEqual(calls[0]['args'][1], User.objects.get(id=2))
+        self.assertEqual(len(calls[0]['context']['guests']), 2)
+        self.assertEqual(calls[1]['args'][1], User.objects.get(id=3))
+        self.assertEqual(len(calls[1]['context']['guests']), 1)
