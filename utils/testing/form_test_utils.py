@@ -1,21 +1,22 @@
 
 
 class FormValidityMixin:
-    """ A mixin for TestCase classes designed to add form functionality """
+    """A mixin for TestCase classes designed to add form functionality."""
     form_class = None
 
     def get_form_kwargs(self, **kwargs):
         return kwargs
 
     def build_form(self, data, form_class=None, **kwargs):
-        """ Builds the form, form_class can overwrite the default class attribute form_class """
+        """Builds the form, form_class can overwrite the default class attribute form_class."""
         if form_class is None:
             form_class = self.form_class
         return form_class(data=data, **self.get_form_kwargs(**kwargs))
 
     def assertHasField(self, field_name):
         """
-        Asserts that the form has a field with the given name
+        Asserts that the form has a field with the given name.
+
         :param field_name: name of the field
         :return: raises AssertionError if not asserted, otherwise returns empty
         """
@@ -24,7 +25,8 @@ class FormValidityMixin:
         self.assertIn(field_name, form.fields, msg=message)
 
     def assertFormValid(self, data, form_class=None, **kwargs):
-        """ Asserts that the form is valid otherwise raises AssertionError mentioning the form error
+        """ Asserts that the form is valid otherwise raises AssertionError mentioning the form error.
+
         :param data: The form data
         :param form_class: The form class, defaults to self.form_class
         :param kwargs: Any form init kwargs not defined in self.build_form()
@@ -43,7 +45,8 @@ class FormValidityMixin:
         return form
 
     def assertFormHasError(self, data, code, form_class=None, field=None, **kwargs):
-        """ Asserts that a form with the given data invalidates on a certain error
+        """ Asserts that a form with the given data invalidates on a certain error.
+
         :param data: The form data
         :param code: the 'code' of the ValidationError
         :param form_class: The form class, defaults to self.form_class

@@ -43,7 +43,7 @@ class TestFormValidityMixin(FormValidityMixin, TestCase):
         self.assertEqual(
             error.__str__(),
             "{field_name} was not a field in {form_class_name}".format(
-                field_name = 'missing_field',
+                field_name='missing_field',
                 form_class_name='TestForm',
             )
         )
@@ -56,8 +56,8 @@ class TestFormValidityMixin(FormValidityMixin, TestCase):
         self.assertEqual(
             error.__str__(),
             "The form was not valid. At least one error was encountered: '{exception_text}' in '{location}'".format(
-                exception_text = 'Test field exception',
-                location = 'main_field'
+                exception_text='Test field exception',
+                location='main_field'
             )
         )
 
@@ -102,4 +102,3 @@ class TestFormValidityMixin(FormValidityMixin, TestCase):
 
             )
         )
-

@@ -8,8 +8,8 @@ __all__ = ["patch", "patch_time", "mock_now"]
 
 
 def patch_time(dt=None):
-    """
-    Adjusts current time to a set point in time
+    """ Adjusts current time to a set point in time for the patched testcase method.
+
     Args:
         dt: The 'current' datetime according to the program. Defaults to monday 25th of april 2022 10 o'clock
 
@@ -26,7 +26,7 @@ def patch_time(dt=None):
 
 
 def mock_now(dt=None):
-    """ Script that changes the default now time to a preset value """
+    """Script that changes the default now time to a preset value."""
     if dt is None:
         dt = datetime.datetime(2022, 4, 25, 10, 0)
 
@@ -39,8 +39,8 @@ def mock_now(dt=None):
 class TestPatchMixin:
 
     def assert_has_call(self, mock: Mock, **kwargs):
-        """
-        Assert that a given mock has a call with the (partially) given attributes.
+        """ Assert that a given mock has a call with the (partially) given attributes.
+
         Args:
             mock: The Mock instance
             **kwargs: List of keyword arguments used in the method call
@@ -54,7 +54,7 @@ class TestPatchMixin:
         call_kwargs = kwargs.copy()
         arg_dict = {}
         for arg_key in filter(lambda kwarg: kwarg.startswith('arg_'), kwargs.keys()):
-            arg_dict[int(arg_key[4:])-1] = call_kwargs.pop(arg_key)
+            arg_dict[int(arg_key[4:]) - 1] = call_kwargs.pop(arg_key)
 
         # Construct a list of all valid calls
         # Calls are tuples of (positional args, keyword args)

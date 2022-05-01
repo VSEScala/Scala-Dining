@@ -1,5 +1,5 @@
 import warnings
-from datetime import date, datetime
+from datetime import datetime
 from decimal import Decimal, ROUND_UP
 
 from dal_select2.widgets import ModelSelect2, ModelSelect2Multiple
@@ -354,7 +354,7 @@ class DiningCommentForm(forms.ModelForm):
 
 class SendReminderForm(forms.Form):
 
-    def __init__(self, *args, dining_list:DiningList=None, **kwargs):
+    def __init__(self, *args, dining_list: DiningList=None, **kwargs):
         assert dining_list is not None
         self.dining_list = dining_list
         super(SendReminderForm, self).__init__(*args, **kwargs)
