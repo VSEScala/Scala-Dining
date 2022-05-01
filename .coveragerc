@@ -36,7 +36,7 @@ exclude_lines =
     if False:
     if __name__ == .__main__.:
 
-#fail_under = 60 #TODO: Add missing testcases and then enable this setting
+#fail_under = 60
 
 # Ignore source code that can’t be found, emitting a warning instead of an exception.
 ignore_errors = True

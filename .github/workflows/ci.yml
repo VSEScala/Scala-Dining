@@ -31,14 +31,3 @@ jobs:
         DINING_DEBUG: on
       run: |
         python manage.py test
-    - name: Run Tests
-      run: coverage run manage.py test
-    - name: Output Coverage
-      run: coverage report && coverage xml
-    - name: Upload coverage to CodeCov
-      uses: codecov/codecov-action@v3.1.0
-      with:
-        env_vars: OS,PYTHON
-        fail_ci_if_error: true
-        files: ./coverage/coverage.xml
-        flags: unittests
