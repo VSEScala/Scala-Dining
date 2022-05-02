@@ -40,7 +40,7 @@ marshmallow==3.13.0
     # via environs
 oauthlib==3.1.1
     # via requests-oauthlib
-pillow==8.3.2
+pillow==9.0.1
     # via -r requirements.in
 pycparser==2.20
     # via cffi
