@@ -25,6 +25,10 @@ jobs:
       - name: Install requirements
         run: pip install -r requirements/ci.txt
       - name: Run Tests
+        if: always()
+        env:
+          DINING_SECRET_KEY: coveragetestingkey
+          DINING_DEBUG: on
         run: coverage run manage.py test
       - name: Output Coverage
         run: coverage report && coverage xml
