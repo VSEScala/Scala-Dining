@@ -38,7 +38,25 @@ def mock_now(dt=None):
 
 class TestPatchMixin:
 
-    def assert_has_call(self, mock: Mock, **kwargs):
+    @staticmethod
+    def assert_has_no_call(mock: Mock, **kwargs):
+        """ Assert that a given mock does not have a call with the (partially) given attributes.
+
+        Args:
+            mock: The Mock instance
+            **kwargs: List of keyword arguments used in the method call
+            Use arg_## as a keyword argument to check for a non-keyworded argument in original method call
+
+        """
+        try:
+            TestPatchMixin.assert_has_call(mock, **kwargs)
+        except AssertionError:
+            return
+        else:
+            raise AssertionError(f"At least one undesired call was made with the given attributes: {kwargs}")
+
+    @staticmethod
+    def assert_has_call(mock: Mock, **kwargs):
         """ Assert that a given mock has a call with the (partially) given attributes.
 
         Args:

@@ -1,15 +1,21 @@
-from datetime import time, timedelta
+from datetime import time, timedelta, datetime
 from decimal import Decimal
 
+from dal_select2.widgets import ModelSelect2, ModelSelect2Multiple
+
+from django.conf import settings
+from django.forms import ModelForm
 from django.test import TestCase
 from django.utils import timezone
 from django.http import HttpRequest
 
 from creditmanagement.models import Transaction
-from dining.forms import CreateSlotForm, SendReminderForm
-from dining.models import DiningList, DiningEntryUser
+from dining.forms import *
+from dining.models import *
+from general.forms import ConcurrenflictFormMixin
 from userdetails.models import Association, User, UserMembership
 from utils.testing import TestPatchMixin, patch, FormValidityMixin
+from utils.testing.patch_utils import patch_time
 
 
 class CreateSlotFormTestCase(TestCase):
@@ -97,6 +103,150 @@ class CreateSlotFormTestCase(TestCase):
         self.assertFalse(self.form.is_valid())
 
 
+class TestDiningInfoForm(FormValidityMixin, TestCase):
+    fixtures = ['base', 'dining_lists']
+    form_class = DiningInfoForm
+
+    def setUp(self):
+        self.dining_list = DiningList.objects.get(id=1)
+        self.user = User.objects.get(id=1)
+
+    def get_form_kwargs(self, **kwargs):
+        kwargs.setdefault('instance', self.dining_list)
+        return super(TestDiningInfoForm, self).get_form_kwargs(**kwargs)
+
+    def test_class(self):
+        self.assertTrue(issubclass(self.form_class, ModelForm))
+        self.assertTrue(issubclass(self.form_class, ConcurrenflictFormMixin))
+
+    def test_widget_replacements(self):
+        form = self.build_form({})
+        self.assertIsInstance(form.fields['owners'].widget, ModelSelect2Multiple)
+
+    @patch_time()
+    def test_form_valid(self):
+        self.assertFormValid({
+            'owners': [1],
+            'dish': "My delicious dish",
+            'serve_time': time(18, 00),
+            'min_diners': 4,
+            'max_diners': 15,
+            'sign_up_deadline': datetime(2022, 4, 26, 15, 0),
+        })
+
+    @patch_time(dt=datetime(2022, 5, 30, 12, 0))
+    def test_form_editing_time_limit(self):
+        """ Asserts that the form can not be used after the timelimit """
+        self.assertFormHasError({}, code='closed')
+
+    @patch_time()
+    def test_kitchen_open_time_validity(self):
+        """ Asserts that the meal can't be served before the kitchen opening time """
+        dt = datetime.combine(timezone.now().today(), settings.KITCHEN_USE_START_TIME) - timedelta(minutes=1)
+        self.assertFormHasError({
+            'serve_time': dt.time()
+        }, code='kitchen_start_time')
+
+    @patch_time()
+    def test_kitchen_close_time_validity(self):
+        """ Asserts that the meal can't be served after the kitchen closing time """
+        dt = datetime.combine(timezone.now().today(), settings.KITCHEN_USE_END_TIME) + timedelta(minutes=1)
+        self.assertFormHasError({
+            'serve_time': dt.time()
+        }, code='kitchen_close_time')
+
+
+class TestDiningPaymentForm(FormValidityMixin, TestCase):
+    fixtures = ['base', 'dining_lists']
+    form_class = DiningPaymentForm
+
+    def setUp(self):
+        self.dining_list = DiningList.objects.get(id=1)
+        self.user = User.objects.get(id=1)
+
+    def get_form_kwargs(self, **kwargs):
+        kwargs.setdefault('instance', self.dining_list)
+        return super(TestDiningPaymentForm, self).get_form_kwargs(**kwargs)
+
+    def test_class(self):
+        self.assertTrue(issubclass(self.form_class, ModelForm))
+        self.assertTrue(issubclass(self.form_class, ConcurrenflictFormMixin))
+
+    @patch_time()
+    def test_form_valid(self):
+        self.assertFormValid({
+            'payment_link': "https://www.google.com/",
+        })
+        self.assertFormValid({})
+
+    @patch_time()
+    def test_dining_cost_conflict(self):
+        """ Assert that an error is raised when both dinner_cost and dinner_cost_total are defined """
+        self.assertFormHasError({
+            'dining_cost_total': 12,
+            'dining_cost': 4,
+        }, code='duplicate_cost', field='dining_cost')
+        self.assertFormHasError({
+            'dining_cost_total': 12,
+            'dining_cost': 4,
+        }, code='duplicate_cost', field='dining_cost_total')
+
+    @patch_time()
+    def test_dining_cost_total_empty_diners(self):
+        """ Assert an error is raised for costs when there are no diners on the dining list """
+        self.dining_list.dining_entries.all().delete()
+        self.assertFormHasError({
+            'dining_cost_total': 12,
+        }, code='costs_no_diners')
+
+    @patch_time()
+    def test_dining_cost_total(self):
+        """ Test that dining cost is correctly computed from total cost """
+        form = self.assertFormValid({'dining_cost_total': 16})
+        self.assertIsNone(form.cleaned_data['dining_cost_total'])
+        self.assertEqual(form.cleaned_data['dining_cost'], 2)
+
+        # Test that it rounds up
+        form = self.assertFormValid({'dining_cost_total': 15.95})
+        self.assertIsNone(form.cleaned_data['dining_cost_total'])
+        self.assertEqual(form.cleaned_data['dining_cost'], 2)
+
+
+class TestDiningCommentForm(FormValidityMixin, TestCase):
+    fixtures = ['base', 'dining_lists']
+    form_class = DiningCommentForm
+
+    def setUp(self):
+        self.dining_list = DiningList.objects.get(id=1)
+        self.user = User.objects.get(id=1)
+
+    def get_form_kwargs(self, **kwargs):
+        kwargs.setdefault('dining_list', self.dining_list)
+        kwargs.setdefault('poster', self.user)
+        return super(TestDiningCommentForm, self).get_form_kwargs(**kwargs)
+
+    def test_valid(self):
+        """ Tests basic validity functionality """
+        posted_msg = 'My very message'
+        form = self.assertFormValid({'message': posted_msg})
+        form.save()
+
+        # Assert copy on database:
+        self.assertTrue(DiningComment.objects.filter(id=form.instance.id).exists())
+        form.instance.refresh_from_db()  # Get database states
+        self.assertEqual(form.instance.message, posted_msg)
+        self.assertEqual(form.instance.dining_list, self.dining_list)
+        self.assertEqual(form.instance.poster, self.user)
+        self.assertEqual(form.instance.pinned_to_top, False)
+
+    def test_pinning(self):
+        """ Tests that a message can be pinned """
+        posted_msg = "A stickied message"
+        form = self.assertFormValid({'message': posted_msg}, pinned=True)
+        form.save()
+        self.assertEqual(form.instance.pinned_to_top, True)
+
+
 class TestSendReminderForm(FormValidityMixin, TestPatchMixin, TestCase):
     fixtures = ['base', 'dining_lists']
     form_class = SendReminderForm
@@ -121,6 +271,30 @@ class TestSendReminderForm(FormValidityMixin, TestPatchMixin, TestCase):
         self.dining_list.payment_link = ""
         self.dining_list.save()
         self.assertFormHasError({}, code='payment_url_missing')
+
+    @patch('dining.forms.send_templated_mail')
+    def test_no_unpaid_users_sending(self, mock_mail):
+        """ Assert that when all users have paid, no mails are send to remind people"""
+        DiningEntryUser.objects.update(has_paid=True)
+        DiningEntryExternal.objects.all().delete()
+        form = self.build_form({})
+        request = HttpRequest()
+        request.user = User.objects.get(id=1)
+        form.send_reminder(request=request)
+
+        mock_mail.assert_not_called()
+
+    @patch('dining.forms.send_templated_mail')
+    def test_no_unpaid_users_sending(self, mock_mail):
+        """ Assert that when all users have paid, no mails are send to remind people"""
+        DiningEntryExternal.objects.update(has_paid=True)
+        DiningEntryUser.objects.all().delete()
+        form = self.build_form({})
+        request = HttpRequest()
+        request.user = User.objects.get(id=1)
+        form.send_reminder(request=request)
+
+        mock_mail.assert_not_called()
 
     @patch('dining.forms.send_templated_mail')
     def test_mail_sending_users(self, mock_mail):

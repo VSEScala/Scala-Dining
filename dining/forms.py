@@ -19,6 +19,11 @@ from general.mail_control import send_templated_mail
 from userdetails.models import Association, UserMembership, User
 
 
+__all__ = ['CreateSlotForm', 'DiningInfoForm', 'DiningPaymentForm', 'DiningEntryUserCreateForm',
+           'DiningEntryExternalCreateForm', 'DiningEntryDeleteForm', 'DiningListDeleteForm',
+           'DiningCommentForm', 'SendReminderForm']
+
+
 def _clean_form(form):
     """Cleans the given form by validating it and throwing ValidationError if it is not valid."""
     if not form.is_valid():
@@ -34,9 +39,9 @@ class ServeTimeCheckMixin:
     def clean_serve_time(self):
         serve_time = self.cleaned_data['serve_time']
         if serve_time < settings.KITCHEN_USE_START_TIME:
-            raise ValidationError("Kitchen can't be used this early")
+            raise ValidationError("Kitchen can't be used this early", code='kitchen_start_time')
         if serve_time > settings.KITCHEN_USE_END_TIME:
-            raise ValidationError("Kitchen can't be used this late")
+            raise ValidationError("Kitchen can't be used this late", code='kitchen_close_time')
         return serve_time
 
 
@@ -136,38 +141,39 @@ class DiningInfoForm(ConcurrenflictFormMixin, ServeTimeCheckMixin, forms.ModelFo
 
 
 class DiningPaymentForm(ConcurrenflictFormMixin, forms.ModelForm):
-    dinner_cost_total = forms.DecimalField(decimal_places=2, max_digits=5, required=False,
+    dining_cost_total = forms.DecimalField(decimal_places=2, max_digits=5, required=False,
                                            validators=[MinValueValidator(Decimal('0'))],
                                            help_text='Only one of dinner cost total or dinner cost per person should '
                                                      'be provided')
 
     class Meta:
         model = DiningList
-        fields = ['dinner_cost_total', 'dining_cost', 'payment_link']
+        fields = ['dining_cost_total', 'dining_cost', 'payment_link']
 
     def clean(self):
         """This cleaning calculates the person dining cost from the total dining cost."""
         cleaned_data = super().clean()
-        dinner_cost_total = cleaned_data.get('dinner_cost_total')
+        dinner_cost_total = cleaned_data.get('dining_cost_total')
         dining_cost = cleaned_data.get('dining_cost')
 
         # Sanity check: do not allow both dinner cost total and dinner cost per person
         if dinner_cost_total and dining_cost:
             msg = "Please only provide either dinner cost total or dinner cost per person"
-            self.add_error('dinner_cost_total', msg)
-            self.add_error('dining_cost', msg)
+            self.add_error('dining_cost_total', ValidationError(msg, code='duplicate_cost'))
+            self.add_error('dining_cost', ValidationError(msg, code='duplicate_cost'))
         elif dinner_cost_total:
             # Total dinner cost provided: calculate dining cost per person and apply
             if self.instance.diners.count() > 0:
                 cost = dinner_cost_total / self.instance.diners.count()
             else:
-                raise ValidationError({
-                    'dinner_cost_total': "Can't calculate dinner cost per person as there are no diners"})
+                msg = "Can't calculate dinner cost per person as there are no diners"
+                raise ValidationError(
+                    {'dining_cost_total': ValidationError(msg, code='costs_no_diners')})
 
             # Round up to remove missing cents
             cost = Decimal(cost).quantize(Decimal('.01'), rounding=ROUND_UP)
             cleaned_data.update({
-                'dinner_cost_total': None,
+                'dining_cost_total': None,
                 'dining_cost': cost,
             })
         return cleaned_data
@@ -381,16 +387,15 @@ class SendReminderForm(forms.Form):
                                 context=context,
                                 request=request)
 
-        if unpaid_guest_entries.count() > 0:
-            for user in User.objects.filter(diningentry__in=unpaid_guest_entries).distinct():
-                guests = []
+        for user in User.objects.filter(diningentry__in=unpaid_guest_entries).distinct():
+            guests = []
 
-                for external_entry in unpaid_guest_entries.filter(user=user):
-                    guests.append(external_entry.name)
+            for external_entry in unpaid_guest_entries.filter(user=user):
+                guests.append(external_entry.name)
 
-                context["guests"] = guests
+            context["guests"] = guests
 
-                send_templated_mail('mail/dining_payment_reminder_external',
-                                    user,
-                                    context=context.copy(),
-                                    request=request)
+            send_templated_mail('mail/dining_payment_reminder_external',
+                                user,
+                                context=context.copy(),
+                                request=request)
