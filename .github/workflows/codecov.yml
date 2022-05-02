@@ -22,10 +22,8 @@ jobs:
           key: ${{ runner.os }}-pip-${{ hashFiles('*requirements.txt') }}
           restore-keys: |
             ${{ runner.os }}-pip-
-      - name: Install dependencies
-        run: |
-          pip install --upgrade pip setuptools wheel
-          pip install -r requirements.txt -r dev-requirements.txt
+      - name: Install requirements
+        run: pip install -r requirements/ci.txt
       - name: Run Tests
         run: coverage run manage.py test
       - name: Output Coverage
