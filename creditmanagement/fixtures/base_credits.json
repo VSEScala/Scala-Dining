@@ -1,0 +1,38 @@
+[
+  {
+    "model": "creditmanagement.transaction",
+    "pk": 1,
+    "fields": {
+      "source": ["association", "knights"],
+      "target": ["user", "test_user"],
+      "amount": 10,
+      "moment": "2022-04-20T15:00:00Z",
+      "description": "Base credits",
+      "created_by": 1
+    }
+  },
+  {
+    "model": "creditmanagement.transaction",
+    "pk": 2,
+    "fields": {
+      "source": ["user", "test_user"],
+      "target": ["user", "test_user_2"],
+      "amount": 4,
+      "moment": "2022-04-20T15:00:00Z",
+      "description": "Internal transfer",
+      "created_by": 1
+    }
+  },
+  {
+    "model": "creditmanagement.transaction",
+    "pk": 3,
+    "fields": {
+      "source": ["association", "scala"],
+      "target": ["association", "knights"],
+      "amount": 10,
+      "moment": "2022-04-20T15:00:00Z",
+      "description": "Base credits",
+      "created_by": 1
+    }
+  }
+]

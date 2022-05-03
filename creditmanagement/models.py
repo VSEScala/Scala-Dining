@@ -10,6 +10,16 @@ from django.utils import timezone
 from userdetails.models import Association, User
 
 
+class AccountManager(models.Manager):
+    def get_by_natural_key(self, type, name=None):
+        if type.lower() == "user":
+            return self.get(user=User.objects.get_by_natural_key(name))
+        elif type.lower() == "association":
+            return self.get(association=Association.objects.get_by_natural_key(name))
+        else:
+            return self.get(special=type)
+
+
 class Account(models.Model):
     """Money account which can be used as a transaction source or target.
 
@@ -35,6 +45,8 @@ class Account(models.Model):
                         "(minus withdraws from this account).",
     }
     special = models.CharField(max_length=30, unique=True, blank=True, null=True, default=None, choices=SPECIAL_ACCOUNTS)
+
+    objects = AccountManager()
 
     def get_balance(self) -> Decimal:
         tx = Transaction.objects.filter_valid()

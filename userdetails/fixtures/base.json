@@ -107,7 +107,7 @@
         "pk": 1,
         "fields": {
             "related_user": 1,
-            "association": 1,
+            "association": ["scala"],
             "is_verified": true
         }
     },
@@ -116,7 +116,7 @@
         "pk": 2,
         "fields": {
             "related_user": 2,
-            "association": 2,
+            "association": ["knights"],
             "is_verified": true
         }
     },
@@ -124,8 +124,8 @@
         "model": "userdetails.usermembership",
         "pk": 3,
         "fields": {
-            "related_user": 1,
-            "association": 1,
+            "related_user": 2,
+            "association": ["scala"],
             "is_verified": false
         }
     },
@@ -134,7 +134,7 @@
         "pk": 4,
         "fields": {
             "related_user": 3,
-            "association": 3,
+            "association": ["quadrivium"],
             "is_verified": true
         }
     },
@@ -143,7 +143,7 @@
         "pk": 5,
         "fields": {
             "related_user": 4,
-            "association": 3,
+            "association": ["quadrivium"],
             "is_verified": true
         }
     },
@@ -152,7 +152,7 @@
         "pk": 6,
         "fields": {
             "related_user": 5,
-            "association": 1,
+            "association": ["scala"],
             "is_verified": false
         }
     }

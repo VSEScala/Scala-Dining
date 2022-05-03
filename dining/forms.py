@@ -122,8 +122,7 @@ class CreateSlotForm(ServeTimeCheckMixin, forms.ModelForm):
 
             # Create dining entry for creator
             user = self.creator
-            entry_form = DiningEntryUserCreateForm({'user': str(user.pk)},
-                                                   instance=DiningEntryUser(created_by=user, dining_list=instance))
+            entry_form = DiningEntryUserCreateForm({'user': str(user.pk)}, created_by=user, dining_list=instance)
             if entry_form.is_valid():
                 entry_form.save()
             else:
@@ -188,6 +187,11 @@ class DiningEntryUserCreateForm(forms.ModelForm):
             'user': ModelSelect2(url='people_autocomplete', attrs={'data-minimum-input-length': '1'})
         }
 
+    def __init__(self, *args, dining_list=None, created_by=None, **kwargs):
+        super(DiningEntryUserCreateForm, self).__init__(*args, **kwargs)
+        self.instance.dining_list = dining_list
+        self.instance.created_by = created_by
+
     def get_user(self):
         """Returns the user responsible for the kitchen cost (not necessarily creator)."""
         user = self.cleaned_data.get('user')
@@ -249,6 +253,10 @@ class DiningEntryExternalCreateForm(DiningEntryUserCreateForm):
     class Meta:
         model = DiningEntryExternal
         fields = ['name']
+
+    def __init__(self, *args, **kwargs):
+        super(DiningEntryExternalCreateForm, self).__init__(*args, **kwargs)
+        self.instance.user = self.instance.created_by
 
     def get_user(self):
         return self.instance.user

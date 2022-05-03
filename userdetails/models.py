@@ -4,9 +4,13 @@ from django.db import models
 from django.utils import timezone
 from django.utils.functional import cached_property
 
+from .managers import UserManager, AssociationManager
+
 
 class User(AbstractUser):
     email = models.EmailField("email address", unique=True)
+
+    objects = UserManager()
 
     def __str__(self):
         return "{} {}".format(self.first_name, self.last_name).strip() or "@{}".format(self.username)
@@ -88,6 +92,8 @@ class Association(Group):
                                              "if they sign up using this social app.")
     balance_update_instructions = models.TextField(max_length=512, default="to be defined")
     has_site_stats_access = models.BooleanField(default=False)
+
+    objects = AssociationManager()
 
     @cached_property
     def requires_action(self):

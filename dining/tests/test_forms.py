@@ -9,7 +9,7 @@ from django.test import TestCase
 from django.utils import timezone
 from django.http import HttpRequest
 
-from creditmanagement.models import Transaction
+from creditmanagement.models import Transaction, Account
 from dining.forms import *
 from dining.models import *
 from general.forms import ConcurrenflictFormMixin
@@ -101,6 +101,79 @@ class CreateSlotFormTestCase(TestCase):
         # Actually tests a different class, but put here for convenience, to test it via the CreateSlotForm class
         self.form_data['serve_time'] = '11:00'
         self.assertFalse(self.form.is_valid())
+
+
+class TestDiningEntryUserCreateForm(FormValidityMixin, TestCase):
+    fixtures = ['base', 'base_credits', 'dining_lists']
+    form_class = DiningEntryUserCreateForm
+
+    def setUp(self):
+        self.dining_list = DiningList.objects.get(id=3)
+        self.user = User.objects.get(id=2)
+
+    def get_form_kwargs(self, **kwargs):
+        kwargs.setdefault('dining_list', self.dining_list)
+        kwargs.setdefault('created_by', self.user)
+        return super(TestDiningEntryUserCreateForm, self).get_form_kwargs(**kwargs)
+
+    def test_widget_replacements(self):
+        form = self.build_form({})
+        self.assertIsInstance(form.fields['user'].widget, ModelSelect2)
+
+    @patch_time()
+    def test_form_valid(self):
+        """ Asserts that the form can not be used after the timelimit """
+        self.assertFormValid({'user': self.user})
+
+    @patch_time(dt=datetime(2022, 4, 26, 18, 0))
+    def test_sign_up_deadline(self):
+        """ Asserts that the form can not be used after the timelimit """
+        # Verify testcase data
+        self.assertNotIn(self.user, self.dining_list.owners.all(), "Incorrect test data, user should not be owner")
+        self.assertFormHasError({'user': self.user}, code='closed')
+        self.assertFormValid({'user': self.user}, created_by=self.dining_list.owners.first())
+
+    @patch_time()
+    def test_room(self):
+        """ Asserts that the form can not be used after the timelimit """
+        # Verify testcase data
+        self.assertNotIn(self.user, self.dining_list.owners.all(), "Incorrect test data, user should not be owner")
+        # Fill the dininglist with meaningless entries
+        other_user = User.objects.get(id=1)
+        for i in range(14):
+            DiningEntryExternal.objects.create(dining_list=self.dining_list, user=other_user, created_by=other_user)
+        self.dining_list.max_diners = 14
+
+        self.assertFormHasError({'user': self.user}, code='full')
+        self.assertFormValid({'user': self.user}, created_by=self.dining_list.owners.first())
+
+    @patch_time()
+    def test_association_only_limitation(self):
+        """ Asserts that the form can not be used after the timelimit """
+        # Verify testcase data
+        self.dining_list.limit_signups_to_association_only = True
+        self.dining_list.save()
+        self.assertNotIn(self.user, self.dining_list.owners.all(), "Incorrect test data, user should not be owner")
+        # user 2 is member of the association
+        self.assertFormValid({'user': self.user})
+        # user 4 is not a member
+        self.assertFormHasError({'user': User.objects.get(id=4)}, code='members_only')
+        # owners can override
+        self.assertFormValid({'user': User.objects.get(id=4)}, created_by=self.dining_list.owners.first())
+
+    @patch_time()
+    def test_minimum_balance(self):
+        with self.settings(MINIMUM_BALANCE_FOR_DINING_SIGN_UP=100):
+            # For minimum balance, nobody has an exception, not even admins
+            self.assertFormHasError({'user': self.user}, code='nomoneyzz')
+            self.assertFormHasError({'user': self.user}, created_by=self.dining_list.owners.first(), code='nomoneyzz')
+            admin = User.objects.filter(is_superuser=True).first()
+            self.assertFormHasError({'user': admin}, created_by=admin, code='nomoneyzz')
+
+    @patch_time(dt=datetime(2022, 5, 30, 12, 0))
+    def test_form_editing_time_limit(self):
+        """ Asserts that the form can not be used after the timelimit """
+        self.assertFormHasError({'user': self.user}, code='closed')
 
 
 class TestDiningInfoForm(FormValidityMixin, TestCase):

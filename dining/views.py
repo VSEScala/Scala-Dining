@@ -238,8 +238,8 @@ class EntryAddView(SlotMixin, TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context.update({
-            'user_form': DiningEntryUserCreateForm(),
-            'external_form': DiningEntryExternalCreateForm(),
+            'user_form': DiningEntryUserCreateForm(dining_list=self.dining_list, created_by=self.request.user),
+            'external_form': DiningEntryExternalCreateForm(dining_list=self.dining_list, created_by=self.request.user),
         })
         return context
 
@@ -249,16 +249,14 @@ class EntryAddView(SlotMixin, TemplateView):
 
         # Do form shenanigans
         if 'add_external' in request.POST:
-            entry = DiningEntryExternal(user=request.user, dining_list=self.dining_list, created_by=request.user)
-            form = DiningEntryExternalCreateForm(request.POST, instance=entry)
+            form = DiningEntryExternalCreateForm(request.POST, dining_list=self.dining_list, created_by=request.user)
         else:
-            entry = DiningEntryUser(dining_list=self.dining_list, created_by=request.user)
-            form = DiningEntryUserCreateForm(request.POST, instance=entry)
+            form = DiningEntryUserCreateForm(request.POST, dining_list=self.dining_list, created_by=request.user)
 
         if form.is_valid():
             entry = form.save()
             # Construct success message
-            if isinstance(entry, DiningEntryUser):
+            if not isinstance(form, DiningEntryExternalCreateForm):
                 if entry.user == request.user:
                     msg = "You successfully joined the dining list"
                 else:

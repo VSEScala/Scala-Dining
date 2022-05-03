@@ -15,16 +15,14 @@ register = template.Library()
 @register.filter
 def can_join(dining_list, user):
     # Try creating an entry
-    entry = DiningEntryUser(dining_list=dining_list, created_by=user)
-    form = DiningEntryUserCreateForm({'user': str(user.pk)}, instance=entry)
+    form = DiningEntryUserCreateForm({'user': str(user.pk)}, dining_list=dining_list, created_by=user)
     return form.is_valid()
 
 
 @register.filter
 def cant_join_reason(dining_list, user):
     """Returns the reason why someone can't join (raises exception when they can join)."""
-    entry = DiningEntryUser(dining_list=dining_list, created_by=user)
-    form = DiningEntryUserCreateForm({'user': str(user.pk)}, instance=entry)
+    form = DiningEntryUserCreateForm({'user': str(user.pk)}, dining_list=dining_list, created_by=user)
     return form.non_field_errors()[0]
 
 

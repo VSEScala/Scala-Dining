@@ -16,6 +16,9 @@ def patch_time(dt=None):
     Returns: Method with adjusted datetime
 
     """
+    if dt is not None and not isinstance(dt, datetime.datetime) and callable(dt):
+        raise KeyError("Patch time incorrectly called. Make sure you patched through @patch_time() and not @patch_time")
+
     def wrapper_func(func):
         def inner(*args, **kwargs):
             with patch('django.utils.timezone.now') as mock:
