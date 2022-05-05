@@ -1,5 +1,56 @@
 [
   {
+    "model": "creditmanagement.transaction",
+    "pk": 45,
+    "fields": {
+      "source": ["association", "scala"],
+      "target": ["user", 1],
+      "amount": 5,
+      "created_by": 1
+    }
+  },
+  {
+    "model": "creditmanagement.transaction",
+    "pk": 46,
+    "fields": {
+      "source": ["association", "scala"],
+      "target": ["user", 2],
+      "amount": 5,
+      "created_by": 1
+    }
+  },
+  {
+    "model": "creditmanagement.transaction",
+    "pk": 47,
+    "fields": {
+      "source": ["association", "scala"],
+      "target": ["user", 3],
+      "amount": 5,
+      "created_by": 1
+    }
+  },
+  {
+    "model": "creditmanagement.transaction",
+    "pk": 60,
+    "fields": {
+      "source": ["user", 1],
+      "target": ["kitchen_cost", ""],
+      "amount": 0.5,
+      "created_by": 1
+    }
+  },
+  {
+    "model": "creditmanagement.transaction",
+    "pk": 60,
+    "fields": {
+      "source": ["user", 1],
+      "target": ["kitchen_cost", ""],
+      "amount": 0.5,
+      "created_by": 1
+    }
+  },
+
+  {
     "model": "dining.dininglist",
     "pk": 1,
     "fields": {
@@ -34,13 +85,24 @@
     }
   },
   {
+    "model": "creditmanagement.transaction",
+    "pk": 51,
+    "fields": {
+      "source": ["user", 1],
+      "target": ["kitchen_cost", ""],
+      "amount": 0.5,
+      "created_by": 1
+    }
+  },
+  {
     "model": "dining.diningentry",
     "pk": 1,
     "fields": {
       "dining_list": 1,
       "user": 1,
       "created_by": 1,
-      "has_paid": false
+      "has_paid": false,
+      "transaction": 51
     }
   },
   {
@@ -61,13 +123,24 @@
     }
   },
   {
+    "model": "creditmanagement.transaction",
+    "pk": 52,
+    "fields": {
+      "source": ["user", 2],
+      "target": ["kitchen_cost", ""],
+      "amount": 0.5,
+      "created_by": 2
+    }
+  },
+  {
     "model": "dining.diningentry",
     "pk": 2,
     "fields": {
       "dining_list": 1,
       "user": 2,
-      "created_by": 2,
-      "has_paid": true
+      "created_by": ["test_user"],
+      "has_paid": true,
+      "transaction": 52
     }
   },
   {
@@ -88,13 +161,24 @@
     }
   },
   {
+    "model": "creditmanagement.transaction",
+    "pk": 53,
+    "fields": {
+      "source": ["user", 3],
+      "target": ["kitchen_cost", ""],
+      "amount": 0.5,
+      "created_by": 1
+    }
+  },
+  {
     "model": "dining.diningentry",
     "pk": 3,
     "fields": {
       "dining_list": 1,
       "user": 3,
       "created_by": 1,
-      "has_paid": false
+      "has_paid": false,
+      "transaction": 53
     }
   },
   {
@@ -115,13 +199,24 @@
     }
   },
   {
+    "model": "creditmanagement.transaction",
+    "pk": 54,
+    "fields": {
+      "source": ["user", 2],
+      "target": ["kitchen_cost", ""],
+      "amount": 0.5,
+      "created_by": 2
+    }
+  },
+  {
     "model": "dining.diningentry",
     "pk": 4,
     "fields": {
       "dining_list": 1,
       "user": 2,
       "created_by": 2,
-      "has_paid": false
+      "has_paid": false,
+      "transaction": 54
     }
   },
   {
@@ -133,13 +228,24 @@
     }
   },
   {
+    "model": "creditmanagement.transaction",
+    "pk": 55,
+    "fields": {
+      "source": ["user", 2],
+      "target": ["kitchen_cost", ""],
+      "amount": 0.5,
+      "created_by": 2
+    }
+  },
+  {
     "model": "dining.diningentry",
     "pk": 5,
     "fields": {
       "dining_list": 1,
       "user": 2,
       "created_by": 2,
-      "has_paid": false
+      "has_paid": false,
+      "transaction": 55
     }
   },
   {
@@ -151,13 +257,24 @@
     }
   },
   {
+    "model": "creditmanagement.transaction",
+    "pk": 56,
+    "fields": {
+      "source": ["user", 3],
+      "target": ["kitchen_cost", ""],
+      "amount": 0.5,
+      "created_by": 3
+    }
+  },
+  {
     "model": "dining.diningentry",
     "pk": 6,
     "fields": {
       "dining_list": 1,
       "user": 3,
       "created_by": 3,
-      "has_paid": false
+      "has_paid": false,
+      "transaction": 56
     }
   },
   {
@@ -170,13 +287,24 @@
     }
   },
   {
+    "model": "creditmanagement.transaction",
+    "pk": 57,
+    "fields": {
+      "source": ["user", 2],
+      "target": ["kitchen_cost", ""],
+      "amount": 0.5,
+      "created_by": 3
+    }
+  },
+  {
     "model": "dining.diningentry",
     "pk": 7,
     "fields": {
       "dining_list": 1,
       "user": 3,
       "created_by": 3,
-      "has_paid": true
+      "has_paid": true,
+      "transaction": 57
     }
   },
   {
@@ -188,13 +316,24 @@
     }
   },
   {
+    "model": "creditmanagement.transaction",
+    "pk": 58,
+    "fields": {
+      "source": ["user", 1],
+      "target": ["kitchen_cost", ""],
+      "amount": 0.5,
+      "created_by": 1
+    }
+  },
+  {
     "model": "dining.diningentry",
     "pk": 8,
     "fields": {
       "dining_list": 1,
       "user": 1,
       "created_by": 1,
-      "has_paid": true
+      "has_paid": true,
+      "transaction": 58
     }
   },
   {
@@ -203,6 +342,73 @@
     "fields": {
       "name": "Hermoine Granger",
       "diningentry_ptr_id": 8
+    }
+  },
+  {
+    "model": "creditmanagement.transaction",
+    "pk": 59,
+    "fields": {
+      "source": ["user", 1],
+      "target": ["kitchen_cost", ""],
+      "amount": 0.5,
+      "created_by": 1
+    }
+  },
+  {
+    "model": "dining.diningentry",
+    "pk": 9,
+    "fields": {
+      "dining_list": 2,
+      "user": 1,
+      "created_by": 1,
+      "has_paid": true,
+      "transaction": 59
+    }
+  },
+  {
+    "model": "dining.diningwork",
+    "pk": 9,
+    "fields": {
+      "has_shopped": true,
+      "has_cooked": true,
+      "has_cleaned": false
+    }
+  },
+  {
+    "model": "dining.diningentryuser",
+    "pk": 9,
+    "fields": {
+      "diningwork_ptr_id": 9,
+      "diningentry_ptr_id": 9
+    }
+  },
+  {
+    "model": "creditmanagement.transaction",
+    "pk": 60,
+    "fields": {
+      "source": ["user", 1],
+      "target": ["kitchen_cost", ""],
+      "amount": 0.5,
+      "created_by": 1
+    }
+  },
+  {
+    "model": "dining.diningentry",
+    "pk": 10,
+    "fields": {
+      "dining_list": 2,
+      "user": 1,
+      "created_by": 1,
+      "has_paid": true,
+      "transaction": 60
+    }
+  },
+  {
+    "model": "dining.diningentryexternal",
+    "pk": 10,
+    "fields": {
+      "name": "Hermoine Granger",
+      "diningentry_ptr_id": 10
     }
   }
 ]

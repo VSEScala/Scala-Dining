@@ -184,7 +184,7 @@ class DiningEntryUser(DiningEntry, DiningWork):
     def clean(self):
         if not self.pk and hasattr(self, 'user') and hasattr(self, 'dining_list'):
             if DiningEntryUser.objects.filter(user=self.user, dining_list=self.dining_list).exists():
-                raise ValidationError("User is already on the dining list")
+                raise ValidationError("User is already on the dining list", code='user_already_present')
 
 
 class DiningEntryExternal(DiningEntry):

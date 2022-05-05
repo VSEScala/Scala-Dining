@@ -283,7 +283,7 @@ class DiningEntryDeleteForm(forms.Form):
 
         # Check permission: either she's owner, or the entry is about herself, or she created the entry
         if not is_owner and self.entry.user != self.deleter and self.entry.created_by != self.deleter:
-            raise ValidationError('Can only delete own entries')
+            raise ValidationError('Can only delete own entries', code='not_owner')
 
         return cleaned_data
 
@@ -306,7 +306,7 @@ class DiningListDeleteForm(forms.ModelForm):
         model = DiningList
         fields = []
 
-    def __init__(self, deleted_by, instance, **kwargs):
+    def __init__(self, deleted_by, instance, data=None, **kwargs):
         # Bind automatically on creation
         super().__init__(instance=instance, data={}, **kwargs)
         self.deleted_by = deleted_by
@@ -317,7 +317,11 @@ class DiningListDeleteForm(forms.ModelForm):
     def clean(self):
         cleaned_data = super().clean()
 
-        # Optionally check min/max diners here
+        if not self.instance.is_adjustable():
+            raise ValidationError("The dining list is locked, changes can no longer be made", code='locked')
+
+        if not self.instance.is_owner(self.deleted_by):
+            raise ValidationError('Only owners of a dining list can delete a list', code='not_owner')
 
         # Also validate all entry deletions
         for entry_deletion in self.entry_delete_forms:
