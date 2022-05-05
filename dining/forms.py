@@ -245,7 +245,7 @@ class DiningEntryUserCreateForm(forms.ModelForm):
                     instance.transaction = tx
                 instance.save()
                 return instance
-
+        # Todo: Inform other if added by someone else logic here instead of in the view
         return super().save(commit)
 
 
@@ -294,6 +294,7 @@ class DiningEntryDeleteForm(forms.Form):
                 tx.cancel(self.deleter)
                 tx.save()
             self.entry.delete()
+        # Todo: Inform other of removal logic here instead of in the view
 
 
 class DiningListDeleteForm(forms.ModelForm):
@@ -341,6 +342,7 @@ class DiningListDeleteForm(forms.ModelForm):
                 entry_deletion.execute()
             # Delete dining list
             self.instance.delete()
+        # Todo: Inform other of removal logic here instead of in the view
 
 
 class DiningCommentForm(forms.ModelForm):
