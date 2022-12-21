@@ -142,7 +142,7 @@ class DiningInfoForm(ConcurrenflictFormMixin, ServeTimeCheckMixin, forms.ModelFo
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['serve_time'].widget.input_type = 'time'
-        self.fields['sign_up_deadline'].widget.input_type = 'time'
+        self.fields['sign_up_deadline'].widget.input_type = 'datetime-local'
 
 
 
