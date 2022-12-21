@@ -6,7 +6,7 @@ Cooking website.
 
 ### Local Python
 
-- Create and activate virtual environment
+- Create and activate an virtual environment
 - Copy `.env.example` to `.env` and adjust as wanted
 - `pip install -r requirements.txt -r dev-requirements.txt`
 - `python manage.py runserver`
