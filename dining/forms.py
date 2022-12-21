@@ -55,6 +55,8 @@ class CreateSlotForm(ServeTimeCheckMixin, forms.ModelForm):
 
         self.creator = creator
 
+        self.fields['serve_time'].widget.input_type = 'time'
+
         # Get associations that the user is a member of (not necessarily verified)
         associations = Association.objects.filter(usermembership__related_user=creator)
         denied_memberships = UserMembership.objects.filter(related_user=creator, is_verified=False,
@@ -137,6 +139,11 @@ class DiningInfoForm(ConcurrenflictFormMixin, ServeTimeCheckMixin, forms.ModelFo
         widgets = {
             'owners': ModelSelect2Multiple(url='people_autocomplete', attrs={'data-minimum-input-length': '1'}),
         }
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['serve_time'].widget.input_type = 'time'
+        self.fields['sign_up_deadline'].widget.input_type = 'time'
+
 
 
 class DiningPaymentForm(ConcurrenflictFormMixin, forms.ModelForm):
