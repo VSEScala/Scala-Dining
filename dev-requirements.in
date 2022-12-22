@@ -2,5 +2,7 @@
 flake8
 flake8-docstrings
 pep8-naming
-codecov~=2.0
-coverage~=4.5.3
+#codecov~=2.0
+#coverage~=4.5.3
+codecov
+coverage

@@ -1,16 +1,16 @@
-name: Test Dining App
+name: Code coverage
 
 on: [push, pull_request]
 
 jobs:
   test:
-    name: Test Code
+    name: Create coverage report
     runs-on: ubuntu-latest
     env:
       DJANGO_ENV: 'TESTING'
     strategy:
       matrix:
-        python: ["3.7"]
+        python: ["3.11"]
         ubuntu: ["ubuntu-20.04"]
     steps:
       - name: Checkout code
@@ -23,14 +23,14 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pip-
       - name: Install requirements
-        run: pip install -r requirements/ci.txt
-      - name: Run Tests
+        run: pip install -r requirements.txt -r dev-requirements.txt
+      - name: Run tests
         if: always()
         env:
           DINING_SECRET_KEY: coveragetestingkey
           DINING_DEBUG: on
         run: coverage run manage.py test
-      - name: Output Coverage
+      - name: Output coverage
         run: coverage report && coverage xml
       - name: Upload coverage to CodeCov
         uses: codecov/codecov-action@v2 # https://github.com/codecov/codecov-action

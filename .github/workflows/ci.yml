@@ -1,6 +1,6 @@
-name: Continuous integration
+name: Continuous testing
 
-on: push
+on: [push, pull_request]
 
 jobs:
   build:
@@ -9,7 +9,7 @@ jobs:
     - uses: actions/checkout@v2
     - uses: actions/setup-python@v1
       with:
-        python-version: 3.8
+        python-version: 3.11
     - uses: actions/cache@v2
       with:
         path: ~/.cache/pip
@@ -19,7 +19,6 @@ jobs:
           ${{ runner.os }}-pip-
     - name: Install dependencies
       run: |
-        pip install --upgrade pip setuptools wheel
         pip install -r requirements.txt -r dev-requirements.txt
     - name: Lint
       run: |
