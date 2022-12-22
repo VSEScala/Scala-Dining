@@ -1,8 +1,9 @@
-from datetime import timedelta, datetime, time
+from datetime import timedelta, datetime, time, date
 from decimal import Decimal
 
 from dal_select2.widgets import ModelSelect2, ModelSelect2Multiple
 from django.conf import settings
+from django.core.exceptions import NON_FIELD_ERRORS
 from django.forms import ModelForm
 from django.http import HttpRequest
 from django.test import TestCase
@@ -206,7 +207,8 @@ class TestDiningEntryUserCreateForm(FormValidityMixin, TestCase):
         with self.settings(MINIMUM_BALANCE_FOR_DINING_SIGN_UP=100):
             # For minimum balance, nobody has an exception, not even admins
             self.assert_form_has_error({'user': self.user}, code='nomoneyzz')
-            self.assert_form_has_error({'user': self.user}, created_by=self.dining_list.owners.first(), code='nomoneyzz')
+            self.assert_form_has_error({'user': self.user}, created_by=self.dining_list.owners.first(),
+                                       code='nomoneyzz')
             admin = User.objects.filter(is_superuser=True).first()
             self.assert_form_has_error({'user': admin}, created_by=admin, code='nomoneyzz')
 
@@ -302,7 +304,8 @@ class TestDiningEntryExternalCreateForm(FormValidityMixin, TestCase):
         with self.settings(MINIMUM_BALANCE_FOR_DINING_SIGN_UP=100):
             # For minimum balance, nobody has an exception, not even admins
             self.assert_form_has_error({'name': 'my guest'}, code='nomoneyzz')
-            self.assert_form_has_error({'name': 'my guest'}, created_by=self.dining_list.owners.first(), code='nomoneyzz')
+            self.assert_form_has_error({'name': 'my guest'}, created_by=self.dining_list.owners.first(),
+                                       code='nomoneyzz')
             admin = User.objects.filter(is_superuser=True).first()
             self.assert_form_has_error({'name': 'my guest'}, created_by=admin, code='nomoneyzz')
 
@@ -410,10 +413,11 @@ class TestDiningListDeleteForm(FormValidityMixin, TestCase):
         self.dining_list.owners.clear()
         self.assert_form_has_error({}, code="not_owner")
 
-    @patch_time(dt=datetime(2022, 5, 30, 12, 0))
     def test_form_editing_time_limit(self):
         """Asserts that the form can not be used after the timelimit."""
-        self.assert_form_has_error({}, code='locked')
+        # The form will be locked by default because the dining list instance has a date in the past.
+        form = DiningListDeleteForm({}, instance=self.dining_list)
+        self.assertTrue(form.has_error(NON_FIELD_ERRORS, code='locked'))
 
 
 class TestDiningInfoForm(FormValidityMixin, TestCase):
@@ -469,26 +473,30 @@ class TestDiningInfoForm(FormValidityMixin, TestCase):
         self.assertEqual(updated_dining_list.max_diners, 14)
         self.assertNotEqual(updated_dining_list.sign_up_deadline.time(), self.dining_list.sign_up_deadline)
 
-    @patch_time(dt=datetime(2022, 5, 30, 12, 0))
     def test_form_editing_time_limit(self):
         """Asserts that the form can not be used after the timelimit."""
-        self.assert_form_has_error({}, code='closed')
+        # Set the dining list to an old date and assert that we have a 'closed' error.
+        self.dining_list.date = date(2000, 1, 1)
+        form = DiningInfoForm({'dish': 'Test'}, instance=self.dining_list)
+        self.assertTrue(form.has_error(NON_FIELD_ERRORS, code='closed'))
 
-    @patch_time()
+        # Note: this tests the DiningList.clean() method and thus should be there instead of
+        # on DiningInfoForm.
+
     def test_kitchen_open_time_validity(self):
         """Asserts that the meal can't be served before the kitchen opening time."""
-        dt = datetime.combine(timezone.now().today(), settings.KITCHEN_USE_START_TIME) - timedelta(minutes=1)
+        dt = datetime.combine(date(2000, 1, 1), settings.KITCHEN_USE_START_TIME) - timedelta(minutes=1)
         self.assert_form_has_error({
             'serve_time': dt.time()
-        }, code='kitchen_start_time')
+        }, code='kitchen_start_time', field='serve_time')
 
-    @patch_time()
     def test_kitchen_close_time_validity(self):
         """Asserts that the meal can't be served after the kitchen closing time."""
-        dt = datetime.combine(timezone.now().today(), settings.KITCHEN_USE_END_TIME) + timedelta(minutes=1)
+        dt = datetime.combine(date(2000, 1, 1), settings.KITCHEN_USE_END_TIME) + timedelta(minutes=1)
+
         self.assert_form_has_error({
             'serve_time': dt.time()
-        }, code='kitchen_close_time')
+        }, code='kitchen_close_time', field='serve_time')
 
 
 class TestDiningPaymentForm(FormValidityMixin, TestCase):
