@@ -8,7 +8,7 @@ from django.db.models import Q, Count, Sum
 from django.http import HttpResponseRedirect, HttpResponse
 from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
-from django.utils.http import is_safe_url
+from django.utils.http import url_has_allowed_host_and_scheme
 from django.views import View
 from django.views.generic import ListView, TemplateView, FormView, DetailView
 
@@ -161,9 +161,9 @@ class MembersEditView(LoginRequiredMixin, AssociationBoardMixin, ListView):
                 self._alter_state(verified, id)
 
         # If next is provided, put possible error messages on the messages system and redirect
-        next = request.GET.get('next', None)
-        if next and is_safe_url(next, request.get_host()):
-            return HttpResponseRedirect(next)
+        redirect_to = request.GET.get('next', None)
+        if url_has_allowed_host_and_scheme(redirect_to, request.get_host()):
+            return HttpResponseRedirect(redirect_to)
 
         return HttpResponseRedirect(request.path_info)
 

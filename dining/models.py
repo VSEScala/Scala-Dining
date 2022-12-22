@@ -1,4 +1,4 @@
-from datetime import time
+from datetime import time, datetime
 from decimal import Decimal
 
 from django.conf import settings
@@ -89,14 +89,16 @@ class DiningList(models.Model):
     is_adjustable.boolean = True
 
     def clean(self):
-        # Validate dining list can be changed
+        # Validate dining list can be changed.
         if self.pk and not self.is_adjustable():
             raise ValidationError("The dining list is not adjustable", code='closed')
-        # Set sign up deadline if it hasn't been set already
+        # Set sign up deadline to a default if it hasn't been set already.
         if not self.sign_up_deadline:
-            loc_time = timezone.datetime.combine(self.date, settings.DINING_LIST_CLOSURE_TIME)
-            loc_time = timezone.get_default_timezone().localize(loc_time)
-            self.sign_up_deadline = loc_time
+            self.sign_up_deadline = datetime.combine(
+                date=self.date,
+                time=settings.DINING_LIST_CLOSURE_TIME,
+                tzinfo=timezone.get_default_timezone()
+            )
 
     def is_open(self):
         """Whether normal users can sign in/out for the dining list (i.e. the deadline has not expired)."""

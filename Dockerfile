@@ -1,12 +1,13 @@
-FROM python:3.8
+FROM python:3.10
 
 # Python settings
 ENV PYTHONUNBUFFERED=1
 
 WORKDIR /app/src
 
-# Install dependencies
-RUN pip install --no-cache-dir gunicorn psycopg2
+# The production dependencies are gunicorn and psycopg2.
+# The version number is pinned but it should be safe to upgrade.
+RUN pip install --no-cache-dir gunicorn==20.1.0 psycopg2==2.9.5
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
