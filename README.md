@@ -32,3 +32,12 @@ inside the virtual environment
 and run `pip-compile requirements.in`.
 See [pip-tools documentation](https://github.com/jazzband/pip-tools)
 for details.
+
+## Code style
+
+The linter Flake8 expects the code, including docstrings, to follow the
+[Google Python Style Guide](https://google.github.io/styleguide/pyguide.html).
+See the file `.flake8` for the exact configuration.
+
+To let PyCharm use the correct docstring format, change the setting at
+"Tools -> Python Integrated Tools -> Docstrings -> Docstring format" to Google.

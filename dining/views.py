@@ -18,8 +18,7 @@ from django.views.generic.edit import DeleteView
 from dining.datesequence import sequenced_date
 from dining.forms import CreateSlotForm, DiningEntryUserCreateForm, DiningEntryExternalCreateForm, \
     DiningEntryDeleteForm, DiningCommentForm, DiningInfoForm, DiningPaymentForm, DiningListDeleteForm, SendReminderForm
-from dining.models import DiningList, DiningDayAnnouncement, DiningCommentVisitTracker, DiningEntryExternal, \
-    DiningEntryUser, DiningEntry
+from dining.models import DiningList, DiningDayAnnouncement, DiningCommentVisitTracker, DiningEntry
 from general.mail_control import send_templated_mail
 from userdetails.models import User, Association
 

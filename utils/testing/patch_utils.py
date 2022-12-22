@@ -8,13 +8,13 @@ __all__ = ["patch", "patch_time", "mock_now"]
 
 
 def patch_time(dt=None):
-    """ Adjusts current time to a set point in time for the patched testcase method.
+    """Adjusts current time to a set point in time for the patched testcase method.
 
     Args:
-        dt: The 'current' datetime according to the program. Defaults to monday 25th of april 2022 10 o'clock
+        dt: The 'current' datetime according to the program. Defaults to Monday 25th of April 2022 10 o'clock.
 
-    Returns: Method with adjusted datetime
-
+    Returns:
+        Method with adjusted datetime.
     """
     if dt is not None and not isinstance(dt, datetime.datetime) and callable(dt):
         raise KeyError("Patch time incorrectly called. Make sure you patched through @patch_time() and not @patch_time")
@@ -43,13 +43,12 @@ class TestPatchMixin:
 
     @staticmethod
     def assert_has_no_call(mock: Mock, **kwargs):
-        """ Assert that a given mock does not have a call with the (partially) given attributes.
+        """Asserts that a given mock does not have a call with the (partially) given attributes.
 
         Args:
             mock: The Mock instance
-            **kwargs: List of keyword arguments used in the method call
-            Use arg_## as a keyword argument to check for a non-keyworded argument in original method call
-
+            kwargs: List of keyword arguments used in the method call.
+                Use arg_## as a keyword argument to check for a non-keyword argument in original method call.
         """
         try:
             TestPatchMixin.assert_has_call(mock, **kwargs)
@@ -60,16 +59,16 @@ class TestPatchMixin:
 
     @staticmethod
     def assert_has_call(mock: Mock, **kwargs):
-        """ Assert that a given mock has a call with the (partially) given attributes.
+        """Asserts that a given mock has a call with the (partially) given attributes.
 
         Args:
-            mock: The Mock instance
-            **kwargs: List of keyword arguments used in the method call
-            Use arg_## as a keyword argument to check for a non-keyworded argument in original method call
+            mock: The Mock instance.
+            kwargs: List of keyword arguments used in the method call.
+                Use arg_## as a keyword argument to check for a non-keyword argument in original method call
 
-        Returns: A list of all valid calls represented as dictionaries. Use 'args' key to retrieve initial method
-         arguments from the dict.
-
+        Returns:
+            A list of all valid calls represented as dictionaries. Use 'args' key to retrieve initial method
+            arguments from the dict.
         """
         # Copy the dict so in the case of an error we can reconstruct the given kwargs
         call_kwargs = kwargs.copy()

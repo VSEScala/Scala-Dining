@@ -1,5 +1,5 @@
-from .form_test_utils import FormValidityMixin
-from .patch_utils import patch, TestPatchMixin
+from utils.testing.form_test_utils import FormValidityMixin
+from utils.testing.patch_utils import patch, TestPatchMixin
 
 
 __all__ = ['FormValidityMixin', 'TestPatchMixin', 'patch']

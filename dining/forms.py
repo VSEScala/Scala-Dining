@@ -14,10 +14,9 @@ from django.utils import timezone
 from creditmanagement.models import Transaction, Account
 from dining.models import DiningList, DiningEntryUser, DiningEntryExternal, DiningComment, DiningEntry
 from general.forms import ConcurrenflictFormMixin
-from general.util import SelectWithDisabled
 from general.mail_control import send_templated_mail
+from general.util import SelectWithDisabled
 from userdetails.models import Association, UserMembership, User
-
 
 __all__ = ['CreateSlotForm', 'DiningInfoForm', 'DiningPaymentForm', 'DiningEntryUserCreateForm',
            'DiningEntryExternalCreateForm', 'DiningEntryDeleteForm', 'DiningListDeleteForm',
@@ -374,7 +373,7 @@ class DiningCommentForm(forms.ModelForm):
 
 class SendReminderForm(forms.Form):
 
-    def __init__(self, *args, dining_list: DiningList=None, **kwargs):
+    def __init__(self, *args, dining_list: DiningList = None, **kwargs):
         assert dining_list is not None
         self.dining_list = dining_list
         super(SendReminderForm, self).__init__(*args, **kwargs)
