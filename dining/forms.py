@@ -9,6 +9,7 @@ from django.core.validators import MinValueValidator
 from django.db import transaction
 from django.db.models import OuterRef, Exists
 from django.forms import ValidationError
+from django.forms.widgets import TimeInput, DateTimeInput
 from django.utils import timezone
 
 from creditmanagement.models import Transaction, Account
@@ -138,12 +139,34 @@ class DiningInfoForm(ConcurrenflictFormMixin, ServeTimeCheckMixin, forms.ModelFo
         fields = ['owners', 'dish', 'serve_time', 'min_diners', 'max_diners', 'sign_up_deadline']
         widgets = {
             'owners': ModelSelect2Multiple(url='people_autocomplete', attrs={'data-minimum-input-length': '1'}),
+            # 'serve_time': TimeInput(input_type='time'),
+            # 'sign_up_deadline': DateTimeInput(input_type='datetime-local')
         }
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['serve_time'].widget.input_type = 'time'
         self.fields['sign_up_deadline'].widget.input_type = 'datetime-local'
+        # self.fields['serve_time'].widget.attrs['min'] = settings.KITCHEN_USE_START_TIME.strftime("%H:%M")
+        self.set_bounds('serve_time', 'min', settings.KITCHEN_USE_START_TIME.strftime("%H:%M"))
+        # self.fields['serve_time'].widget.attrs['max'] = settings.KITCHEN_USE_END_TIME.strftime("%H:%M")
+        self.set_bounds('serve_time', 'max', settings.KITCHEN_USE_END_TIME.strftime("%H:%M"))
+        # self.fields['sign_up_deadline'].widget.attrs['max'] = self.instance.date.strftime("%Y-%m-%dT23:59")
+        self.set_bounds('sign_up_deadline', 'max', self.instance.date.strftime("%Y-%m-%dT23:59"))
+        # self.fields['min_diners'].max_value = settings.MAX_SLOT_DINER_MINIMUM
+        self.set_bounds('min_diners', 'max', settings.MAX_SLOT_DINER_MINIMUM)
+        # self.fields['max_diners'].min_value = settings.MIN_SLOT_DINER_MAXIMUM
+        self.set_bounds('max_diners', 'min', settings.MIN_SLOT_DINER_MAXIMUM)
 
+    def set_bounds(self, field, attr, value):
+        if (attr != 'max' and attr != 'min'):
+            raise ValueError("attr not min or max")
+        f = self.fields[field]
+        f.widget.attrs[attr] = value
+        if attr == 'max' and hasattr(f, 'max_value'):
+            f.max_value = value
+        elif attr == 'min' and hasattr(f, 'min_value'):
+            f.min_value = value
 
 
 class DiningPaymentForm(ConcurrenflictFormMixin, forms.ModelForm):
@@ -381,7 +404,7 @@ class DiningCommentForm(forms.ModelForm):
 
 class SendReminderForm(forms.Form):
 
-    def __init__(self, *args, dining_list: DiningList=None, **kwargs):
+    def __init__(self, *args, dining_list: DiningList = None, **kwargs):
         assert dining_list is not None
         self.dining_list = dining_list
         super(SendReminderForm, self).__init__(*args, **kwargs)
