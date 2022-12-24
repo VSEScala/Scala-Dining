@@ -18,11 +18,11 @@
                        {% if field.field.disabled %}disabled{% endif %}>
                 <label class="custom-control-label w-100 mb-3" for="{{ field.id_for_label }}">
                     {{ field.label }}
-                    {% if field.field.verified %}
+                    {% if field.field.membership.is_verified %}
                         <span class="badge badge-success">Verified</span>
-                    {% elif field.field.verified == False %}
+                    {% elif field.field.membership.is_rejected %}
                         <span class="badge badge-danger">Rejected</span>
-                    {% elif field.field.pending %}
+                    {% elif field.field.membership.is_pending %}
                         <span class="badge badge-info">Pending</span>
                     {% endif %}
                 </label>

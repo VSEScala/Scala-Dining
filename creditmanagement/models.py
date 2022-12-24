@@ -12,6 +12,7 @@ from userdetails.models import Association, User
 
 class AccountManager(models.Manager):
     def get_by_natural_key(self, type, name=None):
+        # See https://docs.djangoproject.com/en/4.1/topics/serialization/#natural-keys
         if type.lower() == "user":
             return self.get(user=User.objects.get_by_natural_key(name))
         elif type.lower() == "association":

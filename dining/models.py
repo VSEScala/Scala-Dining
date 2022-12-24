@@ -13,13 +13,6 @@ from general.models import AbstractVisitTracker
 from userdetails.models import User, Association
 
 
-class UserDiningSettings(models.Model):
-    """Contains setting related to the dining lists and use of the dining lists."""
-    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    allergies = models.CharField(max_length=100, blank=True, help_text="Leave empty if not applicable.",
-                                 verbose_name="allergies or dietary restrictions")
-
-
 class DiningListManager(models.Manager):
     def available_slots(self, date):
         """Returns the number of available slots on the given date."""

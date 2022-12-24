@@ -1,42 +1,51 @@
 from django import forms
-from django.conf import settings
-from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth.forms import UserCreationForm, UsernameField
 from django.core.exceptions import ValidationError
+from django.db import transaction
 from django.db.models import Q
 from django.forms import ModelForm
-from django.utils import timezone
 
-from dining.models import UserDiningSettings
 from userdetails.models import User, Association, UserMembership
 
 
 class RegisterUserForm(UserCreationForm):
+    # Previously associations were saved using a separate AssociationLinkForm. During user creation the logic is so
+    # simple that is suffices to have a simple multiple choice field with all associations and create (unverified)
+    # memberships on save.
+    #
+    # By default, this field is required.
+    associations = forms.ModelMultipleChoiceField(
+        queryset=Association.objects.filter(is_choosable=True),
+        widget=forms.CheckboxSelectMultiple()
+    )
+
     class Meta:
         model = User
-        fields = ('username', 'password1', 'password2', 'email')
+        fields = ('username', 'password1', 'password2', 'email', 'first_name', 'last_name', 'allergies')
+        field_classes = {'username': UsernameField}  # This adds HTML attributes for semantics, see UserCreationForm.
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['first_name'].required = True
+        self.fields['last_name'].required = True
 
-class RegisterUserDetails(forms.ModelForm):
-    first_name = forms.CharField(max_length=40, required=True)
-    last_name = forms.CharField(max_length=40, required=True)
-    allergies = forms.CharField(max_length=100, required=False, help_text="Max 100 characters, leave empty if none")
+        # Set headings used during rendering.
+        #
+        # I don't like doing this here instead of in the template or view, but
+        # I don't know how to do that cleanly.
+        self.fields['username'].heading = 'Account details'
+        self.fields['first_name'].heading = 'Personal details'
+        self.fields['associations'].heading = 'Memberships'
 
-    class Meta:
-        model = User
-        fields = ['first_name', 'last_name', 'allergies']
-
-    def save_as(self, user):
-        user.first_name = self.cleaned_data.get('first_name')
-        user.last_name = self.cleaned_data.get('last_name')
-        user.userdiningsettings.allergies = self.cleaned_data.get('allergies')
-        user.save()
-        user.userdiningsettings.save()
-
-
-class DiningProfileForm(ModelForm):
-    class Meta:
-        model = UserDiningSettings
-        fields = ['allergies']
+    def save(self, commit=True):
+        """Saves user and creates the memberships."""
+        user = super().save(commit=False)
+        if commit:
+            with transaction.atomic():
+                user.save()
+                for association in self.cleaned_data['associations']:
+                    UserMembership.objects.create(related_user=user, association=association)
+        return user
 
 
 class UserForm(ModelForm):
@@ -44,7 +53,7 @@ class UserForm(ModelForm):
 
     class Meta:
         model = User
-        fields = ['username', 'name', 'email']
+        fields = ('username', 'name', 'email', 'allergies')
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -52,95 +61,47 @@ class UserForm(ModelForm):
         self.fields['name'].initial = str(self.instance)
         self.fields['name'].help_text = "Contact the site administrator if you want to change your name."
         self.fields['email'].disabled = True
+        self.fields['email'].required = False  # To hide the asterisk.
 
-
-class AssociationLinkField(forms.BooleanField):
-    """A special BooleanField model for association links.
-
-    Can also indicate current validation state and auto-sets initial value.
-    """
-
-    def __init__(self, user, association, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-        self.initial = False
-        self.required = False
-        self.label = association.name
-        self.user = user
-        self.association = association
-        self.membership = None
-
-        # Find the membership, if any
-        if user is not None:
-            try:
-                self.membership = association.usermembership_set.get(related_user=user)
-                self.initial = self.membership.is_member()
-                if self.membership.get_verified_state() is None:
-                    self.pending = True
-
-                # Check how recently the member has been verified or not. If too recent, block change
-                if self.membership.verified_on is not None:
-                    if self.membership.is_verified:
-                        if self.membership.verified_on + \
-                                settings.DURATION_AFTER_MEMBERSHIP_CONFIRMATION > timezone.now():
-                            # The user has been verified to recently (prevent spamming)
-                            self.disabled = True
-                    else:
-                        if self.membership.verified_on + \
-                                settings.DURATION_AFTER_MEMBERSHIP_REJECTION > timezone.now():
-                            # The user has been verified not to be a member to recently (prevent spamming)
-                            self.disabled = True
-
-            except UserMembership.DoesNotExist:
-                pass
-        if association is None:
-            raise ValueError("Association can not be None")
-
-    def verified(self):
-        if self.membership is None:
-            return None
-        return self.membership.get_verified_state()
-
-    def get_membership_model(self, user=None, new_value=True):
-        # Check input data for correctness
-        if self.user is None and user is None:
-            raise ValueError("Field does not contain user and user was not given in method")
-        if user is not None and self.user is not None and self.user != user:
-            raise ValueError("Given user differs from field user")
-
-        if self.membership is not None:
-            return self.membership
-        if self.user is not None:
-            # If there was a user given, but the link was not found. Create a new link if allowed
-            if new_value:
-                return UserMembership(related_user=self.user, association=self.association)
-        else:
-            # user originally not given. Try to find the link
-            try:
-                return self.association.usermembership_set.get(related_user=user)
-            except UserMembership.DoesNotExist:
-                if new_value:
-                    return UserMembership(related_user=user, association=self.association)
-        return None
+        # Define a heading used during rendering the form.
+        self.fields['allergies'].heading = "Dining"
 
 
 class AssociationLinkForm(forms.Form):
 
     def __init__(self, user, *args, **kwargs):
-        super(AssociationLinkForm, self).__init__(*args, **kwargs)
-
+        super().__init__(*args, **kwargs)
         self.user = user
 
-        if user is None:
-            associations = Association.objects.filter(is_choosable=True)
-        else:
-            associations = Association.objects.filter(
-                Q(is_choosable=True) | (Q(is_choosable=False) & Q(usermembership__related_user=user))).order_by('slug')
+        # Get choosable associations and associations the user is already a member of.
+        #
+        # 'distinct' is necessary because otherwise there will be a large
+        # number of duplicate associations returned, resulting in a slow page
+        # load.
+        associations = Association.objects.filter(
+            Q(is_choosable=True) | Q(usermembership__related_user=user)
+        ).distinct().order_by('slug')
 
-        # Get all associations and make a checkbox field
         for association in associations:
-            field = AssociationLinkField(user, association)
-            # (using the slug since HTML IDs may not contain spaces)
+            # Find membership.
+            try:
+                membership = UserMembership.objects.get(related_user=user, association=association)
+            except UserMembership.DoesNotExist:
+                membership = None
+
+            # Construct boolean field for the association.
+            field = forms.BooleanField(
+                required=False,
+                label=association.name,
+                # Disable when the membership is frozen.
+                disabled=membership and membership.is_frozen(),
+                # Set checked when there is a membership, and it is not rejected.
+                initial=membership and not membership.is_rejected(),
+            )
+
+            # Attach membership and association to the field, which is used by the view.
+            field.membership = membership
+            field.association = association
             self.fields[association.slug] = field
 
     def clean(self):
@@ -153,25 +114,31 @@ class AssociationLinkForm(forms.Form):
 
         return cleaned_data
 
-    def save(self, user=None):
-        """Saves the association links by creating or removing UserMembership instances."""
-        if not self.user and not user:
-            raise ValueError("Both self.user and user are None")
-        if user is None:
-            user = self.user
+    def save(self):
+        """Saves the memberships."""
+        if self.errors:
+            # This is to make it behave the same way as the ModelForm.save() method.
+            raise ValueError("The form didn't validate.")
 
-        for key, value in self.cleaned_data.items():
-            link = self.fields[key].get_membership_model(user, new_value=value)
-            if value:
-                if link.id is None:
-                    link.save()
-                elif link.get_verified_state() is False:
-                    # If user was rejected, and a new request is entered
-                    link.verified_on = None
-                    link.save()
-            else:
-                if link and link.get_verified_state() is not False:
-                    link.delete()
+        for key, chosen in self.cleaned_data.items():
+            membership = self.fields[key].membership
+            association = self.fields[key].association
+
+            # Selected but no membership exists, we need to create it.
+            if chosen and not membership:
+                UserMembership.objects.create(related_user=self.user, association=association)
+
+            # Selected but the membership was rejected, set as pending.
+            #
+            # (Because Django checks for the disabled state server-side, this
+            # can only happen when the membership state is not frozen.)
+            if chosen and membership and membership.is_rejected():
+                membership.set_pending()
+                membership.save()
+
+            # Not selected but there is a non-rejected membership, we need to delete it.
+            if not chosen and membership and not membership.is_rejected():
+                membership.delete()
 
 
 class AssociationSettingsForm(forms.ModelForm):
