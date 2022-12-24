@@ -139,26 +139,27 @@ class DiningInfoForm(ConcurrenflictFormMixin, ServeTimeCheckMixin, forms.ModelFo
         fields = ['owners', 'dish', 'serve_time', 'min_diners', 'max_diners', 'sign_up_deadline']
         widgets = {
             'owners': ModelSelect2Multiple(url='people_autocomplete', attrs={'data-minimum-input-length': '1'}),
-            # 'serve_time': TimeInput(input_type='time'),
-            # 'sign_up_deadline': DateTimeInput(input_type='datetime-local')
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['serve_time'].widget.input_type = 'time'
         self.fields['sign_up_deadline'].widget.input_type = 'datetime-local'
-        # self.fields['serve_time'].widget.attrs['min'] = settings.KITCHEN_USE_START_TIME.strftime("%H:%M")
         self.set_bounds('serve_time', 'min', settings.KITCHEN_USE_START_TIME.strftime("%H:%M"))
-        # self.fields['serve_time'].widget.attrs['max'] = settings.KITCHEN_USE_END_TIME.strftime("%H:%M")
         self.set_bounds('serve_time', 'max', settings.KITCHEN_USE_END_TIME.strftime("%H:%M"))
-        # self.fields['sign_up_deadline'].widget.attrs['max'] = self.instance.date.strftime("%Y-%m-%dT23:59")
         self.set_bounds('sign_up_deadline', 'max', self.instance.date.strftime("%Y-%m-%dT23:59"))
-        # self.fields['min_diners'].max_value = settings.MAX_SLOT_DINER_MINIMUM
         self.set_bounds('min_diners', 'max', settings.MAX_SLOT_DINER_MINIMUM)
-        # self.fields['max_diners'].min_value = settings.MIN_SLOT_DINER_MAXIMUM
         self.set_bounds('max_diners', 'min', settings.MIN_SLOT_DINER_MAXIMUM)
 
     def set_bounds(self, field, attr, value):
+        '''
+        Sets frontend-side bounds to make the filling in of the forms slightly more user-friendly.
+        
+        Arguments:
+            field (string): the name of the field you want to edit
+            attr: either 'min' or 'max'
+            value: the max or min value you want the field to have   
+        '''
         if (attr != 'max' and attr != 'min'):
             raise ValueError("attr not min or max")
         f = self.fields[field]
