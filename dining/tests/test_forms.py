@@ -10,9 +10,10 @@ from django.test import TestCase
 from django.utils import timezone
 
 from creditmanagement.models import Account, Transaction
-from dining.forms import CreateSlotForm, DiningEntryUserCreateForm, DiningEntryExternalCreateForm, \
-    DiningEntryDeleteForm, DiningInfoForm, DiningPaymentForm, DiningCommentForm, SendReminderForm, DiningListDeleteForm
-from dining.models import DiningList, DiningEntryUser, DiningEntryExternal, DiningEntry, DiningComment
+from dining.forms import CreateSlotForm, \
+    DiningEntryDeleteForm, DiningInfoForm, DiningPaymentForm, DiningCommentForm, SendReminderForm, DiningListDeleteForm, \
+    DiningEntryInternalForm, DiningEntryExternalForm
+from dining.models import DiningList, DiningEntry, DiningComment
 from general.forms import ConcurrenflictFormMixin
 from userdetails.models import Association, User, UserMembership
 from utils.testing import TestPatchMixin, patch, FormValidityMixin
@@ -104,18 +105,18 @@ class CreateSlotFormTestCase(TestCase):
         self.assertFalse(self.form.is_valid())
 
 
-class TestDiningEntryUserCreateForm(FormValidityMixin, TestCase):
+class TestDiningEntryInternalForm(FormValidityMixin, TestCase):
     fixtures = ['base', 'base_credits', 'dining_lists']
-    form_class = DiningEntryUserCreateForm
+    form_class = DiningEntryInternalForm
 
     def setUp(self):
         self.dining_list = DiningList.objects.get(id=3)
         self.user = User.objects.get(id=2)
 
     def get_form_kwargs(self, **kwargs):
-        kwargs.setdefault('dining_list', self.dining_list)
-        kwargs.setdefault('created_by', self.user)
-        return super(TestDiningEntryUserCreateForm, self).get_form_kwargs(**kwargs)
+        entry = DiningEntry(dining_list=self.dining_list, created_by=self.user)
+        kwargs.setdefault('instance', entry)
+        return super().get_form_kwargs(**kwargs)
 
     def test_widget_replacements(self):
         form = self.build_form({})
@@ -133,13 +134,13 @@ class TestDiningEntryUserCreateForm(FormValidityMixin, TestCase):
         form = self.assert_form_valid({'user': User.objects.get(id=4)})
         instance = form.save()
 
-        self.assertTrue(DiningEntryUser.objects.filter(id=instance.id).exists())
+        self.assertTrue(DiningEntry.objects.filter(id=instance.id).exists())
         instance.refresh_from_db()
         self.assertEqual(instance.user, User.objects.get(id=4))
         self.assertEqual(instance.created_by, self.user)
 
     @patch_time()
-    def test_transation_db_creation(self):
+    def test_transaction_db_creation(self):
         """Asserts that the correct transaction is created."""
         # Adjust kitchen cost so we can test it takes that value
         self.dining_list.kitchen_cost = 0.42
@@ -159,7 +160,7 @@ class TestDiningEntryUserCreateForm(FormValidityMixin, TestCase):
 
     @patch_time()
     def test_prevent_doubles(self):
-        DiningEntryUser.objects.create(
+        DiningEntry.objects.create(
             dining_list=self.dining_list,
             user=self.user,
             created_by=self.user
@@ -172,7 +173,10 @@ class TestDiningEntryUserCreateForm(FormValidityMixin, TestCase):
         # Verify testcase data
         self.assertNotIn(self.user, self.dining_list.owners.all(), "Incorrect test data, user should not be owner")
         self.assert_form_has_error({'user': self.user}, code='closed')
-        self.assert_form_valid({'user': self.user}, created_by=self.dining_list.owners.first())
+        self.assert_form_valid(
+            {'user': self.user},
+            instance=DiningEntry(dining_list=self.dining_list, created_by=self.dining_list.owners.first())
+        )
 
     @patch_time()
     def test_room(self):
@@ -182,11 +186,14 @@ class TestDiningEntryUserCreateForm(FormValidityMixin, TestCase):
         # Fill the dininglist with meaningless entries
         other_user = User.objects.get(id=1)
         for i in range(14):
-            DiningEntryExternal.objects.create(dining_list=self.dining_list, user=other_user, created_by=other_user)
+            DiningEntry.objects.create(dining_list=self.dining_list, user=other_user, created_by=other_user)
         self.dining_list.max_diners = 14
 
         self.assert_form_has_error({'user': self.user}, code='full')
-        self.assert_form_valid({'user': self.user}, created_by=self.dining_list.owners.first())
+        self.assert_form_valid(
+            {'user': self.user},
+            instance=DiningEntry(dining_list=self.dining_list, created_by=self.dining_list.owners.first())
+        )
 
     @patch_time()
     def test_association_only_limitation(self):
@@ -200,17 +207,27 @@ class TestDiningEntryUserCreateForm(FormValidityMixin, TestCase):
         # user 4 is not a member
         self.assert_form_has_error({'user': User.objects.get(id=4)}, code='members_only')
         # owners can override
-        self.assert_form_valid({'user': User.objects.get(id=4)}, created_by=self.dining_list.owners.first())
+        self.assert_form_valid(
+            {'user': User.objects.get(id=4)},
+            instance=DiningEntry(dining_list=self.dining_list, created_by=self.dining_list.owners.first())
+        )
 
     @patch_time()
     def test_minimum_balance(self):
         with self.settings(MINIMUM_BALANCE_FOR_DINING_SIGN_UP=100):
             # For minimum balance, nobody has an exception, not even admins
-            self.assert_form_has_error({'user': self.user}, code='nomoneyzz')
-            self.assert_form_has_error({'user': self.user}, created_by=self.dining_list.owners.first(),
-                                       code='nomoneyzz')
+            self.assert_form_has_error({'user': self.user}, code='no_money')
+            self.assert_form_has_error(
+                {'user': self.user},
+                instance=DiningEntry(dining_list=self.dining_list, created_by=self.dining_list.owners.first()),
+                code='no_money'
+            )
             admin = User.objects.filter(is_superuser=True).first()
-            self.assert_form_has_error({'user': admin}, created_by=admin, code='nomoneyzz')
+            self.assert_form_has_error(
+                {'user': admin},
+                instance=DiningEntry(dining_list=self.dining_list, created_by=admin),
+                code='no_money'
+            )
 
     @patch_time(dt=datetime(2022, 5, 30, 12, 0))
     def test_form_editing_time_limit(self):
@@ -218,46 +235,46 @@ class TestDiningEntryUserCreateForm(FormValidityMixin, TestCase):
         self.assert_form_has_error({'user': self.user}, code='closed')
 
 
-class TestDiningEntryExternalCreateForm(FormValidityMixin, TestCase):
+class TestDiningEntryExternalForm(FormValidityMixin, TestCase):
     fixtures = ['base', 'base_credits', 'dining_lists']
-    form_class = DiningEntryExternalCreateForm
+    form_class = DiningEntryExternalForm
 
     def setUp(self):
         self.dining_list = DiningList.objects.get(id=3)
         self.user = User.objects.get(id=2)
 
     def get_form_kwargs(self, **kwargs):
-        kwargs.setdefault('dining_list', self.dining_list)
-        kwargs.setdefault('created_by', self.user)
-        return super(TestDiningEntryExternalCreateForm, self).get_form_kwargs(**kwargs)
+        entry = DiningEntry(dining_list=self.dining_list, created_by=self.user, user=self.user)
+        kwargs.setdefault('instance', entry)
+        return super().get_form_kwargs(**kwargs)
 
     @patch_time()
     def test_form_valid(self):
         """Asserts that the testing environment standard is valid."""
         # Check for self creation, useful to guarantee a baseline of current testing environment
-        self.assert_form_valid({'name': 'my_guest'})
+        self.assert_form_valid({'external_name': 'my_guest'})
 
     @patch_time()
     def test_entry_db_creation(self):
         """Tests the database object creation for an entry."""
-        form = self.assert_form_valid({'name': 'my guest'})
+        form = self.assert_form_valid({'external_name': 'my guest'})
         instance = form.save()
 
-        self.assertTrue(DiningEntryExternal.objects.filter(id=instance.id).exists())
+        self.assertTrue(DiningEntry.objects.filter(id=instance.id).exists())
         instance.refresh_from_db()
         self.assertEqual(instance.user, self.user)
         self.assertEqual(instance.created_by, self.user)
-        self.assertEqual(instance.name, 'my guest')
+        self.assertEqual(instance.external_name, 'my guest')
 
     @patch_time()
-    def test_transation_db_creation(self):
+    def test_transaction_db_creation(self):
         """Asserts that the correct transaction is created."""
         # Adjust kitchen cost so we can test it takes that value
         self.dining_list.kitchen_cost = 0.37
         self.dining_list.save()
 
         # Save the instance
-        form = self.assert_form_valid({'name': 'my guest'})
+        form = self.assert_form_valid({'external_name': 'my guest'})
         instance = form.save()
 
         self.assertIsNotNone(instance.transaction)
@@ -270,8 +287,12 @@ class TestDiningEntryExternalCreateForm(FormValidityMixin, TestCase):
     def test_sign_up_deadline(self):
         # Verify testcase data
         self.assertNotIn(self.user, self.dining_list.owners.all(), "Incorrect test data, user should not be owner")
-        self.assert_form_has_error({'name': 'my guest'}, code='closed')
-        self.assert_form_valid({'name': 'my guest'}, created_by=self.dining_list.owners.first())
+        self.assert_form_has_error({'external_name': 'my guest'}, code='closed')
+        self.assert_form_valid(
+            {'external_name': 'my guest'},
+            instance=DiningEntry(dining_list=self.dining_list, created_by=self.dining_list.owners.first(),
+                                 user=self.user)
+        )
 
     @patch_time()
     def test_room(self):
@@ -280,11 +301,15 @@ class TestDiningEntryExternalCreateForm(FormValidityMixin, TestCase):
         # Fill the dininglist with meaningless entries
         other_user = User.objects.get(id=1)
         for i in range(14):
-            DiningEntryExternal.objects.create(dining_list=self.dining_list, user=other_user, created_by=other_user)
+            DiningEntry.objects.create(dining_list=self.dining_list, user=other_user, created_by=other_user)
         self.dining_list.max_diners = 14
 
-        self.assert_form_has_error({'name': 'my guest'}, code='full')
-        self.assert_form_valid({'name': 'my guest'}, created_by=self.dining_list.owners.first())
+        self.assert_form_has_error({'external_name': 'my guest'}, code='full')
+        self.assert_form_valid(
+            {'external_name': 'my guest'},
+            instance=DiningEntry(dining_list=self.dining_list, created_by=self.dining_list.owners.first(),
+                                 user=self.user)
+        )
 
     @patch_time()
     def test_association_only_limitation(self):
@@ -293,26 +318,43 @@ class TestDiningEntryExternalCreateForm(FormValidityMixin, TestCase):
         self.dining_list.save()
         self.assertNotIn(self.user, self.dining_list.owners.all(), "Incorrect test data, user should not be owner")
         # user 2 is member of the association
-        self.assert_form_valid({'name': 'my guest'})
+        self.assert_form_valid({'external_name': 'my guest'})
         # user 4 is not a member
-        self.assert_form_has_error({'name': 'my guest'}, code='members_only', created_by=User.objects.get(id=4))
+        self.assert_form_has_error(
+            {'external_name': 'my guest'},
+            code='members_only',
+            instance=DiningEntry(dining_list=self.dining_list, created_by=User.objects.get(id=4),
+                                 user=User.objects.get(id=4))
+        )
         # owners can override
-        self.assert_form_valid({'name': 'my guest'}, created_by=self.dining_list.owners.first())
+        self.assert_form_valid(
+            {'external_name': 'my guest'},
+            instance=DiningEntry(dining_list=self.dining_list, created_by=self.dining_list.owners.first(),
+                                 user=self.user)
+        )
 
     @patch_time()
     def test_minimum_balance(self):
         with self.settings(MINIMUM_BALANCE_FOR_DINING_SIGN_UP=100):
             # For minimum balance, nobody has an exception, not even admins
-            self.assert_form_has_error({'name': 'my guest'}, code='nomoneyzz')
-            self.assert_form_has_error({'name': 'my guest'}, created_by=self.dining_list.owners.first(),
-                                       code='nomoneyzz')
+            self.assert_form_has_error({'external_name': 'my guest'}, code='no_money')
+            self.assert_form_has_error(
+                {'external_name': 'my guest'},
+                instance=DiningEntry(dining_list=self.dining_list, created_by=self.dining_list.owners.first(),
+                                     user=self.user),
+                code='no_money'
+            )
             admin = User.objects.filter(is_superuser=True).first()
-            self.assert_form_has_error({'name': 'my guest'}, created_by=admin, code='nomoneyzz')
+            self.assert_form_has_error(
+                {'external_name': 'my guest'},
+                instance=DiningEntry(dining_list=self.dining_list, created_by=admin, user=self.user),
+                code='no_money'
+            )
 
     @patch_time(dt=datetime(2022, 5, 30, 12, 0))
     def test_form_editing_time_limit(self):
         """Asserts that the form can not be used after the timelimit."""
-        self.assert_form_has_error({'name': 'my guest'}, code='closed')
+        self.assert_form_has_error({'external_name': 'my guest'}, code='closed')
 
 
 class TestDiningEntryDeleteForm(FormValidityMixin, TestCase):
@@ -320,7 +362,7 @@ class TestDiningEntryDeleteForm(FormValidityMixin, TestCase):
     form_class = DiningEntryDeleteForm
 
     def setUp(self):
-        self.entry = DiningEntryUser.objects.get(id=2)
+        self.entry = DiningEntry.objects.get(id=2)
         self.user = self.entry.user
         self.dining_list = self.entry.dining_list
 
@@ -333,7 +375,7 @@ class TestDiningEntryDeleteForm(FormValidityMixin, TestCase):
     def test_form_valid(self):
         self.assert_form_valid({})
         # Test an external user that this user added
-        self.assert_form_valid({}, entry=DiningEntryExternal.objects.get(id=4))
+        self.assert_form_valid({}, entry=DiningEntry.objects.get(id=4))
 
     @patch_time()
     def test_db_entry_deletion(self):
@@ -391,8 +433,7 @@ class TestDiningListDeleteForm(FormValidityMixin, TestCase):
         dining_list_id = self.dining_list.id
         self.assert_form_valid({}).execute()
 
-        self.assertFalse(DiningEntryUser.objects.filter(dining_list__id=dining_list_id).exists())
-        self.assertFalse(DiningEntryExternal.objects.filter(dining_list__id=dining_list_id).exists())
+        self.assertFalse(DiningEntry.objects.filter(dining_list__id=dining_list_id).exists())
 
     @patch_time()
     def test_db_transaction_cancellation(self):
@@ -640,7 +681,7 @@ class TestSendReminderForm(FormValidityMixin, TestPatchMixin, TestCase):
         # Assert that the correct number of recipients are documented
         self.assertEqual(
             len(calls[0]['args'][1]),
-            DiningEntryUser.objects.filter(
+            DiningEntry.objects.internal().filter(
                 dining_list=self.dining_list,
                 has_paid=False,
             ).count()

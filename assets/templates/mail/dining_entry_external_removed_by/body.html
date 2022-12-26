@@ -6,7 +6,7 @@
         Hi {{ recipient.first_name }}
     </p>
     <p>
-        {{ remover }} has <b>removed</b> your guest <b> {{ entry.name }}</b> from the following dining list:
+        {{ remover }} has <b>removed</b> your guest <b> {{ entry.get_name }}</b> from the following dining list:
     </p>
     <table>
         <tr><td>
@@ -26,11 +26,11 @@
         </td></tr>
     </table>
     <p>
-        Please inform {{ entry.name }} that he can no longer dine on this dining list
+        Please inform {{ entry.get_name }} that he can no longer dine on this dining list.
     </p>
     {% if dining_list.is_open and dining_list.has_room %}
     <p>
-        If you still want to add your guest to the dining list. You can do that here:
+        If you still want to add your guest to the dining list, you can do that here:
     </p>
     <div>
         <a href="{{ site_uri }}{{ dining_list.get_absolute_url }}"
@@ -47,5 +47,5 @@
 {% endblock %}
 
 {% block mail_footer %}
-    You received this e-mail because you originally added {{ entry.name }} to the dining list.
+    You received this e-mail because you originally added {{ entry.get_name }} to the dining list.
 {% endblock %}

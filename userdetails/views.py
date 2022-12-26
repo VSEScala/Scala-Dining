@@ -6,7 +6,7 @@ from django.db.models.functions import Concat
 from django.urls import reverse_lazy
 from django.views.generic import ListView, FormView
 
-from dining.models import DiningEntryUser, DiningList
+from dining.models import DiningList, DiningEntry
 from userdetails.forms import RegisterUserForm
 from userdetails.models import User
 
@@ -28,7 +28,7 @@ class DiningJoinHistoryView(LoginRequiredMixin, ListView):
     paginate_by = 20
 
     def get_queryset(self):
-        return DiningEntryUser.objects.filter(user=self.request.user).order_by('-dining_list__date')
+        return DiningEntry.objects.internal().filter(user=self.request.user).order_by('-dining_list__date')
 
 
 class DiningClaimHistoryView(LoginRequiredMixin, ListView):

@@ -6,8 +6,8 @@ from django.test import TestCase
 from django.utils import timezone
 
 from creditmanagement.models import Transaction
-from dining.forms import DiningEntryUserCreateForm, DiningEntryDeleteForm, DiningEntryExternalCreateForm
-from dining.models import DiningList, DiningEntryUser
+from dining.forms import DiningEntryDeleteForm, DiningEntryInternalForm, DiningEntryExternalForm
+from dining.models import DiningList, DiningEntry
 from userdetails.models import User, Association, UserMembership
 
 
@@ -24,7 +24,7 @@ def _create_dining_list(**kwargs):
     return dl
 
 
-class DiningEntryUserCreateFormTestCase(TestCase):
+class DiningEntryInternalFormTestCase(TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.association = Association.objects.create()
@@ -36,9 +36,9 @@ class DiningEntryUserCreateFormTestCase(TestCase):
         self.dining_list = DiningList.objects.create(date=date(2089, 1, 1), association=self.association,
                                                      sign_up_deadline=datetime(2088, 1, 1, tzinfo=timezone.utc))
         self.dining_list.owners.add(self.user)
+        self.dining_entry = DiningEntry(dining_list=self.dining_list, created_by=self.user2)
         self.post_data = {'user': str(self.user2.pk)}
-        self.form = DiningEntryUserCreateForm(self.post_data, dining_list=self.dining_list, created_by=self.user2)
-        self.dining_entry = self.form.instance
+        self.form = DiningEntryInternalForm(self.post_data, instance=self.dining_entry)
 
     def test_form(self):
         self.assertTrue(self.form.is_valid())
@@ -82,12 +82,13 @@ class DiningEntryUserCreateFormTestCase(TestCase):
         self.assertTrue(self.form.has_error(NON_FIELD_ERRORS, 'members_only'))
 
     def test_balance_too_low(self):
+        # Move money away from user2's balance.
         Transaction.objects.create(source=self.user2.account,
                                    target=self.association.account,
                                    amount=Decimal('99'),
                                    created_by=self.user2)
         self.assertFalse(self.form.is_valid())
-        self.assertTrue(self.form.has_error(NON_FIELD_ERRORS, 'nomoneyzz'))
+        self.assertTrue(self.form.has_error(NON_FIELD_ERRORS, 'no_money'))
 
     def test_balance_too_low_exception(self):
         # Make user member of association with exception
@@ -105,7 +106,7 @@ class DiningEntryUserCreateFormTestCase(TestCase):
         self.assertFalse(self.form.is_valid())
 
 
-class DiningEntryExternalCreateFormTestCase(TestCase):
+class DiningEntryExternalFormTestCase(TestCase):
     """This class only tests a valid form instance since the clean method has been tested above already."""
 
     @classmethod
@@ -119,10 +120,11 @@ class DiningEntryExternalCreateFormTestCase(TestCase):
         self.dining_list = DiningList.objects.create(date=date(2089, 1, 1), association=self.association,
                                                      sign_up_deadline=datetime(2088, 1, 1, tzinfo=timezone.utc))
         self.dining_list.owners.add(self.user)
-        self.post_data = {'name': 'Ankie'}
+        self.dining_entry = DiningEntry(dining_list=self.dining_list, user=self.user2, created_by=self.user2)
+        self.post_data = {'external_name': 'Ankie'}
 
     def test_form(self):
-        form = DiningEntryExternalCreateForm(self.post_data, dining_list=self.dining_list, created_by=self.user2)
+        form = DiningEntryExternalForm(self.post_data, instance=self.dining_entry)
         self.assertTrue(form.is_valid())
 
 
@@ -134,7 +136,7 @@ class DiningEntryDeleteFormTestCase(TestCase):
         self.dining_list = DiningList.objects.create(date=date(2100, 1, 1), association=self.association,
                                                      sign_up_deadline=datetime(2100, 1, 1, tzinfo=timezone.utc))
         self.dining_list.owners.add(self.user1)
-        self.entry = DiningEntryUser(user=self.user2, created_by=self.user2, dining_list=self.dining_list)
+        self.entry = DiningEntry(user=self.user2, created_by=self.user2, dining_list=self.dining_list)
         self.form = DiningEntryDeleteForm(self.entry, self.user2, {})
 
     def test_valid(self):

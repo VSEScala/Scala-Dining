@@ -102,24 +102,11 @@
       "user": 1,
       "created_by": 1,
       "has_paid": false,
-      "transaction": 51
-    }
-  },
-  {
-    "model": "dining.diningwork",
-    "pk": 1,
-    "fields": {
+      "transaction": 51,
       "has_shopped": true,
       "has_cooked": true,
-      "has_cleaned": false
-    }
-  },
-  {
-    "model": "dining.diningentryuser",
-    "pk": 1,
-    "fields": {
-      "diningwork_ptr_id": 1,
-      "diningentry_ptr_id": 1
+      "has_cleaned": false,
+      "external_name": ""
     }
   },
   {
@@ -140,24 +127,11 @@
       "user": 2,
       "created_by": ["test_user"],
       "has_paid": true,
-      "transaction": 52
-    }
-  },
-  {
-    "model": "dining.diningwork",
-    "pk": 2,
-    "fields": {
+      "transaction": 52,
       "has_shopped": true,
       "has_cooked": true,
-      "has_cleaned": false
-    }
-  },
-  {
-    "model": "dining.diningentryuser",
-    "pk": 2,
-    "fields": {
-      "diningwork_ptr_id": 2,
-      "diningentry_ptr_id": 2
+      "has_cleaned": false,
+      "external_name": ""
     }
   },
   {
@@ -178,24 +152,11 @@
       "user": 3,
       "created_by": 1,
       "has_paid": false,
-      "transaction": 53
-    }
-  },
-  {
-    "model": "dining.diningwork",
-    "pk": 3,
-    "fields": {
+      "transaction": 53,
       "has_shopped": true,
       "has_cooked": true,
-      "has_cleaned": false
-    }
-  },
-  {
-    "model": "dining.diningentryuser",
-    "pk": 3,
-    "fields": {
-      "diningwork_ptr_id": 3,
-      "diningentry_ptr_id": 3
+      "has_cleaned": false,
+      "external_name": ""
     }
   },
   {
@@ -216,15 +177,11 @@
       "user": 2,
       "created_by": 2,
       "has_paid": false,
-      "transaction": 54
-    }
-  },
-  {
-    "model": "dining.diningentryexternal",
-    "pk": 4,
-    "fields": {
-      "name": "Joost",
-      "diningentry_ptr_id": 4
+      "transaction": 54,
+      "external_name": "Joost",
+      "has_shopped": false,
+      "has_cooked": false,
+      "has_cleaned": false
     }
   },
   {
@@ -245,15 +202,11 @@
       "user": 2,
       "created_by": 2,
       "has_paid": false,
-      "transaction": 55
-    }
-  },
-  {
-    "model": "dining.diningentryexternal",
-    "pk": 5,
-    "fields": {
-      "name": "Kevin Knorren",
-      "diningentry_ptr_id": 5
+      "transaction": 55,
+      "external_name": "Kevin Knorren",
+      "has_shopped": false,
+      "has_cooked": false,
+      "has_cleaned": false
     }
   },
   {
@@ -274,16 +227,11 @@
       "user": 3,
       "created_by": 3,
       "has_paid": false,
-      "transaction": 56
-    }
-  },
-  {
-    "model": "dining.diningentryexternal",
-    "pk": 6,
-    "fields": {
-      "name": "Harry Hakker",
-      "diningentry_ptr_id": 6
-
+      "transaction": 56,
+      "external_name": "Harry Hakker",
+      "has_shopped": false,
+      "has_cooked": false,
+      "has_cleaned": false
     }
   },
   {
@@ -304,15 +252,11 @@
       "user": 3,
       "created_by": 3,
       "has_paid": true,
-      "transaction": 57
-    }
-  },
-  {
-    "model": "dining.diningentryexternal",
-    "pk": 7,
-    "fields": {
-      "name": "J.Jonah Jameson",
-      "diningentry_ptr_id": 7
+      "transaction": 57,
+      "external_name": "J.Jonah Jameson",
+      "has_shopped": false,
+      "has_cooked": false,
+      "has_cleaned": false
     }
   },
   {
@@ -333,15 +277,11 @@
       "user": 1,
       "created_by": 1,
       "has_paid": true,
-      "transaction": 58
-    }
-  },
-  {
-    "model": "dining.diningentryexternal",
-    "pk": 8,
-    "fields": {
-      "name": "Hermoine Granger",
-      "diningentry_ptr_id": 8
+      "transaction": 58,
+      "external_name": "Hermoine Granger",
+      "has_shopped": false,
+      "has_cooked": false,
+      "has_cleaned": false
     }
   },
   {
@@ -362,24 +302,11 @@
       "user": 1,
       "created_by": 1,
       "has_paid": true,
-      "transaction": 59
-    }
-  },
-  {
-    "model": "dining.diningwork",
-    "pk": 9,
-    "fields": {
+      "transaction": 59,
       "has_shopped": true,
       "has_cooked": true,
-      "has_cleaned": false
-    }
-  },
-  {
-    "model": "dining.diningentryuser",
-    "pk": 9,
-    "fields": {
-      "diningwork_ptr_id": 9,
-      "diningentry_ptr_id": 9
+      "has_cleaned": false,
+      "external_name": ""
     }
   },
   {
@@ -400,15 +327,11 @@
       "user": 1,
       "created_by": 1,
       "has_paid": true,
-      "transaction": 60
-    }
-  },
-  {
-    "model": "dining.diningentryexternal",
-    "pk": 10,
-    "fields": {
-      "name": "Hermoine Granger",
-      "diningentry_ptr_id": 10
+      "transaction": 60,
+      "external_name": "Hermoine Granger",
+      "has_shopped": false,
+      "has_cooked": false,
+      "has_cleaned": false
     }
   }
 ]

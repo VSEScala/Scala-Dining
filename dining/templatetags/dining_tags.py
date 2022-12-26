@@ -5,8 +5,8 @@ from django import template
 from django.conf import settings
 from django.utils import timezone
 
-from dining.forms import DiningEntryUserCreateForm, DiningEntryDeleteForm
-from dining.models import DiningEntry, DiningEntryUser, DiningList
+from dining.forms import DiningEntryDeleteForm, DiningEntryInternalForm
+from dining.models import DiningEntry, DiningList
 from userdetails.models import User
 
 register = template.Library()
@@ -15,14 +15,16 @@ register = template.Library()
 @register.filter
 def can_join(dining_list, user):
     # Try creating an entry
-    form = DiningEntryUserCreateForm({'user': str(user.pk)}, dining_list=dining_list, created_by=user)
+    entry = DiningEntry(dining_list=dining_list, created_by=user)
+    form = DiningEntryInternalForm({'user': str(user.pk)}, instance=entry)
     return form.is_valid()
 
 
 @register.filter
 def cant_join_reason(dining_list, user):
     """Returns the reason why someone can't join (raises exception when they can join)."""
-    form = DiningEntryUserCreateForm({'user': str(user.pk)}, dining_list=dining_list, created_by=user)
+    entry = DiningEntry(dining_list=dining_list, created_by=user)
+    form = DiningEntryInternalForm({'user': str(user.pk)}, instance=entry)
     return form.non_field_errors()[0]
 
 
@@ -55,7 +57,7 @@ def can_delete_entry(entry, user):
 @register.filter
 def get_entry(dining_list, user):
     """Gets the user entry (not external) for given user."""
-    return DiningEntryUser.objects.filter(dining_list=dining_list, user=user).first()
+    return DiningEntry.objects.internal().filter(dining_list=dining_list, user=user).first()
 
 
 @register.filter

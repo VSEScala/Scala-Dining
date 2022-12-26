@@ -112,11 +112,11 @@ class DiningList(models.Model):
 
     def internal_dining_entries(self):
         """All dining entries that are not for external people."""
-        return DiningEntryUser.objects.filter(dining_list=self)
+        return DiningEntry.objects.internal().filter(dining_list=self)
 
     def external_dining_entries(self):
         """All dining entries that are not for external people."""
-        return DiningEntryExternal.objects.filter(dining_list=self)
+        return DiningEntry.objects.external().filter(dining_list=self)
 
     def clean_fields(self, exclude=None):
         super().clean_fields(exclude=exclude)
@@ -127,69 +127,60 @@ class DiningList(models.Model):
                     {'sign_up_deadline': ["Sign up deadline can't be later than the day dinner is served"]})
 
 
+class DiningEntryManager(models.Manager):
+    def internal(self):
+        return self.filter(external_name="")
+
+    def external(self):
+        return self.exclude(external_name="")
+
+
 class DiningEntry(models.Model):
     """Represents an entry on a dining list."""
-
     dining_list = models.ForeignKey(DiningList, on_delete=models.PROTECT, related_name='dining_entries')
-    # This is the person who is responsible for the kitchen cost, it will be the same as the transaction source
+
+    # This is the person who is responsible for the kitchen cost. It will be the same as the transaction source.
     user = models.ForeignKey(User, on_delete=models.PROTECT)
     created_by = models.ForeignKey(User, on_delete=models.PROTECT, related_name='created_dining_entries')
-    # The transaction that belongs to this entry
+
+    # The transaction that belongs to this entry.
     transaction = models.OneToOneField(Transaction, on_delete=models.PROTECT, null=True, blank=True)
+
+    # If a name is provided, this entry is external.
+    external_name = models.CharField(max_length=100, blank=True)
 
     has_paid = models.BooleanField(default=False)
 
-    def get_subclass(self):
-        """Return an instance of the correct subclass, either DiningEntryUser or DiningEntryExternal."""
-        try:
-            return self.diningentryuser
-        except DiningEntryUser.DoesNotExist:
-            pass
-        try:
-            return self.diningentryexternal
-        except DiningEntryExternal.DoesNotExist:
-            pass
-        raise RuntimeError("Invalid DiningEntry")
-
-    def get_name(self):
-        """Return name of diner."""
-        return self.user.get_full_name()
-
-    def is_internal(self):
-        return True
-
-    def is_external(self):
-        return not self.is_internal()
-
-    def __str__(self):
-        return "{}: {}".format(self.dining_list.date, self.get_name())
-
-
-class DiningWork(models.Model):
-    # Define the unique id name to prevent conflicts with DiningEntry
-    w_id = models.AutoField(primary_key=True)
-
-    # Add the stats
+    # Work/help stats
     has_shopped = models.BooleanField(default=False)
     has_cooked = models.BooleanField(default=False)
     has_cleaned = models.BooleanField(default=False)
 
+    objects = DiningEntryManager()
 
-class DiningEntryUser(DiningEntry, DiningWork):
-    def clean(self):
-        if not self.pk and hasattr(self, 'user') and hasattr(self, 'dining_list'):
-            if DiningEntryUser.objects.filter(user=self.user, dining_list=self.dining_list).exists():
-                raise ValidationError("User is already on the dining list", code='user_already_present')
-
-
-class DiningEntryExternal(DiningEntry):
-    name = models.CharField(max_length=100)
+    class Meta:
+        verbose_name_plural = 'dining entries'
 
     def get_name(self):
-        return self.name
+        """Return name of diner."""
+        return self.external_name or self.user.get_full_name()
 
     def is_internal(self):
-        return False
+        return not self.is_external()
+
+    def is_external(self):
+        return bool(self.external_name)
+
+    def __str__(self):
+        return "{}: {}".format(self.dining_list.date, self.get_name())
+
+    def clean(self):
+        # Check for duplicate internal entry, when this entry is being created (i.e. self.pk is not set).
+        #
+        # It might happen that self.user did not clean. In that case the attribute is not available.
+        if not self.pk and self.is_internal() and hasattr(self, 'user'):
+            if DiningEntry.objects.internal().filter(user=self.user.pk, dining_list=self.dining_list).exists():
+                raise ValidationError("User is already on the dining list", code='user_already_present')
 
 
 class DiningComment(models.Model):

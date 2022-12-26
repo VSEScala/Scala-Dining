@@ -7,7 +7,7 @@ from django.test import TestCase, TransactionTestCase, skipUnlessDBFeature
 from django.utils import timezone
 
 from dining.forms import SendReminderForm
-from dining.models import DiningList, DiningEntryUser, DiningEntryExternal
+from dining.models import DiningList, DiningEntry
 from userdetails.models import Association, User
 
 
@@ -33,15 +33,15 @@ class SendReminderFormTestCase(TestCase):
     def create_dining_entry(self, user: User, has_paid: bool, guest_name=None):
         """Helper to quickly create a dining entry."""
         if guest_name:
-            DiningEntryExternal.objects.create(
+            DiningEntry.objects.create(
                 user=user,
                 dining_list=self.dining_list,
                 created_by=user,
                 has_paid=has_paid,
-                name=guest_name,
+                external_name=guest_name,
             )
         else:
-            DiningEntryUser.objects.create(
+            DiningEntry.objects.create(
                 user=user,
                 dining_list=self.dining_list,
                 created_by=user,

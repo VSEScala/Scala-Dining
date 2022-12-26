@@ -1,15 +1,14 @@
-
 from django.test import TestCase
 
 from userdetails.forms import RegisterUserForm
-from userdetails.models import Association, UserMembership
+from userdetails.models import Association
 
 
 class RegisterUserFormTestCase(TestCase):
     def test_save_memberships(self):
         """Tests membership creation during form save."""
         a1 = Association.objects.create(name='a1')
-        a2 = Association.objects.create(name='a2')
+        Association.objects.create(name='a2')
         form = RegisterUserForm({
             'first_name': 'Test',
             'last_name': 'User',

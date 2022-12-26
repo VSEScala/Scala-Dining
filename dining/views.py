@@ -16,8 +16,9 @@ from django.views.generic.detail import SingleObjectMixin
 from django.views.generic.edit import DeleteView
 
 from dining.datesequence import sequenced_date
-from dining.forms import CreateSlotForm, DiningEntryUserCreateForm, DiningEntryExternalCreateForm, \
-    DiningEntryDeleteForm, DiningCommentForm, DiningInfoForm, DiningPaymentForm, DiningListDeleteForm, SendReminderForm
+from dining.forms import CreateSlotForm, DiningEntryDeleteForm, DiningCommentForm, DiningInfoForm, DiningPaymentForm, \
+    DiningListDeleteForm, SendReminderForm, \
+    DiningEntryExternalForm, DiningEntryInternalForm
 from dining.models import DiningList, DiningDayAnnouncement, DiningCommentVisitTracker, DiningEntry
 from general.mail_control import send_templated_mail
 from userdetails.models import User, Association
@@ -229,16 +230,17 @@ class UpdateSlotViewTrackerMixin:
 
 class SlotMixin(LoginRequiredMixin, DiningListMixin, UpdateSlotViewTrackerMixin):
     """Mixin for a dining list detail page."""
+    pass
 
 
-class EntryAddView(SlotMixin, TemplateView):
+class EntryAddView(LoginRequiredMixin, DiningListMixin, TemplateView):
     template_name = "dining_lists/dining_entry_add.html"
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context.update({
-            'user_form': DiningEntryUserCreateForm(dining_list=self.dining_list, created_by=self.request.user),
-            'external_form': DiningEntryExternalCreateForm(dining_list=self.dining_list, created_by=self.request.user),
+            'user_form': DiningEntryInternalForm(),
+            'external_form': DiningEntryExternalForm(),
         })
         return context
 
@@ -248,47 +250,46 @@ class EntryAddView(SlotMixin, TemplateView):
 
         # Do form shenanigans
         if 'add_external' in request.POST:
-            form = DiningEntryExternalCreateForm(request.POST, dining_list=self.dining_list, created_by=request.user)
+            entry = DiningEntry(user=request.user, dining_list=self.dining_list, created_by=request.user)
+            form = DiningEntryExternalForm(request.POST, instance=entry)
         else:
-            form = DiningEntryUserCreateForm(request.POST, dining_list=self.dining_list, created_by=request.user)
+            entry = DiningEntry(dining_list=self.dining_list, created_by=request.user)
+            form = DiningEntryInternalForm(request.POST, instance=entry)
 
         if form.is_valid():
             entry = form.save()
-            # Construct success message
-            if not isinstance(form, DiningEntryExternalCreateForm):
-                if entry.user == request.user:
-                    msg = "You successfully joined the dining list"
-                else:
-                    # Send mail to the diner
-                    send_templated_mail('mail/dining_entry_added_by',
-                                        entry.user,
-                                        context={'entry': entry, 'dining_list': entry.dining_list},
-                                        request=request)
-                    msg = "You successfully added {} to the dining list".format(entry.user.get_short_name())
-            else:
-                msg = "You successfully added {} to the dining list".format(entry.name)
-            messages.success(request, msg)
+
+            # The entry is for another existing user, send a mail to them.
+            if entry.is_internal() and entry.user != request.user:
+                send_templated_mail(
+                    'mail/dining_entry_added_by',
+                    entry.user,
+                    context={'entry': entry, 'dining_list': entry.dining_list},
+                    request=request
+                )
+                messages.success(
+                    request,
+                    "You successfully added {} to the dining list".format(entry.user.get_short_name())
+                )
+
+            # The entry is for an external diner, provide a message.
+            if entry.is_external():
+                messages.success(request, "You successfully added {} to the dining list".format(entry.external_name))
         else:
-            # Apply error messages
+            # The form was invalid, put the errors in a message.
             for field, errors in form.errors.items():
                 for error in errors:
                     messages.error(request, "{}: {}".format(field, error) if field != NON_FIELD_ERRORS else error)
 
-        # Redirect to next if provided, else to the diner list if successful, else to self
-        redirect_to = request.GET.get('next')
-        if url_has_allowed_host_and_scheme(redirect_to, request.get_host()):
-            return HttpResponseRedirect(redirect_to)
-        if form.is_valid():
-            # Todo: Check if user is on multiple dining lists today, then show warning?
-            return HttpResponseRedirect(self.reverse('slot_list'))
-        return HttpResponseRedirect(self.reverse('entry_add'))
+        # Always redirect to the dining list page
+        return redirect(self.dining_list)
 
 
 class EntryDeleteView(LoginRequiredMixin, SingleObjectMixin, View):
     model = DiningEntry
 
     def post(self, request, *args, **kwargs):
-        entry = self.get_object().get_subclass()
+        entry = self.get_object()
 
         # Process deletion
         form = DiningEntryDeleteForm(entry, request.user, {})
@@ -327,100 +328,42 @@ class EntryDeleteView(LoginRequiredMixin, SingleObjectMixin, View):
 class SlotListView(SlotMixin, TemplateView):
     template_name = "dining_lists/dining_slot_diners.html"
 
+    def can_edit_stats(self):
+        """Returns whether the current user can edit work and paid stats."""
+        return self.dining_list.is_owner(self.request.user) and self.dining_list.is_adjustable()
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        # Select related eliminates the extra queries during rendering of the template
-        entries = self.dining_list.dining_entries.select_related('user', 'diningentryuser', 'diningentryexternal')
-        entries = entries.order_by('user__first_name')
-        context['entries'] = entries
+        context.update({
+            'entries': self.dining_list.dining_entries.order_by('user__first_name', 'user__last_name', 'external_name'),
+            'can_edit_stats': self.can_edit_stats(),
+        })
         return context
 
-    # Todo: fix complexity
-    def post(self, request, *args, **kwargs):  # noqa: C901
-        if not self.dining_list.is_owner(request.user):
+    def post(self, request, *args, **kwargs):
+        if not self.can_edit_stats():
             raise PermissionDenied
 
-        # Check for edit conflict, not very elegant but this post method needs to be rewritten anyway
-        conflict = False
-        for entry in self.dining_list.dining_entries.all():
-            entry = entry.get_subclass()
-            if entry.is_internal():
-                initial_shop = request.POST.get('initial_entry{}_shop'.format(entry.pk))
-                if initial_shop and initial_shop != str(entry.has_shopped):
-                    conflict = True
-                    break
-                initial_cook = request.POST.get('initial_entry{}_cook'.format(entry.pk))
-                if initial_cook and initial_cook != str(entry.has_cooked):
-                    conflict = True
-                    break
-                initial_clean = request.POST.get('initial_entry{}_clean'.format(entry.pk))
-                if initial_clean and initial_clean != str(entry.has_cleaned):
-                    conflict = True
-                    break
-            initial_paid = request.POST.get('initial_entry{}_paid'.format(entry.pk))
-            if initial_paid and initial_paid != str(entry.has_paid):
-                conflict = True
-                break
-        if conflict:
-            messages.error(request, 'Someone else modified the stats while you were changing them, your changes have '
-                                    'not been saved. We apologize for the inconvenience')
-            return HttpResponseRedirect(self.reverse('slot_list'))
+        # The code above checks that the user is allowed to edit this dining
+        # list. It does not check whether the given dining entry ID is actually
+        # part of the dining list. To check that, we provide the dining list to
+        # get_object_or_404(). If we did not do that, the user could change all
+        # dining entries across all lists.
 
-        # Get all the keys in the post and put all relevant ones in a list
-        post_requests = []
-        for key in request.POST:
-            key = key.split(":")
-            if len(key) == 2:
-                post_requests.append(key)
+        entry = get_object_or_404(DiningEntry, id=request.POST.get('entry_id'), dining_list=self.dining_list)
 
-        # Process payment for all entries
-        entries = {}
+        # We toggle the given stat value, based on the previous value as was submitted by the form.
+        stat = request.POST.get('toggle')
+        if stat == 'shopped':
+            entry.has_shopped = not bool(request.POST.get('shopped_val'))
+        elif stat == 'cooked':
+            entry.has_cooked = not bool(request.POST.get('cooked_val'))
+        elif stat == 'cleaned':
+            entry.has_cleaned = not bool(request.POST.get('cleaned_val'))
+        elif stat == 'paid':
+            entry.has_paid = not bool(request.POST.get('paid_val'))
 
-        # For all entries in the dining list, set the paid value to false
-        for entry in self.dining_list.dining_entries.all():
-            entry.has_paid = False
-            entries[str(entry.id)] = entry
-
-        # Go over all keys in the request containing has_paid, adjust the state on that object
-        for key in post_requests:
-            if key[1] == 'has_paid':
-                try:
-                    entries[key[0]].has_paid = True
-                except KeyError:
-                    # Entry doesn't exist any more
-                    pass
-
-        # save all has_paid values
-        for entry in entries.values():
-            entry.save()
-
-        # Adjust the help stats
-        entries = {}
-
-        # For all entries in the dining list, set the values to false
-        for entry in self.dining_list.internal_dining_entries():
-            entry.has_shopped = False
-            entry.has_cooked = False
-            entry.has_cleaned = False
-            entries[str(entry.id)] = entry
-
-        # Go over all keys in the request containing has_paid, adjust the state on that object
-        for key in post_requests:
-            try:
-                if key[1] == "has_shopped":
-                    entries[key[0]].has_shopped = True
-                elif key[1] == "has_cooked":
-                    entries[key[0]].has_cooked = True
-                elif key[1] == "has_cleaned":
-                    entries[key[0]].has_cleaned = True
-            except KeyError:
-                # Entry doesn't exist any more
-                pass
-
-        # save all has_paid values
-        for entry in entries.values():
-            entry.save()
-
+        entry.save()
         return HttpResponseRedirect(self.reverse('slot_list'))
 
 

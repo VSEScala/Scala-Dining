@@ -1,4 +1,3 @@
-import warnings
 from datetime import timedelta
 from decimal import Decimal, ROUND_UP
 from typing import List, Dict
@@ -15,15 +14,14 @@ from django.forms import ValidationError
 from django.utils import timezone
 
 from creditmanagement.models import Transaction, Account
-from dining.models import DiningList, DiningEntryUser, DiningEntryExternal, DiningComment, DiningEntry, \
-    PaymentReminderLock
+from dining.models import DiningList, DiningComment, DiningEntry, PaymentReminderLock
 from general.forms import ConcurrenflictFormMixin
 from general.mail_control import construct_templated_mail
 from general.util import SelectWithDisabled
 from userdetails.models import Association, UserMembership, User
 
-__all__ = ['CreateSlotForm', 'DiningInfoForm', 'DiningPaymentForm', 'DiningEntryUserCreateForm',
-           'DiningEntryExternalCreateForm', 'DiningEntryDeleteForm', 'DiningListDeleteForm',
+__all__ = ['CreateSlotForm', 'DiningInfoForm', 'DiningPaymentForm', 'DiningEntryInternalForm',
+           'DiningEntryExternalForm', 'DiningEntryDeleteForm', 'DiningListDeleteForm',
            'DiningCommentForm', 'SendReminderForm']
 
 
@@ -120,18 +118,27 @@ class CreateSlotForm(ServeTimeCheckMixin, forms.ModelForm):
         return cleaned_data
 
     def save(self, commit=True):
-        instance = super().save(commit=commit)
-        if commit:
-            # Make creator owner
-            instance.owners.add(self.creator)
+        instance = super().save(commit=False)  # type: DiningList
 
-            # Create dining entry for creator
-            user = self.creator
-            entry_form = DiningEntryUserCreateForm({'user': str(user.pk)}, created_by=user, dining_list=instance)
-            if entry_form.is_valid():
-                entry_form.save()
-            else:
-                warnings.warn("Couldn't create dining entry while creating dining list")
+        if commit:
+            with transaction.atomic():
+                instance.save()
+                # Make creator owner
+                instance.owners.add(self.creator)
+
+                # Create dining entry for creator.
+                #
+                # We use the form to make sure that the kitchen cost
+                # transaction is created.
+                entry_form = DiningEntryInternalForm(
+                    {'user': str(self.creator.pk)},
+                    instance=DiningEntry(created_by=self.creator, dining_list=instance)
+                )
+                if entry_form.is_valid():
+                    entry_form.save()
+                else:
+                    # This can only happen when the server is misconfigured.
+                    raise RuntimeError("Couldn't create dining entry while creating dining list", entry_form.errors)
         return instance
 
 
@@ -210,19 +217,16 @@ class DiningPaymentForm(ConcurrenflictFormMixin, forms.ModelForm):
         return cleaned_data
 
 
-class DiningEntryUserCreateForm(forms.ModelForm):
+class DiningEntryInternalForm(forms.ModelForm):
+    """This form can be used to create internal dining entries."""
+
     class Meta:
-        model = DiningEntryUser
-        fields = ['user']
+        model = DiningEntry
+        fields = ('user',)
         widgets = {
             # User needs to type at least 1 character, could change it to 2
             'user': ModelSelect2(url='people_autocomplete', attrs={'data-minimum-input-length': '1'})
         }
-
-    def __init__(self, *args, dining_list=None, created_by=None, **kwargs):
-        super(DiningEntryUserCreateForm, self).__init__(*args, **kwargs)
-        self.instance.dining_list = dining_list
-        self.instance.created_by = created_by
 
     def get_user(self):
         """Returns the user responsible for the kitchen cost (not necessarily creator)."""
@@ -257,38 +261,46 @@ class DiningEntryUserCreateForm(forms.ModelForm):
 
         # User balance check
         if not user.has_min_balance_exception() and user.account.get_balance() < settings.MINIMUM_BALANCE_FOR_DINING_SIGN_UP:
-            raise ValidationError("The balance of the user is too low to add", code='nomoneyzz')
+            raise ValidationError("The balance of the user is too low to add", code='no_money')
 
         return cleaned_data
 
     def save(self, commit=True):
         """Creates a kitchen cost transaction and saves the entry."""
+        instance = super().save(commit=False)  # type: DiningEntry
         if commit:
             with transaction.atomic():
-                instance = super().save(commit=False)  # type: DiningEntry
                 amount = instance.dining_list.kitchen_cost
                 # Skip transaction if dining list is free
                 if amount != Decimal('0.00'):
-                    tx = Transaction.objects.create(source=instance.user.account,
-                                                    target=Account.objects.get(special='kitchen_cost'),
-                                                    amount=amount,
-                                                    description="Kitchen cost for {}".format(instance.dining_list),
-                                                    created_by=instance.created_by)
+                    tx = Transaction.objects.create(
+                        source=instance.user.account,
+                        target=Account.objects.get(special='kitchen_cost'),
+                        amount=amount,
+                        description="Kitchen cost for {}".format(instance.dining_list),
+                        created_by=instance.created_by
+                    )
                     instance.transaction = tx
                 instance.save()
-                return instance
-        # Todo: Inform other if added by someone else logic here instead of in the view
-        return super().save(commit)
+        return instance
 
 
-class DiningEntryExternalCreateForm(DiningEntryUserCreateForm):
+class DiningEntryExternalForm(DiningEntryInternalForm):
+    """Form for creating an external dining entry.
+
+    This is the same as for internal entries but with the external_name field
+    instead.
+    """
+
     class Meta:
-        model = DiningEntryExternal
-        fields = ['name']
+        model = DiningEntry
+        fields = ('external_name',)
+        labels = {'external_name': 'Name'}
 
     def __init__(self, *args, **kwargs):
-        super(DiningEntryExternalCreateForm, self).__init__(*args, **kwargs)
-        self.instance.user = self.instance.created_by
+        super().__init__(*args, **kwargs)
+        # External name is not required on the model thus we set it as required here.
+        self.fields['external_name'].required = True
 
     def get_user(self):
         return self.instance.user
@@ -425,7 +437,7 @@ class SendReminderForm(forms.Form):
         Returns:
             A QuerySet of User instances.
         """
-        unpaid_user_entries = DiningEntryUser.objects.filter(dining_list=self.dining_list, has_paid=False)
+        unpaid_user_entries = self.dining_list.internal_dining_entries().filter(has_paid=False)
         return User.objects.filter(diningentry__in=unpaid_user_entries)
 
     def get_guest_recipients(self) -> Dict[User, List[str]]:
@@ -435,11 +447,11 @@ class SendReminderForm(forms.Form):
             A dictionary from User to a list of guest names who were added by
             the user.
         """
-        unpaid_guest_entries = DiningEntryExternal.objects.filter(dining_list=self.dining_list, has_paid=False)
+        unpaid_guest_entries = self.dining_list.external_dining_entries().filter(has_paid=False)
 
         recipients = {}
         for user in User.objects.filter(diningentry__in=unpaid_guest_entries).distinct():
-            recipients[user] = [e.name for e in unpaid_guest_entries.filter(user=user)]
+            recipients[user] = [e.get_name() for e in unpaid_guest_entries.filter(user=user)]
         return recipients
 
     def construct_messages(self, request) -> List[EmailMessage]:
