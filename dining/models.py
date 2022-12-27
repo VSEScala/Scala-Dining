@@ -249,3 +249,15 @@ class DiningDayAnnouncement(models.Model):
 
     def __str__(self):
         return self.title
+
+
+class PaymentReminderLock(models.Model):
+    """Database table to prevent multiple payment reminder emails.
+
+    This table stores temporary data and can safely be removed or recreated.
+
+    See SlotPaymentView.
+    """
+    # We use primary_key=True to prevent an unnecessary auto id column.
+    dining_list = models.OneToOneField(DiningList, on_delete=models.CASCADE, primary_key=True)  # Key
+    sent = models.DateTimeField(null=True)  # Value

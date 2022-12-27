@@ -583,8 +583,12 @@ class SlotPaymentView(SlotMixin, SlotOwnerMixin, FormView):
     """A view class that allows dining list owners to send payment reminders."""
     form_class = SendReminderForm
 
+    def get(self, request, *args, **kwargs):
+        # This is to prevent TemplateView.get to fail because template_name is not defined.
+        return self.http_method_not_allowed(request, *args, **kwargs)
+
     def get_form_kwargs(self):
-        kwargs = super(SlotPaymentView, self).get_form_kwargs()
+        kwargs = super().get_form_kwargs()
         kwargs['dining_list'] = self.dining_list
         return kwargs
 
@@ -592,11 +596,14 @@ class SlotPaymentView(SlotMixin, SlotOwnerMixin, FormView):
         return self.reverse('slot_details')
 
     def form_invalid(self, form):
-        msg = f"Could not process request: {form.errors}"
-        messages.info(self.request, msg)
+        for e in form.non_field_errors():
+            messages.info(self.request, str(e))
         return HttpResponseRedirect(self.get_success_url())
 
     def form_valid(self, form):
-        form.send_reminder(self.request)
-        messages.success(self.request, "Diners have been informed")
-        return super(SlotPaymentView, self).form_valid(form)
+        success = form.send_reminder(self.request)
+        if not success:
+            messages.success(self.request, "Diners have been informed recently, you can send a new mail momentarily")
+        else:
+            messages.success(self.request, "Diners have been informed")
+        return super().form_valid(form)

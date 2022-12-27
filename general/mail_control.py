@@ -1,6 +1,8 @@
+from typing import List
+
 from django.contrib.sites.shortcuts import get_current_site
 from django.core import mail
-from django.core.mail import EmailMultiAlternatives
+from django.core.mail import EmailMultiAlternatives, EmailMessage
 from django.http import HttpRequest
 from django.template.loader import render_to_string
 
@@ -23,19 +25,10 @@ def get_mail_context(recipient: User, extra_context: dict = None, request: HttpR
     }
 
 
-def send_templated_mail(template_dir: str, recipients, context: dict = None, request=None):
-    """Sends a mail using a template.
+def construct_templated_mail(template_dir: str, recipients, context: dict = None, request=None) -> List[EmailMessage]:
+    """Constructs email messages.
 
-    Args:
-        template_dir: The directory containing the email templates. They should
-            be named body.html, body.txt and subject.txt.
-        recipients: The recipient(s) for the message as User instances. Can be
-            a list or QuerySet if you want to send the mail to multiple users,
-            or a single User instance.
-        context: Will be added to the context for the template, alongside the
-            context returned by get_mail_context.
-        request: The request is necessary for figuring out the full site URL
-            and for running the standard context processors.
+    See send_templated_mail() for an explanation of the arguments.
     """
     if isinstance(recipients, User):
         recipients = [recipients]
@@ -51,6 +44,22 @@ def send_templated_mail(template_dir: str, recipients, context: dict = None, req
         message = EmailMultiAlternatives(subject=subject, body=text_body, to=[recipient.email])
         message.attach_alternative(html_body, 'text/html')
         messages.append(message)
+    return messages
 
-    # Send messages
+
+def send_templated_mail(template_dir: str, recipients, context: dict = None, request=None):
+    """Sends a mail using a template.
+
+    Args:
+        template_dir: The directory containing the email templates. They should
+            be named body.html, body.txt and subject.txt.
+        recipients: The recipient(s) for the message as User instances. Can be
+            a list or QuerySet if you want to send the mail to multiple users,
+            or a single User instance.
+        context: Will be added to the context for the template, alongside the
+            context returned by get_mail_context.
+        request: The request is necessary for figuring out the full site URL
+            and for running the standard context processors.
+    """
+    messages = construct_templated_mail(template_dir, recipients, context, request)
     mail.get_connection().send_messages(messages)

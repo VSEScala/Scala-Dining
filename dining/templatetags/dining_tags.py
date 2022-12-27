@@ -131,15 +131,13 @@ def short_owners_string(dining_list: DiningList) -> str:
     Returns:
         Names of the owners separated by ',' and 'and'
     """
-    owners = dining_list.owners.all()
+    owners = list(dining_list.owners.all())
 
     if len(owners) > 1:
-        names = [o.first_name for o in owners]
+        first_names = [o.first_name for o in owners]
+        # Join by comma and 'and'
+        return '{} and {}'.format(', '.join(first_names[:-1]), first_names[-1])
+    elif len(owners) == 1:
+        return owners[0].get_full_name()
     else:
-        names = [o.get_full_name() for o in owners]
-
-    if len(names) >= 2:
-        # Join all but last names by ',' and put 'and' in front of last name
-        commaseparated = ', '.join(names[0:-1])
-        return '{} and {}'.format(commaseparated, names[-1])
-    return names[0]
+        return ''

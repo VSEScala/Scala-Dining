@@ -615,19 +615,21 @@ class TestSendReminderForm(FormValidityMixin, TestPatchMixin, TestCase):
         self.dining_list.save()
         self.assert_form_has_error({}, code='payment_url_missing')
 
-    @patch('dining.forms.send_templated_mail')
-    def test_no_unpaid_users_sending(self, mock_mail):
-        """Asserts that when all users have paid, no mails are send to remind people."""
-        DiningEntryUser.objects.update(has_paid=True)
-        DiningEntryExternal.objects.all().delete()
-        form = self.build_form({})
-        request = HttpRequest()
-        request.user = User.objects.get(id=1)
-        form.send_reminder(request=request)
+    # This is unnecessary. It is perfectly fine to call send_templated_mail with 0 recipients.
 
-        mock_mail.assert_not_called()
+    # @patch('dining.forms.construct_templated_mail')
+    # def test_no_unpaid_users_sending(self, mock_mail):
+    #     """Asserts that when all users have paid, no mails are send to remind people."""
+    #     DiningEntryUser.objects.update(has_paid=True)
+    #     DiningEntryExternal.objects.all().delete()
+    #     form = self.build_form({})
+    #     request = HttpRequest()
+    #     request.user = User.objects.get(id=1)
+    #     form.send_reminder(request=request)
+    #
+    #     mock_mail.assert_not_called()
 
-    @patch('dining.forms.send_templated_mail')
+    @patch('dining.forms.construct_templated_mail')
     def test_mail_sending_users(self, mock_mail):
         form = self.assert_form_valid({})
         request = HttpRequest()
@@ -647,7 +649,7 @@ class TestSendReminderForm(FormValidityMixin, TestPatchMixin, TestCase):
         self.assertEqual(calls[0]['context']['dining_list'], self.dining_list)
         self.assertEqual(calls[0]['context']['reminder'], User.objects.get(id=1))
 
-    @patch('dining.forms.send_templated_mail')
+    @patch('dining.forms.construct_templated_mail')
     def test_mail_sending_external(self, mock_mail):
         """Tests handling of messaging for external guests added by a certain user."""
         form = self.assert_form_valid({})

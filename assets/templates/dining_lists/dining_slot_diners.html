@@ -150,17 +150,23 @@
                             <button type="submit" class="btn btn-block btn-primary" form="statsForm">
                                 Update User Stats
                             </button>
-                            {% if dining_list.payment_link %}
                             <form method="post" class="mt-3"
                                   action="{% url 'slot_inform_payment' day=date.day month=date.month year=date.year identifier=dining_list.association.slug %}">
                                 {% csrf_token %}
-                                <button type="submit" class="btn btn-block btn-secondary" onclick="this.disabled = true;">
-                                    <div class="badge badge-info" style="position: center">new</div>
-                                    <span class="">Send payment mail <i class="fas fa-envelope"></i></span>
+                                <button type="submit"
+                                        class="btn btn-block btn-secondary"
+                                        {% if not dining_list.payment_link %}disabled{% endif %}>
+                                    <i class="fas fa-envelope"></i> Send payment mail
                                 </button>
-                                <small>Sends a mail to all who have not yet paid with a reminder</small>
+                                <small>
+                                    {% if dining_list.payment_link %}
+                                        Sends a mail to all who have not yet paid with a reminder
+                                    {% else %}
+                                        <a href="{% url 'slot_change' day=date.day month=date.month year=date.year identifier=dining_list.association.slug %}">
+                                            Enter a payment link</a> to send a payment mail
+                                    {% endif %}
+                                </small>
                             </form>
-                            {% endif %}
                         {% endif %}
                     </td>
                     <td><div></div></td>
@@ -184,20 +190,23 @@
                 <button type="submit" class="btn btn-block btn-primary" form="statsForm">
                     Update User Stats
                 </button>
-                {% if dining_list.payment_link %}
-                    <form method="post" class="mt-3"
-                          action="{% url 'slot_inform_payment' day=date.day month=date.month year=date.year identifier=dining_list.association.slug %}">
-                        {% csrf_token %}
-                        <button type="submit" class="btn btn-block btn-secondary" onclick="this.disabled = true;">
-                            <div class="badge badge-info" style="position: center">new</div>
-                            <span class="">Send payment mail <i class="fas fa-envelope"></i></span>
-                        </button>
-                        <small>Sends a mail to all who have not yet paid with a reminder</small>
-                        <small class="text-warning d-flex d-md-none">
-                            We are aware of an issue where this button does not work on some mobile devices in Chrome.
-                        </small>
-                    </form>
-                {% endif %}
+                <form method="post" class="mt-3"
+                      action="{% url 'slot_inform_payment' day=date.day month=date.month year=date.year identifier=dining_list.association.slug %}">
+                    {% csrf_token %}
+                    <button type="submit"
+                            class="btn btn-block btn-secondary"
+                            {% if not dining_list.payment_link %}disabled{% endif %}>
+                        <i class="fas fa-envelope"></i> Send payment mail
+                    </button>
+                    <small>
+                        {% if dining_list.payment_link %}
+                            Sends a mail to all who have not yet paid with a reminder
+                        {% else %}
+                            <a href="{% url 'slot_change' day=date.day month=date.month year=date.year identifier=dining_list.association.slug %}">
+                                Enter a payment link</a> to send a payment mail
+                        {% endif %}
+                    </small>
+                </form>
             {% endif %}
            {% if dining_list|can_add_others:user %}
                <a class="btn btn-primary btn-block" href="

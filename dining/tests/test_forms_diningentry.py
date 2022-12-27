@@ -91,7 +91,7 @@ class DiningEntryUserCreateFormTestCase(TestCase):
 
     def test_balance_too_low_exception(self):
         # Make user member of association with exception
-        assoc = Association.objects.create(slug='ankie4president', name='PvdD', has_min_exception=True)
+        assoc = Association.objects.create(slug='assoc', name='Association', has_min_exception=True)
         UserMembership.objects.create(related_user=self.user2, association=assoc, is_verified=True,
                                       verified_on=timezone.now())
         Transaction.objects.create(source=self.user2.account,

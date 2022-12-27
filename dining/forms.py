@@ -1,20 +1,24 @@
 import warnings
-from datetime import datetime
+from datetime import timedelta
 from decimal import Decimal, ROUND_UP
+from typing import List, Dict
 
 from dal_select2.widgets import ModelSelect2, ModelSelect2Multiple
 from django import forms
 from django.conf import settings
+from django.core import mail
+from django.core.mail import EmailMessage
 from django.core.validators import MinValueValidator
 from django.db import transaction
-from django.db.models import OuterRef, Exists
+from django.db.models import OuterRef, Exists, QuerySet
 from django.forms import ValidationError
 from django.utils import timezone
 
 from creditmanagement.models import Transaction, Account
-from dining.models import DiningList, DiningEntryUser, DiningEntryExternal, DiningComment, DiningEntry
+from dining.models import DiningList, DiningEntryUser, DiningEntryExternal, DiningComment, DiningEntry, \
+    PaymentReminderLock
 from general.forms import ConcurrenflictFormMixin
-from general.mail_control import send_templated_mail
+from general.mail_control import construct_templated_mail
 from general.util import SelectWithDisabled
 from userdetails.models import Association, UserMembership, User
 
@@ -403,9 +407,10 @@ class DiningCommentForm(forms.ModelForm):
 class SendReminderForm(forms.Form):
 
     def __init__(self, *args, dining_list: DiningList = None, **kwargs):
-        assert dining_list is not None
+        if dining_list is None:
+            raise ValueError("dining_list is required")
         self.dining_list = dining_list
-        super(SendReminderForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     def clean(self):
         # Verify that there are people to inform
@@ -414,30 +419,87 @@ class SendReminderForm(forms.Form):
         if self.dining_list.payment_link == "":
             raise ValidationError("There was no payment url defined", code="payment_url_missing")
 
-    def send_reminder(self, request=None):
-        assert request is not None
+    def get_user_recipients(self) -> QuerySet:
+        """Returns the users that need to pay themselves, excluding external entries.
+
+        Returns:
+            A QuerySet of User instances.
+        """
         unpaid_user_entries = DiningEntryUser.objects.filter(dining_list=self.dining_list, has_paid=False)
+        return User.objects.filter(diningentry__in=unpaid_user_entries)
+
+    def get_guest_recipients(self) -> Dict[User, List[str]]:
+        """Returns external diners who have not yet paid.
+
+        Returns:
+            A dictionary from User to a list of guest names who were added by
+            the user.
+        """
         unpaid_guest_entries = DiningEntryExternal.objects.filter(dining_list=self.dining_list, has_paid=False)
 
-        is_reminder = datetime.now().date() > self.dining_list.date  # ?? Please explain non-trivial operations
-
-        context = {'dining_list': self.dining_list, 'reminder': request.user, 'is_reminder': is_reminder}
-
-        if unpaid_user_entries.count() > 0:
-            send_templated_mail('mail/dining_payment_reminder',
-                                User.objects.filter(diningentry__in=unpaid_user_entries),
-                                context=context,
-                                request=request)
-
+        recipients = {}
         for user in User.objects.filter(diningentry__in=unpaid_guest_entries).distinct():
-            guests = []
+            recipients[user] = [e.name for e in unpaid_guest_entries.filter(user=user)]
+        return recipients
 
-            for external_entry in unpaid_guest_entries.filter(user=user):
-                guests.append(external_entry.name)
+    def construct_messages(self, request) -> List[EmailMessage]:
+        """Constructs the emails to send."""
+        messages = []
 
-            context["guests"] = guests
+        is_reminder = timezone.now().date() > self.dining_list.date
 
-            send_templated_mail('mail/dining_payment_reminder_external',
-                                user,
-                                context=context.copy(),
-                                request=request)
+        # Mail for internal diners
+        messages.extend(construct_templated_mail(
+            'mail/dining_payment_reminder',
+            self.get_user_recipients(),
+            context={'dining_list': self.dining_list, 'reminder': request.user, 'is_reminder': is_reminder},
+            request=request
+        ))
+
+        # Mail for external diners
+        for user, guests in self.get_guest_recipients().items():
+            messages.extend(construct_templated_mail(
+                'mail/dining_payment_reminder_external',
+                user,
+                context={
+                    'dining_list': self.dining_list,
+                    'reminder': request.user,
+                    'is_reminder': is_reminder,
+                    'guests': guests,
+                },
+                request=request
+            ))
+        return messages
+
+    def send_reminder(self, request, nowait=False) -> bool:
+        """Sends a reminder email to all non-paid diners on the dining list.
+
+        The sending is rate-limited to prevent multiple emails from being sent
+        simultaneously.
+
+        Args:
+            nowait: When True, raises DatabaseError instead of blocking when
+                the lock is held.
+
+        Returns:
+            True on success. False when a mail was already sent too recently
+            for this dining list.
+        """
+        # We use a critical section to prevent multiple emails from being sent
+        # simultaneously. The critical section is implemented using the
+        # database locking mechanism. However, SQLite does not support locking.
+        # You need to use PostgreSQL as database.
+        with transaction.atomic():
+            # Acquire a lock on the dining list row. This may block.
+            DiningList.objects.select_for_update(nowait=nowait).get(pk=self.dining_list.pk)
+            # Retrieve the row that stores the last sent time.
+            lock, _ = PaymentReminderLock.objects.get_or_create(dining_list=self.dining_list)
+            if lock.sent and timezone.now() - lock.sent < timedelta(seconds=30):
+                # A mail was sent too recently.
+                return False
+            else:
+                # Update the lock and send the emails.
+                lock.sent = timezone.now()
+                lock.save()
+                mail.get_connection().send_messages(self.construct_messages(request))
+                return True
