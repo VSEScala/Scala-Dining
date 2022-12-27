@@ -10,7 +10,7 @@ from general.mail_control import send_templated_mail
 from userdetails.models import User, Association
 
 # Form fields which are used in transaction forms
-USER_FORM_FIELD = forms.ModelChoiceField(User.objects.all(),
+USER_FORM_FIELD = forms.ModelChoiceField(User.objects.filter(is_active=True),
                                          required=False,
                                          widget=ModelSelect2(url='people_autocomplete'),
                                          label="User")
@@ -175,7 +175,13 @@ class ClearOpenExpensesForm(forms.Form):
         # Calculate and create the transactions that need to be applied
 
         # Get all verified members. Probably nicer to create a helper method for this.
-        members = User.objects.filter(usermembership__association=association, usermembership__is_verified=True)
+        members = User.objects.filter(
+            # We could exclude inactive user accounts.
+            # But they will show up in the association members list and can be rejected there manually.
+            # is_active=True,
+            usermembership__association=association,
+            usermembership__is_verified=True
+        )
         self.transactions = []
         for m in members:
             balance = m.account.get_balance()
