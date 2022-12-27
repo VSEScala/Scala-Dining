@@ -3,12 +3,21 @@ from django.contrib.auth.models import AbstractUser, Group
 from django.db import models
 from django.utils import timezone
 from django.utils.functional import cached_property
+from phonenumber_field.modelfields import PhoneNumberField
 
 from .managers import UserManager, AssociationManager
 
 
 class User(AbstractUser):
     email = models.EmailField("email address", unique=True)
+
+    # PhoneNumberField uses a phone number input widget and prevents abuse of the field for non-phone number data.
+    phone_number = PhoneNumberField(blank=True, help_text="If given, will be visible to other diners on the same list.")
+    email_public = models.BooleanField(
+        'email public',
+        default=False,
+        help_text="If selected, your email address will be visible to other diners on the same list."
+    )
 
     objects = UserManager()
 

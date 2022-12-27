@@ -59,6 +59,8 @@ INSTALLED_APPS = [
     'allauth',
     'allauth.socialaccount',
     'allauthproviders.quadrivium',
+
+    'phonenumber_field',
 ]
 
 MIDDLEWARE = [
