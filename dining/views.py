@@ -465,12 +465,10 @@ class SlotAllergyView(SlotMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        from django.db.models import CharField
-        from django.db.models.functions import Length
-        CharField.register_lookup(Length)
-        context['allergy_entries'] = self.dining_list.internal_dining_entries().filter(
-            user__userdiningsettings__allergies__length__gte=1)
-
+        entries = self.dining_list.internal_dining_entries().exclude(user__userdiningsettings__allergies='')
+        context.update({
+            'allergy_entries': entries.order_by('user__first_name', 'user__last_name')
+        })
         return context
 
 
