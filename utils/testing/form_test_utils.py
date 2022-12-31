@@ -1,6 +1,3 @@
-from django.forms import Form
-
-
 class FormValidityMixin:
     """A mixin for TestCase classes designed to add form functionality."""
     form_class = None
@@ -56,7 +53,7 @@ class FormValidityMixin:
                 Leave empty if not relevant.
             kwargs: Any form init kwargs not defined in self.build_form().
         """
-        form = self.build_form(data, form_class=form_class or self.form_class, **kwargs)  # type: Form
+        form = self.build_form(data, form_class=form_class or self.form_class, **kwargs)
 
         if form.is_valid():
             raise AssertionError("The form contained no errors")

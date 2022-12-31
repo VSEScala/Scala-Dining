@@ -9,7 +9,6 @@ from django.core.validators import MinValueValidator
 from django.db import transaction
 from django.db.models import OuterRef, Exists
 from django.forms import ValidationError
-from django.forms.widgets import TimeInput, DateTimeInput
 from django.utils import timezone
 
 from creditmanagement.models import Transaction, Account
@@ -151,14 +150,13 @@ class DiningInfoForm(ConcurrenflictFormMixin, ServeTimeCheckMixin, forms.ModelFo
         self.set_bounds('max_diners', 'min', settings.MIN_SLOT_DINER_MAXIMUM)
 
     def set_bounds(self, field, attr, value):
-        '''
-        Sets frontend-side bounds to make the filling in of the forms slightly more user-friendly.
-        
-        Arguments:
+        """Sets frontend-side bounds to make the filling in of the forms slightly more user-friendly.
+
+        Args:
             field (string): the name of the field you want to edit
             attr: either 'min' or 'max'
-            value: the max or min value you want the field to have   
-        '''
+            value: the max or min value you want the field to have
+        """
         if (attr != 'max' and attr != 'min'):
             raise ValueError("attr not min or max")
         f = self.fields[field]
