@@ -72,7 +72,7 @@ class PeopleAutocompleteView(LoginRequiredMixin, Select2QuerySetView):
     # paginate_by = 10
 
     def get_queryset(self):
-        qs = User.objects.all()
+        qs = User.objects.filter(is_active=True)
         if self.q:
             qs = qs.annotate(full_name=Concat('first_name',
                                               Value(' '),

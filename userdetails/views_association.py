@@ -112,6 +112,7 @@ class MembersOverview(LoginRequiredMixin, AssociationBoardMixin, ListView):
     paginate_by = 50
 
     def get_queryset(self):
+        # We include inactive users who are still a member of the association.
         return User.objects.filter(
             Q(usermembership__association=self.association) & Q(usermembership__is_verified=True))
 
