@@ -10,7 +10,7 @@ from django.http import Http404, HttpResponseRedirect, HttpResponseForbidden, Ht
 from django.shortcuts import redirect, get_object_or_404
 from django.urls import reverse
 from django.utils import timezone
-from django.utils.http import is_safe_url
+from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.generic import TemplateView, View, FormView
 from django.views.generic.detail import SingleObjectMixin
 from django.views.generic.edit import DeleteView
@@ -275,9 +275,9 @@ class EntryAddView(SlotMixin, TemplateView):
                     messages.error(request, "{}: {}".format(field, error) if field != NON_FIELD_ERRORS else error)
 
         # Redirect to next if provided, else to the diner list if successful, else to self
-        next_url = request.GET.get('next')
-        if next_url and is_safe_url(next_url, request.get_host()):
-            return HttpResponseRedirect(next_url)
+        redirect_to = request.GET.get('next')
+        if url_has_allowed_host_and_scheme(redirect_to, request.get_host()):
+            return HttpResponseRedirect(redirect_to)
         if form.is_valid():
             # Todo: Check if user is on multiple dining lists today, then show warning?
             return HttpResponseRedirect(self.reverse('slot_list'))
@@ -318,10 +318,10 @@ class EntryDeleteView(LoginRequiredMixin, SingleObjectMixin, View):
 
         # Go to next
         next_url = request.GET.get('next')
-        if not next_url or not is_safe_url(next_url, request.get_host()):
-            next_url = entry.dining_list.get_absolute_url()
-
-        return HttpResponseRedirect(next_url)
+        if url_has_allowed_host_and_scheme(next_url, request.get_host()):
+            return HttpResponseRedirect(next_url)
+        else:
+            return HttpResponseRedirect(entry.dining_list.get_absolute_url())
 
 
 class SlotListView(SlotMixin, TemplateView):

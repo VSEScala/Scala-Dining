@@ -59,6 +59,7 @@ INSTALLED_APPS = [
     'allauth',
     'allauth.socialaccount',
     'allauthproviders.quadrivium',
+    'fontawesomefree',
 ]
 
 MIDDLEWARE = [
