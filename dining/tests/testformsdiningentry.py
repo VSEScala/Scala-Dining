@@ -7,7 +7,7 @@ from django.utils import timezone
 
 from creditmanagement.models import Transaction
 from dining.forms import DiningEntryUserCreateForm, DiningEntryDeleteForm, DiningEntryExternalCreateForm
-from dining.models import DiningList, DiningEntryUser, DiningEntryExternal
+from dining.models import DiningList, DiningEntryUser
 from userdetails.models import User, Association, UserMembership
 
 
