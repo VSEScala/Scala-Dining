@@ -1,32 +1,52 @@
-name: Continuous testing
+name: Continuous integration
 
-on: [push, pull_request]
+# We might want to fine-tune this to prevent duplicate checks.
+on: [pull_request]
+
+# When a step fails, the next steps are not executed. This means that when a
+# test case fails, the coverage report will not be uploaded. This should be
+# fine, but we could use `if: always()` to change that behavior.
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
+  ci:
+    runs-on: ubuntu-22.04
+
+    services:
+      postgres:
+        image: postgres:12
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        # Set health checks to wait until postgres has started
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
-    - uses: actions/checkout@v2
-    - uses: actions/setup-python@v1
+    - uses: actions/checkout@v3
+    - name: Set up Python
+      uses: actions/setup-python@v4
       with:
-        python-version: 3.11
-    - uses: actions/cache@v2
-      with:
-        path: ~/.cache/pip
-        # Match requirements.txt and dev-requirements.txt
-        key: ${{ runner.os }}-pip-${{ hashFiles('*requirements.txt') }}
-        restore-keys: |
-          ${{ runner.os }}-pip-
+        python-version: '3.11'
+        cache: 'pip'
+        cache-dependency-path: |
+          requirements.txt
+          dev-requirements.txt
     - name: Install dependencies
-      run: |
-        pip install -r requirements.txt -r dev-requirements.txt
-    - name: Lint
-      run: |
-        flake8
-    - name: Unit tests
-      if: always()
+      # We use the psycopg2 binary package for testing.
+      # About --use-pep517: https://github.com/pypa/pip/issues/8559
+      run: pip install --use-pep517 -r requirements.txt -r dev-requirements.txt psycopg2-binary==2.9.5
+    - name: Run tests and collect coverage
+      run: coverage run manage.py test
       env:
         DINING_SECRET_KEY: hi
         DINING_DEBUG: on
-      run: |
-        python manage.py test
+        DINING_DATABASE_URL: postgres://postgres:postgres@localhost/postgres
+    # This is above flake8 so that we upload even if linting fails
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+    - name: Lint with flake8
+      run: flake8

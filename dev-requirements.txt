@@ -4,20 +4,8 @@
 #
 #    pip-compile dev-requirements.in
 #
-certifi==2022.12.7
-    # via
-    #   -c requirements.txt
-    #   requests
-charset-normalizer==2.1.1
-    # via
-    #   -c requirements.txt
-    #   requests
-codecov==2.1.12
-    # via -r dev-requirements.in
 coverage==7.0.0
-    # via
-    #   -r dev-requirements.in
-    #   codecov
+    # via -r dev-requirements.in
 flake8==6.0.0
     # via
     #   -r dev-requirements.in
@@ -25,10 +13,6 @@ flake8==6.0.0
     #   pep8-naming
 flake8-docstrings==1.6.0
     # via -r dev-requirements.in
-idna==3.4
-    # via
-    #   -c requirements.txt
-    #   requests
 mccabe==0.7.0
     # via flake8
 pep8-naming==0.13.3
@@ -39,13 +23,5 @@ pydocstyle==6.1.1
     # via flake8-docstrings
 pyflakes==3.0.1
     # via flake8
-requests==2.28.1
-    # via
-    #   -c requirements.txt
-    #   codecov
 snowballstemmer==2.2.0
     # via pydocstyle
-urllib3==1.26.13
-    # via
-    #   -c requirements.txt
-    #   requests
