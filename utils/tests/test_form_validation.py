@@ -37,9 +37,9 @@ class TestFormValidityMixin(FormValidityMixin, TestCase):
 
     def test_assert_has_field(self):
         # This should not raise an error
-        self.assert_has_field('main_field')
+        self.assertHasField('main_field')
         # This should
-        error = self.raises_assertion_error(self.assert_has_field, 'missing_field')
+        error = self.raises_assertion_error(self.assertHasField, 'missing_field')
         self.assertEqual(
             error.__str__(),
             "{field_name} was not a field in {form_class_name}".format(
@@ -50,9 +50,9 @@ class TestFormValidityMixin(FormValidityMixin, TestCase):
 
     def test_assert_form_valid(self):
         # This should not raise an error
-        self.assert_form_valid({'main_field': "ok"})
+        self.assertFormValid({'main_field': "ok"})
         # This should
-        error = self.raises_assertion_error(self.assert_form_valid, {'main_field': "break_field"})
+        error = self.raises_assertion_error(self.assertFormValid, {'main_field': "break_field"})
         self.assertEqual(
             error.__str__(),
             "The form was not valid. At least one error was encountered: '{exception_text}' in '{location}'".format(
@@ -62,29 +62,29 @@ class TestFormValidityMixin(FormValidityMixin, TestCase):
         )
 
     def test_assert_form_has_error_in_field(self):
-        self.assert_form_has_error({'main_field': 'break_field'}, 'invalid_field')
-        self.assert_form_has_error({'main_field': 'break_field'}, 'invalid_field', field='main_field')
+        self.assertFormHasError({'main_field': 'break_field'}, 'invalid_field')
+        self.assertFormHasError({'main_field': 'break_field'}, 'invalid_field', field='main_field')
 
         # Error is in main_field not fake_field
         with self.assertRaises(AssertionError):
-            self.assert_form_has_error({'main_field': 'break_field'}, 'invalid_form', field='fake_field')
+            self.assertFormHasError({'main_field': 'break_field'}, 'invalid_form', field='fake_field')
 
         # This next data raises an error, just not the one with this code
         with self.assertRaises(AssertionError):
-            self.assert_form_has_error({'main_field': 'break_field'}, 'invalid_data', field='main_field')
+            self.assertFormHasError({'main_field': 'break_field'}, 'invalid_data', field='main_field')
 
     def test_assert_form_has_error_in_form(self):
-        self.assert_form_has_error({'main_field': 'break_form'}, 'invalid_form')
+        self.assertFormHasError({'main_field': 'break_form'}, 'invalid_form')
 
         # Should raise AssertionError because the form contains no errors.
-        error = self.raises_assertion_error(self.assert_form_has_error, {'main_field': 'break_nothing'}, 'invalid_form')
+        error = self.raises_assertion_error(self.assertFormHasError, {'main_field': 'break_nothing'}, 'invalid_form')
         self.assertEqual(error.__str__(), "The form contained no errors")
 
         # Error is not in main_field, but elsewhere
-        error = self.raises_assertion_error(self.assert_form_has_error, {'main_field': 'break_form'}, 'invalid_form',
+        error = self.raises_assertion_error(self.assertFormHasError, {'main_field': 'break_form'}, 'invalid_form',
                                             field='main_field')
         self.assertEqual(str(error), "Form did not contain an error with code 'invalid_form', with field=main_field.")
 
         # Error code is not correct, but there is another error
-        error = self.raises_assertion_error(self.assert_form_has_error, {'main_field': 'break_form'}, 'invalid_field')
+        error = self.raises_assertion_error(self.assertFormHasError, {'main_field': 'break_form'}, 'invalid_field')
         self.assertEqual(str(error), "Form did not contain an error with code 'invalid_field', with field=None.")

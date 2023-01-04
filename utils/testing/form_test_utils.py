@@ -1,3 +1,5 @@
+# flake8: noqa: N802
+
 class FormValidityMixin:
     """A mixin for TestCase classes designed to add form functionality."""
     form_class = None
@@ -11,7 +13,7 @@ class FormValidityMixin:
             form_class = self.form_class
         return form_class(data=data, **self.get_form_kwargs(**kwargs))
 
-    def assert_has_field(self, field_name):
+    def assertHasField(self, field_name):
         """Asserts that the form has a field with the given name.
 
         Raises:
@@ -22,7 +24,7 @@ class FormValidityMixin:
         # This method is provided by the TestCase class.
         self.assertIn(field_name, form.fields, msg=message)
 
-    def assert_form_valid(self, data, form_class=None, **kwargs):
+    def assertFormValid(self, data, form_class=None, **kwargs):
         """Asserts that the form is valid, otherwise raises AssertionError mentioning the form error.
 
         Args:
@@ -42,7 +44,7 @@ class FormValidityMixin:
             raise AssertionError(fail_message)
         return form
 
-    def assert_form_has_error(self, data, code, form_class=None, field=None, **kwargs):
+    def assertFormHasError(self, data, code, form_class=None, field=None, **kwargs):
         """Asserts that a form with the given data invalidates on a certain error.
 
         Args:
