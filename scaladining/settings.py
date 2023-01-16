@@ -93,6 +93,9 @@ TEMPLATES = [
     },
 ]
 
+# https://docs.djangoproject.com/en/4.1/ref/settings/#internal-ips
+INTERNAL_IPS = env.list('DINING_INTERNAL_IPS', default='')
+
 WSGI_APPLICATION = 'scaladining.wsgi.application'
 
 LOGIN_REDIRECT_URL = '/'

@@ -7,8 +7,6 @@ version: '3.7'
 services:
   app:
     build: .
-    # Image for pushing
-    image: quadrivium.azurecr.io/scaladining:latest
     command: python manage.py runserver 0.0.0.0:8000
     environment:
       DINING_DEBUG: 'true'

@@ -3,49 +3,23 @@ from django.contrib.auth import login
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Value
 from django.db.models.functions import Concat
-from django.http import HttpResponseRedirect
-from django.urls import reverse
-from django.views.generic import TemplateView, ListView
+from django.urls import reverse_lazy
+from django.views.generic import ListView, FormView
 
 from dining.models import DiningEntryUser, DiningList
-from userdetails.forms import RegisterUserForm, RegisterUserDetails, AssociationLinkForm
+from userdetails.forms import RegisterUserForm
 from userdetails.models import User
 
 
-class RegisterView(TemplateView):
+class RegisterView(FormView):
     template_name = "account/signup.html"
+    form_class = RegisterUserForm
+    success_url = reverse_lazy('index')
 
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context.update({
-            'account_form': RegisterUserForm(),
-            'account_detail_form': RegisterUserDetails(),
-            'associationlink_form': AssociationLinkForm(None),
-        })
-        return context
-
-    def post(self, request, *args, **kwargs):
-        account_form = RegisterUserForm(request.POST)
-        account_detail_form = RegisterUserDetails(request.POST)
-        associationlink_form = AssociationLinkForm(None, request.POST)
-
-        context = {
-            'account_form': account_form,
-            'account_detail_form': account_detail_form,
-            'associationlink_form': associationlink_form,
-        }
-
-        if account_form.is_valid() and account_detail_form.is_valid() and associationlink_form.is_valid():
-            # User is valid, safe it to the server
-            user = account_form.save()
-            user = User.objects.get(pk=user.pk)
-            account_detail_form.save_as(user)
-            associationlink_form.save(user=user)
-
-            login(request, user, backend='django.contrib.auth.backends.ModelBackend')
-            return HttpResponseRedirect(reverse('index'))
-
-        return self.render_to_response(context)
+    def form_valid(self, form):
+        user = form.save()
+        login(self.request, user, backend='django.contrib.auth.backends.ModelBackend')
+        return super().form_valid(form)
 
 
 class DiningJoinHistoryView(LoginRequiredMixin, ListView):

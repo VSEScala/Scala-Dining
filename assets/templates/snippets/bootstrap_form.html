@@ -1,9 +1,23 @@
-{# Bootstrap 4 form #}
+{% comment %}
+Render a form using Bootstrap 4 CSS classes.
+
+The snippet uses a very manual and verbose way of rendering. It is sometimes
+very ugly. We could always switch to django-crispy-forms.
+
+If a field has a 'heading' attribute, the value of that attribute will be
+rendered above the field.
+
+Args:
+    form: The form to render.
+    horizontal: If True, will use the Bootstrap 4 horizontal form layout
+        instead of form groups.
+{% endcomment %}
 {% for hidden in form.hidden_fields %}{{ hidden }}{% endfor %}
 
 {% include 'snippets/bootstrap_form_non_field_errors.html' %}
 
 {% for field in form.visible_fields %}
+    {% if field.field.heading %}<h3>{{ field.field.heading }}</h3>{% endif %}
     {% include 'snippets/bootstrap_form_field.html' %}
 {% endfor %}
 

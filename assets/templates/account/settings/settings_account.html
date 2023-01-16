@@ -3,16 +3,12 @@
 {% block tab_account %}active{% endblock %}
 
 {% block details %}
-    {# Username #}
     <form method="post" action="{% url 'settings_account' %}">
         <h3>Account</h3>
         {% csrf_token %}
-        {% include "snippets/bootstrap_form.html" with form=user_form horizontal=True %}
-        <h3>Dining</h3>
-        {% include "snippets/bootstrap_form.html" with form=dining_form horizontal=True %}
+        {% include "snippets/bootstrap_form.html" with horizontal=True %}
         <h3>Memberships</h3>
         {% include "account/snippet_associations_form.html" with form=association_links_form %}
-        <p><button type="submit" name="user_submit" class="btn btn-primary btn-block">Save</button></p>
+        <button type="submit" class="btn btn-primary btn-block">Save</button>
     </form>
-
 {% endblock %}

@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from django.test import TestCase
 from django.utils import timezone
 
@@ -62,3 +64,50 @@ class UserMembershipTestCase(TestCase):
         membership.set_verified(False)
         membership.refresh_from_db()  # To check if it's saved
         self.assertIs(membership.get_verified_state(), False)
+
+    def test_set_pending(self):
+        membership = UserMembership.objects.create(
+            related_user=self.user,
+            association=self.association,
+            is_verified=True,
+            verified_on=datetime(2020, 2, 1, tzinfo=timezone.utc),
+        )
+        self.assertIs(membership.get_verified_state(), True)
+        membership.set_pending()
+        self.assertIs(membership.get_verified_state(), None)
+
+    def test_is_frozen(self):
+        membership = UserMembership.objects.create(
+            related_user=self.user,
+            association=self.association,
+            is_verified=True,
+            verified_on=datetime(2020, 1, 1, tzinfo=timezone.utc),
+        )
+        self.assertFalse(membership.is_frozen())
+        membership.verified_on = timezone.now()
+        self.assertTrue(membership.is_frozen())
+
+    def test_is_rejected(self):
+        membership = UserMembership.objects.create(
+            related_user=self.user,
+            association=self.association,
+        )
+        self.assertFalse(membership.is_rejected())
+        membership = UserMembership.objects.create(
+            related_user=self.user,
+            association=self.association,
+            is_verified=True,
+            verified_on=datetime(2020, 1, 1, tzinfo=timezone.utc),
+        )
+        self.assertFalse(membership.is_rejected())
+        membership.is_verified = False
+        self.assertTrue(membership.is_rejected())
+
+    def test_is_pending(self):
+        membership = UserMembership.objects.create(
+            related_user=self.user,
+            association=self.association,
+        )
+        self.assertTrue(membership.is_pending())
+        membership.set_verified(True)
+        self.assertFalse(membership.is_pending())
