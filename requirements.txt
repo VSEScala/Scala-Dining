@@ -16,7 +16,7 @@ cffi==1.15.1
     # via cryptography
 charset-normalizer==2.1.1
     # via requests
-cryptography==38.0.4
+cryptography==39.0.1
     # via pyjwt
 defusedxml==0.7.1
     # via python3-openid
