@@ -329,8 +329,12 @@ class SlotListView(SlotMixin, TemplateView):
     template_name = "dining_lists/dining_slot_diners.html"
 
     def can_edit_stats(self):
-        """Returns whether the current user can edit work and paid stats."""
-        return self.dining_list.is_owner(self.request.user) and self.dining_list.is_adjustable()
+        """Returns whether the current user can edit work and paid stats.
+
+        The user must be owner. It is possible to edit the stats after the
+        dining list is no longer adjustable.
+        """
+        return self.dining_list.is_owner(self.request.user)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
