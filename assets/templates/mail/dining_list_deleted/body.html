@@ -6,7 +6,8 @@
         Hi {{ recipient.first_name }}
     </p>
     <p>
-        We regret to inform you that the following dining list has been <b>cancelled</b>.
+        We regret to inform you that the following dining list has been cancelled.
+        {% if reason %}The reason provided was: "{{ reason }}".{% endif %}
     </p>
     <table>
         <tr><td>
@@ -29,27 +30,21 @@
         </td><td>
             {{dining_list.association}}
         </td></tr>
-
     </table>
     <p>
-        As you were subscribed to this dining list, you have been removed from the dining list and your money has been refunded
+        As you were subscribed to this dining list, you have been removed from the dining list and your money has been refunded.
         Maybe you can join or start another dining list. You can do so here:
     </p>
     <div>
         <a href="{{ site_uri }}{{ day_view_url }}"
            style="background-color: #375a7f;padding: 0.75em; border-radius: 0.25rem; color: white; text-decoration: none;">
-            Go to day view</a>
+            Go to day view
+        </a>
     </div>
-
-    <p>
-        We are sorry for the inconvenience,
-    </p>
     <p>
         With kind regards,
     </p>
     <p style="padding-top: 1em;">
-
-
         The Scala Dining App
     </p>
 {% endblock %}

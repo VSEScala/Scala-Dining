@@ -5,8 +5,6 @@ from datetime import time, timedelta
 MAX_SLOT_NUMBER = 3
 KITCHEN_COST = Decimal('0.50')
 
-# Maximum number of slots on each date
-MAX_SLOT_DINER_MINIMUM = 6
 MIN_SLOT_DINER_MAXIMUM = 12
 
 # Last claim time for dining slots
@@ -28,5 +26,3 @@ TRANSACTION_PENDING_DURATION = timedelta(days=2)
 # Membership change settings
 DURATION_AFTER_MEMBERSHIP_CONFIRMATION = timedelta(days=30)
 DURATION_AFTER_MEMBERSHIP_REJECTION = timedelta(days=30)
-
-DOMAIN_NAME = "dining.studentencultuur.nl"

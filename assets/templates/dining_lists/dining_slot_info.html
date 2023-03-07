@@ -4,6 +4,12 @@
 {% block tab_info %}active{% endblock %}
 
 {% block details %}
+    <p>
+        <a href="{% url 'day_view' day=dining_list.date.day month=dining_list.date.month year=dining_list.date.year %}">
+            ← Back to day
+        </a>
+    </p>
+
     <div class="row">
         {# Primary information #}
         <div class="col-md-10">
@@ -75,26 +81,11 @@
         </div>
     </div>
 
-    {# Change buttons #}
     {% if dining_list|is_owner:user %}
-        <div class="row mt-3">
-            <div class="col-md">
-                {% url 'slot_change' day=date.day month=date.month year=date.year identifier=dining_list.association.slug as url %}
-                <a class="btn btn-primary btn-block" href="{{ url }}">
-                    <i class="fas fa-tools"></i> Change information
-                </a>
-            </div>
-            {% if dining_list|is_owner:user and dining_list.diners.count < dining_list.min_diners %}
-                {# The min_diners check is only performed here and not while a list is actually deleted, so it's #}
-                {# possible to delete a list even if there are more diners than min_diners XD #}
-                <div class="col-md">
-                    {% url "slot_delete" year=date.year month=date.month day=date.day identifier=dining_list.association.slug as url %}
-                    <a href="{{ url }}" class="btn btn-outline-danger btn-block">
-                        <i class="fas fa-trash-alt"></i> Remove dining list
-                    </a>
-                </div>
-            {% endif %}
-        </div>
+        <a class="btn btn-primary mt-3"
+           href="{% url 'slot_change' day=date.day month=date.month year=date.year identifier=dining_list.association.slug %}">
+            <i class="fas fa-edit"></i> Change information
+        </a>
     {% endif %}
 
     <hr>
@@ -123,7 +114,7 @@
                         </form>
                     {% endif %}
                 {% elif dining_list|can_join:user %}
-                    {% url 'entry_add' day=date.day month=date.month year=date.year identifier=dining_list.association.slug as url%}
+                    {% url 'entry_add' day=date.day month=date.month year=date.year identifier=dining_list.association.slug as url %}
                     <form method="post" action="{{ url }}?next={{ request.path_info }}">
                         {% csrf_token %}
                         <input type="hidden" name="user" value="{{ user.pk }}">
@@ -181,14 +172,6 @@
                     {% endif %}
                 </div>
             </div>
-
-            {# Minimum number of diners #}
-            {% if dining_list.dining_entries.count < dining_list.min_diners %}
-                <div class="row mt-3">
-                    <div class="col-3">Minimum diners:</div>
-                    <div class="col-9">{{ dining_list.min_diners }}</div>
-                </div>
-            {% endif %}
 
             {# Kitchen cost #}
             <div class="row mt-3">

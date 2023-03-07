@@ -13,7 +13,6 @@ from django.utils import timezone
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.generic import TemplateView, View, FormView
 from django.views.generic.detail import SingleObjectMixin
-from django.views.generic.edit import DeleteView
 
 from dining.datesequence import sequenced_date
 from dining.forms import CreateSlotForm, DiningEntryDeleteForm, DiningCommentForm, DiningInfoForm, DiningPaymentForm, \
@@ -479,51 +478,32 @@ class SlotInfoChangeView(SlotMixin, SlotOwnerMixin, TemplateView):
         return self.render_to_response(context)
 
 
-class SlotDeleteView(SlotMixin, SlotOwnerMixin, DeleteView):
+class SlotDeleteView(SlotMixin, SlotOwnerMixin, FormView):
     """Page for slot deletion.
 
     Page is only available for slot owners.
     """
     template_name = "dining_lists/dining_slot_delete.html"
-    context_object_name = "dining_list"
+    form_class = DiningListDeleteForm
 
-    def get_object(self, queryset=None):
-        return self.dining_list
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs.update({
+            'instance': self.dining_list,
+        })
+        return kwargs
 
-    def delete(self, request, *args, **kwargs):
-        instance = self.get_object()
-        form = DiningListDeleteForm(request.user, instance)
-        if form.is_valid():
-            day_view_url = super(DiningListMixin, self).reverse("day_view")
+    def get_day_view_url(self):
+        return super(DiningListMixin, self).reverse("day_view")
 
-            # Evaluate the query to obtain diners before the dining list is removed from the database
-            to_notify = list(instance.diners.exclude(id=request.user.id))
+    def get_success_url(self):
+        return self.get_day_view_url()
 
-            # Get dining list with related fields, necessary for sending mail because then the object is no longer in db
-            dining_list = DiningList.objects.prefetch_related('owners', 'association').get(pk=instance.pk)
-
-            with transaction.atomic():
-                form.execute()
-
-                # Send mail to the people on the dining list
-                send_templated_mail('mail/dining_list_deleted',
-                                    to_notify,
-                                    {
-                                        'dining_list': dining_list,
-                                        'cancelled_by': request.user,
-                                        'day_view_url': day_view_url
-                                    },
-                                    request=request)
-
-            messages.success(request, "Dining list is deleted")
-
-            return HttpResponseRedirect(day_view_url)
-
-        # Could not delete
-        for error in form.non_field_errors():
-            messages.add_message(request, messages.ERROR, error)
-
-        return HttpResponseRedirect(self.reverse("slot_delete"))
+    def form_valid(self, form):
+        with transaction.atomic():
+            form.execute_and_notify(self.request, self.get_day_view_url())
+            messages.success(self.request, "Dining list is deleted")
+        return super().form_valid(form)
 
 
 class SlotPaymentView(SlotMixin, SlotOwnerMixin, FormView):
