@@ -8,6 +8,7 @@ Horizontal form layout: https://getbootstrap.com/docs/4.3/components/forms/#hori
 Args:
     field: The field to render.
     horizontal: See above.
+    hide_asterisk: Hides the red 'required' asterisk.
 {% endcomment %}
 {% load widget_tweaks %}
 {% load static %}
@@ -26,7 +27,7 @@ Args:
         {# Default Bootstrap field (prob some text input) #}
         <label for="{{ field.id_for_label }}" class="{% if horizontal %}col-sm-2 col-form-label{% endif %}">
             {{ field.label }}
-            {% if field.field.required %}
+            {% if field.field.required and not hide_asterisk %}
                 <span class="text-danger">*</span>
             {% endif %}
         </label>

@@ -15,7 +15,7 @@ services:
     volumes:
       - .:/app/src
     ports:
-      - 8000:8000
+      - "8000:8000"
     depends_on:
       - db
   db:
@@ -27,7 +27,7 @@ services:
     volumes:
       - db:/var/lib/postgresql/data
     ports:
-      - 5432:5432
+      - "5432:5432"
 
 volumes:
   db:

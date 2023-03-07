@@ -186,8 +186,8 @@ class DiningEntry(models.Model):
 class DiningComment(models.Model):
     dining_list = models.ForeignKey(DiningList, on_delete=models.CASCADE)
     timestamp = models.DateTimeField(default=timezone.now)
-    poster = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    message = models.CharField(max_length=256)
+    poster = models.ForeignKey(User, on_delete=models.PROTECT)
+    message = models.TextField()
     pinned_to_top = models.BooleanField(default=False)
 
 

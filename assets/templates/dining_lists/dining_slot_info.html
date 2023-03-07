@@ -206,21 +206,10 @@
     {% for comment in comments %}
         {% include 'snippets/snippet_comments.html' %}
     {% endfor %}
-
-    {# New comment form #}
-    {% url 'slot_details' day=date.day month=date.month year=date.year identifier=dining_list.association.slug as url %}
-    <form method="post" action="{{ url }}">
-        {% if form.errors %}
-            <div class="alert alert-dismissable alert-warning mb-1">
-                <button type="button" class="close" data-dismiss="alert">×</button>
-                {% for key, value in form.errors.items %}
-                    {{ value.as_text }}
-                {% endfor %}
-            </div>
-        {% endif %}
-        <textarea name="message" class="form-control" placeholder="Leave a remark"></textarea>
-        <button type="submit" class="btn btn-block btn-primary mt-1">Post</button>
+    <form method="post"
+          action="{% url 'slot_details' day=date.day month=date.month year=date.year identifier=dining_list.association.slug %}">
         {% csrf_token %}
+        {% include 'snippets/bootstrap_form.html' with hide_asterisk=True %}
+        <button type="submit" class="btn btn-primary">Post comment</button>
     </form>
-
 {% endblock details %}
