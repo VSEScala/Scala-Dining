@@ -390,30 +390,11 @@ class DiningListDeleteForm(forms.ModelForm):
 
 
 class DiningCommentForm(forms.ModelForm):
+    message = forms.CharField(max_length=10000, label="Comment", widget=forms.Textarea(attrs={'rows': '3'}))
+
     class Meta:
         model = DiningComment
         fields = ['message']
-
-    def __init__(self, poster, dining_list, pinned=False, data=None, **kwargs):
-        if data is not None:
-            # User defaults to added_by if not set
-            data = data.copy()
-            data.setdefault('poster', poster.pk)
-            data.setdefault('dining_list', dining_list.pk)
-            data.setdefault('pinned_to_top', pinned)
-
-        super().__init__(**kwargs, data=data)
-
-        self.dining_list = dining_list
-        self.added_by = poster
-        self.pinned = pinned
-
-    def save(self, *args, **kwargs):
-        self.instance.poster = self.added_by
-        self.instance.dining_list = self.dining_list
-        self.instance.pinned_to_top = self.pinned
-
-        super().save(*args, **kwargs)
 
 
 class SendReminderForm(forms.Form):

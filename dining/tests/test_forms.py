@@ -11,9 +11,9 @@ from django.utils import timezone
 
 from creditmanagement.models import Account, Transaction
 from dining.forms import CreateSlotForm, \
-    DiningEntryDeleteForm, DiningInfoForm, DiningPaymentForm, DiningCommentForm, SendReminderForm, DiningListDeleteForm, \
+    DiningEntryDeleteForm, DiningInfoForm, DiningPaymentForm, SendReminderForm, DiningListDeleteForm, \
     DiningEntryInternalForm, DiningEntryExternalForm
-from dining.models import DiningList, DiningEntry, DiningComment
+from dining.models import DiningList, DiningEntry
 from general.forms import ConcurrenflictFormMixin
 from userdetails.models import Association, User, UserMembership
 from utils.testing import TestPatchMixin, patch, FormValidityMixin
@@ -594,41 +594,6 @@ class TestDiningPaymentForm(FormValidityMixin, TestCase):
         form = self.assertFormValid({'dining_cost_total': 15.95})
         self.assertIsNone(form.cleaned_data['dining_cost_total'])
         self.assertEqual(form.cleaned_data['dining_cost'], 2)
-
-
-class TestDiningCommentForm(FormValidityMixin, TestCase):
-    fixtures = ['base', 'dining_lists']
-    form_class = DiningCommentForm
-
-    def setUp(self):
-        self.dining_list = DiningList.objects.get(id=1)
-        self.user = User.objects.get(id=1)
-
-    def get_form_kwargs(self, **kwargs):
-        kwargs.setdefault('dining_list', self.dining_list)
-        kwargs.setdefault('poster', self.user)
-        return super(TestDiningCommentForm, self).get_form_kwargs(**kwargs)
-
-    def test_valid(self):
-        """Tests basic validity functionality."""
-        posted_msg = 'My very message'
-        form = self.assertFormValid({'message': posted_msg})
-        form.save()
-
-        # Assert copy on database:
-        self.assertTrue(DiningComment.objects.filter(id=form.instance.id).exists())
-        form.instance.refresh_from_db()  # Get database states
-        self.assertEqual(form.instance.message, posted_msg)
-        self.assertEqual(form.instance.dining_list, self.dining_list)
-        self.assertEqual(form.instance.poster, self.user)
-        self.assertEqual(form.instance.pinned_to_top, False)
-
-    def test_pinning(self):
-        """Tests that a message can be pinned."""
-        posted_msg = "A stickied message"
-        form = self.assertFormValid({'message': posted_msg}, pinned=True)
-        form.save()
-        self.assertEqual(form.instance.pinned_to_top, True)
 
 
 class TestSendReminderForm(FormValidityMixin, TestPatchMixin, TestCase):

@@ -30,3 +30,11 @@ body {
 .select2-selection {
     background-color: #fff;
 }
+
+/* Remove paragraph margin for dining list comment text.
+
+Copied from Bootstrap's .card-text.
+*/
+.dining-list-comment > p:last-child {
+    margin-bottom: 0
+}

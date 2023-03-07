@@ -1,5 +1,4 @@
 {% load humanize %}
-
 <div class="card mb-3">
     <div class="card-header">
         <span class="h5 mr-1">
@@ -10,7 +9,5 @@
         </span>
         <i class="small">{{ comment.timestamp|naturaltime }}</i>
     </div>
-    <div class="card-body">
-        <p class="card-text">{{ comment.message|urlize }}</p>
-    </div>
+    <div class="card-body dining-list-comment">{{ comment.message|urlize|linebreaks }}</div>
 </div>

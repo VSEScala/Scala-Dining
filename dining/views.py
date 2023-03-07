@@ -19,7 +19,7 @@ from dining.datesequence import sequenced_date
 from dining.forms import CreateSlotForm, DiningEntryDeleteForm, DiningCommentForm, DiningInfoForm, DiningPaymentForm, \
     DiningListDeleteForm, SendReminderForm, \
     DiningEntryExternalForm, DiningEntryInternalForm
-from dining.models import DiningList, DiningDayAnnouncement, DiningCommentVisitTracker, DiningEntry
+from dining.models import DiningList, DiningDayAnnouncement, DiningCommentVisitTracker, DiningEntry, DiningComment
 from general.mail_control import send_templated_mail
 from userdetails.models import User, Association
 
@@ -36,9 +36,10 @@ class DayMixin:
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['date'] = self.date
-        # Nr of days between date and today
-        context['date_diff'] = (self.date - date.today()).days
+        context.update({
+            'date': self.date,
+            'date_diff': (self.date - date.today()).days,  # Nr. of days between date and today
+        })
         return context
 
     def init_date(self):
@@ -186,8 +187,10 @@ class DiningListMixin(DayMixin):
     dining_list = None
 
     def get_context_data(self, **kwargs):
-        context = super(DiningListMixin, self).get_context_data(**kwargs)
-        context['dining_list'] = self.dining_list
+        context = super().get_context_data(**kwargs)
+        context.update({
+            'dining_list': self.dining_list,
+        })
         return context
 
     def init_dining_list(self):
@@ -371,39 +374,36 @@ class SlotListView(SlotMixin, TemplateView):
         return HttpResponseRedirect(self.reverse('slot_list'))
 
 
-class SlotInfoView(SlotMixin, TemplateView):
+class SlotInfoView(LoginRequiredMixin, DiningListMixin, UpdateSlotViewTrackerMixin, FormView):
     template_name = "dining_lists/dining_slot_info.html"
+    form_class = DiningCommentForm
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs.update({
+            'instance': DiningComment(dining_list=self.dining_list, poster=self.request.user),
+        })
+        return kwargs
+
+    def get_success_url(self):
+        return self.reverse('slot_details')
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['comments'] = self.dining_list.diningcomment_set.order_by('-pinned_to_top', 'timestamp').all()
-
-        # Last visit
-        context['last_visited'] = DiningCommentVisitTracker.get_latest_visit(
-            user=self.request.user,
-            dining_list=self.dining_list,
-            update=True)
-
-        from django.db.models import CharField
-        from django.db.models.functions import Length
-        CharField.register_lookup(Length)
-        context['number_of_allergies'] = self.dining_list.internal_dining_entries().filter(
-            user__allergies__length__gte=1).count()
-
+        context.update({
+            'comments': self.dining_list.diningcomment_set.order_by('-pinned_to_top', 'timestamp').all(),
+            'last_visited': DiningCommentVisitTracker.get_latest_visit(
+                user=self.request.user,
+                dining_list=self.dining_list,
+                update=True
+            ),
+            'number_of_allergies': self.dining_list.internal_dining_entries().exclude(user__allergies='').count(),
+        })
         return context
 
-    def post(self, request, *args, **kwargs):
-        context = self.get_context_data(**kwargs)
-
-        # Add the comment
-        comment_form = DiningCommentForm(request.user, self.dining_list, data=request.POST)
-
-        if comment_form.is_valid():
-            comment_form.save()
-            return HttpResponseRedirect(self.reverse('slot_details'))
-        else:
-            context['form'] = comment_form
-            return self.render_to_response(context)
+    def form_valid(self, form):
+        form.save()
+        return super().form_valid(form)
 
 
 class SlotAllergyView(SlotMixin, TemplateView):
