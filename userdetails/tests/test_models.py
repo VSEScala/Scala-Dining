@@ -1,5 +1,6 @@
 from datetime import datetime
 
+from django.core.exceptions import ValidationError
 from django.test import TestCase
 from django.utils import timezone
 
@@ -43,6 +44,13 @@ class UserTestCase(TestCase):
         association = Association.objects.create(has_min_exception=True)
         UserMembership.objects.create(related_user=self.user, association=association)
         self.assertFalse(self.user.has_min_balance_exception())
+
+    def test_username_case_insensitive(self):
+        """Cleaning should raise ValidationError for an existing username with different case."""
+        with self.assertRaises(ValidationError) as cm:
+            User(username='Noortje').full_clean()
+        exception = cm.exception
+        self.assertEqual(exception.error_dict['username'][0].code, 'unique')
 
 
 class UserMembershipTestCase(TestCase):
