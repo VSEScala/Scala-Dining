@@ -384,13 +384,32 @@ class TestDiningEntryDeleteForm(FormValidityMixin, TestCase):
 
         self.assertFalse(DiningEntry.objects.filter(id=self.entry.id).exists())
 
-    @patch_time(dt=datetime(2022, 4, 26, 14, 23))
-    def test_db_transacton_deletion(self):
-        self.assertFormValid({}).execute()
-        self.entry.transaction.refresh_from_db()
+    def test_db_transaction_deletion(self):
+        """Tests that a reversal transaction is created upon deletion."""
+        user = User.objects.create_user('user')
+        kitchen_cost = Account.objects.get(special='kitchen_cost')
+        dl = DiningList.objects.create(date=date(2123, 1, 2))
 
-        self.assertEqual(self.entry.transaction.cancelled, timezone.make_aware(datetime(2022, 4, 26, 14, 23)))
-        self.assertEqual(self.entry.transaction.cancelled_by, self.user)
+        # We manually create the entry with transaction, so that our test doesn't depend on DiningEntryInternalForm
+        entry = DiningEntry.objects.create(
+            dining_list=dl,
+            user=user,
+            created_by=user,
+            transaction=Transaction.objects.create(
+                source=user.account,
+                target=kitchen_cost,
+                amount=Decimal('2.18'),
+                created_by=user
+            )
+        )
+        # Confirm our balance is negative
+        self.assertEqual(user.account.get_balance(), Decimal('-2.18'))
+        # Execute form
+        form = DiningEntryDeleteForm(entry, user, {})
+        self.assertTrue(form.is_valid())
+        form.execute()
+        # Assert that our balance is now zero
+        self.assertEqual(user.account.get_balance(), Decimal('0.00'))
 
     @patch_time(dt=datetime(2022, 4, 26, 18, 0))
     def test_sign_up_deadline(self):
@@ -438,12 +457,12 @@ class TestDiningListDeleteForm(FormValidityMixin, TestCase):
     def test_db_transaction_cancellation(self):
         """Tests that the correct transactions are cancelled."""
         diner_count = self.dining_list.dining_entries.count()
-        old_cancelled_transaction_count = Transaction.objects.filter(cancelled__isnull=False).count()
+        old_cancelled_transaction_count = Transaction.objects.filter().count()
 
         self.assertFormValid({}).execute(self.user)
 
         self.assertEqual(
-            Transaction.objects.filter(cancelled__isnull=False).count(),
+            Transaction.objects.filter().count(),
             old_cancelled_transaction_count + diner_count
         )
 

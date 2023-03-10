@@ -22,13 +22,7 @@ class AccountManager(models.Manager):
 
 
 class Account(models.Model):
-    """Money account which can be used as a transaction source or target.
-
-    About deletion: an account can be deleted *as long as* there are no
-    transactions created for the account. This is implemented by user and
-    association having on_delete=CASCADE and Transaction.source/target having
-    on_delete=PROTECT.
-    """
+    """Money account which can be used as a transaction source or target."""
 
     # An account can only have one of user or association or special
     user = models.OneToOneField(User, on_delete=models.CASCADE, blank=True, null=True)
@@ -45,16 +39,17 @@ class Account(models.Model):
                         "The balance indicates the money that is payed for kitchen usage "
                         "(minus withdraws from this account).",
     }
-    special = models.CharField(max_length=30, unique=True, blank=True, null=True, default=None, choices=SPECIAL_ACCOUNTS)
+    special = models.CharField(max_length=30, unique=True, blank=True, null=True, default=None,
+                               choices=SPECIAL_ACCOUNTS)
 
     objects = AccountManager()
 
     def get_balance(self) -> Decimal:
-        tx = Transaction.objects.filter_valid()
+        qs = Transaction.objects.all()
         # 2 separate queries for the source and target sums
         # If there are no rows, the value will be made 0.00
-        source_sum = tx.filter(source=self).aggregate(sum=Sum('amount'))['sum'] or Decimal('0.00')
-        target_sum = tx.filter(target=self).aggregate(sum=Sum('amount'))['sum'] or Decimal('0.00')
+        source_sum = qs.filter(source=self).aggregate(sum=Sum('amount'))['sum'] or Decimal('0.00')
+        target_sum = qs.filter(target=self).aggregate(sum=Sum('amount'))['sum'] or Decimal('0.00')
         return target_sum - source_sum
 
     get_balance.short_description = "Balance"  # (used in admin site)
@@ -110,63 +105,31 @@ class Account(models.Model):
         return Transaction.objects.filter_account(self)
 
 
-class TransactionQuerySet2(QuerySet):
-    def filter_valid(self):
-        """Filters transactions that have not been cancelled."""
-        return self.filter(cancelled__isnull=True)
-
+class TransactionQuerySet(QuerySet):
     def filter_account(self, account: Account):
         """Filters transactions that have the given account as source or target."""
         return self.filter(Q(source=account) | Q(target=account))
 
 
 class Transaction(models.Model):
-    # We do not enforce that source != target because those rows are not harmful,
-    #  balance is not affected when source == target.
+    # We do not enforce that source != target because those rows are not harmful.
     source = models.ForeignKey(Account, on_delete=models.PROTECT, related_name='transaction_source_set')
     target = models.ForeignKey(Account, on_delete=models.PROTECT, related_name='transaction_target_set')
     # Amount can only be (strictly) positive
     amount = models.DecimalField(decimal_places=2, max_digits=8, validators=[MinValueValidator(Decimal('0.01'))])
     moment = models.DateTimeField(default=timezone.now)
-    description = models.CharField(max_length=150)
+    description = models.CharField(max_length=1000)
     created_by = models.ForeignKey(User, on_delete=models.PROTECT, related_name='transaction_set')
 
-    # Implementation note on cancellation
-    # Instead of an extra 'cancelled' column we could also write a method that
-    # creates a new transaction that reverses this transaction. In that case
-    # however it is not possible to check whether a transaction is already
-    # cancelled.
+    objects = TransactionQuerySet.as_manager()
 
-    # Note 2
-    # This is by no means an ideal solution and there are probably much better
-    # solutions but we can easily change this. Other options:
-    # - Separate table: not ideal because DRY
-    # - Delete transaction: while we can't and shouldn't disallow deletion on
-    #   code and database level, we should not make deletion part of the API.
-
-    # Note 3
-    # This cancelled column is risky, one might forget to filter out cancelled
-    # transactions when calculating balance. We might need to filter those out
-    # by default.
-    cancelled = models.DateTimeField(null=True)
-    cancelled_by = models.ForeignKey(User,
-                                     on_delete=models.PROTECT,
-                                     null=True,
-                                     related_name='transaction_cancelled_set')
-
-    objects = TransactionQuerySet2.as_manager()
-
-    def cancel(self, user: User):
-        """Sets the transaction as cancelled.
-
-        Don't forget to save afterwards.
-        """
-        if self.cancelled:
-            raise ValueError("Already cancelled")
-        self.cancelled = timezone.now()
-        self.cancelled_by = user
-
-    def is_cancelled(self) -> bool:
-        return bool(self.cancelled)
-
-    is_cancelled.boolean = True
+    def reversal(self, reverted_by: User):
+        """Returns a reversal transaction for this transaction (unsaved)."""
+        return Transaction(
+            source=self.target,
+            target=self.source,
+            amount=self.amount,
+            # I'm undecided between 'revert' and 'refund'.
+            description=f'Refund "{self.description}"',
+            created_by=reverted_by,
+        )

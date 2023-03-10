@@ -12,7 +12,7 @@
         </thead>
         <tbody>
         {% for tx in object_list %}
-            <tr {% if tx.is_cancelled %}style="text-decoration: line-through;"{% endif %}>
+            <tr>
                 <td>{{ tx.moment }}</td>
                 <td>
                     {% if tx.source == account_self %}
@@ -23,7 +23,7 @@
                 </td>
                 <td>
                     {% if tx.source == account_self %}
-                        <span class="text-danger">{{ tx.amount|negate|euro }}</span>
+                        <span class="text-danger">-{{ tx.amount|euro }}</span>
                     {% else %}
                         <span class="text-success">+{{ tx.amount|euro }}</span>
                     {% endif %}

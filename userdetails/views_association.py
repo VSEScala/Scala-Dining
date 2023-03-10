@@ -101,8 +101,7 @@ class AssociationTransactionsCSVView(LoginRequiredMixin, AssociationBoardMixin, 
     def get(self, request, *args, **kwargs):
         response = HttpResponse(content_type='text/csv')
         response['Content-Disposition'] = 'attachment; filename="association_transactions.csv"'
-        # We only include non-cancelled transactions
-        qs = Transaction.objects.filter_valid().filter_account(self.association.account).order_by('-moment')
+        qs = Transaction.objects.filter_account(self.association.account).order_by('-moment')
         write_transactions_csv(response, qs, self.association.account)
         return response
 
@@ -296,8 +295,7 @@ class SiteCreditDetailView(AssociationBoardMixin, AssociationHasSiteAccessMixin,
         # Handle income/outcome flow
         # We only handle and show the form if we're on page 1
         if page_obj.number == 1 and self.date_range_form.is_valid():
-            qs = Transaction.objects.filter_valid().filter(moment__gte=self.date_start,
-                                                           moment__lte=self.date_end)
+            qs = Transaction.objects.filter(moment__gte=self.date_start, moment__lte=self.date_end)
             influx = qs.filter(target=account).aggregate(sum=Sum('amount'))['sum'] or Decimal('0.00')
             outflux = qs.filter(source=account).aggregate(sum=Sum('amount'))['sum'] or Decimal('0.00')
 

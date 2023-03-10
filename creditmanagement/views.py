@@ -24,8 +24,7 @@ class TransactionCSVView(LoginRequiredMixin, View):
     def get(self, request, *args, **kwargs):
         response = HttpResponse(content_type='text/csv')
         response['Content-Disposition'] = 'attachment; filename="user_transactions.csv"'
-        # We only include non-cancelled transactions
-        qs = Transaction.objects.filter_valid().filter_account(request.user.account).order_by('-moment')
+        qs = Transaction.objects.filter_account(request.user.account).order_by('-moment')
         write_transactions_csv(response, qs, request.user.account)
         return response
 

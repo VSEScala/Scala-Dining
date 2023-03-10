@@ -74,19 +74,12 @@ class TransactionAdmin(admin.ModelAdmin):
     """The transaction admin enables viewing transactions and creating new transactions."""
 
     ordering = ('-moment',)
-    list_display = ('moment', 'source', 'target', 'amount', 'description', 'is_cancelled')
+    list_display = ('moment', 'source', 'target', 'amount', 'description')
     list_filter = (SourceTypeListFilter, TargetTypeListFilter)
 
-    fields = ('source', 'target', 'amount', 'description', 'moment', 'created_by', 'cancelled', 'cancelled_by')
-    # Created_by, cancelled and cancelled_by are also shown on the add form (read only),
-    #  it would be nice to hide it but that requires a separate form which is overkill.
-    readonly_fields = ('moment', 'created_by', 'cancelled', 'cancelled_by')
+    fields = ('source', 'target', 'amount', 'moment', 'description', 'created_by')
+    readonly_fields = ('moment', 'created_by')  # Only applicable for the add transaction form (changing is not allowed)
     autocomplete_fields = ('source', 'target')
-
-    # Changing transactions is obviously not possible, I have however also not
-    #  implemented an action for refunding transactions. That is however on
-    #  purpose, because you can refund a transaction by creating a new reversed
-    #  transaction, which is better in my opinion.
 
     def has_change_permission(self, request, obj=None):
         return False

@@ -361,11 +361,13 @@ class DiningEntryDeleteForm(forms.Form):
         return cleaned_data
 
     def execute(self):
+        if self.errors:
+            raise ValueError("The form didn't validate.")
+
         with transaction.atomic():
             tx = self.entry.transaction
             if tx:
-                tx.cancel(self.deleter)
-                tx.save()
+                tx.reversal(self.deleter).save()
             self.entry.delete()
         # Todo: Inform other of removal logic here instead of in the view
 
