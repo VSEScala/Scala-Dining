@@ -26,6 +26,15 @@ def forward(apps, schema_editor):
     Account = apps.get_model("creditmanagement", "Account")
     Transaction = apps.get_model("creditmanagement", "Transaction")
 
+    if Transaction.objects.count() == 0:
+        # This migration caused the test cases that used fixtures to fail,
+        # because we create a new user below. This created user collides with
+        # the users that are being created from fixtures.
+        #
+        # To prevent this, when there are no transactions, we skip this
+        # migration so that the user is not created.
+        return
+
     # Sanity check: compare balances before and after
     before = compute_balance(Account, Transaction)
 

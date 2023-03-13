@@ -1,12 +1,5 @@
 [
   {
-    "model": "creditmanagement.account",
-    "pk": 1,
-    "fields": {
-      "user": 1
-    }
-  },
-  {
     "model": "creditmanagement.transaction",
     "pk": 45,
     "fields": {

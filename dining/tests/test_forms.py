@@ -386,18 +386,24 @@ class TestDiningEntryDeleteForm(FormValidityMixin, TestCase):
 
     def test_db_transaction_deletion(self):
         """Tests that a reversal transaction is created upon deletion."""
-        user = User.objects.create_user('user')
-        kitchen_cost = Account.objects.get(special='kitchen_cost')
-        dl = DiningList.objects.create(date=date(2123, 1, 2))
+        # We create a new user because the user created in setUp() already has transactions.
+        user = User.objects.create_user('user345876')
 
-        # We manually create the entry with transaction, so that our test doesn't depend on DiningEntryInternalForm
+        # We create a new dining list because self.dining_list is not adjustable which makes the form invalid.
+        dining_list = DiningList.objects.create(
+            date=date(2123, 4, 5),
+            sign_up_deadline=datetime(2123, 4, 5, tzinfo=timezone.utc),
+            association=self.dining_list.association
+        )
+
+        # We manually create the entry and transaction, so that our test doesn't depend on other code.
         entry = DiningEntry.objects.create(
-            dining_list=dl,
+            dining_list=dining_list,
             user=user,
             created_by=user,
             transaction=Transaction.objects.create(
                 source=user.account,
-                target=kitchen_cost,
+                target=Account.objects.get(special='kitchen_cost'),
                 amount=Decimal('2.18'),
                 created_by=user
             )
