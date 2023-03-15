@@ -154,8 +154,7 @@ class CreateSlotForm(ServeTimeCheckMixin, forms.ModelForm):
         # Check if user has enough money to claim a slot
         min_balance_exception = creator.has_min_balance_exception()
         if (
-            not min_balance_exception and creator.account.get_balance() < 
-            settings.MINIMUM_BALANCE_FOR_DINING_SLOT_CLAIM
+            not min_balance_exception and creator.account.get_balance() < settings.MINIMUM_BALANCE_FOR_DINING_SLOT_CLAIM
         ):
             raise ValidationError("Your balance is too low to claim a slot")
 
@@ -167,13 +166,11 @@ class CreateSlotForm(ServeTimeCheckMixin, forms.ModelForm):
         if self.instance.date < timezone.now().date():
             raise ValidationError("This date is in the past")
         if (
-            self.instance.date == timezone.now().date() and 
-            timezone.now().time() > settings.DINING_SLOT_CLAIM_CLOSURE_TIME
+            self.instance.date == timezone.now().date() and timezone.now().time() > settings.DINING_SLOT_CLAIM_CLOSURE_TIME
         ):
             raise ValidationError("It's too late to claim any dining slots")
         if (
-            self.instance.date > 
-            timezone.now().date() + settings.DINING_SLOT_CLAIM_AHEAD
+            self.instance.date > timezone.now().date() + settings.DINING_SLOT_CLAIM_AHEAD
         ):
             raise ValidationError("Dining list is too far in the future")
 
@@ -343,8 +340,7 @@ class DiningEntryInternalForm(forms.ModelForm):
 
         # User balance check
         if (
-            not user.has_min_balance_exception() and 
-            user.account.get_balance() < settings.MINIMUM_BALANCE_FOR_DINING_SIGN_UP
+            not user.has_min_balance_exception() and user.account.get_balance() < settings.MINIMUM_BALANCE_FOR_DINING_SIGN_UP
         ):
             raise ValidationError(
                 "The balance of the user is too low to add", code="no_money"
@@ -420,9 +416,7 @@ class DiningEntryDeleteForm(forms.Form):
 
         # Check permission: either she's owner, or the entry is about herself, or she created the entry
         if (
-            not is_owner and 
-            self.entry.user != self.deleter and
-            self.entry.created_by != self.deleter
+            not is_owner and self.entry.user != self.deleter and self.entry.created_by != self.deleter
         ):
             raise ValidationError("Can only delete own entries", code="not_owner")
 
