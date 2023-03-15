@@ -44,6 +44,23 @@ class ServeTimeCheckMixin:
         if serve_time > settings.KITCHEN_USE_END_TIME:
             raise ValidationError("Kitchen can't be used this late", code='kitchen_close_time')
         return serve_time
+    
+    def set_bounds(self, field, attr, value):
+        """Sets frontend-side bounds to make the filling in of the forms slightly more user-friendly.
+
+        Args:
+            field (string): the name of the field you want to edit
+            attr: either 'min' or 'max'
+            value: the max or min value you want the field to have
+        """
+        if (attr != 'max' and attr != 'min'):
+            raise ValueError("attr not min or max")
+        f = self.fields[field]
+        f.widget.attrs[attr] = value
+        if attr == 'max' and hasattr(f, 'max_value'):
+            f.max_value = value
+        elif attr == 'min' and hasattr(f, 'min_value'):
+            f.min_value = value
 
 
 class CreateSlotForm(ServeTimeCheckMixin, forms.ModelForm):
@@ -88,6 +105,12 @@ class CreateSlotForm(ServeTimeCheckMixin, forms.ModelForm):
             self.add_error(None,
                            ValidationError(
                                "You are not a member of any association and thus can not claim a dining list"))
+        
+        self.set_bounds('max_diners', 'min', settings.MIN_SLOT_DINER_MAXIMUM)
+        self.set_bounds('serve_time', 'min', settings.KITCHEN_USE_START_TIME.strftime("%H:%M"))
+        self.set_bounds('serve_time', 'max', settings.KITCHEN_USE_END_TIME.strftime("%H:%M"))
+
+
 
     def clean(self):
         # Note: uniqueness for date+association is implicitly enforced using the association form field
@@ -160,22 +183,7 @@ class DiningInfoForm(ConcurrenflictFormMixin, ServeTimeCheckMixin, forms.ModelFo
         self.set_bounds('min_diners', 'max', settings.MAX_SLOT_DINER_MINIMUM)
         self.set_bounds('max_diners', 'min', settings.MIN_SLOT_DINER_MAXIMUM)
 
-    def set_bounds(self, field, attr, value):
-        """Sets frontend-side bounds to make the filling in of the forms slightly more user-friendly.
 
-        Args:
-            field (string): the name of the field you want to edit
-            attr: either 'min' or 'max'
-            value: the max or min value you want the field to have
-        """
-        if (attr != 'max' and attr != 'min'):
-            raise ValueError("attr not min or max")
-        f = self.fields[field]
-        f.widget.attrs[attr] = value
-        if attr == 'max' and hasattr(f, 'max_value'):
-            f.max_value = value
-        elif attr == 'min' and hasattr(f, 'min_value'):
-            f.min_value = value
 
 
 class DiningPaymentForm(ConcurrenflictFormMixin, forms.ModelForm):
