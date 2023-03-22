@@ -1,6 +1,7 @@
 from datetime import datetime
 from os import getenv
 
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import ObjectDoesNotExist
 from django.http import HttpResponseForbidden, Http404
 from django.shortcuts import render
@@ -38,7 +39,9 @@ class DateRangeFilterMixin:
         return context
 
 
-class SiteUpdateView(ListView):
+class SiteUpdateView(LoginRequiredMixin, ListView):
+    # DEPRECATED: This view is currently not in use.
+
     template_name = "general/site_updates.html"
     paginate_by = 4
 
