@@ -420,8 +420,7 @@ class TestDiningListDeleteForm(FormValidityMixin, TestCase):
 
     def get_form_kwargs(self, **kwargs):
         kwargs.setdefault('instance', self.dining_list)
-        kwargs.setdefault('deleted_by', self.user)
-        return super(TestDiningListDeleteForm, self).get_form_kwargs(**kwargs)
+        return super().get_form_kwargs(**kwargs)
 
     @patch_time()
     def test_form_valid(self):
@@ -431,7 +430,7 @@ class TestDiningListDeleteForm(FormValidityMixin, TestCase):
     @patch_time()
     def test_db_list_deletion(self):
         dining_list_id = self.dining_list.id
-        self.assertFormValid({}).execute()
+        self.assertFormValid({}).execute(self.user)
 
         self.assertFalse(DiningEntry.objects.filter(dining_list__id=dining_list_id).exists())
 
@@ -441,18 +440,12 @@ class TestDiningListDeleteForm(FormValidityMixin, TestCase):
         diner_count = self.dining_list.dining_entries.count()
         old_cancelled_transaction_count = Transaction.objects.filter(cancelled__isnull=False).count()
 
-        self.assertFormValid({}).execute()
+        self.assertFormValid({}).execute(self.user)
 
-        # Ensure that the
         self.assertEqual(
             Transaction.objects.filter(cancelled__isnull=False).count(),
             old_cancelled_transaction_count + diner_count
         )
-
-    @patch_time()
-    def test_owner_deletion(self):
-        self.dining_list.owners.clear()
-        self.assertFormHasError({}, code="not_owner")
 
     def test_form_editing_time_limit(self):
         """Asserts that the form can not be used after the timelimit."""
@@ -487,7 +480,6 @@ class TestDiningInfoForm(FormValidityMixin, TestCase):
             'owners': [1],
             'dish': "My delicious dish",
             'serve_time': time(18, 00),
-            'min_diners': 4,
             'max_diners': 15,
             'sign_up_deadline': datetime(2022, 4, 26, 15, 0),
         })
@@ -498,7 +490,6 @@ class TestDiningInfoForm(FormValidityMixin, TestCase):
             'owners': [4],
             'dish': "New dish",
             'serve_time': time(17, 5),
-            'min_diners': 6,
             'max_diners': 14,
             'sign_up_deadline': datetime(2022, 4, 26, 12, 00),
         }).save()
@@ -510,7 +501,6 @@ class TestDiningInfoForm(FormValidityMixin, TestCase):
         self.assertIn(User.objects.get(id=4), updated_dining_list.owners.all())
         self.assertEqual(updated_dining_list.dish, "New dish")
         self.assertEqual(updated_dining_list.serve_time, time(17, 5))
-        self.assertEqual(updated_dining_list.min_diners, 6)
         self.assertEqual(updated_dining_list.max_diners, 14)
         self.assertNotEqual(updated_dining_list.sign_up_deadline.time(), self.dining_list.sign_up_deadline)
 

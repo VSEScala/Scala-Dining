@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from dining.models import DiningDayAnnouncement, DiningComment, DiningList, DiningEntry
+from dining.models import DiningDayAnnouncement, DiningComment, DiningList, DiningEntry, DeletedList
 
 
 @admin.register(DiningEntry)
@@ -36,3 +36,17 @@ class DiningDayAnnouncementAdmin(admin.ModelAdmin):
 
 
 admin.site.register(DiningComment)
+
+
+@admin.register(DeletedList)
+class DeletedListAdmin(admin.ModelAdmin):
+    # list_display = ('date', 'deleted_by')
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False

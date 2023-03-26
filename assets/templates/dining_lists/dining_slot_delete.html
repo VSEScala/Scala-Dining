@@ -1,22 +1,23 @@
 {% extends 'dining_lists/dining_slot.html' %}
 
 {% block details %}
-    <div class="row">
-        <div class="col-12">
-            <p>
-                Are you sure to remove the dining list on <strong>{{ dining_list.date }}</strong> for the
-                association <strong>{{ dining_list.association }}</strong>? All
-                <strong>{{ dining_list.dining_entries.count }}</strong> currently subscribed diners will have the
-                kitchen costs refunded and will get notified via e-mail.
-            </p>
-            <form method="post">
-                {% csrf_token %}
-                <button type="submit" class="btn btn-danger">
-                    <i class="fas fa-trash-alt"></i> Delete dining list
-                </button>
-                {% url "slot_details" year=date.year month=date.month day=date.day identifier=dining_list.association.slug as back %}
-                <a href="{{ back }}" class="btn">Go back</a>
-            </form>
-        </div>
-    </div>
+    <p>
+        <a href="{% url "slot_change" year=date.year month=date.month day=date.day identifier=dining_list.association.slug %}">
+            ← Back to edit
+        </a>
+    </p>
+    <p>
+        Are you sure you want to delete the dining list on <strong>{{ dining_list.date }}</strong> for the
+        association <strong>{{ dining_list.association }}</strong>? All
+        <strong>{{ dining_list.dining_entries.count }}</strong> currently subscribed diners will have the
+        kitchen costs refunded.
+    </p>
+    <form method="post"
+          action="{% url 'slot_delete' year=date.year month=date.month day=date.day identifier=dining_list.association.slug %}">
+        {% csrf_token %}
+        {% include "snippets/bootstrap_form.html" with horizontal=True %}
+        <button type="submit" class="btn btn-danger">
+            <i class="fas fa-trash-alt"></i> Delete
+        </button>
+    </form>
 {% endblock %}

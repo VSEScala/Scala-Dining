@@ -7,6 +7,7 @@ from django import forms
 from django.conf import settings
 from django.core import mail
 from django.core.mail import EmailMessage
+from django.core.serializers import serialize
 from django.core.validators import MinValueValidator
 from django.db import transaction
 from django.db.models import OuterRef, Exists, QuerySet
@@ -14,7 +15,7 @@ from django.forms import ValidationError
 from django.utils import timezone
 
 from creditmanagement.models import Transaction, Account
-from dining.models import DiningList, DiningComment, DiningEntry, PaymentReminderLock
+from dining.models import DiningList, DiningComment, DiningEntry, PaymentReminderLock, DeletedList
 from general.forms import ConcurrenflictFormMixin
 from general.mail_control import construct_templated_mail
 from general.util import SelectWithDisabled
@@ -207,14 +208,7 @@ class CreateSlotForm(ServeTimeCheckMixin, forms.ModelForm):
 class DiningInfoForm(ConcurrenflictFormMixin, ServeTimeCheckMixin, forms.ModelForm):
     class Meta:
         model = DiningList
-        fields = [
-            "owners",
-            "dish",
-            "serve_time",
-            "min_diners",
-            "max_diners",
-            "sign_up_deadline",
-        ]
+        fields = ['owners', 'dish', 'serve_time', 'max_diners', 'sign_up_deadline']
         widgets = {
             "owners": ModelSelect2Multiple(
                 url="people_autocomplete", attrs={"data-minimum-input-length": "1"}
@@ -234,7 +228,6 @@ class DiningInfoForm(ConcurrenflictFormMixin, ServeTimeCheckMixin, forms.ModelFo
         self.set_bounds(
             "sign_up_deadline", "max", self.instance.date.strftime("%Y-%m-%dT23:59")
         )
-        self.set_bounds("min_diners", "max", settings.MAX_SLOT_DINER_MINIMUM)
         self.set_bounds("max_diners", "min", settings.MIN_SLOT_DINER_MAXIMUM)
 
 
@@ -433,58 +426,77 @@ class DiningEntryDeleteForm(forms.Form):
 
 
 class DiningListDeleteForm(forms.ModelForm):
-    """Allows deletion of a dining list with it's entries.
+    """Allows deletion of a dining list with its entries.
 
     This will refund all kitchen costs.
     """
+    reason = forms.CharField(
+        max_length=1000,
+        required=False,
+        help_text="You can optionally provide a reason."
+    )
 
     class Meta:
         model = DiningList
         fields = []
 
-    def __init__(self, deleted_by, instance, data=None, **kwargs):
-        # Bind automatically on creation
-        super().__init__(instance=instance, data={}, **kwargs)
-        self.deleted_by = deleted_by
-        # Create entry delete forms
-        self.entry_delete_forms = [
-            DiningEntryDeleteForm(entry, deleted_by, {})
-            for entry in instance.dining_entries.all()
-        ]
-
     def clean(self):
         cleaned_data = super().clean()
-
         if not self.instance.is_adjustable():
-            raise ValidationError(
-                "The dining list is locked, changes can no longer be made",
-                code="locked",
-            )
-
-        if not self.instance.is_owner(self.deleted_by):
-            raise ValidationError(
-                "Only owners of a dining list can delete a list", code="not_owner"
-            )
-
-        # Also validate all entry deletions
-        for entry_deletion in self.entry_delete_forms:
-            if not entry_deletion.is_valid():
-                raise ValidationError(entry_deletion.non_field_errors())
-
+            raise ValidationError("The dining list is locked, changes can no longer be made", code='locked')
         return cleaned_data
 
-    def execute(self):
-        """Deletes the dining list by first deleting the entries and after that deleting the dining list."""
-        # Check if validated
-        self.save(commit=False)
+    def execute(self, deleted_by):
+        """Deletes the dining list."""
+        if self.errors:
+            raise ValueError("Form didn't validate")
 
         with transaction.atomic():
-            # Delete all entries (this will refund kitchen cost)
-            for entry_deletion in self.entry_delete_forms:
-                entry_deletion.execute()
+            # Create audit log entry
+            DeletedList.objects.create(
+                deleted_by=deleted_by,
+                reason=self.cleaned_data['reason'],
+                json_list=serialize("json", DiningList.objects.filter(pk=self.instance.pk)),
+                json_diners=serialize("json", self.instance.dining_entries.all()),
+            )
+
+            # Delete entries
+            for entry in self.instance.dining_entries.all():
+                form = DiningEntryDeleteForm(entry, deleted_by, {})
+                if not form.is_valid():
+                    raise RuntimeError("Could not validate dining entry while deleting a dining list")
+                form.execute()
+
             # Delete dining list
             self.instance.delete()
-        # Todo: Inform other of removal logic here instead of in the view
+
+    def execute_and_notify(self, request, day_view_url):
+        """Deletes the dining list and notifies diners.
+
+        Args:
+            request: The request user is used as deletion user.
+            day_view_url: This URL is used in the email body.
+        """
+        deleted_by = request.user
+
+        # Construct mails
+        recipients = [x.user for x in self.instance.internal_dining_entries() if x.user != deleted_by]
+        messages = construct_templated_mail(
+            'mail/dining_list_deleted',
+            recipients,
+            {
+                'dining_list': self.instance,
+                'cancelled_by': deleted_by,
+                'day_view_url': day_view_url,
+                'reason': self.cleaned_data['reason'],
+            },
+            request=request
+        )
+
+        with transaction.atomic():
+            # Delete and inform the diners
+            self.execute(deleted_by)
+            mail.get_connection().send_messages(messages)
 
 
 class DiningCommentForm(forms.ModelForm):

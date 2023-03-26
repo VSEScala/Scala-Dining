@@ -1,25 +1,21 @@
 {% extends 'dining_lists/dining_slot.html' %}
 
 {% block details %}
+    <p><a href="{{ dining_list.get_absolute_url }}">← Back to dining list</a></p>
     <form method="post" id="infoForm">
         {% csrf_token %}
-        {# Display the info form #}
-        <h1>General info</h1>
+        <h2>General info</h2>
         {% include "snippets/bootstrap_form.html" with form=info_form horizontal=True %}
-
-        <h1>Cost and payment</h1>
+        <h2>Cost and payment</h2>
         {% include "snippets/bootstrap_form.html" with form=payment_form horizontal=True %}
-
-        {# The save and cancel buttons #}
-        <div class="row">
-            <div class="col">
-                <button type="submit" class="btn btn-block btn-primary">Save</button>
-            </div>
-            <div class="col">
-                <a href="{{ dining_list.get_absolute_url }}" class="btn btn-block btn-secondary">Cancel</a>
-            </div>
-        </div>
+        <button type="submit" class="btn btn-primary">Save</button>
     </form>
+    <p>
+
+    <a href="{% url "slot_delete" year=date.year month=date.month day=date.day identifier=dining_list.association.slug %}"
+       class="btn btn-danger mt-3">
+        <i class="fas fa-trash-alt"></i> Delete
+    </a>
 
     {# Check if current user is owner, else show warning message #}
     <script>

@@ -3,7 +3,7 @@ from decimal import Decimal
 
 from django.conf import settings
 from django.core.exceptions import ValidationError, MultipleObjectsReturned
-from django.core.validators import MinValueValidator, MaxValueValidator
+from django.core.validators import MinValueValidator
 from django.db import models
 from django.db.models import Sum
 from django.utils import timezone
@@ -25,7 +25,7 @@ class DiningListManager(models.Manager):
 class DiningList(models.Model):
     """A single dining list (slot) model.
 
-    The following fields may not be changed after creation: kitchen_cost, min_diners/max_diners!
+    The following fields may not be changed after creation: kitchen_cost!
     """
     date = models.DateField()
 
@@ -38,14 +38,14 @@ class DiningList(models.Model):
     sign_up_deadline = models.DateTimeField(help_text="The time before users need to sign up.")
     serve_time = models.TimeField(default=time(18, 00))
 
-    dish = models.CharField(default="", max_length=100, blank=True, help_text="The dish made")
+    dish = models.CharField(default="", max_length=100, blank=True)
     # The days adjustable is implemented to prevent adjustment in credits or aid due to a deletion of a user account.
     adjustable_duration = models.DurationField(
         default=settings.TRANSACTION_PENDING_DURATION,
-        help_text="The amount of time the dining list can be adjusted after its date")
+        help_text="How long the dining list can be adjusted after its date.")
     # Todo: implement limit in the views.
     limit_signups_to_association_only = models.BooleanField(
-        default=False, help_text="Whether only members of the given association can sign up")
+        default=False, help_text="Whether only members of the given association can sign up.")
 
     kitchen_cost = models.DecimalField(decimal_places=2, verbose_name="kitchen cost per person", max_digits=10,
                                        default=settings.KITCHEN_COST, validators=[MinValueValidator(Decimal('0.00'))])
@@ -58,8 +58,6 @@ class DiningList(models.Model):
 
     payment_link = models.CharField(blank=True, max_length=100, help_text="Link for payment, e.g. a Tikkie link.")
 
-    # min_diners can be set to a negative value. Is not really problematic though
-    min_diners = models.IntegerField(default=4, validators=[MaxValueValidator(settings.MAX_SLOT_DINER_MINIMUM)])
     max_diners = models.IntegerField(default=20, validators=[MinValueValidator(settings.MIN_SLOT_DINER_MAXIMUM)])
 
     diners = models.ManyToManyField(User, through='DiningEntry', through_fields=('dining_list', 'user'))
@@ -252,3 +250,15 @@ class PaymentReminderLock(models.Model):
     # We use primary_key=True to prevent an unnecessary auto id column.
     dining_list = models.OneToOneField(DiningList, on_delete=models.CASCADE, primary_key=True)  # Key
     sent = models.DateTimeField(null=True)  # Value
+
+
+class DeletedList(models.Model):
+    """For audit purposes, keep a log of deleted dining lists."""
+    deleted_by = models.ForeignKey(User, on_delete=models.PROTECT)
+    date = models.DateTimeField('deletion date', default=timezone.now)
+    reason = models.TextField()
+    json_list = models.TextField('JSON dining list')
+    json_diners = models.TextField('JSON dining entries')
+
+    def __str__(self):
+        return f'Deleted on {self.date.date()} by {self.deleted_by}'
