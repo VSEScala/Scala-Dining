@@ -2,6 +2,7 @@ from allauth.socialaccount.models import SocialApp
 from django.conf import settings
 from django.contrib.auth.models import AbstractUser, Group
 from django.contrib.auth.models import UserManager as DjangoUserManager, GroupManager
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils import timezone
 from django.utils.functional import cached_property
@@ -28,6 +29,25 @@ class User(AbstractUser):
     )
 
     objects = UserManager()
+
+    def clean(self):
+        # By default, Django uses case-sensitive usernames. This means that
+        # users 'asdf' and 'Asdf' are considered different users. The allauth
+        # library handles it differently and considers them the same users.
+        # This doesn't play well together.
+        #
+        # We fix it using a case-insensitive uniqueness check on the username,
+        # in the model validation below. In the future, we could consider
+        # normalizing usernames to lowercase, or removing the allauth library
+        # for something more lightweight (custom code).
+        qs = self.__class__.objects.filter(username__iexact=self.username)
+        # Exclude own entry
+        if self.pk:
+            qs = qs.exclude(pk=self.pk)
+        if qs.exists():
+            raise ValidationError({
+                'username': ValidationError('A user with that username already exists.', code='unique'),
+            })
 
     def __str__(self):
         return "{} {}".format(self.first_name, self.last_name).strip() or "@{}".format(self.username)
