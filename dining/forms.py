@@ -1,6 +1,6 @@
 from datetime import timedelta
 from decimal import Decimal, ROUND_UP
-from typing import List, Dict
+from typing import List, Dict, Literal
 
 from dal_select2.widgets import ModelSelect2, ModelSelect2Multiple
 from django import forms
@@ -21,9 +21,17 @@ from general.mail_control import construct_templated_mail
 from general.util import SelectWithDisabled
 from userdetails.models import Association, UserMembership, User
 
-__all__ = ['CreateSlotForm', 'DiningInfoForm', 'DiningPaymentForm', 'DiningEntryInternalForm',
-           'DiningEntryExternalForm', 'DiningEntryDeleteForm', 'DiningListDeleteForm',
-           'DiningCommentForm', 'SendReminderForm']
+__all__ = [
+    "CreateSlotForm",
+    "DiningInfoForm",
+    "DiningPaymentForm",
+    "DiningEntryInternalForm",
+    "DiningEntryExternalForm",
+    "DiningEntryDeleteForm",
+    "DiningListDeleteForm",
+    "DiningCommentForm",
+    "SendReminderForm",
+]
 
 
 def _clean_form(form):
@@ -39,56 +47,81 @@ class ServeTimeCheckMixin:
     """Mixin which gives errors on the serve_time if it is not within the kitchen opening hours."""
 
     def clean_serve_time(self):
-        serve_time = self.cleaned_data['serve_time']
+        serve_time = self.cleaned_data["serve_time"]
         if serve_time < settings.KITCHEN_USE_START_TIME:
-            raise ValidationError("Kitchen can't be used this early", code='kitchen_start_time')
+            raise ValidationError("Kitchen can't be used this early", code="kitchen_start_time")
         if serve_time > settings.KITCHEN_USE_END_TIME:
-            raise ValidationError("Kitchen can't be used this late", code='kitchen_close_time')
+            raise ValidationError("Kitchen can't be used this late", code="kitchen_close_time")
         return serve_time
+
+    def set_bounds(self, field: str, attr: Literal["max"] | Literal["min"], value: str):
+        """Sets frontend-side bounds to make the filling in of the forms slightly more user-friendly.
+
+        Args:
+            field (string): the name of the field you want to edit
+            attr: either 'min' or 'max'
+            value: the max or min value you want the field to have
+        """
+        if attr != "max" and attr != "min":
+            raise ValueError("attr not min or max")
+        f = self.fields[field]
+        f.widget.attrs[attr] = value
+        if attr == "max" and hasattr(f, "max_value"):
+            f.max_value = value
+        elif attr == "min" and hasattr(f, "min_value"):
+            f.min_value = value
 
 
 class CreateSlotForm(ServeTimeCheckMixin, forms.ModelForm):
     class Meta:
         model = DiningList
-        fields = ('dish', 'association', 'max_diners', 'serve_time')
+        fields = ("dish", "association", "max_diners", "serve_time")
 
     def __init__(self, creator: User, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         self.creator = creator
 
-        self.fields['serve_time'].widget.input_type = 'time'
+        self.fields["serve_time"].widget.input_type = "time"
 
         # Get associations that the user is a member of (not necessarily verified)
         associations = Association.objects.filter(usermembership__related_user=creator)
-        denied_memberships = UserMembership.objects.filter(related_user=creator, is_verified=False,
-                                                           verified_on__isnull=False)
+        denied_memberships = UserMembership.objects.filter(
+            related_user=creator, is_verified=False, verified_on__isnull=False
+        )
         associations = associations.exclude(usermembership__in=denied_memberships)
 
         # Filter out unavailable associations (those that have a dining list already on this day)
-        dining_lists = DiningList.objects.filter(date=self.instance.date, association=OuterRef('pk'))
+        dining_lists = DiningList.objects.filter(date=self.instance.date, association=OuterRef("pk"))
         available = associations.annotate(occupied=Exists(dining_lists)).filter(occupied=False)
         unavailable = associations.annotate(occupied=Exists(dining_lists)).filter(occupied=True)
 
         if unavailable.exists():
-            help_text = "Some of your associations are not available since they already have a dining list for this date."
+            help_text = (
+                "Some of your associations are not available since they already have a dining list for this date."
+            )
         else:
             help_text = ""
 
         widget = SelectWithDisabled(disabled_choices=[(a.pk, a.name) for a in unavailable])
 
-        self.fields['association'] = forms.ModelChoiceField(queryset=available, widget=widget, help_text=help_text)
+        self.fields["association"] = forms.ModelChoiceField(queryset=available, widget=widget, help_text=help_text)
 
         if len(available) == 1:
-            self.initial['association'] = available[0].pk
-            self.fields['association'].disabled = True
+            self.initial["association"] = available[0].pk
+            self.fields["association"].disabled = True
 
         if associations.count() == 0:
             # Ready an error message as the user is not a member of any of the associations and thus can not create a slot
             self.cleaned_data = {}
-            self.add_error(None,
-                           ValidationError(
-                               "You are not a member of any association and thus can not claim a dining list"))
+            self.add_error(
+                None,
+                ValidationError("You are not a member of any association and thus can not claim a dining list"),
+            )
+
+        self.set_bounds("max_diners", "min", settings.MIN_SLOT_DINER_MAXIMUM)
+        self.set_bounds("serve_time", "min", settings.KITCHEN_USE_START_TIME.strftime("%H:%M"))
+        self.set_bounds("serve_time", "max", settings.KITCHEN_USE_END_TIME.strftime("%H:%M"))
 
     def clean(self):
         # Note: uniqueness for date+association is implicitly enforced using the association form field
@@ -132,88 +165,78 @@ class CreateSlotForm(ServeTimeCheckMixin, forms.ModelForm):
                 # We use the form to make sure that the kitchen cost
                 # transaction is created.
                 entry_form = DiningEntryInternalForm(
-                    {'user': str(self.creator.pk)},
-                    instance=DiningEntry(created_by=self.creator, dining_list=instance)
+                    {"user": str(self.creator.pk)},
+                    instance=DiningEntry(created_by=self.creator, dining_list=instance),
                 )
                 if entry_form.is_valid():
                     entry_form.save()
                 else:
                     # This can only happen when the server is misconfigured.
-                    raise RuntimeError("Couldn't create dining entry while creating dining list", entry_form.errors)
+                    raise RuntimeError(
+                        "Couldn't create dining entry while creating dining list",
+                        entry_form.errors,
+                    )
         return instance
 
 
 class DiningInfoForm(ConcurrenflictFormMixin, ServeTimeCheckMixin, forms.ModelForm):
     class Meta:
         model = DiningList
-        fields = ['owners', 'dish', 'serve_time', 'max_diners', 'sign_up_deadline']
+        fields = ["owners", "dish", "serve_time", "max_diners", "sign_up_deadline"]
         widgets = {
-            'owners': ModelSelect2Multiple(url='people_autocomplete', attrs={'data-minimum-input-length': '1'}),
+            "owners": ModelSelect2Multiple(url="people_autocomplete", attrs={"data-minimum-input-length": "1"}),
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['serve_time'].widget.input_type = 'time'
-        self.fields['sign_up_deadline'].widget.input_type = 'datetime-local'
-        self.set_bounds('serve_time', 'min', settings.KITCHEN_USE_START_TIME.strftime("%H:%M"))
-        self.set_bounds('serve_time', 'max', settings.KITCHEN_USE_END_TIME.strftime("%H:%M"))
-        self.set_bounds('sign_up_deadline', 'max', self.instance.date.strftime("%Y-%m-%dT23:59"))
-        self.set_bounds('max_diners', 'min', settings.MIN_SLOT_DINER_MAXIMUM)
-
-    def set_bounds(self, field, attr, value):
-        """Sets frontend-side bounds to make the filling in of the forms slightly more user-friendly.
-
-        Args:
-            field (string): the name of the field you want to edit
-            attr: either 'min' or 'max'
-            value: the max or min value you want the field to have
-        """
-        if (attr != 'max' and attr != 'min'):
-            raise ValueError("attr not min or max")
-        f = self.fields[field]
-        f.widget.attrs[attr] = value
-        if attr == 'max' and hasattr(f, 'max_value'):
-            f.max_value = value
-        elif attr == 'min' and hasattr(f, 'min_value'):
-            f.min_value = value
+        self.fields["serve_time"].widget.input_type = "time"
+        self.fields["sign_up_deadline"].widget.input_type = "datetime-local"
+        self.set_bounds("serve_time", "min", settings.KITCHEN_USE_START_TIME.strftime("%H:%M"))
+        self.set_bounds("serve_time", "max", settings.KITCHEN_USE_END_TIME.strftime("%H:%M"))
+        self.set_bounds("sign_up_deadline", "max", self.instance.date.strftime("%Y-%m-%dT23:59"))
+        self.set_bounds("max_diners", "min", settings.MIN_SLOT_DINER_MAXIMUM)
 
 
 class DiningPaymentForm(ConcurrenflictFormMixin, forms.ModelForm):
-    dining_cost_total = forms.DecimalField(decimal_places=2, max_digits=5, required=False,
-                                           validators=[MinValueValidator(Decimal('0'))],
-                                           help_text='Only one of dinner cost total or dinner cost per person should '
-                                                     'be provided')
+    dining_cost_total = forms.DecimalField(
+        decimal_places=2,
+        max_digits=5,
+        required=False,
+        validators=[MinValueValidator(Decimal("0"))],
+        help_text="Only one of dinner cost total or dinner cost per person should be provided",
+    )
 
     class Meta:
         model = DiningList
-        fields = ['dining_cost_total', 'dining_cost', 'payment_link']
+        fields = ["dining_cost_total", "dining_cost", "payment_link"]
 
     def clean(self):
         """This cleaning calculates the person dining cost from the total dining cost."""
         cleaned_data = super().clean()
-        dinner_cost_total = cleaned_data.get('dining_cost_total')
-        dining_cost = cleaned_data.get('dining_cost')
+        dinner_cost_total = cleaned_data.get("dining_cost_total")
+        dining_cost = cleaned_data.get("dining_cost")
 
         # Sanity check: do not allow both dinner cost total and dinner cost per person
         if dinner_cost_total and dining_cost:
             msg = "Please only provide either dinner cost total or dinner cost per person"
-            self.add_error('dining_cost_total', ValidationError(msg, code='duplicate_cost'))
-            self.add_error('dining_cost', ValidationError(msg, code='duplicate_cost'))
+            self.add_error("dining_cost_total", ValidationError(msg, code="duplicate_cost"))
+            self.add_error("dining_cost", ValidationError(msg, code="duplicate_cost"))
         elif dinner_cost_total:
             # Total dinner cost provided: calculate dining cost per person and apply
             if self.instance.diners.count() > 0:
                 cost = dinner_cost_total / self.instance.diners.count()
             else:
                 msg = "Can't calculate dinner cost per person as there are no diners"
-                raise ValidationError(
-                    {'dining_cost_total': ValidationError(msg, code='costs_no_diners')})
+                raise ValidationError({"dining_cost_total": ValidationError(msg, code="costs_no_diners")})
 
             # Round up to remove missing cents
-            cost = Decimal(cost).quantize(Decimal('.01'), rounding=ROUND_UP)
-            cleaned_data.update({
-                'dining_cost_total': None,
-                'dining_cost': cost,
-            })
+            cost = Decimal(cost).quantize(Decimal(".01"), rounding=ROUND_UP)
+            cleaned_data.update(
+                {
+                    "dining_cost_total": None,
+                    "dining_cost": cost,
+                }
+            )
         return cleaned_data
 
 
@@ -222,15 +245,15 @@ class DiningEntryInternalForm(forms.ModelForm):
 
     class Meta:
         model = DiningEntry
-        fields = ('user',)
+        fields = ("user",)
         widgets = {
             # User needs to type at least 1 character, could change it to 2
-            'user': ModelSelect2(url='people_autocomplete', attrs={'data-minimum-input-length': '1'})
+            "user": ModelSelect2(url="people_autocomplete", attrs={"data-minimum-input-length": "1"})
         }
 
     def get_user(self):
         """Returns the user responsible for the kitchen cost (not necessarily creator)."""
-        user = self.cleaned_data.get('user')
+        user = self.cleaned_data.get("user")
         if not user:
             raise ValidationError("User not provided")
         return user
@@ -244,24 +267,24 @@ class DiningEntryInternalForm(forms.ModelForm):
 
         # Adjustable
         if not dining_list.is_adjustable():
-            raise ValidationError("Dining list can no longer be adjusted", code='closed')
+            raise ValidationError("Dining list can no longer be adjusted", code="closed")
 
         # Closed (exception for owner)
         if not dining_list.is_owner(creator) and not dining_list.is_open():
-            raise ValidationError("Dining list is closed", code='closed')
+            raise ValidationError("Dining list is closed", code="closed")
 
         # Full (exception for owner)
         if not dining_list.is_owner(creator) and not dining_list.has_room():
-            raise ValidationError("Dining list is full", code='full')
+            raise ValidationError("Dining list is full", code="full")
 
         if dining_list.limit_signups_to_association_only:
             # User should be verified association member, except when the entry creator is owner
             if not dining_list.is_owner(creator) and not user.is_verified_member_of(dining_list.association):
-                raise ValidationError("Dining list is limited to members only", code='members_only')
+                raise ValidationError("Dining list is limited to members only", code="members_only")
 
         # User balance check
         if not user.has_min_balance_exception() and user.account.get_balance() < settings.MINIMUM_BALANCE_FOR_DINING_SIGN_UP:
-            raise ValidationError("The balance of the user is too low to add", code='no_money')
+            raise ValidationError("The balance of the user is too low to add", code="no_money")
 
         return cleaned_data
 
@@ -272,13 +295,13 @@ class DiningEntryInternalForm(forms.ModelForm):
             with transaction.atomic():
                 amount = instance.dining_list.kitchen_cost
                 # Skip transaction if dining list is free
-                if amount != Decimal('0.00'):
+                if amount != Decimal("0.00"):
                     tx = Transaction.objects.create(
                         source=instance.user.account,
-                        target=Account.objects.get(special='kitchen_cost'),
+                        target=Account.objects.get(special="kitchen_cost"),
                         amount=amount,
                         description="Kitchen cost for {}".format(instance.dining_list),
-                        created_by=instance.created_by
+                        created_by=instance.created_by,
                     )
                     instance.transaction = tx
                 instance.save()
@@ -294,13 +317,13 @@ class DiningEntryExternalForm(DiningEntryInternalForm):
 
     class Meta:
         model = DiningEntry
-        fields = ('external_name',)
-        labels = {'external_name': 'Name'}
+        fields = ("external_name",)
+        labels = {"external_name": "Name"}
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # External name is not required on the model thus we set it as required here.
-        self.fields['external_name'].required = True
+        self.fields["external_name"].required = True
 
     def get_user(self):
         return self.instance.user
@@ -319,15 +342,21 @@ class DiningEntryDeleteForm(forms.Form):
         is_owner = dining_list.is_owner(self.deleter)
 
         if not dining_list.is_adjustable():
-            raise ValidationError("The dining list is locked, changes can no longer be made", code='locked')
+            raise ValidationError(
+                "The dining list is locked, changes can no longer be made",
+                code="locked",
+            )
 
         # Validate dining list is still open (except for claimant)
         if not is_owner and not dining_list.is_open():
-            raise ValidationError("The dining list is closed, ask the chef to remove this entry instead", code='closed')
+            raise ValidationError(
+                "The dining list is closed, ask the chef to remove this entry instead",
+                code="closed",
+            )
 
         # Check permission: either she's owner, or the entry is about herself, or she created the entry
         if not is_owner and self.entry.user != self.deleter and self.entry.created_by != self.deleter:
-            raise ValidationError('Can only delete own entries', code='not_owner')
+            raise ValidationError("Can only delete own entries", code="not_owner")
 
         return cleaned_data
 
@@ -346,11 +375,8 @@ class DiningListDeleteForm(forms.ModelForm):
 
     This will refund all kitchen costs.
     """
-    reason = forms.CharField(
-        max_length=1000,
-        required=False,
-        help_text="You can optionally provide a reason."
-    )
+
+    reason = forms.CharField(max_length=1000, required=False, help_text="You can optionally provide a reason.")
 
     class Meta:
         model = DiningList
@@ -359,7 +385,7 @@ class DiningListDeleteForm(forms.ModelForm):
     def clean(self):
         cleaned_data = super().clean()
         if not self.instance.is_adjustable():
-            raise ValidationError("The dining list is locked, changes can no longer be made", code='locked')
+            raise ValidationError("The dining list is locked, changes can no longer be made", code="locked")
         return cleaned_data
 
     def execute(self, deleted_by):
@@ -371,7 +397,7 @@ class DiningListDeleteForm(forms.ModelForm):
             # Create audit log entry
             DeletedList.objects.create(
                 deleted_by=deleted_by,
-                reason=self.cleaned_data['reason'],
+                reason=self.cleaned_data["reason"],
                 json_list=serialize("json", DiningList.objects.filter(pk=self.instance.pk)),
                 json_diners=serialize("json", self.instance.dining_entries.all()),
             )
@@ -398,15 +424,15 @@ class DiningListDeleteForm(forms.ModelForm):
         # Construct mails
         recipients = [x.user for x in self.instance.internal_dining_entries() if x.user != deleted_by]
         messages = construct_templated_mail(
-            'mail/dining_list_deleted',
+            "mail/dining_list_deleted",
             recipients,
             {
-                'dining_list': self.instance,
-                'cancelled_by': deleted_by,
-                'day_view_url': day_view_url,
-                'reason': self.cleaned_data['reason'],
+                "dining_list": self.instance,
+                "cancelled_by": deleted_by,
+                "day_view_url": day_view_url,
+                "reason": self.cleaned_data["reason"],
             },
-            request=request
+            request=request,
         )
 
         with transaction.atomic():
@@ -416,15 +442,14 @@ class DiningListDeleteForm(forms.ModelForm):
 
 
 class DiningCommentForm(forms.ModelForm):
-    message = forms.CharField(max_length=10000, label="Comment", widget=forms.Textarea(attrs={'rows': '3'}))
+    message = forms.CharField(max_length=10000, label="Comment", widget=forms.Textarea(attrs={"rows": "3"}))
 
     class Meta:
         model = DiningComment
-        fields = ['message']
+        fields = ["message"]
 
 
 class SendReminderForm(forms.Form):
-
     def __init__(self, *args, dining_list: DiningList = None, **kwargs):
         if dining_list is None:
             raise ValueError("dining_list is required")
@@ -468,26 +493,34 @@ class SendReminderForm(forms.Form):
         is_reminder = timezone.now().date() > self.dining_list.date
 
         # Mail for internal diners
-        messages.extend(construct_templated_mail(
-            'mail/dining_payment_reminder',
-            self.get_user_recipients(),
-            context={'dining_list': self.dining_list, 'reminder': request.user, 'is_reminder': is_reminder},
-            request=request
-        ))
+        messages.extend(
+            construct_templated_mail(
+                "mail/dining_payment_reminder",
+                self.get_user_recipients(),
+                context={
+                    "dining_list": self.dining_list,
+                    "reminder": request.user,
+                    "is_reminder": is_reminder,
+                },
+                request=request,
+            )
+        )
 
         # Mail for external diners
         for user, guests in self.get_guest_recipients().items():
-            messages.extend(construct_templated_mail(
-                'mail/dining_payment_reminder_external',
-                user,
-                context={
-                    'dining_list': self.dining_list,
-                    'reminder': request.user,
-                    'is_reminder': is_reminder,
-                    'guests': guests,
-                },
-                request=request
-            ))
+            messages.extend(
+                construct_templated_mail(
+                    "mail/dining_payment_reminder_external",
+                    user,
+                    context={
+                        "dining_list": self.dining_list,
+                        "reminder": request.user,
+                        "is_reminder": is_reminder,
+                        "guests": guests,
+                    },
+                    request=request,
+                )
+            )
         return messages
 
     def send_reminder(self, request, nowait=False) -> bool:
