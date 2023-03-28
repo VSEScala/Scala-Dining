@@ -80,9 +80,6 @@ class DiningList(models.Model):
     is_adjustable.boolean = True
 
     def clean(self):
-        # Validate dining list can be changed.
-        if self.pk and not self.is_adjustable():
-            raise ValidationError("The dining list is not adjustable", code='closed')
         # Set sign up deadline to a default if it hasn't been set already.
         if not self.sign_up_deadline:
             self.sign_up_deadline = datetime.combine(
@@ -118,11 +115,14 @@ class DiningList(models.Model):
 
     def clean_fields(self, exclude=None):
         super().clean_fields(exclude=exclude)
-        # Valid sign up deadline
+        # Validate sign up deadline.
+        #
+        # We can't put this in clean(), because then forms which put this field in the exclude list break.
         if not exclude or 'sign_up_deadline' not in exclude:
             if self.sign_up_deadline and self.sign_up_deadline.date() > self.date:
                 raise ValidationError(
-                    {'sign_up_deadline': ["Sign up deadline can't be later than the day dinner is served"]})
+                    {'sign_up_deadline': ["Sign up deadline can't be later than the day dinner is served."]}
+                )
 
 
 class DiningEntryManager(models.Manager):

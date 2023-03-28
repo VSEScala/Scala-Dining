@@ -529,16 +529,6 @@ class TestDiningInfoForm(FormValidityMixin, TestCase):
         self.assertEqual(updated_dining_list.max_diners, 14)
         self.assertNotEqual(updated_dining_list.sign_up_deadline.time(), self.dining_list.sign_up_deadline)
 
-    def test_form_editing_time_limit(self):
-        """Asserts that the form can not be used after the timelimit."""
-        # Set the dining list to an old date and assert that we have a 'closed' error.
-        self.dining_list.date = date(2000, 1, 1)
-        form = DiningInfoForm({'dish': 'Test'}, instance=self.dining_list)
-        self.assertTrue(form.has_error(NON_FIELD_ERRORS, code='closed'))
-
-        # Note: this tests the DiningList.clean() method and thus should be there instead of
-        # on DiningInfoForm.
-
     def test_kitchen_open_time_validity(self):
         """Asserts that the meal can't be served before the kitchen opening time."""
         dt = datetime.combine(date(2000, 1, 1), settings.KITCHEN_USE_START_TIME) - timedelta(minutes=1)
