@@ -210,6 +210,10 @@ class DiningPaymentForm(ConcurrenflictFormMixin, forms.ModelForm):
         model = DiningList
         fields = ["dining_cost_total", "dining_cost", "payment_link"]
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["payment_link"].widget.input_type = "url"
+
     def clean(self):
         """This cleaning calculates the person dining cost from the total dining cost."""
         cleaned_data = super().clean()

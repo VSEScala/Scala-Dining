@@ -6,6 +6,9 @@ __pycache__/
 /.idea/
 *.iml
 
+# VSCode
+.vscode/*
+
 # Local data
 *.sqlite3
 /media/
