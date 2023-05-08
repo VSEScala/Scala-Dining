@@ -56,7 +56,8 @@ class DiningList(models.Model):
 
     auto_pay = models.BooleanField(default=False)
 
-    payment_link = models.CharField(blank=True, max_length=100, help_text="Link for payment, e.g. a Tikkie link.")
+    # Why max_length=2000? -> https://stackoverflow.com/q/417142/2373688
+    payment_link = models.URLField(blank=True, max_length=2000, help_text="Link for payment, e.g. a Tikkie link.")
 
     max_diners = models.IntegerField(default=20, validators=[MinValueValidator(settings.MIN_SLOT_DINER_MAXIMUM)])
 

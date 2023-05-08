@@ -41,11 +41,15 @@ def forward(apps, schema_editor):
     # We create a dedicated user for the reversal transactions, so that we can
     # easily find them if something went wrong.
     User = apps.get_model("userdetails", "User")
-    u = User.objects.create(
-        username="transaction_cancel_migration_user",
-        email="invalid2@localhost",
-        first_name="Transaction Cancel Migration User"
-    )
+    try:
+        u = User.objects.get(email="invalid2@localhost")
+    except User.DoesNotExist:
+        u = User.objects.create(
+            username="transaction_cancel_migration_user",
+            email="invalid2@localhost",
+            first_name="Transaction Cancel Migration User"
+        )
+
     for tx in Transaction.objects.exclude(cancelled=None):
         # Manually create reversal transaction (we cannot use the reversal()
         # method).
