@@ -4,3 +4,4 @@ skip-string-normalization = true
 
 [tool.isort]
 profile = "pycharm"
+line_length = 127
