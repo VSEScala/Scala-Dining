@@ -3,3 +3,6 @@ flake8
 flake8-docstrings
 pep8-naming
 coverage
+autopep8
+isort
+flake8-import-order
