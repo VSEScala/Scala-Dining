@@ -51,3 +51,4 @@ jobs:
     - name: Lint with flake8
       run: flake8
     - uses: psf/black@stable
+    - run: isort --check --diff .

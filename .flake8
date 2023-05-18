@@ -6,6 +6,8 @@ ignore =
     D413
     # Makes it possible to split long (boolean) equations on multiple lines
     W503
+    #Imports
+    I
 extend-select =
     W504
 exclude =
@@ -18,4 +20,3 @@ max-complexity = 10
 max-line-length = 127
 
 docstring-convention = google
-import-order-style = pycharm
