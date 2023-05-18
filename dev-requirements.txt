@@ -15,8 +15,6 @@ flake8==6.0.0
     #   pep8-naming
 flake8-docstrings==1.6.0
     # via -r dev-requirements.in
-flake8-import-order==0.18.2
-    # via -r dev-requirements.in
 isort==5.12.0
     # via -r dev-requirements.in
 mccabe==0.7.0
@@ -27,7 +25,6 @@ pycodestyle==2.10.0
     # via
     #   autopep8
     #   flake8
-    #   flake8-import-order
 pydocstyle==6.1.1
     # via flake8-docstrings
 pyflakes==3.0.1
@@ -36,6 +33,3 @@ snowballstemmer==2.2.0
     # via pydocstyle
 tomli==2.0.1
     # via autopep8
-
-# The following packages are considered to be unsafe in a requirements file:
-# setuptools
