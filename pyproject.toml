@@ -1,7 +1,8 @@
 [tool.black]
-line-length = 127
-skip-string-normalization = true
+line-length = 88
+extend-exclude = ".*/migrations/.*.py"
 
 [tool.isort]
-profile = "pycharm"
-line_length = 127
+profile = "black"
+line_length = 88
+extend_skip_glob = ["*/migrations/*.py"]

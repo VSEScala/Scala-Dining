@@ -6,6 +6,10 @@
 #
 autopep8==2.0.2
     # via -r dev-requirements.in
+black==23.3.0
+    # via -r dev-requirements.in
+click==8.1.3
+    # via black
 coverage==7.0.0
     # via -r dev-requirements.in
 flake8==6.0.0
@@ -21,8 +25,18 @@ isort==5.12.0
     # via -r dev-requirements.in
 mccabe==0.7.0
     # via flake8
+mypy-extensions==1.0.0
+    # via black
+packaging==22.0
+    # via
+    #   -c requirements.txt
+    #   black
+pathspec==0.11.1
+    # via black
 pep8-naming==0.13.3
     # via -r dev-requirements.in
+platformdirs==3.5.1
+    # via black
 pycodestyle==2.10.0
     # via
     #   autopep8
@@ -35,7 +49,9 @@ pyflakes==3.0.1
 snowballstemmer==2.2.0
     # via pydocstyle
 tomli==2.0.1
-    # via autopep8
+    # via
+    #   autopep8
+    #   black
 
 # The following packages are considered to be unsafe in a requirements file:
 # setuptools
