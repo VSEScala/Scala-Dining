@@ -4,46 +4,46 @@ from . import views
 from .views import DayView, index
 
 urlpatterns = [
-    path('', index, name='index'),
-    path('csv/', views.DailyDinersCSVView.as_view(), name="diners_csv"),
+    path("", index, name="index"),
+    path("csv/", views.DailyDinersCSVView.as_view(), name="diners_csv"),
     path(
-        '<int:year>/<int:month>/<int:day>/',
+        "<int:year>/<int:month>/<int:day>/",
         include(
             [
-                path('', DayView.as_view(), name='day_view'),
-                path('add/', views.NewSlotView.as_view(), name='new_slot'),
+                path("", DayView.as_view(), name="day_view"),
+                path("add/", views.NewSlotView.as_view(), name="new_slot"),
                 path(
-                    '<slug:identifier>/',
+                    "<slug:identifier>/",
                     include(
                         [
-                            path('', views.SlotInfoView.as_view(), name='slot_details'),
+                            path("", views.SlotInfoView.as_view(), name="slot_details"),
                             path(
-                                'list/', views.SlotListView.as_view(), name='slot_list'
+                                "list/", views.SlotListView.as_view(), name="slot_list"
                             ),
                             path(
-                                'allergy/',
+                                "allergy/",
                                 views.SlotAllergyView.as_view(),
-                                name='slot_allergy',
+                                name="slot_allergy",
                             ),
                             path(
-                                'entry/add/',
+                                "entry/add/",
                                 views.EntryAddView.as_view(),
-                                name='entry_add',
+                                name="entry_add",
                             ),
                             path(
-                                'change/',
+                                "change/",
                                 views.SlotInfoChangeView.as_view(),
-                                name='slot_change',
+                                name="slot_change",
                             ),
                             path(
-                                'delete/',
+                                "delete/",
                                 views.SlotDeleteView.as_view(),
-                                name='slot_delete',
+                                name="slot_delete",
                             ),
                             path(
-                                'inform_payment/',
+                                "inform_payment/",
                                 views.SlotPaymentView.as_view(),
-                                name='slot_inform_payment',
+                                name="slot_inform_payment",
                             ),
                         ]
                     ),
@@ -52,6 +52,6 @@ urlpatterns = [
         ),
     ),
     path(
-        'entries/<int:pk>/delete/', views.EntryDeleteView.as_view(), name='entry_delete'
+        "entries/<int:pk>/delete/", views.EntryDeleteView.as_view(), name="entry_delete"
     ),
 ]

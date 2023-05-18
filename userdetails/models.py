@@ -47,8 +47,8 @@ class User(AbstractUser):
         if qs.exists():
             raise ValidationError(
                 {
-                    'username': ValidationError(
-                        'A user with that username already exists.', code='unique'
+                    "username": ValidationError(
+                        "A user with that username already exists.", code="unique"
                     ),
                 }
             )

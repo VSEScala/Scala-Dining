@@ -11,14 +11,14 @@ from .provider import QuadriviumProvider
 class QuadriviumOAuth2Adapter(OAuth2Adapter):
     provider_id = QuadriviumProvider.id
 
-    access_token_url = 'https://keycloak2.esmgquadrivium.nl/auth/realms/q/protocol/openid-connect/token'
+    access_token_url = "https://keycloak2.esmgquadrivium.nl/auth/realms/q/protocol/openid-connect/token"
     authorize_url = (
-        'https://keycloak2.esmgquadrivium.nl/auth/realms/q/protocol/openid-connect/auth'
+        "https://keycloak2.esmgquadrivium.nl/auth/realms/q/protocol/openid-connect/auth"
     )
-    profile_url = 'https://keycloak2.esmgquadrivium.nl/auth/realms/q/protocol/openid-connect/userinfo'
+    profile_url = "https://keycloak2.esmgquadrivium.nl/auth/realms/q/protocol/openid-connect/userinfo"
 
     def complete_login(self, request, app, token, **kwargs):
-        auth = {'Authorization': 'Bearer ' + token.token}
+        auth = {"Authorization": "Bearer " + token.token}
         resp = requests.get(self.profile_url, headers=auth)
         resp.raise_for_status()
         extra_data = resp.json()

@@ -22,7 +22,7 @@ def patch_time(dt=None):
 
     def wrapper_func(func):
         def inner(*args, **kwargs):
-            with patch('django.utils.timezone.now') as mock:
+            with patch("django.utils.timezone.now") as mock:
                 mock.side_effect = mock_now(dt=dt)
                 func(*args, **kwargs)
 
@@ -77,7 +77,7 @@ class TestPatchMixin:
         # Copy the dict so in the case of an error we can reconstruct the given kwargs
         call_kwargs = kwargs.copy()
         arg_dict = {}
-        for arg_key in filter(lambda kwarg: kwarg.startswith('arg_'), kwargs.keys()):
+        for arg_key in filter(lambda kwarg: kwarg.startswith("arg_"), kwargs.keys()):
             arg_dict[int(arg_key[4:]) - 1] = call_kwargs.pop(arg_key)
 
         # Construct a list of all valid calls
@@ -94,7 +94,7 @@ class TestPatchMixin:
                     valid = False
                     break
             if valid:
-                valid_calls.append({'args': kall[0], **kall[1]})
+                valid_calls.append({"args": kall[0], **kall[1]})
 
         if not valid_calls:
             raise AssertionError(

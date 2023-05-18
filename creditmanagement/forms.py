@@ -13,7 +13,7 @@ from userdetails.models import User, Association
 USER_FORM_FIELD = forms.ModelChoiceField(
     User.objects.filter(is_active=True),
     required=False,
-    widget=ModelSelect2(url='people_autocomplete'),
+    widget=ModelSelect2(url="people_autocomplete"),
     label="User",
 )
 ASSOCIATION_FORM_FIELD = forms.ModelChoiceField(
@@ -58,14 +58,14 @@ class TransactionForm(forms.ModelForm):
     class Meta:
         model = Transaction
         fields = [
-            'origin',
-            'amount',
-            'target_user',
-            'target_association',
-            'description',
+            "origin",
+            "amount",
+            "target_user",
+            "target_association",
+            "description",
         ]
         help_texts = {
-            'description': "E.g. deposit or withdrawal via board member.",
+            "description": "E.g. deposit or withdrawal via board member.",
         }
 
     def __init__(self, source: Account, user: User, *args, **kwargs):
@@ -78,8 +78,8 @@ class TransactionForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.instance.source = source
         self.instance.created_by = user
-        self.fields['origin'].initial = str(source)
-        self.fields['target_association'].help_text = (
+        self.fields["origin"].initial = str(source)
+        self.fields["target_association"].help_text = (
             "Provide a user or an association who will receive the money. "
             "You can't provide both a user and an association."
         )
@@ -88,7 +88,7 @@ class TransactionForm(forms.ModelForm):
         cleaned_data = super().clean()
         # Check that there's exactly 1 one user or association set
         target_el, idx = one_of(
-            cleaned_data.get('target_user'), cleaned_data.get('target_association')
+            cleaned_data.get("target_user"), cleaned_data.get("target_association")
         )
         if not target_el:
             raise ValidationError("Provide exactly one of user or association.")
@@ -104,7 +104,7 @@ class TransactionForm(forms.ModelForm):
         # We block transactions made by this form that make a user account balance negative
         # (Note that there's a race condition here, but it is not an issue in practice.)
         source = self.instance.source  # type: Account
-        if source.user and source.get_balance() < cleaned_data.get('amount'):
+        if source.user and source.get_balance() < cleaned_data.get("amount"):
             raise ValidationError("Your balance is insufficient.")
 
         return cleaned_data
@@ -127,14 +127,14 @@ class SiteWideTransactionForm(forms.ModelForm):
     class Meta:
         model = Transaction
         fields = [
-            'source_user',
-            'source_association',
-            'source_special',
-            'target_user',
-            'target_association',
-            'target_special',
-            'amount',
-            'description',
+            "source_user",
+            "source_association",
+            "source_special",
+            "target_user",
+            "target_association",
+            "target_special",
+            "amount",
+            "description",
         ]
 
     def __init__(self, user: User, *args, **kwargs):
@@ -151,17 +151,17 @@ class SiteWideTransactionForm(forms.ModelForm):
         cleaned_data = super().clean()
         # Get source
         source_el, source_idx = one_of(
-            cleaned_data.get('source_user'),
-            cleaned_data.get('source_association'),
-            cleaned_data.get('source_special'),
+            cleaned_data.get("source_user"),
+            cleaned_data.get("source_association"),
+            cleaned_data.get("source_special"),
         )
         if not source_el:
             raise ValidationError("Provide exactly 1 transaction source.")
         # Target
         target_el, target_idx = one_of(
-            cleaned_data.get('target_user'),
-            cleaned_data.get('target_association'),
-            cleaned_data.get('target_special'),
+            cleaned_data.get("target_user"),
+            cleaned_data.get("target_association"),
+            cleaned_data.get("target_special"),
         )
         if not target_el:
             raise ValidationError("Provide exactly 1 transaction target.")
@@ -190,9 +190,9 @@ class SiteWideTransactionForm(forms.ModelForm):
                 source = self.instance.source
                 if source.user:
                     send_templated_mail(
-                        'mail/transaction_created',
+                        "mail/transaction_created",
                         source.user,
-                        {'transaction': instance},
+                        {"transaction": instance},
                         request,
                     )
 
@@ -237,7 +237,7 @@ class ClearOpenExpensesForm(forms.Form):
         """Saves the transactions to the database."""
         if not self.is_valid():
             raise RuntimeError
-        desc = self.cleaned_data.get('description')
+        desc = self.cleaned_data.get("description")
         with transaction.atomic():
             for tx in self.transactions:
                 tx.description = desc
@@ -255,9 +255,9 @@ class AccountPickerForm(forms.Form):
     def clean(self):
         cleaned_data = super().clean()
         fields = (
-            bool(cleaned_data['user']),
-            bool(cleaned_data['association']),
-            bool(cleaned_data['special']),
+            bool(cleaned_data["user"]),
+            bool(cleaned_data["association"]),
+            bool(cleaned_data["special"]),
         )
         if sum(fields) != 1:
             raise ValidationError("Select 1 of the fields.")
@@ -265,13 +265,13 @@ class AccountPickerForm(forms.Form):
 
     def get_account(self) -> Account:
         """Returns the account that was picked."""
-        user = self.cleaned_data['user']
+        user = self.cleaned_data["user"]
         if user:
             return user.account
-        association = self.cleaned_data['association']
+        association = self.cleaned_data["association"]
         if association:
             return association.account
-        special = self.cleaned_data['special']
+        special = self.cleaned_data["special"]
         if special:
             return special
         raise RuntimeError

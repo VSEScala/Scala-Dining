@@ -8,20 +8,20 @@ from userdetails.models import User, Association, UserMembership
 
 class CreateMembershipTestCase(TestCase):
     def setUp(self):
-        self.user = User.objects.create_user('ankie', 'ankie@cats.cat')
+        self.user = User.objects.create_user("ankie", "ankie@cats.cat")
         self.social_app = SocialApp.objects.create(
-            provider='quadrivium', name='ESMG Quadrivium'
+            provider="quadrivium", name="ESMG Quadrivium"
         )
         self.social_app.sites.add(
             Site.objects.first()
         )  # Allauth needs a link to a Site
         self.social_account = SocialAccount.objects.create(
-            user=self.user, provider='quadrivium'
+            user=self.user, provider="quadrivium"
         )
         self.association = Association.objects.create(
-            name='Q', slug='q', social_app=self.social_app
+            name="Q", slug="q", social_app=self.social_app
         )
-        self.association_not_linked = Association.objects.create(name='R', slug='r')
+        self.association_not_linked = Association.objects.create(name="R", slug="r")
 
     def test_create_membership(self):
         _create_membership(self.social_account, None)

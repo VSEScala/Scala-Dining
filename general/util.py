@@ -36,7 +36,7 @@ class SelectWithDisabled(django.forms.Select):
                 name, option_value, option_label, False, index, attrs=attrs
             )
             # Modify option so that it is disabled
-            option['attrs']['disabled'] = 'disabled'
+            option["attrs"]["disabled"] = "disabled"
             # Add option to group
             groups.append((None, [option], index))
             index += 1

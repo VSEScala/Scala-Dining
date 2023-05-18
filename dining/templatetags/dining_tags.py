@@ -16,7 +16,7 @@ register = template.Library()
 def can_join(dining_list, user):
     # Try creating an entry
     entry = DiningEntry(dining_list=dining_list, created_by=user)
-    form = DiningEntryInternalForm({'user': str(user.pk)}, instance=entry)
+    form = DiningEntryInternalForm({"user": str(user.pk)}, instance=entry)
     return form.is_valid()
 
 
@@ -24,7 +24,7 @@ def can_join(dining_list, user):
 def cant_join_reason(dining_list, user):
     """Returns the reason why someone can't join (raises exception when they can join)."""
     entry = DiningEntry(dining_list=dining_list, created_by=user)
-    form = DiningEntryInternalForm({'user': str(user.pk)}, instance=entry)
+    form = DiningEntryInternalForm({"user": str(user.pk)}, instance=entry)
     return form.non_field_errors()[0]
 
 
@@ -149,8 +149,8 @@ def short_owners_string(dining_list: DiningList) -> str:
     if len(owners) > 1:
         first_names = [o.first_name for o in owners]
         # Join by comma and 'and'
-        return '{} and {}'.format(', '.join(first_names[:-1]), first_names[-1])
+        return "{} and {}".format(", ".join(first_names[:-1]), first_names[-1])
     elif len(owners) == 1:
         return owners[0].get_full_name()
     else:
-        return ''
+        return ""

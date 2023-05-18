@@ -29,14 +29,14 @@ class AssociationBoardMixin:
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['association'] = self.association
-        context['notify_overview'] = self.association.has_new_member_requests()
+        context["association"] = self.association
+        context["notify_overview"] = self.association.has_new_member_requests()
         return context
 
     def dispatch(self, request, *args, **kwargs):
         """Gets association and checks if user is board member."""
         self.association = get_object_or_404(
-            Association, slug=kwargs['association_name']
+            Association, slug=kwargs["association_name"]
         )
         if not request.user.groups.filter(id=self.association.id):
             raise PermissionDenied
@@ -59,7 +59,7 @@ class AssociationTransactionListView(
 
     def get_queryset(self):
         return Transaction.objects.filter_account(self.association.account).order_by(
-            '-moment'
+            "-moment"
         )
 
 
@@ -68,15 +68,15 @@ class AssociationTransactionAddView(
 ):
     """View where an association can transfer money to someone else."""
 
-    template_name = 'accounts/association_credits_transaction.html'
+    template_name = "accounts/association_credits_transaction.html"
 
     def get_source(self) -> Account:
         return self.association.account
 
     def get_success_url(self):
         return reverse(
-            'association_credits',
-            kwargs={'association_name': self.kwargs.get('association_name')},
+            "association_credits",
+            kwargs={"association_name": self.kwargs.get("association_name")},
         )
 
 
@@ -91,8 +91,8 @@ class AutoCreateNegativeCreditsView(
         if not self.association.has_min_exception:
             raise PermissionDenied
         kwargs = super().get_form_kwargs()
-        kwargs['association'] = self.association
-        kwargs['user'] = self.request.user
+        kwargs["association"] = self.association
+        kwargs["user"] = self.request.user
         return kwargs
 
     def form_valid(self, form):
@@ -104,14 +104,14 @@ class AutoCreateNegativeCreditsView(
 
     def get_success_url(self):
         return reverse(
-            'association_credits', kwargs={'association_name': self.association.slug}
+            "association_credits", kwargs={"association_name": self.association.slug}
         )
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         # Sum all transaction amounts
-        context['transactions_sum'] = sum(
-            tx.amount for tx in context['form'].transactions
+        context["transactions_sum"] = sum(
+            tx.amount for tx in context["form"].transactions
         )
         return context
 
@@ -120,12 +120,12 @@ class AssociationTransactionsCSVView(LoginRequiredMixin, AssociationBoardMixin, 
     """Returns a CSV file with all transactions."""
 
     def get(self, request, *args, **kwargs):
-        response = HttpResponse(content_type='text/csv')
+        response = HttpResponse(content_type="text/csv")
         response[
-            'Content-Disposition'
+            "Content-Disposition"
         ] = 'attachment; filename="association_transactions.csv"'
         qs = Transaction.objects.filter_account(self.association.account).order_by(
-            '-moment'
+            "-moment"
         )
         write_transactions_csv(response, qs, self.association.account)
         return response
@@ -148,7 +148,7 @@ class AssociationOverview(LoginRequiredMixin, AssociationBoardMixin, TemplateVie
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['pending_memberships'] = UserMembership.objects.filter(
+        context["pending_memberships"] = UserMembership.objects.filter(
             association=self.association, verified_on__isnull=True
         )
         return context
@@ -160,7 +160,7 @@ class MembersEditView(LoginRequiredMixin, AssociationBoardMixin, ListView):
 
     def get_queryset(self):
         return UserMembership.objects.filter(Q(association=self.association)).order_by(
-            'is_verified', 'verified_on', 'created_on'
+            "is_verified", "verified_on", "created_on"
         )
 
     def _alter_state(self, verified, id):
@@ -190,7 +190,7 @@ class MembersEditView(LoginRequiredMixin, AssociationBoardMixin, ListView):
                 self._alter_state(verified, id)
 
         # If next is provided, put possible error messages on the messages system and redirect
-        redirect_to = request.GET.get('next', None)
+        redirect_to = request.GET.get("next", None)
         if url_has_allowed_host_and_scheme(redirect_to, request.get_host()):
             return HttpResponseRedirect(redirect_to)
 
@@ -202,7 +202,7 @@ class AssociationSettingsView(AssociationBoardMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super(AssociationSettingsView, self).get_context_data(**kwargs)
-        context['form'] = AssociationSettingsForm(instance=self.association)
+        context["form"] = AssociationSettingsForm(instance=self.association)
 
         return context
 
@@ -218,7 +218,7 @@ class AssociationSettingsView(AssociationBoardMixin, TemplateView):
             return HttpResponseRedirect(request.path_info)
 
         context = self.get_context_data()
-        context['form'] = form
+        context["form"] = form
         return render(request, self.template_name, context)
 
 
@@ -253,19 +253,19 @@ class SiteDiningView(
                 cooked_for_own = cooked_for.filter(user__in=members)
 
                 association_stats[association.id] = {
-                    'association': association,
-                    'lists_claimed': dining_lists.filter(
+                    "association": association,
+                    "lists_claimed": dining_lists.filter(
                         association=association
                     ).count(),
-                    'cooked_for': cooked_for.count(),
-                    'cooked_for_own': cooked_for_own.count(),
-                    'weighted_eaters': 0,
+                    "cooked_for": cooked_for.count(),
+                    "cooked_for_own": cooked_for_own.count(),
+                    "weighted_eaters": 0,
                 }
             # Get general data for all members. Note: this is done here as the length of members is significantly longer
             # than the number of associations so this should be quicker
             users = User.objects.filter(
                 diningentry__dining_list__in=dining_lists
-            ).annotate(dining_entry_count=Count('diningentry'))
+            ).annotate(dining_entry_count=Count("diningentry"))
 
             for user in users:
                 memberships = UserMembership.objects.filter(
@@ -276,9 +276,9 @@ class SiteDiningView(
 
                     for membership in memberships:
                         association_stats[membership.association_id][
-                            'weighted_eaters'
+                            "weighted_eaters"
                         ] += user_weight
-            context['stats'] = association_stats
+            context["stats"] = association_stats
         return context
 
 
@@ -293,8 +293,8 @@ class SiteCreditView(
         context = super().get_context_data(**kwargs)
 
         # Get the balance for each association
-        context['associations'] = Association.objects.all()
-        context['special_accounts'] = Account.objects.filter(special__isnull=False)
+        context["associations"] = Association.objects.all()
+        context["special_accounts"] = Account.objects.filter(special__isnull=False)
         return context
 
 
@@ -306,18 +306,18 @@ class SiteTransactionView(
     This is only meant to be used for the highest boss.
     """
 
-    template_name = 'accounts/site_credit_transaction.html'
+    template_name = "accounts/site_credit_transaction.html"
     form_class = SiteWideTransactionForm
 
     def get_success_url(self):
         return reverse(
-            'association_site_credit_stats',
-            kwargs={'association_name': self.kwargs['association_name']},
+            "association_site_credit_stats",
+            kwargs={"association_name": self.kwargs["association_name"]},
         )
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
-        kwargs['user'] = self.request.user
+        kwargs["user"] = self.request.user
         return kwargs
 
     def form_valid(self, form):
@@ -337,20 +337,20 @@ class SiteCreditDetailView(
     Only allows displaying details for bookkeeping accounts.
     """
 
-    template_name = 'accounts/site_credit_detail.html'
+    template_name = "accounts/site_credit_detail.html"
     model = Account
-    slug_field = 'special'  # Finds the object from the 'slug' URL parameter
+    slug_field = "special"  # Finds the object from the 'slug' URL parameter
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        account = context['object']
+        account = context["object"]
 
         # Paginate transactions
-        transaction_qs = account.get_transactions().order_by('-moment')
+        transaction_qs = account.get_transactions().order_by("-moment")
         paginator = Paginator(transaction_qs, 100)
-        page_number = self.request.GET.get('page')
+        page_number = self.request.GET.get("page")
         page_obj = paginator.get_page(page_number)
-        context['page_obj'] = page_obj
+        context["page_obj"] = page_obj
 
         # Handle income/outcome flow
         # We only handle and show the form if we're on page 1
@@ -358,17 +358,17 @@ class SiteCreditDetailView(
             qs = Transaction.objects.filter(
                 moment__gte=self.date_start, moment__lte=self.date_end
             )
-            influx = qs.filter(target=account).aggregate(sum=Sum('amount'))[
-                'sum'
-            ] or Decimal('0.00')
-            outflux = qs.filter(source=account).aggregate(sum=Sum('amount'))[
-                'sum'
-            ] or Decimal('0.00')
+            influx = qs.filter(target=account).aggregate(sum=Sum("amount"))[
+                "sum"
+            ] or Decimal("0.00")
+            outflux = qs.filter(source=account).aggregate(sum=Sum("amount"))[
+                "sum"
+            ] or Decimal("0.00")
 
-            context['dining_balance'] = {
-                'influx': influx,
-                'outflux': outflux,
-                'nettoflux': influx - outflux,
+            context["dining_balance"] = {
+                "influx": influx,
+                "outflux": outflux,
+                "nettoflux": influx - outflux,
             }
 
         return context

@@ -3,7 +3,7 @@ from datetime import time, timedelta
 
 # Maximum number of slots on each date
 MAX_SLOT_NUMBER = 3
-KITCHEN_COST = Decimal('0.50')
+KITCHEN_COST = Decimal("0.50")
 
 MIN_SLOT_DINER_MAXIMUM = 12
 
@@ -17,8 +17,8 @@ KITCHEN_USE_START_TIME = time(16, 30)
 KITCHEN_USE_END_TIME = time(19, 30)
 
 # Balance bottom limit
-MINIMUM_BALANCE_FOR_DINING_SIGN_UP = Decimal('-2.00') + KITCHEN_COST
-MINIMUM_BALANCE_FOR_DINING_SLOT_CLAIM = Decimal('-2.00') + KITCHEN_COST
+MINIMUM_BALANCE_FOR_DINING_SIGN_UP = Decimal("-2.00") + KITCHEN_COST
+MINIMUM_BALANCE_FOR_DINING_SLOT_CLAIM = Decimal("-2.00") + KITCHEN_COST
 
 # The duration that pending transactions should last
 TRANSACTION_PENDING_DURATION = timedelta(days=2)

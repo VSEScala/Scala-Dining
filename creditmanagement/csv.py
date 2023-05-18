@@ -21,24 +21,24 @@ def write_transactions_csv(
     csv_writer = csv.writer(csv_file)
     csv_writer.writerow(
         [
-            'date',
-            'direction',
-            'account_type',
-            'name',
-            'email',
-            'amount',
-            'description',
-            'created_by',
+            "date",
+            "direction",
+            "account_type",
+            "name",
+            "email",
+            "amount",
+            "description",
+            "created_by",
         ]
     )
 
     for t in transactions:
         # Determine direction and counterparty
         if t.source == account_self:
-            direction = 'out'
+            direction = "out"
             counterparty = t.target
         elif t.target == account_self:
-            direction = 'in'
+            direction = "in"
             counterparty = t.source
         else:
             raise ValueError("Transaction does not involve account_self")
@@ -50,14 +50,14 @@ def write_transactions_csv(
             .isoformat()
         )
         account_type = (
-            'user'
+            "user"
             if counterparty.user
-            else 'association'
+            else "association"
             if counterparty.association
-            else 'special'
+            else "special"
         )
         name = str(counterparty)
-        email = counterparty.user.email if account_type == 'user' else ''
+        email = counterparty.user.email if account_type == "user" else ""
 
         csv_writer.writerow(
             [

@@ -15,7 +15,7 @@ class AssociationTestCase(TestCase):
         self.assertFalse(self.association.has_new_member_requests())
 
     def test_has_new_member_requests_true(self):
-        user = User.objects.create_user('ankie')
+        user = User.objects.create_user("ankie")
         UserMembership.objects.create(related_user=user, association=self.association)
         self.assertTrue(self.association.has_new_member_requests())
 
@@ -23,7 +23,7 @@ class AssociationTestCase(TestCase):
 class UserTestCase(TestCase):
     @classmethod
     def setUpTestData(cls):
-        cls.user = User.objects.create_user('noortje')
+        cls.user = User.objects.create_user("noortje")
 
     def test_has_min_balance_exception_no_membership(self):
         self.assertFalse(self.user.has_min_balance_exception())
@@ -56,15 +56,15 @@ class UserTestCase(TestCase):
     def test_username_case_insensitive(self):
         """Cleaning should raise ValidationError for an existing username with different case."""
         with self.assertRaises(ValidationError) as cm:
-            User(username='Noortje').full_clean()
+            User(username="Noortje").full_clean()
         exception = cm.exception
-        self.assertEqual(exception.error_dict['username'][0].code, 'unique')
+        self.assertEqual(exception.error_dict["username"][0].code, "unique")
 
 
 class UserMembershipTestCase(TestCase):
     @classmethod
     def setUpTestData(cls):
-        cls.user = User.objects.create_user('noortje')
+        cls.user = User.objects.create_user("noortje")
         cls.association = Association.objects.create()
 
     def test_set_verified_true(self):

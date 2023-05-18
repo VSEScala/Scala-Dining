@@ -22,30 +22,30 @@ class RegisterUserForm(UserCreationForm):
     class Meta:
         model = User
         fields = (
-            'username',
-            'password1',
-            'password2',
-            'email',
-            'first_name',
-            'last_name',
-            'allergies',
+            "username",
+            "password1",
+            "password2",
+            "email",
+            "first_name",
+            "last_name",
+            "allergies",
         )
         field_classes = {
-            'username': UsernameField
+            "username": UsernameField
         }  # This adds HTML attributes for semantics, see UserCreationForm.
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['first_name'].required = True
-        self.fields['last_name'].required = True
+        self.fields["first_name"].required = True
+        self.fields["last_name"].required = True
 
         # Set headings used during rendering.
         #
         # I don't like doing this here instead of in the template or view, but
         # I don't know how to do that cleanly.
-        self.fields['username'].heading = 'Account details'
-        self.fields['first_name'].heading = 'Personal details'
-        self.fields['associations'].heading = 'Memberships'
+        self.fields["username"].heading = "Account details"
+        self.fields["first_name"].heading = "Personal details"
+        self.fields["associations"].heading = "Memberships"
 
     def save(self, commit=True):
         """Saves user and creates the memberships."""
@@ -53,7 +53,7 @@ class RegisterUserForm(UserCreationForm):
         if commit:
             with transaction.atomic():
                 user.save()
-                for association in self.cleaned_data['associations']:
+                for association in self.cleaned_data["associations"]:
                     UserMembership.objects.create(
                         related_user=user, association=association
                     )
@@ -65,20 +65,20 @@ class UserForm(ModelForm):
 
     class Meta:
         model = User
-        fields = ('username', 'name', 'email', 'allergies')
+        fields = ("username", "name", "email", "allergies")
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['name'].disabled = True
-        self.fields['name'].initial = str(self.instance)
+        self.fields["name"].disabled = True
+        self.fields["name"].initial = str(self.instance)
         self.fields[
-            'name'
+            "name"
         ].help_text = "Contact the site administrator if you want to change your name."
-        self.fields['email'].disabled = True
-        self.fields['email'].required = False  # To hide the asterisk.
+        self.fields["email"].disabled = True
+        self.fields["email"].required = False  # To hide the asterisk.
 
         # Define a heading used during rendering the form.
-        self.fields['allergies'].heading = "Dining"
+        self.fields["allergies"].heading = "Dining"
 
 
 class AssociationLinkForm(forms.Form):
@@ -96,7 +96,7 @@ class AssociationLinkForm(forms.Form):
                 Q(is_choosable=True) | Q(usermembership__related_user=user)
             )
             .distinct()
-            .order_by('slug')
+            .order_by("slug")
         )
 
         for association in associations:
@@ -165,4 +165,4 @@ class AssociationLinkForm(forms.Form):
 class AssociationSettingsForm(forms.ModelForm):
     class Meta:
         model = Association
-        fields = ['balance_update_instructions']
+        fields = ["balance_update_instructions"]

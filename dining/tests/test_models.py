@@ -13,7 +13,7 @@ from userdetails.models import User, Association
 class DiningListTestCase(TestCase):
     @classmethod
     def setUpTestData(cls):
-        cls.user = User.objects.create_user('ankie')
+        cls.user = User.objects.create_user("ankie")
         cls.association = Association.objects.create()
 
     def setUp(self):
@@ -32,19 +32,19 @@ class DiningListTestCase(TestCase):
 
         with patch.object(
             timezone,
-            'now',
+            "now",
             return_value=datetime(2015, 1, 1, 16, 59, tzinfo=timezone.utc),
         ):
             self.assertTrue(list.is_open())
         with patch.object(
             timezone,
-            'now',
+            "now",
             return_value=datetime(2015, 1, 1, 17, 00, tzinfo=timezone.utc),
         ):
             self.assertFalse(list.is_open())
         with patch.object(
             timezone,
-            'now',
+            "now",
             return_value=datetime(2015, 1, 1, 17, 1, tzinfo=timezone.utc),
         ):
             self.assertFalse(list.is_open())
@@ -69,7 +69,7 @@ class DiningListTestCase(TestCase):
 class DiningListCleanTestCase(TestCase):
     @classmethod
     def setUpTestData(cls):
-        cls.user = User.objects.create_user('ankie')
+        cls.user = User.objects.create_user("ankie")
         cls.association = Association.objects.create()
 
     def setUp(self):
@@ -90,10 +90,10 @@ class DiningListCleanTestCase(TestCase):
 class DiningEntryTestCase(TestCase):
     @classmethod
     def setUpTestData(cls):
-        cls.user = User.objects.create_user('piet')
+        cls.user = User.objects.create_user("piet")
         cls.dining_list = DiningList.objects.create(
             date=date(2123, 2, 1),
-            association=Association.objects.create(slug='assoc'),
+            association=Association.objects.create(slug="assoc"),
             sign_up_deadline=datetime(2100, 1, 1, tzinfo=timezone.utc),
         )
 
@@ -116,7 +116,7 @@ class DiningEntryTestCase(TestCase):
         entry = DiningEntry(
             user=self.user,
             dining_list=self.dining_list,
-            external_name='Piet',
+            external_name="Piet",
             created_by=self.user,
         )
         entry.full_clean()  # No ValidationError

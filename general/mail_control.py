@@ -16,13 +16,13 @@ def get_mail_context(
     # This is how Django does it with their password reset email
     current_site = get_current_site(request)
     use_https = request.is_secure() if request else False
-    protocol = 'https' if use_https else 'http'
+    protocol = "https" if use_https else "http"
     return {
-        'domain': current_site.domain,
-        'site_name': current_site.name,
-        'recipient': recipient,
-        'protocol': protocol,
-        'site_uri': '{}://{}'.format(protocol, current_site.domain),
+        "domain": current_site.domain,
+        "site_name": current_site.name,
+        "recipient": recipient,
+        "protocol": protocol,
+        "site_uri": "{}://{}".format(protocol, current_site.domain),
         **(extra_context or {}),
     }
 
@@ -42,19 +42,19 @@ def construct_templated_mail(
         # Render templates
         local_context = get_mail_context(recipient, context, request)
         subject = render_to_string(
-            template_dir + '/subject.txt', context=local_context, request=request
+            template_dir + "/subject.txt", context=local_context, request=request
         ).strip()
         html_body = render_to_string(
-            template_dir + '/body.html', context=local_context, request=request
+            template_dir + "/body.html", context=local_context, request=request
         )
         text_body = render_to_string(
-            template_dir + '/body.txt', context=local_context, request=request
+            template_dir + "/body.txt", context=local_context, request=request
         )
         # Create message
         message = EmailMultiAlternatives(
             subject=subject, body=text_body, to=[recipient.email]
         )
-        message.attach_alternative(html_body, 'text/html')
+        message.attach_alternative(html_body, "text/html")
         messages.append(message)
     return messages
 

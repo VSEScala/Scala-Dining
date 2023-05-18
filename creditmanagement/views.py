@@ -16,7 +16,7 @@ class TransactionListView(LoginRequiredMixin, ListView):
 
     def get_queryset(self):
         return Transaction.objects.filter_account(self.request.user.account).order_by(
-            '-moment'
+            "-moment"
         )
 
 
@@ -24,10 +24,10 @@ class TransactionCSVView(LoginRequiredMixin, View):
     """Returns a CSV with transactions of the current user."""
 
     def get(self, request, *args, **kwargs):
-        response = HttpResponse(content_type='text/csv')
-        response['Content-Disposition'] = 'attachment; filename="user_transactions.csv"'
+        response = HttpResponse(content_type="text/csv")
+        response["Content-Disposition"] = 'attachment; filename="user_transactions.csv"'
         qs = Transaction.objects.filter_account(request.user.account).order_by(
-            '-moment'
+            "-moment"
         )
         write_transactions_csv(response, qs, request.user.account)
         return response
@@ -44,8 +44,8 @@ class TransactionFormView(FormView):
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
-        kwargs['source'] = self.get_source()  # Set transaction source/origin
-        kwargs['user'] = self.request.user  # Set created_by
+        kwargs["source"] = self.get_source()  # Set transaction source/origin
+        kwargs["user"] = self.request.user  # Set created_by
         return kwargs
 
     def form_valid(self, form):
@@ -64,7 +64,7 @@ class TransactionAddView(LoginRequiredMixin, TransactionFormView):
     """View where a user can transfer money to someone else."""
 
     template_name = "credit_management/transaction_add.html"
-    success_url = reverse_lazy('credits:transaction_list')
+    success_url = reverse_lazy("credits:transaction_list")
 
     def get_source(self) -> Account:
         return self.request.user.account

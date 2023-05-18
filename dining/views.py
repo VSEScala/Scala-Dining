@@ -44,7 +44,7 @@ from userdetails.models import User, Association
 
 def index(request):
     d = sequenced_date.upcoming()
-    return redirect('day_view', year=d.year, month=d.month, day=d.day)
+    return redirect("day_view", year=d.year, month=d.month, day=d.day)
 
 
 class DayMixin:
@@ -56,8 +56,8 @@ class DayMixin:
         context = super().get_context_data(**kwargs)
         context.update(
             {
-                'date': self.date,
-                'date_diff': (
+                "date": self.date,
+                "date_diff": (
                     self.date - date.today()
                 ).days,  # Nr. of days between date and today
             }
@@ -71,10 +71,10 @@ class DayMixin:
             return
         try:
             self.date = sequenced_date.fromdate(
-                date(self.kwargs['year'], self.kwargs['month'], self.kwargs['day'])
+                date(self.kwargs["year"], self.kwargs["month"], self.kwargs["day"])
             )
         except ValueError:
-            raise Http404('Invalid date')
+            raise Http404("Invalid date")
 
     def dispatch(self, request, *args, **kwargs):
         """Initializes date before get/post is called."""
@@ -84,9 +84,9 @@ class DayMixin:
     def reverse(self, *args, kwargs=None, **other_kwargs):
         """URL reverse which expands the date."""
         kwargs = kwargs or {}
-        kwargs['year'] = self.date.year
-        kwargs['month'] = self.date.month
-        kwargs['day'] = self.date.day
+        kwargs["year"] = self.date.year
+        kwargs["month"] = self.date.month
+        kwargs["day"] = self.date.day
         return reverse(*args, kwargs=kwargs, **other_kwargs)
 
 
@@ -103,11 +103,11 @@ class DayView(LoginRequiredMixin, DayMixin, TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
 
-        context['dining_lists'] = DiningList.objects.filter(date=self.date)
-        context['Announcements'] = DiningDayAnnouncement.objects.filter(date=self.date)
+        context["dining_lists"] = DiningList.objects.filter(date=self.date)
+        context["Announcements"] = DiningDayAnnouncement.objects.filter(date=self.date)
 
         # Make the view clickable
-        context['interactive'] = True
+        context["interactive"] = True
 
         return context
 
@@ -121,23 +121,23 @@ class DailyDinersCSVView(LoginRequiredMixin, View):
             return HttpResponseForbidden
 
         # Get the end date
-        date_end = request.GET.get('to', None)
+        date_end = request.GET.get("to", None)
         if date_end:
             # Why do you use datetime here and not date?
-            date_end = datetime.strptime(date_end, '%d/%m/%y')
+            date_end = datetime.strptime(date_end, "%d/%m/%y")
         else:
             date_end = timezone.now()
 
         # Filter on a start date
-        date_start = request.GET.get('from', None)
+        date_start = request.GET.get("from", None)
         if date_start:
-            date_start = datetime.strptime(date_start, '%d/%m/%y')
+            date_start = datetime.strptime(date_start, "%d/%m/%y")
         else:
             date_start = date_end
 
         # Count all dining entries in the given period
         entry_count = Count(
-            'diningentry',
+            "diningentry",
             filter=(
                 Q(diningentry__dining_list__date__lte=date_end)
                 & Q(diningentry__dining_list__date__gte=date_start)
@@ -149,21 +149,21 @@ class DailyDinersCSVView(LoginRequiredMixin, View):
         users = users.filter(diningentry_count__gt=0)
 
         # Get the related membership objects for speed optimisation
-        users.select_related('usermembership')
+        users.select_related("usermembership")
 
         # Get all associations
         associations = Association.objects.all()
 
         # Create the CSV file
         # Set up
-        response = HttpResponse(content_type='text/csv')
+        response = HttpResponse(content_type="text/csv")
         response[
-            'Content-Disposition'
+            "Content-Disposition"
         ] = 'attachment; filename="association_members.csv"'
         csv_writer = csv.writer(response)
 
         # Write header
-        header = ['Name', 'Joined']
+        header = ["Name", "Joined"]
         for association in associations:
             header += [association.name]
 
@@ -196,7 +196,7 @@ class NewSlotView(LoginRequiredMixin, DayMixin, TemplateView):
         context = super().get_context_data()
         context.update(
             {
-                'slot_form': CreateSlotForm(
+                "slot_form": CreateSlotForm(
                     self.request.user, instance=DiningList(date=self.date)
                 )
             }
@@ -206,12 +206,12 @@ class NewSlotView(LoginRequiredMixin, DayMixin, TemplateView):
     def post(self, request, *args, **kwargs):
         context = self.get_context_data()
 
-        context['slot_form'] = CreateSlotForm(
+        context["slot_form"] = CreateSlotForm(
             request.user, request.POST, instance=DiningList(date=self.date)
         )
 
-        if context['slot_form'].is_valid():
-            dining_list = context['slot_form'].save()
+        if context["slot_form"].is_valid():
+            dining_list = context["slot_form"].save()
             messages.success(request, "You successfully created a new dining list")
             return redirect(dining_list)
 
@@ -227,7 +227,7 @@ class DiningListMixin(DayMixin):
         context = super().get_context_data(**kwargs)
         context.update(
             {
-                'dining_list': self.dining_list,
+                "dining_list": self.dining_list,
             }
         )
         return context
@@ -240,7 +240,7 @@ class DiningListMixin(DayMixin):
         # Needs initialized date
         self.init_date()
         self.dining_list = get_object_or_404(
-            DiningList, date=self.date, association__slug=self.kwargs['identifier']
+            DiningList, date=self.date, association__slug=self.kwargs["identifier"]
         )
 
     def dispatch(self, request, *args, **kwargs):
@@ -249,7 +249,7 @@ class DiningListMixin(DayMixin):
 
     def reverse(self, *args, kwargs=None, **other_kwargs):
         kwargs = kwargs or {}
-        kwargs['identifier'] = self.dining_list.association.slug
+        kwargs["identifier"] = self.dining_list.association.slug
         return super().reverse(*args, kwargs=kwargs, **other_kwargs)
 
 
@@ -259,15 +259,15 @@ class UpdateSlotViewTrackerMixin:
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         # Get the amount of messages
-        context['comments_total'] = self.dining_list.diningcomment_set.count()
+        context["comments_total"] = self.dining_list.diningcomment_set.count()
         # Get the amount of unread messages
         view_time = DiningCommentVisitTracker.get_latest_visit(
             user=self.request.user, dining_list=self.dining_list
         )
         if view_time is None:
-            context['comments_unread'] = context['comments_total']
+            context["comments_unread"] = context["comments_total"]
         else:
-            context['comments_unread'] = self.dining_list.diningcomment_set.filter(
+            context["comments_unread"] = self.dining_list.diningcomment_set.filter(
                 timestamp__gte=view_time
             ).count()
 
@@ -290,8 +290,8 @@ class EntryAddView(LoginRequiredMixin, DiningListMixin, TemplateView):
         context = super().get_context_data(**kwargs)
         context.update(
             {
-                'user_form': DiningEntryInternalForm(),
-                'external_form': DiningEntryExternalForm(),
+                "user_form": DiningEntryInternalForm(),
+                "external_form": DiningEntryExternalForm(),
             }
         )
         return context
@@ -301,7 +301,7 @@ class EntryAddView(LoginRequiredMixin, DiningListMixin, TemplateView):
         #  to write HTML for displaying these errors (they are already in a Django message).
 
         # Do form shenanigans
-        if 'add_external' in request.POST:
+        if "add_external" in request.POST:
             entry = DiningEntry(
                 user=request.user, dining_list=self.dining_list, created_by=request.user
             )
@@ -316,9 +316,9 @@ class EntryAddView(LoginRequiredMixin, DiningListMixin, TemplateView):
             # The entry is for another existing user, send a mail to them.
             if entry.is_internal() and entry.user != request.user:
                 send_templated_mail(
-                    'mail/dining_entry_added_by',
+                    "mail/dining_entry_added_by",
                     entry.user,
-                    context={'entry': entry, 'dining_list': entry.dining_list},
+                    context={"entry": entry, "dining_list": entry.dining_list},
                     request=request,
                 )
                 messages.success(
@@ -374,20 +374,20 @@ class EntryDeleteView(LoginRequiredMixin, SingleObjectMixin, View):
             # Send a mail when someone else does the removal
             if entry.user != request.user:
                 context = {
-                    'entry': entry,
-                    'dining_list': entry.dining_list,
-                    'remover': request.user,
+                    "entry": entry,
+                    "dining_list": entry.dining_list,
+                    "remover": request.user,
                 }
                 if entry.is_external():
                     send_templated_mail(
-                        'mail/dining_entry_external_removed_by',
+                        "mail/dining_entry_external_removed_by",
                         entry.user,
                         context,
                         request,
                     )
                 else:
                     send_templated_mail(
-                        'mail/dining_entry_removed_by', entry.user, context, request
+                        "mail/dining_entry_removed_by", entry.user, context, request
                     )
 
         else:
@@ -395,7 +395,7 @@ class EntryDeleteView(LoginRequiredMixin, SingleObjectMixin, View):
                 messages.error(request, error)
 
         # Go to next
-        next_url = request.GET.get('next')
+        next_url = request.GET.get("next")
         if url_has_allowed_host_and_scheme(next_url, request.get_host()):
             return HttpResponseRedirect(next_url)
         else:
@@ -417,10 +417,10 @@ class SlotListView(SlotMixin, TemplateView):
         context = super().get_context_data(**kwargs)
         context.update(
             {
-                'entries': self.dining_list.dining_entries.order_by(
-                    'user__first_name', 'user__last_name', 'external_name'
+                "entries": self.dining_list.dining_entries.order_by(
+                    "user__first_name", "user__last_name", "external_name"
                 ),
-                'can_edit_stats': self.can_edit_stats(),
+                "can_edit_stats": self.can_edit_stats(),
             }
         )
         return context
@@ -436,22 +436,22 @@ class SlotListView(SlotMixin, TemplateView):
         # dining entries across all lists.
 
         entry = get_object_or_404(
-            DiningEntry, id=request.POST.get('entry_id'), dining_list=self.dining_list
+            DiningEntry, id=request.POST.get("entry_id"), dining_list=self.dining_list
         )
 
         # We toggle the given stat value, based on the previous value as was submitted by the form.
-        stat = request.POST.get('toggle')
-        if stat == 'shopped':
-            entry.has_shopped = not bool(request.POST.get('shopped_val'))
-        elif stat == 'cooked':
-            entry.has_cooked = not bool(request.POST.get('cooked_val'))
-        elif stat == 'cleaned':
-            entry.has_cleaned = not bool(request.POST.get('cleaned_val'))
-        elif stat == 'paid':
-            entry.has_paid = not bool(request.POST.get('paid_val'))
+        stat = request.POST.get("toggle")
+        if stat == "shopped":
+            entry.has_shopped = not bool(request.POST.get("shopped_val"))
+        elif stat == "cooked":
+            entry.has_cooked = not bool(request.POST.get("cooked_val"))
+        elif stat == "cleaned":
+            entry.has_cleaned = not bool(request.POST.get("cleaned_val"))
+        elif stat == "paid":
+            entry.has_paid = not bool(request.POST.get("paid_val"))
 
         entry.save()
-        return HttpResponseRedirect(self.reverse('slot_list'))
+        return HttpResponseRedirect(self.reverse("slot_list"))
 
 
 class SlotInfoView(
@@ -464,7 +464,7 @@ class SlotInfoView(
         kwargs = super().get_form_kwargs()
         kwargs.update(
             {
-                'instance': DiningComment(
+                "instance": DiningComment(
                     dining_list=self.dining_list, poster=self.request.user
                 ),
             }
@@ -472,20 +472,20 @@ class SlotInfoView(
         return kwargs
 
     def get_success_url(self):
-        return self.reverse('slot_details')
+        return self.reverse("slot_details")
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context.update(
             {
-                'comments': self.dining_list.diningcomment_set.order_by(
-                    '-pinned_to_top', 'timestamp'
+                "comments": self.dining_list.diningcomment_set.order_by(
+                    "-pinned_to_top", "timestamp"
                 ).all(),
-                'last_visited': DiningCommentVisitTracker.get_latest_visit(
+                "last_visited": DiningCommentVisitTracker.get_latest_visit(
                     user=self.request.user, dining_list=self.dining_list, update=True
                 ),
-                'number_of_allergies': self.dining_list.internal_dining_entries()
-                .exclude(user__allergies='')
+                "number_of_allergies": self.dining_list.internal_dining_entries()
+                .exclude(user__allergies="")
                 .count(),
             }
         )
@@ -501,9 +501,9 @@ class SlotAllergyView(SlotMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        entries = self.dining_list.internal_dining_entries().exclude(user__allergies='')
+        entries = self.dining_list.internal_dining_entries().exclude(user__allergies="")
         context.update(
-            {'allergy_entries': entries.order_by('user__first_name', 'user__last_name')}
+            {"allergy_entries": entries.order_by("user__first_name", "user__last_name")}
         )
         return context
 
@@ -530,9 +530,9 @@ class SlotInfoChangeView(SlotMixin, SlotOwnerMixin, TemplateView):
 
         context.update(
             {
-                'info_form': DiningInfoForm(instance=self.dining_list, prefix='info'),
-                'payment_form': DiningPaymentForm(
-                    instance=self.dining_list, prefix='payment'
+                "info_form": DiningInfoForm(instance=self.dining_list, prefix="info"),
+                "payment_form": DiningPaymentForm(
+                    instance=self.dining_list, prefix="payment"
                 ),
             }
         )
@@ -555,10 +555,10 @@ class SlotInfoChangeView(SlotMixin, SlotOwnerMixin, TemplateView):
         """
 
         info_form = DiningInfoForm(
-            request.POST, instance=self.dining_list, prefix='info'
+            request.POST, instance=self.dining_list, prefix="info"
         )
         payment_form = DiningPaymentForm(
-            request.POST, instance=self.dining_list, prefix='payment'
+            request.POST, instance=self.dining_list, prefix="payment"
         )
 
         # Save and redirect if forms are valid, stay otherwise
@@ -567,12 +567,12 @@ class SlotInfoChangeView(SlotMixin, SlotOwnerMixin, TemplateView):
             payment_form.save()
             messages.success(request, "Changes successfully saved")
 
-            return HttpResponseRedirect(self.reverse('slot_details'))
+            return HttpResponseRedirect(self.reverse("slot_details"))
 
         context.update(
             {
-                'info_form': info_form,
-                'payment_form': payment_form,
+                "info_form": info_form,
+                "payment_form": payment_form,
             }
         )
 
@@ -592,7 +592,7 @@ class SlotDeleteView(SlotMixin, SlotOwnerMixin, FormView):
         kwargs = super().get_form_kwargs()
         kwargs.update(
             {
-                'instance': self.dining_list,
+                "instance": self.dining_list,
             }
         )
         return kwargs
@@ -621,11 +621,11 @@ class SlotPaymentView(SlotMixin, SlotOwnerMixin, FormView):
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
-        kwargs['dining_list'] = self.dining_list
+        kwargs["dining_list"] = self.dining_list
         return kwargs
 
     def get_success_url(self):
-        return self.reverse('slot_details')
+        return self.reverse("slot_details")
 
     def form_invalid(self, form):
         for e in form.non_field_errors():

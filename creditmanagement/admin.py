@@ -7,8 +7,8 @@ from creditmanagement.models import Account, Transaction
 class AccountTypeListFilter(admin.SimpleListFilter):
     """Allows filtering on account type which is either user, association or special."""
 
-    title = 'account type'  # (displayed in side bar)
-    parameter_name = 'type'  # (used in URL query)
+    title = "account type"  # (displayed in side bar)
+    parameter_name = "type"  # (used in URL query)
 
     # Queries can be overridden in a subclass
     user_query = Q(user__isnull=False)
@@ -18,17 +18,17 @@ class AccountTypeListFilter(admin.SimpleListFilter):
     def lookups(self, request, model_admin):
         # First element is URL param, second element is display value
         return (
-            ('user', "User"),
-            ('association', "Association"),
-            ('special', "Special"),
+            ("user", "User"),
+            ("association", "Association"),
+            ("special", "Special"),
         )
 
     def queryset(self, request, queryset):
-        if self.value() == 'user':
+        if self.value() == "user":
             return queryset.filter(self.user_query)
-        if self.value() == 'association':
+        if self.value() == "association":
             return queryset.filter(self.association_query)
-        if self.value() == 'special':
+        if self.value() == "special":
             return queryset.filter(self.special_query)
 
 
@@ -42,15 +42,15 @@ class AccountAdmin(admin.ModelAdmin):
     you could change the user or association linked to the account.
     """
 
-    ordering = ('special', 'association__name', 'user__first_name', 'user__last_name')
-    list_display = ('__str__', 'get_balance', 'negative_since')
+    ordering = ("special", "association__name", "user__first_name", "user__last_name")
+    list_display = ("__str__", "get_balance", "negative_since")
     list_filter = (AccountTypeListFilter,)
     search_fields = (
-        'user__first_name',
-        'user__last_name',
-        'user__username',
-        'association__name',
-        'special',
+        "user__first_name",
+        "user__last_name",
+        "user__username",
+        "association__name",
+        "special",
     )
 
     def has_change_permission(self, request, obj=None):
@@ -61,7 +61,7 @@ class SourceTypeListFilter(AccountTypeListFilter):
     """Allows filtering on the source account type."""
 
     title = "source account type"
-    parameter_name = 'source_type'
+    parameter_name = "source_type"
     user_query = Q(source__user__isnull=False)
     association_query = Q(source__association__isnull=False)
     special_query = Q(source__special__isnull=False)
@@ -71,7 +71,7 @@ class TargetTypeListFilter(AccountTypeListFilter):
     """Allows filtering on the target account type."""
 
     title = "target account type"
-    parameter_name = 'target_type'
+    parameter_name = "target_type"
     user_query = Q(target__user__isnull=False)
     association_query = Q(target__association__isnull=False)
     special_query = Q(target__special__isnull=False)
@@ -81,16 +81,16 @@ class TargetTypeListFilter(AccountTypeListFilter):
 class TransactionAdmin(admin.ModelAdmin):
     """The transaction admin enables viewing transactions and creating new transactions."""
 
-    ordering = ('-moment',)
-    list_display = ('moment', 'source', 'target', 'amount', 'description')
+    ordering = ("-moment",)
+    list_display = ("moment", "source", "target", "amount", "description")
     list_filter = (SourceTypeListFilter, TargetTypeListFilter)
 
-    fields = ('source', 'target', 'amount', 'moment', 'description', 'created_by')
+    fields = ("source", "target", "amount", "moment", "description", "created_by")
     readonly_fields = (
-        'moment',
-        'created_by',
+        "moment",
+        "created_by",
     )  # Only applicable for the add transaction form (changing is not allowed)
-    autocomplete_fields = ('source', 'target')
+    autocomplete_fields = ("source", "target")
 
     def has_change_permission(self, request, obj=None):
         return False

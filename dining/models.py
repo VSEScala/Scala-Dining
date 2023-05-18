@@ -18,12 +18,12 @@ class DiningListManager(models.Manager):
         """Returns the number of available slots on the given date."""
         # Get slots occupied by announcements
         announce_slots = DiningDayAnnouncement.objects.filter(date=date).aggregate(
-            Sum('slots_occupy')
+            Sum("slots_occupy")
         )
         announce_slots = (
             0
-            if announce_slots['slots_occupy__sum'] is None
-            else announce_slots['slots_occupy__sum']
+            if announce_slots["slots_occupy__sum"] is None
+            else announce_slots["slots_occupy__sum"]
         )
         return settings.MAX_SLOT_NUMBER - len(self.filter(date=date)) - announce_slots
 
@@ -41,8 +41,8 @@ class DiningList(models.Model):
     association = models.ForeignKey(Association, on_delete=models.PROTECT)
     owners = models.ManyToManyField(
         settings.AUTH_USER_MODEL,
-        related_name='owned_dining_lists',
-        help_text='Owners can manage the dining list.',
+        related_name="owned_dining_lists",
+        help_text="Owners can manage the dining list.",
     )
 
     sign_up_deadline = models.DateTimeField(
@@ -67,7 +67,7 @@ class DiningList(models.Model):
         verbose_name="kitchen cost per person",
         max_digits=10,
         default=settings.KITCHEN_COST,
-        validators=[MinValueValidator(Decimal('0.00'))],
+        validators=[MinValueValidator(Decimal("0.00"))],
     )
 
     dining_cost = models.DecimalField(
@@ -77,7 +77,7 @@ class DiningList(models.Model):
         blank=True,
         null=True,
         default=None,
-        validators=[MinValueValidator(Decimal('0.00'))],
+        validators=[MinValueValidator(Decimal("0.00"))],
     )
 
     auto_pay = models.BooleanField(default=False)
@@ -92,7 +92,7 @@ class DiningList(models.Model):
     )
 
     diners = models.ManyToManyField(
-        User, through='DiningEntry', through_fields=('dining_list', 'user')
+        User, through="DiningEntry", through_fields=("dining_list", "user")
     )
 
     objects = DiningListManager()
@@ -138,8 +138,8 @@ class DiningList(models.Model):
         slug = self.association.slug
         d = self.date
         return reverse(
-            'slot_details',
-            kwargs={'year': d.year, 'month': d.month, 'day': d.day, 'identifier': slug},
+            "slot_details",
+            kwargs={"year": d.year, "month": d.month, "day": d.day, "identifier": slug},
         )
 
     def internal_dining_entries(self):
@@ -155,11 +155,11 @@ class DiningList(models.Model):
         # Validate sign up deadline.
         #
         # We can't put this in clean(), because then forms which put this field in the exclude list break.
-        if not exclude or 'sign_up_deadline' not in exclude:
+        if not exclude or "sign_up_deadline" not in exclude:
             if self.sign_up_deadline and self.sign_up_deadline.date() > self.date:
                 raise ValidationError(
                     {
-                        'sign_up_deadline': [
+                        "sign_up_deadline": [
                             "Sign up deadline can't be later than the day dinner is served."
                         ]
                     }
@@ -178,13 +178,13 @@ class DiningEntry(models.Model):
     """Represents an entry on a dining list."""
 
     dining_list = models.ForeignKey(
-        DiningList, on_delete=models.PROTECT, related_name='dining_entries'
+        DiningList, on_delete=models.PROTECT, related_name="dining_entries"
     )
 
     # This is the person who is responsible for the kitchen cost. It will be the same as the transaction source.
     user = models.ForeignKey(User, on_delete=models.PROTECT)
     created_by = models.ForeignKey(
-        User, on_delete=models.PROTECT, related_name='created_dining_entries'
+        User, on_delete=models.PROTECT, related_name="created_dining_entries"
     )
 
     # The transaction that belongs to this entry.
@@ -205,7 +205,7 @@ class DiningEntry(models.Model):
     objects = DiningEntryManager()
 
     class Meta:
-        verbose_name_plural = 'dining entries'
+        verbose_name_plural = "dining entries"
 
     def get_name(self):
         """Return name of diner."""
@@ -224,14 +224,14 @@ class DiningEntry(models.Model):
         # Check for duplicate internal entry, when this entry is being created (i.e. self.pk is not set).
         #
         # It might happen that self.user did not clean. In that case the attribute is not available.
-        if not self.pk and self.is_internal() and hasattr(self, 'user'):
+        if not self.pk and self.is_internal() and hasattr(self, "user"):
             if (
                 DiningEntry.objects.internal()
                 .filter(user=self.user.pk, dining_list=self.dining_list)
                 .exists()
             ):
                 raise ValidationError(
-                    "User is already on the dining list", code='user_already_present'
+                    "User is already on the dining list", code="user_already_present"
                 )
 
 
@@ -322,10 +322,10 @@ class DeletedList(models.Model):
     """For audit purposes, keep a log of deleted dining lists."""
 
     deleted_by = models.ForeignKey(User, on_delete=models.PROTECT)
-    date = models.DateTimeField('deletion date', default=timezone.now)
+    date = models.DateTimeField("deletion date", default=timezone.now)
     reason = models.TextField()
-    json_list = models.TextField('JSON dining list')
-    json_diners = models.TextField('JSON dining entries')
+    json_list = models.TextField("JSON dining list")
+    json_diners = models.TextField("JSON dining entries")
 
     def __str__(self):
-        return f'Deleted on {self.date.date()} by {self.deleted_by}'
+        return f"Deleted on {self.date.date()} by {self.deleted_by}"

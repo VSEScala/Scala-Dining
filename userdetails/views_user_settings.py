@@ -13,8 +13,8 @@ class SettingsProfileView(LoginRequiredMixin, TemplateView):
         context = super().get_context_data(**kwargs)
         context.update(
             {
-                'form': UserForm(instance=self.request.user),
-                'association_links_form': AssociationLinkForm(self.request.user),
+                "form": UserForm(instance=self.request.user),
+                "association_links_form": AssociationLinkForm(self.request.user),
             }
         )
         return context
@@ -27,14 +27,14 @@ class SettingsProfileView(LoginRequiredMixin, TemplateView):
             with transaction.atomic():
                 user_form.save()
                 membership_form.save()
-            return redirect('settings_account')
+            return redirect("settings_account")
 
         # A form was not valid.
         context = self.get_context_data()
         context.update(
             {
-                'form': user_form,
-                'association_links_form': membership_form,
+                "form": user_form,
+                "association_links_form": membership_form,
             }
         )
         return self.render_to_response(context)
