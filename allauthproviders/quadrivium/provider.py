@@ -41,7 +41,7 @@ class QuadriviumProvider(AssociationProvider):
             username=data.get('preferred_username', data.get('given_name')),
             email=data.get('email'),
             first_name=data.get('given_name'),
-            last_name=data.get('family_name')
+            last_name=data.get('family_name'),
         )
 
 

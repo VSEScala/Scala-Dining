@@ -5,7 +5,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ('userdetails', '0010_auto_20190304_2050'),
     ]
@@ -13,8 +12,7 @@ class Migration(migrations.Migration):
     operations = [
         migrations.CreateModel(
             name='UserOverview',
-            fields=[
-            ],
+            fields=[],
             options={
                 'proxy': True,
                 'indexes': [],

@@ -11,10 +11,12 @@ class SettingsProfileView(LoginRequiredMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context.update({
-            'form': UserForm(instance=self.request.user),
-            'association_links_form': AssociationLinkForm(self.request.user),
-        })
+        context.update(
+            {
+                'form': UserForm(instance=self.request.user),
+                'association_links_form': AssociationLinkForm(self.request.user),
+            }
+        )
         return context
 
     def post(self, request, *args, **kwargs):
@@ -29,8 +31,10 @@ class SettingsProfileView(LoginRequiredMixin, TemplateView):
 
         # A form was not valid.
         context = self.get_context_data()
-        context.update({
-            'form': user_form,
-            'association_links_form': membership_form,
-        })
+        context.update(
+            {
+                'form': user_form,
+                'association_links_form': membership_form,
+            }
+        )
         return self.render_to_response(context)

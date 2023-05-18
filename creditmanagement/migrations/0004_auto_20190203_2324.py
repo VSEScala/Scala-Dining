@@ -5,7 +5,6 @@ import django.db.models.deletion
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ('userdetails', '0002_auto_20190203_2324'),
         ('creditmanagement', '0003_merge_20190203_1925'),
@@ -15,31 +14,73 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='PendingTransaction',
             name='source_association',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='pendingtransaction_transaction_source', to='userdetails.Association', verbose_name='The association giving the money'),
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name='pendingtransaction_transaction_source',
+                to='userdetails.Association',
+                verbose_name='The association giving the money',
+            ),
         ),
         migrations.AlterField(
             model_name='PendingTransaction',
             name='target_association',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='pendingtransaction_transaction_target', to='userdetails.Association', verbose_name='The association recieving the money'),
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name='pendingtransaction_transaction_target',
+                to='userdetails.Association',
+                verbose_name='The association recieving the money',
+            ),
         ),
         migrations.AlterField(
             model_name='FixedTransaction',
             name='source_association',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='fixedtransaction_transaction_source', to='userdetails.Association', verbose_name='The association giving the money'),
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name='fixedtransaction_transaction_source',
+                to='userdetails.Association',
+                verbose_name='The association giving the money',
+            ),
         ),
         migrations.AlterField(
             model_name='FixedTransaction',
             name='target_association',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='fixedtransaction_transaction_target', to='userdetails.Association', verbose_name='The association recieving the money'),
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name='fixedtransaction_transaction_target',
+                to='userdetails.Association',
+                verbose_name='The association recieving the money',
+            ),
         ),
         migrations.AlterField(
             model_name='PendingDiningTransaction',
             name='source_association',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='pendingdiningtransaction_transaction_source', to='userdetails.Association', verbose_name='The association giving the money'),
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name='pendingdiningtransaction_transaction_source',
+                to='userdetails.Association',
+                verbose_name='The association giving the money',
+            ),
         ),
         migrations.AlterField(
             model_name='PendingDiningTransaction',
             name='target_association',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='pendingdiningtransaction_transaction_target', to='userdetails.Association', verbose_name='The association recieving the money'),
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name='pendingdiningtransaction_transaction_target',
+                to='userdetails.Association',
+                verbose_name='The association recieving the money',
+            ),
         ),
     ]

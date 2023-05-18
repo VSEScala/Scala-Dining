@@ -6,7 +6,6 @@ import django.db.models.deletion
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
     dependencies = [
@@ -20,26 +19,56 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='pendingdininglisttracker',
             name='dining_list',
-            field=models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, to='dining.DiningList'),
+            field=models.OneToOneField(
+                on_delete=django.db.models.deletion.CASCADE, to='dining.DiningList'
+            ),
         ),
         migrations.AddField(
             model_name='fixedtransaction',
             name='source_association',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='fixedtransaction_transaction_source', to='userdetails.Association', verbose_name='The association giving the money'),
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name='fixedtransaction_transaction_source',
+                to='userdetails.Association',
+                verbose_name='The association giving the money',
+            ),
         ),
         migrations.AddField(
             model_name='fixedtransaction',
             name='source_user',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='fixedtransaction_transaction_source', to=settings.AUTH_USER_MODEL, verbose_name='The user giving the money'),
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name='fixedtransaction_transaction_source',
+                to=settings.AUTH_USER_MODEL,
+                verbose_name='The user giving the money',
+            ),
         ),
         migrations.AddField(
             model_name='fixedtransaction',
             name='target_association',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='fixedtransaction_transaction_target', to='userdetails.Association', verbose_name='The association recieving the money'),
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name='fixedtransaction_transaction_target',
+                to='userdetails.Association',
+                verbose_name='The association recieving the money',
+            ),
         ),
         migrations.AddField(
             model_name='fixedtransaction',
             name='target_user',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='fixedtransaction_transaction_target', to=settings.AUTH_USER_MODEL, verbose_name='The user receiving the money'),
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name='fixedtransaction_transaction_target',
+                to=settings.AUTH_USER_MODEL,
+                verbose_name='The user receiving the money',
+            ),
         ),
     ]

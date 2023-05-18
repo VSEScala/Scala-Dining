@@ -47,7 +47,7 @@ def forward(apps, schema_editor):
         u = User.objects.create(
             username="transaction_cancel_migration_user",
             email="invalid2@localhost",
-            first_name="Transaction Cancel Migration User"
+            first_name="Transaction Cancel Migration User",
         )
 
     for tx in Transaction.objects.exclude(cancelled=None):
@@ -57,7 +57,10 @@ def forward(apps, schema_editor):
             source=tx.target,
             target=tx.source,
             amount=tx.amount,
-            moment=tx.moment + timedelta(seconds=1),  # If the moment was exactly equal, ordering might go wrong
+            moment=tx.moment
+            + timedelta(
+                seconds=1
+            ),  # If the moment was exactly equal, ordering might go wrong
             description=f'Refund "{tx.description}"',
             created_by=u,
         )
@@ -79,5 +82,7 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RunPython(forward, reverse_code=migrations.RunPython.noop, elidable=True)
+        migrations.RunPython(
+            forward, reverse_code=migrations.RunPython.noop, elidable=True
+        )
     ]

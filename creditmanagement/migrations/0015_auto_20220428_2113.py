@@ -6,7 +6,6 @@ import django.db.models.deletion
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
         ('userdetails', '0020_auto_20210319_2310'),
@@ -17,16 +16,31 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='account',
             name='association',
-            field=models.OneToOneField(null=True, on_delete=django.db.models.deletion.CASCADE, to='userdetails.association'),
+            field=models.OneToOneField(
+                null=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                to='userdetails.association',
+            ),
         ),
         migrations.AlterField(
             model_name='account',
             name='special',
-            field=models.CharField(blank=True, choices=[('kitchen_cost', 'Kitchen cost')], default=None, max_length=30, null=True, unique=True),
+            field=models.CharField(
+                blank=True,
+                choices=[('kitchen_cost', 'Kitchen cost')],
+                default=None,
+                max_length=30,
+                null=True,
+                unique=True,
+            ),
         ),
         migrations.AlterField(
             model_name='account',
             name='user',
-            field=models.OneToOneField(null=True, on_delete=django.db.models.deletion.CASCADE, to=settings.AUTH_USER_MODEL),
+            field=models.OneToOneField(
+                null=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                to=settings.AUTH_USER_MODEL,
+            ),
         ),
     ]

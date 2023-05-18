@@ -6,7 +6,6 @@ import django.db.models.deletion
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ('auth', '0009_alter_user_last_name_max_length'),
         ('userdetails', '0001_initial'),
@@ -23,7 +22,17 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='Association',
             fields=[
-                ('group_ptr', models.OneToOneField(auto_created=True, on_delete=django.db.models.deletion.CASCADE, parent_link=True, primary_key=True, serialize=False, to='auth.Group')),
+                (
+                    'group_ptr',
+                    models.OneToOneField(
+                        auto_created=True,
+                        on_delete=django.db.models.deletion.CASCADE,
+                        parent_link=True,
+                        primary_key=True,
+                        serialize=False,
+                        to='auth.Group',
+                    ),
+                ),
                 ('slug', models.SlugField(max_length=10)),
                 ('image', models.ImageField(blank=True, upload_to='')),
             ],
@@ -38,11 +47,21 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='User',
             name='groups',
-            field=models.ManyToManyField(blank=True, help_text='The groups this user belongs to. A user will get all permissions granted to each of their groups.', related_name='user_set', related_query_name='user', to='auth.Group', verbose_name='groups'),
+            field=models.ManyToManyField(
+                blank=True,
+                help_text='The groups this user belongs to. A user will get all permissions granted to each of their groups.',
+                related_name='user_set',
+                related_query_name='user',
+                to='auth.Group',
+                verbose_name='groups',
+            ),
         ),
         migrations.AlterField(
             model_name='UserMembership',
             name='association',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='userdetails.Association'),
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE,
+                to='userdetails.Association',
+            ),
         ),
     ]

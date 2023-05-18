@@ -9,12 +9,14 @@ from userdetails.models import User, UserMembership, Association
 
 class AssociationLinks(admin.TabularInline):
     """Membership inline."""
+
     model = UserMembership
     extra = 0
 
 
 class MemberOfFilter(admin.SimpleListFilter):
     """Creates a filter that filters users on the association they are part of (unvalidated)."""
+
     # Human-readable title which will be displayed in the
     # right admin sidebar just above the filter options.
     title = 'Member of association'
@@ -24,7 +26,10 @@ class MemberOfFilter(admin.SimpleListFilter):
 
     def lookups(self, request, model_admin):
         """Returns a list of tuples representing all the associations as displayed in the table."""
-        return Association.objects.all().values_list('pk', 'name', )
+        return Association.objects.all().values_list(
+            'pk',
+            'name',
+        )
 
     def queryset(self, request, queryset):
         """Returns the filtered querysets containing all members of the selected associations."""
@@ -32,7 +37,9 @@ class MemberOfFilter(admin.SimpleListFilter):
             return queryset
 
         # Find all members in the UserMemberships model containing the selected association
-        a = UserMembership.objects.filter(association=self.value()).values_list('related_user_id')
+        a = UserMembership.objects.filter(association=self.value()).values_list(
+            'related_user_id'
+        )
         return queryset.filter(pk__in=a)
 
 
@@ -67,6 +74,7 @@ class GroupAdminForm(forms.ModelForm):
 
     (As opposed to Djangos standard location in the user page.)
     """
+
     users = forms.ModelMultipleChoiceField(
         User.objects.all(),
         widget=admin.widgets.FilteredSelectMultiple('Users', False),

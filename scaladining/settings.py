@@ -27,7 +27,9 @@ env.read_env(path=os.path.join(BASE_DIR, '.env'), recurse=False)
 
 DEBUG = env.bool('DINING_DEBUG', default=False)
 
-SECRET_KEY = env.str('DINING_SECRET_KEY', default='') or env.file('DINING_SECRET_KEY_FILE')
+SECRET_KEY = env.str('DINING_SECRET_KEY', default='') or env.file(
+    'DINING_SECRET_KEY_FILE'
+)
 
 ALLOWED_HOSTS = env.list('DINING_ALLOWED_HOSTS', default='')
 
@@ -36,7 +38,6 @@ AUTH_USER_MODEL = 'userdetails.User'
 # django.contrib.admin is replaced by scaladining.apps.MyAdminConfig
 INSTALLED_APPS = [
     'whitenoise.runserver_nostatic',  # For static files
-
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
@@ -44,15 +45,12 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'django.contrib.humanize',
     'django.contrib.sites',
-
     'dining.apps.DiningConfig',
     'creditmanagement.apps.CreditManagementConfig',
     'general.apps.GeneralConfig',
     'scaladining.apps.MyAdminConfig',
-
     'allauth.account',  # This needs to be before userdetails due to admin.site.unregister
     'userdetails.apps.UserDetailsConfig',
-
     'dal',
     'dal_select2',
     'widget_tweaks',
@@ -87,7 +85,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
-                'scaladining.context_processors.scala'
+                'scaladining.context_processors.scala',
             ],
         },
     },
@@ -109,9 +107,13 @@ STATICFILES_DIRS = [os.path.join(BASE_DIR, 'assets/static')]
 MEDIA_ROOT = env.str('DINING_MEDIA_ROOT', default=os.path.join(BASE_DIR, 'uploads'))
 MEDIA_URL = env.str('DINING_MEDIA_URL', default='/media/')
 
-DATABASES = {'default': env.dj_db_url('DINING_DATABASE_URL', default='sqlite:///db.sqlite3')}
+DATABASES = {
+    'default': env.dj_db_url('DINING_DATABASE_URL', default='sqlite:///db.sqlite3')
+}
 if not DATABASES['default'].get('PASSWORD'):
-    DATABASES['default']['PASSWORD'] = env.file('DINING_DATABASE_PASSWORD_FILE', default='')
+    DATABASES['default']['PASSWORD'] = env.file(
+        'DINING_DATABASE_PASSWORD_FILE', default=''
+    )
 
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -156,7 +158,9 @@ email_config = env.dj_email_url('DINING_EMAIL_URL', default='console:')
 EMAIL_HOST = email_config['EMAIL_HOST']
 EMAIL_PORT = email_config['EMAIL_PORT']
 EMAIL_HOST_USER = email_config['EMAIL_HOST_USER']
-EMAIL_HOST_PASSWORD = email_config['EMAIL_HOST_PASSWORD'] or env.file('DINING_EMAIL_PASSWORD_FILE', default='')
+EMAIL_HOST_PASSWORD = email_config['EMAIL_HOST_PASSWORD'] or env.file(
+    'DINING_EMAIL_PASSWORD_FILE', default=''
+)
 EMAIL_BACKEND = email_config['EMAIL_BACKEND']
 EMAIL_USE_TLS = email_config['EMAIL_USE_TLS']
 EMAIL_USE_SSL = email_config['EMAIL_USE_SSL']

@@ -1,6 +1,10 @@
 from django.urls import path
 
-from creditmanagement.views import TransactionListView, TransactionAddView, TransactionCSVView
+from creditmanagement.views import (
+    TransactionListView,
+    TransactionAddView,
+    TransactionCSVView,
+)
 
 app_name = 'credits'
 

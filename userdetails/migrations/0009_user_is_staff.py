@@ -4,7 +4,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ('userdetails', '0008_remove_user_is_staff'),
     ]
@@ -13,6 +12,10 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='user',
             name='is_staff',
-            field=models.BooleanField(default=False, help_text='Designates whether the user can log into this admin site.', verbose_name='staff status'),
+            field=models.BooleanField(
+                default=False,
+                help_text='Designates whether the user can log into this admin site.',
+                verbose_name='staff status',
+            ),
         ),
     ]

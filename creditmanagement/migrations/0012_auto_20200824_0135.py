@@ -4,7 +4,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ('creditmanagement', '0011_account_transaction'),
     ]
@@ -45,6 +44,5 @@ class Migration(migrations.Migration):
         ),
         migrations.DeleteModel(  # (This model had managed=False)
             name='PendingDiningTransaction',
-
         ),
     ]

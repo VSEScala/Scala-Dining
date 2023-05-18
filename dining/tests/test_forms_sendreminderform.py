@@ -77,7 +77,9 @@ class SendReminderFormTestCase(TestCase):
         self.create_dining_entry(self.user, has_paid=False, guest_name='Guest 1')
         self.create_dining_entry(self.user, has_paid=False, guest_name='Guest 2')
         self.assertEqual(list(self.form.get_user_recipients()), [])
-        self.assertEqual(self.form.get_guest_recipients(), {self.user: ['Guest 1', 'Guest 2']})
+        self.assertEqual(
+            self.form.get_guest_recipients(), {self.user: ['Guest 1', 'Guest 2']}
+        )
 
     def test_arbitrary(self):
         """Tests with an arbitrary dining list with all cases.
@@ -86,16 +88,23 @@ class SendReminderFormTestCase(TestCase):
         case above. We also verify construct_messages().
         """
         # Create 4 users.
-        u = [User.objects.create(username=f'{i}', email=f'{i}@localhost') for i in range(4)]
+        u = [
+            User.objects.create(username=f'{i}', email=f'{i}@localhost')
+            for i in range(4)
+        ]
         # Create 1 of each possible case.
         self.create_dining_entry(u[0], has_paid=False)
         self.create_dining_entry(u[1], has_paid=True)
         self.create_dining_entry(u[2], has_paid=False, guest_name='Guest 1')
-        self.create_dining_entry(u[2], has_paid=False, guest_name='Guest 2')  # Same user, different guest
+        self.create_dining_entry(
+            u[2], has_paid=False, guest_name='Guest 2'
+        )  # Same user, different guest
         self.create_dining_entry(u[3], has_paid=True, guest_name='Guest 3')
 
         self.assertEqual(list(self.form.get_user_recipients()), [u[0]])
-        self.assertEqual(self.form.get_guest_recipients(), {u[2]: ['Guest 1', 'Guest 2']})
+        self.assertEqual(
+            self.form.get_guest_recipients(), {u[2]: ['Guest 1', 'Guest 2']}
+        )
 
         # For construct_messages() we just confirm that it has the correct
         # recipients. If we wanted to test that the contexts are correct, we
@@ -117,11 +126,14 @@ class SendReminderFormLockTestCase(TransactionTestCase):
     @skipUnlessDBFeature('has_select_for_update', 'has_select_for_update_nowait')
     def test_send_reminder(self):
         """Tests that send_reminder() doesn't send multiple emails simultaneously."""
-        form = SendReminderForm({}, dining_list=DiningList.objects.create(
-            date=date(2020, 1, 1),
-            association=Association.objects.create(slug='assoc'),
-            sign_up_deadline=datetime(2020, 1, 1, 12, 0, tzinfo=timezone.utc),
-        ))
+        form = SendReminderForm(
+            {},
+            dining_list=DiningList.objects.create(
+                date=date(2020, 1, 1),
+                association=Association.objects.create(slug='assoc'),
+                sign_up_deadline=datetime(2020, 1, 1, 12, 0, tzinfo=timezone.utc),
+            ),
+        )
         request = HttpRequest()
         request.user = User.objects.create()
 

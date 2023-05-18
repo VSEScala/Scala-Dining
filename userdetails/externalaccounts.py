@@ -18,7 +18,9 @@ def _create_membership(socialaccount, request):
     if not linked_associations:
         warnings.warn('No associations linked to the external account')
     for association in linked_associations:
-        membership = UserMembership.objects.filter(related_user=user, association=association).first()
+        membership = UserMembership.objects.filter(
+            related_user=user, association=association
+        ).first()
         if membership:
             # There exists a membership already, verify it if needed
             if not membership.is_verified:
@@ -26,8 +28,12 @@ def _create_membership(socialaccount, request):
                 membership.verified_on = timezone.now()
                 membership.save()
         else:
-            UserMembership.objects.create(related_user=user, association=association, is_verified=True,
-                                          verified_on=timezone.now())
+            UserMembership.objects.create(
+                related_user=user,
+                association=association,
+                is_verified=True,
+                verified_on=timezone.now(),
+            )
 
 
 @receiver(user_signed_up)

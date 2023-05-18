@@ -6,7 +6,12 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import NON_FIELD_ERRORS, PermissionDenied
 from django.db import transaction
 from django.db.models import Q, Count
-from django.http import Http404, HttpResponseRedirect, HttpResponseForbidden, HttpResponse
+from django.http import (
+    Http404,
+    HttpResponseRedirect,
+    HttpResponseForbidden,
+    HttpResponse,
+)
 from django.shortcuts import redirect, get_object_or_404
 from django.urls import reverse
 from django.utils import timezone
@@ -15,10 +20,24 @@ from django.views.generic import TemplateView, View, FormView
 from django.views.generic.detail import SingleObjectMixin
 
 from dining.datesequence import sequenced_date
-from dining.forms import CreateSlotForm, DiningEntryDeleteForm, DiningCommentForm, DiningInfoForm, DiningPaymentForm, \
-    DiningListDeleteForm, SendReminderForm, \
-    DiningEntryExternalForm, DiningEntryInternalForm
-from dining.models import DiningList, DiningDayAnnouncement, DiningCommentVisitTracker, DiningEntry, DiningComment
+from dining.forms import (
+    CreateSlotForm,
+    DiningEntryDeleteForm,
+    DiningCommentForm,
+    DiningInfoForm,
+    DiningPaymentForm,
+    DiningListDeleteForm,
+    SendReminderForm,
+    DiningEntryExternalForm,
+    DiningEntryInternalForm,
+)
+from dining.models import (
+    DiningList,
+    DiningDayAnnouncement,
+    DiningCommentVisitTracker,
+    DiningEntry,
+    DiningComment,
+)
 from general.mail_control import send_templated_mail
 from userdetails.models import User, Association
 
@@ -35,10 +54,14 @@ class DayMixin:
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context.update({
-            'date': self.date,
-            'date_diff': (self.date - date.today()).days,  # Nr. of days between date and today
-        })
+        context.update(
+            {
+                'date': self.date,
+                'date_diff': (
+                    self.date - date.today()
+                ).days,  # Nr. of days between date and today
+            }
+        )
         return context
 
     def init_date(self):
@@ -47,7 +70,9 @@ class DayMixin:
             # Already initialized
             return
         try:
-            self.date = sequenced_date.fromdate(date(self.kwargs['year'], self.kwargs['month'], self.kwargs['day']))
+            self.date = sequenced_date.fromdate(
+                date(self.kwargs['year'], self.kwargs['month'], self.kwargs['day'])
+            )
         except ValueError:
             raise Http404('Invalid date')
 
@@ -91,7 +116,6 @@ class DailyDinersCSVView(LoginRequiredMixin, View):
     """Returns a CSV file with all diners of that day."""
 
     def get(self, request, *args, **kwargs):
-
         # Only superusers can access this page
         if not request.user.is_superuser:
             return HttpResponseForbidden
@@ -112,8 +136,13 @@ class DailyDinersCSVView(LoginRequiredMixin, View):
             date_start = date_end
 
         # Count all dining entries in the given period
-        entry_count = Count('diningentry', filter=(Q(diningentry__dining_list__date__lte=date_end) & Q(
-            diningentry__dining_list__date__gte=date_start)))
+        entry_count = Count(
+            'diningentry',
+            filter=(
+                Q(diningentry__dining_list__date__lte=date_end)
+                & Q(diningentry__dining_list__date__gte=date_start)
+            ),
+        )
 
         # Annotate the counts to the user
         users = User.objects.annotate(diningentry_count=entry_count)
@@ -128,7 +157,9 @@ class DailyDinersCSVView(LoginRequiredMixin, View):
         # Create the CSV file
         # Set up
         response = HttpResponse(content_type='text/csv')
-        response['Content-Disposition'] = 'attachment; filename="association_members.csv"'
+        response[
+            'Content-Disposition'
+        ] = 'attachment; filename="association_members.csv"'
         csv_writer = csv.writer(response)
 
         # Write header
@@ -158,19 +189,26 @@ class DailyDinersCSVView(LoginRequiredMixin, View):
 
 class NewSlotView(LoginRequiredMixin, DayMixin, TemplateView):
     """Creation page for a new dining list."""
+
     template_name = "dining_lists/dining_add.html"
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data()
-        context.update({
-            'slot_form': CreateSlotForm(self.request.user, instance=DiningList(date=self.date))
-        })
+        context.update(
+            {
+                'slot_form': CreateSlotForm(
+                    self.request.user, instance=DiningList(date=self.date)
+                )
+            }
+        )
         return context
 
     def post(self, request, *args, **kwargs):
         context = self.get_context_data()
 
-        context['slot_form'] = CreateSlotForm(request.user, request.POST, instance=DiningList(date=self.date))
+        context['slot_form'] = CreateSlotForm(
+            request.user, request.POST, instance=DiningList(date=self.date)
+        )
 
         if context['slot_form'].is_valid():
             dining_list = context['slot_form'].save()
@@ -187,9 +225,11 @@ class DiningListMixin(DayMixin):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context.update({
-            'dining_list': self.dining_list,
-        })
+        context.update(
+            {
+                'dining_list': self.dining_list,
+            }
+        )
         return context
 
     def init_dining_list(self):
@@ -199,7 +239,9 @@ class DiningListMixin(DayMixin):
             return
         # Needs initialized date
         self.init_date()
-        self.dining_list = get_object_or_404(DiningList, date=self.date, association__slug=self.kwargs['identifier'])
+        self.dining_list = get_object_or_404(
+            DiningList, date=self.date, association__slug=self.kwargs['identifier']
+        )
 
     def dispatch(self, request, *args, **kwargs):
         self.init_dining_list()
@@ -219,19 +261,25 @@ class UpdateSlotViewTrackerMixin:
         # Get the amount of messages
         context['comments_total'] = self.dining_list.diningcomment_set.count()
         # Get the amount of unread messages
-        view_time = DiningCommentVisitTracker.get_latest_visit(user=self.request.user, dining_list=self.dining_list)
+        view_time = DiningCommentVisitTracker.get_latest_visit(
+            user=self.request.user, dining_list=self.dining_list
+        )
         if view_time is None:
             context['comments_unread'] = context['comments_total']
         else:
-            context['comments_unread'] = self.dining_list.diningcomment_set.filter(timestamp__gte=view_time).count()
+            context['comments_unread'] = self.dining_list.diningcomment_set.filter(
+                timestamp__gte=view_time
+            ).count()
 
         return context
 
 
 # We use 2 different terminologies for the same thing, 'slot' and 'dining list'. We should get rid of 'slot'.
 
+
 class SlotMixin(LoginRequiredMixin, DiningListMixin, UpdateSlotViewTrackerMixin):
     """Mixin for a dining list detail page."""
+
     pass
 
 
@@ -240,10 +288,12 @@ class EntryAddView(LoginRequiredMixin, DiningListMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context.update({
-            'user_form': DiningEntryInternalForm(),
-            'external_form': DiningEntryExternalForm(),
-        })
+        context.update(
+            {
+                'user_form': DiningEntryInternalForm(),
+                'external_form': DiningEntryExternalForm(),
+            }
+        )
         return context
 
     def post(self, request, *args, **kwargs):
@@ -252,7 +302,9 @@ class EntryAddView(LoginRequiredMixin, DiningListMixin, TemplateView):
 
         # Do form shenanigans
         if 'add_external' in request.POST:
-            entry = DiningEntry(user=request.user, dining_list=self.dining_list, created_by=request.user)
+            entry = DiningEntry(
+                user=request.user, dining_list=self.dining_list, created_by=request.user
+            )
             form = DiningEntryExternalForm(request.POST, instance=entry)
         else:
             entry = DiningEntry(dining_list=self.dining_list, created_by=request.user)
@@ -267,21 +319,33 @@ class EntryAddView(LoginRequiredMixin, DiningListMixin, TemplateView):
                     'mail/dining_entry_added_by',
                     entry.user,
                     context={'entry': entry, 'dining_list': entry.dining_list},
-                    request=request
+                    request=request,
                 )
                 messages.success(
                     request,
-                    "You successfully added {} to the dining list".format(entry.user.get_short_name())
+                    "You successfully added {} to the dining list".format(
+                        entry.user.get_short_name()
+                    ),
                 )
 
             # The entry is for an external diner, provide a message.
             if entry.is_external():
-                messages.success(request, "You successfully added {} to the dining list".format(entry.external_name))
+                messages.success(
+                    request,
+                    "You successfully added {} to the dining list".format(
+                        entry.external_name
+                    ),
+                )
         else:
             # The form was invalid, put the errors in a message.
             for field, errors in form.errors.items():
                 for error in errors:
-                    messages.error(request, "{}: {}".format(field, error) if field != NON_FIELD_ERRORS else error)
+                    messages.error(
+                        request,
+                        "{}: {}".format(field, error)
+                        if field != NON_FIELD_ERRORS
+                        else error,
+                    )
 
         # Always redirect to the dining list page
         return redirect(self.dining_list)
@@ -309,11 +373,22 @@ class EntryDeleteView(LoginRequiredMixin, SingleObjectMixin, View):
 
             # Send a mail when someone else does the removal
             if entry.user != request.user:
-                context = {'entry': entry, 'dining_list': entry.dining_list, 'remover': request.user}
+                context = {
+                    'entry': entry,
+                    'dining_list': entry.dining_list,
+                    'remover': request.user,
+                }
                 if entry.is_external():
-                    send_templated_mail('mail/dining_entry_external_removed_by', entry.user, context, request)
+                    send_templated_mail(
+                        'mail/dining_entry_external_removed_by',
+                        entry.user,
+                        context,
+                        request,
+                    )
                 else:
-                    send_templated_mail('mail/dining_entry_removed_by', entry.user, context, request)
+                    send_templated_mail(
+                        'mail/dining_entry_removed_by', entry.user, context, request
+                    )
 
         else:
             for error in form.non_field_errors():
@@ -340,10 +415,14 @@ class SlotListView(SlotMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context.update({
-            'entries': self.dining_list.dining_entries.order_by('user__first_name', 'user__last_name', 'external_name'),
-            'can_edit_stats': self.can_edit_stats(),
-        })
+        context.update(
+            {
+                'entries': self.dining_list.dining_entries.order_by(
+                    'user__first_name', 'user__last_name', 'external_name'
+                ),
+                'can_edit_stats': self.can_edit_stats(),
+            }
+        )
         return context
 
     def post(self, request, *args, **kwargs):
@@ -356,7 +435,9 @@ class SlotListView(SlotMixin, TemplateView):
         # get_object_or_404(). If we did not do that, the user could change all
         # dining entries across all lists.
 
-        entry = get_object_or_404(DiningEntry, id=request.POST.get('entry_id'), dining_list=self.dining_list)
+        entry = get_object_or_404(
+            DiningEntry, id=request.POST.get('entry_id'), dining_list=self.dining_list
+        )
 
         # We toggle the given stat value, based on the previous value as was submitted by the form.
         stat = request.POST.get('toggle')
@@ -373,15 +454,21 @@ class SlotListView(SlotMixin, TemplateView):
         return HttpResponseRedirect(self.reverse('slot_list'))
 
 
-class SlotInfoView(LoginRequiredMixin, DiningListMixin, UpdateSlotViewTrackerMixin, FormView):
+class SlotInfoView(
+    LoginRequiredMixin, DiningListMixin, UpdateSlotViewTrackerMixin, FormView
+):
     template_name = "dining_lists/dining_slot_info.html"
     form_class = DiningCommentForm
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
-        kwargs.update({
-            'instance': DiningComment(dining_list=self.dining_list, poster=self.request.user),
-        })
+        kwargs.update(
+            {
+                'instance': DiningComment(
+                    dining_list=self.dining_list, poster=self.request.user
+                ),
+            }
+        )
         return kwargs
 
     def get_success_url(self):
@@ -389,15 +476,19 @@ class SlotInfoView(LoginRequiredMixin, DiningListMixin, UpdateSlotViewTrackerMix
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context.update({
-            'comments': self.dining_list.diningcomment_set.order_by('-pinned_to_top', 'timestamp').all(),
-            'last_visited': DiningCommentVisitTracker.get_latest_visit(
-                user=self.request.user,
-                dining_list=self.dining_list,
-                update=True
-            ),
-            'number_of_allergies': self.dining_list.internal_dining_entries().exclude(user__allergies='').count(),
-        })
+        context.update(
+            {
+                'comments': self.dining_list.diningcomment_set.order_by(
+                    '-pinned_to_top', 'timestamp'
+                ).all(),
+                'last_visited': DiningCommentVisitTracker.get_latest_visit(
+                    user=self.request.user, dining_list=self.dining_list, update=True
+                ),
+                'number_of_allergies': self.dining_list.internal_dining_entries()
+                .exclude(user__allergies='')
+                .count(),
+            }
+        )
         return context
 
     def form_valid(self, form):
@@ -411,9 +502,9 @@ class SlotAllergyView(SlotMixin, TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         entries = self.dining_list.internal_dining_entries().exclude(user__allergies='')
-        context.update({
-            'allergy_entries': entries.order_by('user__first_name', 'user__last_name')
-        })
+        context.update(
+            {'allergy_entries': entries.order_by('user__first_name', 'user__last_name')}
+        )
         return context
 
 
@@ -437,10 +528,14 @@ class SlotInfoChangeView(SlotMixin, SlotOwnerMixin, TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
 
-        context.update({
-            'info_form': DiningInfoForm(instance=self.dining_list, prefix='info'),
-            'payment_form': DiningPaymentForm(instance=self.dining_list, prefix='payment'),
-        })
+        context.update(
+            {
+                'info_form': DiningInfoForm(instance=self.dining_list, prefix='info'),
+                'payment_form': DiningPaymentForm(
+                    instance=self.dining_list, prefix='payment'
+                ),
+            }
+        )
         return context
 
     def post(self, request, *args, **kwargs):
@@ -459,8 +554,12 @@ class SlotInfoChangeView(SlotMixin, SlotOwnerMixin, TemplateView):
         (perhaps it was meant that way?).
         """
 
-        info_form = DiningInfoForm(request.POST, instance=self.dining_list, prefix='info')
-        payment_form = DiningPaymentForm(request.POST, instance=self.dining_list, prefix='payment')
+        info_form = DiningInfoForm(
+            request.POST, instance=self.dining_list, prefix='info'
+        )
+        payment_form = DiningPaymentForm(
+            request.POST, instance=self.dining_list, prefix='payment'
+        )
 
         # Save and redirect if forms are valid, stay otherwise
         if info_form.is_valid() and payment_form.is_valid():
@@ -470,10 +569,12 @@ class SlotInfoChangeView(SlotMixin, SlotOwnerMixin, TemplateView):
 
             return HttpResponseRedirect(self.reverse('slot_details'))
 
-        context.update({
-            'info_form': info_form,
-            'payment_form': payment_form,
-        })
+        context.update(
+            {
+                'info_form': info_form,
+                'payment_form': payment_form,
+            }
+        )
 
         return self.render_to_response(context)
 
@@ -483,14 +584,17 @@ class SlotDeleteView(SlotMixin, SlotOwnerMixin, FormView):
 
     Page is only available for slot owners.
     """
+
     template_name = "dining_lists/dining_slot_delete.html"
     form_class = DiningListDeleteForm
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
-        kwargs.update({
-            'instance': self.dining_list,
-        })
+        kwargs.update(
+            {
+                'instance': self.dining_list,
+            }
+        )
         return kwargs
 
     def get_day_view_url(self):
@@ -508,6 +612,7 @@ class SlotDeleteView(SlotMixin, SlotOwnerMixin, FormView):
 
 class SlotPaymentView(SlotMixin, SlotOwnerMixin, FormView):
     """A view class that allows dining list owners to send payment reminders."""
+
     form_class = SendReminderForm
 
     def get(self, request, *args, **kwargs):
@@ -530,7 +635,10 @@ class SlotPaymentView(SlotMixin, SlotOwnerMixin, FormView):
     def form_valid(self, form):
         success = form.send_reminder(self.request)
         if not success:
-            messages.success(self.request, "Diners have been informed recently, you can send a new mail momentarily")
+            messages.success(
+                self.request,
+                "Diners have been informed recently, you can send a new mail momentarily",
+            )
         else:
             messages.success(self.request, "Diners have been informed")
         return super().form_valid(form)

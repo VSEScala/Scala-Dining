@@ -15,7 +15,9 @@ class TransactionListView(LoginRequiredMixin, ListView):
     paginate_by = 20
 
     def get_queryset(self):
-        return Transaction.objects.filter_account(self.request.user.account).order_by('-moment')
+        return Transaction.objects.filter_account(self.request.user.account).order_by(
+            '-moment'
+        )
 
 
 class TransactionCSVView(LoginRequiredMixin, View):
@@ -24,7 +26,9 @@ class TransactionCSVView(LoginRequiredMixin, View):
     def get(self, request, *args, **kwargs):
         response = HttpResponse(content_type='text/csv')
         response['Content-Disposition'] = 'attachment; filename="user_transactions.csv"'
-        qs = Transaction.objects.filter_account(request.user.account).order_by('-moment')
+        qs = Transaction.objects.filter_account(request.user.account).order_by(
+            '-moment'
+        )
         write_transactions_csv(response, qs, request.user.account)
         return response
 
@@ -35,6 +39,7 @@ class TransactionFormView(FormView):
     A subclass needs to override get_source(), set the success URL and set the
     template name.
     """
+
     form_class = TransactionForm
 
     def get_form_kwargs(self):
@@ -45,7 +50,9 @@ class TransactionFormView(FormView):
 
     def form_valid(self, form):
         form.save()
-        messages.add_message(self.request, messages.SUCCESS, "Transaction has been successfully created.")
+        messages.add_message(
+            self.request, messages.SUCCESS, "Transaction has been successfully created."
+        )
         return HttpResponseRedirect(self.get_success_url())
 
     def get_source(self) -> Account:
@@ -55,10 +62,12 @@ class TransactionFormView(FormView):
 
 class TransactionAddView(LoginRequiredMixin, TransactionFormView):
     """View where a user can transfer money to someone else."""
+
     template_name = "credit_management/transaction_add.html"
     success_url = reverse_lazy('credits:transaction_list')
 
     def get_source(self) -> Account:
         return self.request.user.account
+
 
 # MoneyObtainmentView is removed in favor of Site Credits tab

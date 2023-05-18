@@ -5,12 +5,15 @@ from django.utils import timezone
 
 class SiteUpdate(models.Model):
     """Contains setting related to the dining lists and use of the dining lists."""
+
     date = models.DateTimeField(auto_now_add=True, unique=True)
     title = models.CharField(max_length=140, unique=True)
     message = models.TextField()
 
     def __str__(self):
-        return "{date}: {title}".format(date=self.date.strftime("%Y-%m-%d"), title=self.title)
+        return "{date}: {title}".format(
+            date=self.date.strftime("%Y-%m-%d"), title=self.title
+        )
 
     # I've removed the 'mail_users' method on purpose, we should not have that
 
@@ -47,10 +50,14 @@ class PageVisitTracker(AbstractVisitTracker):
         :param user: The user visiting the page
         """
         if update:
-            latest_visit_obj, created = cls.objects.get_or_create(user=user, page=cls.__get_page_int__(page_name))
+            latest_visit_obj, created = cls.objects.get_or_create(
+                user=user, page=cls.__get_page_int__(page_name)
+            )
         else:
             try:
-                latest_visit_obj = cls.objects.get(user=user, page=cls.__get_page_int__(page_name))
+                latest_visit_obj = cls.objects.get(
+                    user=user, page=cls.__get_page_int__(page_name)
+                )
             except cls.DoesNotExist:
                 return None
 

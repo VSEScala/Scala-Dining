@@ -45,7 +45,13 @@ class AccountAdmin(admin.ModelAdmin):
     ordering = ('special', 'association__name', 'user__first_name', 'user__last_name')
     list_display = ('__str__', 'get_balance', 'negative_since')
     list_filter = (AccountTypeListFilter,)
-    search_fields = ('user__first_name', 'user__last_name', 'user__username', 'association__name', 'special')
+    search_fields = (
+        'user__first_name',
+        'user__last_name',
+        'user__username',
+        'association__name',
+        'special',
+    )
 
     def has_change_permission(self, request, obj=None):
         return False
@@ -53,6 +59,7 @@ class AccountAdmin(admin.ModelAdmin):
 
 class SourceTypeListFilter(AccountTypeListFilter):
     """Allows filtering on the source account type."""
+
     title = "source account type"
     parameter_name = 'source_type'
     user_query = Q(source__user__isnull=False)
@@ -62,6 +69,7 @@ class SourceTypeListFilter(AccountTypeListFilter):
 
 class TargetTypeListFilter(AccountTypeListFilter):
     """Allows filtering on the target account type."""
+
     title = "target account type"
     parameter_name = 'target_type'
     user_query = Q(target__user__isnull=False)
@@ -78,7 +86,10 @@ class TransactionAdmin(admin.ModelAdmin):
     list_filter = (SourceTypeListFilter, TargetTypeListFilter)
 
     fields = ('source', 'target', 'amount', 'moment', 'description', 'created_by')
-    readonly_fields = ('moment', 'created_by')  # Only applicable for the add transaction form (changing is not allowed)
+    readonly_fields = (
+        'moment',
+        'created_by',
+    )  # Only applicable for the add transaction form (changing is not allowed)
     autocomplete_fields = ('source', 'target')
 
     def has_change_permission(self, request, obj=None):

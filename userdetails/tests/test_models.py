@@ -30,14 +30,22 @@ class UserTestCase(TestCase):
 
     def test_has_min_balance_exception_false(self):
         association = Association.objects.create()
-        UserMembership.objects.create(related_user=self.user, association=association, is_verified=True,
-                                      verified_on=timezone.now())
+        UserMembership.objects.create(
+            related_user=self.user,
+            association=association,
+            is_verified=True,
+            verified_on=timezone.now(),
+        )
         self.assertFalse(self.user.has_min_balance_exception())
 
     def test_has_min_balance_exception_true(self):
         association = Association.objects.create(has_min_exception=True)
-        UserMembership.objects.create(related_user=self.user, association=association, is_verified=True,
-                                      verified_on=timezone.now())
+        UserMembership.objects.create(
+            related_user=self.user,
+            association=association,
+            is_verified=True,
+            verified_on=timezone.now(),
+        )
         self.assertTrue(self.user.has_min_balance_exception())
 
     def test_has_min_balance_exception_unverified_membership(self):
@@ -60,14 +68,18 @@ class UserMembershipTestCase(TestCase):
         cls.association = Association.objects.create()
 
     def test_set_verified_true(self):
-        membership = UserMembership.objects.create(related_user=self.user, association=self.association)
+        membership = UserMembership.objects.create(
+            related_user=self.user, association=self.association
+        )
         self.assertIsNone(membership.get_verified_state())
         membership.set_verified(True)
         membership.refresh_from_db()  # To check if it's saved
         self.assertIs(membership.get_verified_state(), True)
 
     def test_set_verified_false(self):
-        membership = UserMembership.objects.create(related_user=self.user, association=self.association)
+        membership = UserMembership.objects.create(
+            related_user=self.user, association=self.association
+        )
         self.assertIsNone(membership.get_verified_state())
         membership.set_verified(False)
         membership.refresh_from_db()  # To check if it's saved

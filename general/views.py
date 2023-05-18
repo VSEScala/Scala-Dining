@@ -55,7 +55,9 @@ class SiteUpdateView(LoginRequiredMixin, ListView):
         except ObjectDoesNotExist:
             latest_update = timezone.now()
 
-        context['latest_visit'] = PageVisitTracker.get_latest_visit('updates', self.request.user, update=True)
+        context['latest_visit'] = PageVisitTracker.get_latest_visit(
+            'updates', self.request.user, update=True
+        )
         context['latest_update'] = latest_update
 
         return context
@@ -79,10 +81,12 @@ class HelpPageView(TemplateView):
         build_date = getenv('BUILD_TIMESTAMP')
         if build_date:
             build_date = datetime.fromtimestamp(float(build_date), timezone.utc)
-        context.update({
-            'build_date': build_date,
-            'commit_sha': getenv('COMMIT_SHA'),
-        })
+        context.update(
+            {
+                'build_date': build_date,
+                'commit_sha': getenv('COMMIT_SHA'),
+            }
+        )
         return context
 
 
@@ -94,7 +98,9 @@ class RulesPageView(View):
     def get(self, request):
         # Store the recent updates/visit data in the local context
         if request.user.is_authenticated:
-            self.context['latest_visit'] = PageVisitTracker.get_latest_visit('rules', request.user, update=True)
+            self.context['latest_visit'] = PageVisitTracker.get_latest_visit(
+                'rules', request.user, update=True
+            )
         self.context['latest_update'] = self.change_date
 
         return render(request, self.template, self.context)
@@ -117,9 +123,12 @@ class UpgradeBalanceInstructionsView(TemplateView):
         if self.request.user.is_authenticated:
             # Separated for a possible prefilter to be implemented later (e.g. if active in kitchen)
             associations = Association.objects.order_by('slug')
-            context['user_associations'] = associations.filter(usermembership__related_user=self.request.user)
-            context['other_associations'] = associations. \
-                exclude(id__in=context['user_associations'].values_list('id', flat=True))
+            context['user_associations'] = associations.filter(
+                usermembership__related_user=self.request.user
+            )
+            context['other_associations'] = associations.exclude(
+                id__in=context['user_associations'].values_list('id', flat=True)
+            )
         else:
             context['other_associations'] = Association.objects.all()
 
@@ -153,7 +162,9 @@ class EmailTemplateView(View):
         def __getitem__(self, key):
             item = self._dict.get(key, None)
             if item is None:
-                return EmailTemplateView.create_new_factory(name="{name}.{key}".format(name=self._name, key=key))
+                return EmailTemplateView.create_new_factory(
+                    name="{name}.{key}".format(name=self._name, key=key)
+                )
             else:
                 return item
 

@@ -5,7 +5,6 @@ import django.db.models.deletion
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ('userdetails', '0018_association_has_site_stats_access'),
     ]
@@ -14,16 +13,28 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='association',
             name='has_min_exception',
-            field=models.BooleanField(default=False, help_text='If checked, this association has an exception to the minimum balance.'),
+            field=models.BooleanField(
+                default=False,
+                help_text='If checked, this association has an exception to the minimum balance.',
+            ),
         ),
         migrations.AlterField(
             model_name='association',
             name='is_choosable',
-            field=models.BooleanField(default=True, help_text='If checked, this association can be chosen as membership by users.'),
+            field=models.BooleanField(
+                default=True,
+                help_text='If checked, this association can be chosen as membership by users.',
+            ),
         ),
         migrations.AlterField(
             model_name='association',
             name='social_app',
-            field=models.ForeignKey(blank=True, help_text='A user automatically becomes member of the association if they sign up using this social app.', null=True, on_delete=django.db.models.deletion.PROTECT, to='socialaccount.SocialApp'),
+            field=models.ForeignKey(
+                blank=True,
+                help_text='A user automatically becomes member of the association if they sign up using this social app.',
+                null=True,
+                on_delete=django.db.models.deletion.PROTECT,
+                to='socialaccount.SocialApp',
+            ),
         ),
     ]

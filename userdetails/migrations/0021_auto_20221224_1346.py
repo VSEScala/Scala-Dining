@@ -5,7 +5,6 @@ import userdetails.models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ('userdetails', '0020_auto_20210319_2310'),
     ]
@@ -26,6 +25,11 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='user',
             name='allergies',
-            field=models.CharField(blank=True, help_text='E.g. gluten or vegetarian. Leave empty if not applicable.', max_length=100, verbose_name='food allergies or preferences'),
+            field=models.CharField(
+                blank=True,
+                help_text='E.g. gluten or vegetarian. Leave empty if not applicable.',
+                max_length=100,
+                verbose_name='food allergies or preferences',
+            ),
         ),
     ]

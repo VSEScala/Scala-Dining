@@ -16,13 +16,23 @@ class RegisterUserForm(UserCreationForm):
     # By default, this field is required.
     associations = forms.ModelMultipleChoiceField(
         queryset=Association.objects.filter(is_choosable=True),
-        widget=forms.CheckboxSelectMultiple()
+        widget=forms.CheckboxSelectMultiple(),
     )
 
     class Meta:
         model = User
-        fields = ('username', 'password1', 'password2', 'email', 'first_name', 'last_name', 'allergies')
-        field_classes = {'username': UsernameField}  # This adds HTML attributes for semantics, see UserCreationForm.
+        fields = (
+            'username',
+            'password1',
+            'password2',
+            'email',
+            'first_name',
+            'last_name',
+            'allergies',
+        )
+        field_classes = {
+            'username': UsernameField
+        }  # This adds HTML attributes for semantics, see UserCreationForm.
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -44,7 +54,9 @@ class RegisterUserForm(UserCreationForm):
             with transaction.atomic():
                 user.save()
                 for association in self.cleaned_data['associations']:
-                    UserMembership.objects.create(related_user=user, association=association)
+                    UserMembership.objects.create(
+                        related_user=user, association=association
+                    )
         return user
 
 
@@ -59,7 +71,9 @@ class UserForm(ModelForm):
         super().__init__(*args, **kwargs)
         self.fields['name'].disabled = True
         self.fields['name'].initial = str(self.instance)
-        self.fields['name'].help_text = "Contact the site administrator if you want to change your name."
+        self.fields[
+            'name'
+        ].help_text = "Contact the site administrator if you want to change your name."
         self.fields['email'].disabled = True
         self.fields['email'].required = False  # To hide the asterisk.
 
@@ -68,7 +82,6 @@ class UserForm(ModelForm):
 
 
 class AssociationLinkForm(forms.Form):
-
     def __init__(self, user, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.user = user
@@ -78,14 +91,20 @@ class AssociationLinkForm(forms.Form):
         # 'distinct' is necessary because otherwise there will be a large
         # number of duplicate associations returned, resulting in a slow page
         # load.
-        associations = Association.objects.filter(
-            Q(is_choosable=True) | Q(usermembership__related_user=user)
-        ).distinct().order_by('slug')
+        associations = (
+            Association.objects.filter(
+                Q(is_choosable=True) | Q(usermembership__related_user=user)
+            )
+            .distinct()
+            .order_by('slug')
+        )
 
         for association in associations:
             # Find membership.
             try:
-                membership = UserMembership.objects.get(related_user=user, association=association)
+                membership = UserMembership.objects.get(
+                    related_user=user, association=association
+                )
             except UserMembership.DoesNotExist:
                 membership = None
 
@@ -126,7 +145,9 @@ class AssociationLinkForm(forms.Form):
 
             # Selected but no membership exists, we need to create it.
             if chosen and not membership:
-                UserMembership.objects.create(related_user=self.user, association=association)
+                UserMembership.objects.create(
+                    related_user=self.user, association=association
+                )
 
             # Selected but the membership was rejected, set as pending.
             #

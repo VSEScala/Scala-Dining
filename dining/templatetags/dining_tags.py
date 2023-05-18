@@ -38,8 +38,12 @@ def can_add_others(dining_list, user):
     is_adjustable = dining_list.is_adjustable()
     is_owner = dining_list.is_owner(user)
     has_room = dining_list.is_open() and dining_list.has_room()
-    limited = dining_list.limit_signups_to_association_only and not user.usermembership_set.filter(
-        association=dining_list.association).exists()
+    limited = (
+        dining_list.limit_signups_to_association_only
+        and not user.usermembership_set.filter(
+            association=dining_list.association
+        ).exists()
+    )
     return is_adjustable and (is_owner or (has_room and not limited))
 
 
@@ -57,7 +61,11 @@ def can_delete_entry(entry, user):
 @register.filter
 def get_entry(dining_list, user):
     """Gets the user entry (not external) for given user."""
-    return DiningEntry.objects.internal().filter(dining_list=dining_list, user=user).first()
+    return (
+        DiningEntry.objects.internal()
+        .filter(dining_list=dining_list, user=user)
+        .first()
+    )
 
 
 @register.filter
@@ -92,7 +100,10 @@ def dining_list_creation_open(date: datetime.date) -> bool:
     """
     if date < timezone.now().date():
         return False
-    if date == timezone.now().date() and settings.DINING_SLOT_CLAIM_CLOSURE_TIME < timezone.now().time():
+    if (
+        date == timezone.now().date()
+        and settings.DINING_SLOT_CLAIM_CLOSURE_TIME < timezone.now().time()
+    ):
         # Too late for today
         return False
     return True

@@ -9,7 +9,6 @@ import django.utils.timezone
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
         ('userdetails', '0008_remove_user_is_staff'),
@@ -24,15 +23,82 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='PendingDiningTransaction',
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('source_user', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.DO_NOTHING, related_name='pendingdiningtransaction_transaction_source', to=settings.AUTH_USER_MODEL, verbose_name='The user giving the money')),
-                ('source_association', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.DO_NOTHING, related_name='pendingdiningtransaction_transaction_source', to='userdetails.Association', verbose_name='The association giving the money')),
-                ('amount', models.DecimalField(decimal_places=2, max_digits=4, validators=[django.core.validators.MinValueValidator(Decimal('0.01'))], verbose_name='Money transferred')),
-                ('target_user', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.DO_NOTHING, related_name='pendingdiningtransaction_transaction_target', to=settings.AUTH_USER_MODEL, verbose_name='The user receiving the money')),
-                ('target_association', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.DO_NOTHING, related_name='pendingdiningtransaction_transaction_target', to='userdetails.Association', verbose_name='The association recieving the money')),
-                ('order_moment', models.DateTimeField(default=django.utils.timezone.now)),
-                ('confirm_moment', models.DateTimeField(blank=True, default=django.utils.timezone.now)),
-                ('description', models.CharField(blank=True, default='', max_length=50)),
+                (
+                    'id',
+                    models.AutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name='ID',
+                    ),
+                ),
+                (
+                    'source_user',
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.DO_NOTHING,
+                        related_name='pendingdiningtransaction_transaction_source',
+                        to=settings.AUTH_USER_MODEL,
+                        verbose_name='The user giving the money',
+                    ),
+                ),
+                (
+                    'source_association',
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.DO_NOTHING,
+                        related_name='pendingdiningtransaction_transaction_source',
+                        to='userdetails.Association',
+                        verbose_name='The association giving the money',
+                    ),
+                ),
+                (
+                    'amount',
+                    models.DecimalField(
+                        decimal_places=2,
+                        max_digits=4,
+                        validators=[
+                            django.core.validators.MinValueValidator(Decimal('0.01'))
+                        ],
+                        verbose_name='Money transferred',
+                    ),
+                ),
+                (
+                    'target_user',
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.DO_NOTHING,
+                        related_name='pendingdiningtransaction_transaction_target',
+                        to=settings.AUTH_USER_MODEL,
+                        verbose_name='The user receiving the money',
+                    ),
+                ),
+                (
+                    'target_association',
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.DO_NOTHING,
+                        related_name='pendingdiningtransaction_transaction_target',
+                        to='userdetails.Association',
+                        verbose_name='The association recieving the money',
+                    ),
+                ),
+                (
+                    'order_moment',
+                    models.DateTimeField(default=django.utils.timezone.now),
+                ),
+                (
+                    'confirm_moment',
+                    models.DateTimeField(blank=True, default=django.utils.timezone.now),
+                ),
+                (
+                    'description',
+                    models.CharField(blank=True, default='', max_length=50),
+                ),
             ],
             options={
                 'abstract': False,

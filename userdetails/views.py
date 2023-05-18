@@ -28,7 +28,11 @@ class DiningJoinHistoryView(LoginRequiredMixin, ListView):
     paginate_by = 20
 
     def get_queryset(self):
-        return DiningEntry.objects.internal().filter(user=self.request.user).order_by('-dining_list__date')
+        return (
+            DiningEntry.objects.internal()
+            .filter(user=self.request.user)
+            .order_by('-dining_list__date')
+        )
 
 
 class DiningClaimHistoryView(LoginRequiredMixin, ListView):
@@ -40,7 +44,6 @@ class DiningClaimHistoryView(LoginRequiredMixin, ListView):
 
 
 class PeopleAutocompleteView(LoginRequiredMixin, Select2QuerySetView):
-
     # django-autocomplete-light does infinite scrolling by default, but doesn't seem to trigger when paginate_by has a
     # lower value (e.g. 5)
     # paginate_by = 10
@@ -48,9 +51,9 @@ class PeopleAutocompleteView(LoginRequiredMixin, Select2QuerySetView):
     def get_queryset(self):
         qs = User.objects.filter(is_active=True)
         if self.q:
-            qs = qs.annotate(full_name=Concat('first_name',
-                                              Value(' '),
-                                              'last_name')).filter(full_name__icontains=self.q)
+            qs = qs.annotate(
+                full_name=Concat('first_name', Value(' '), 'last_name')
+            ).filter(full_name__icontains=self.q)
         return qs
 
     def get_result_label(self, result):

@@ -1,5 +1,9 @@
 import requests
-from allauth.socialaccount.providers.oauth2.views import OAuth2Adapter, OAuth2CallbackView, OAuth2LoginView
+from allauth.socialaccount.providers.oauth2.views import (
+    OAuth2Adapter,
+    OAuth2CallbackView,
+    OAuth2LoginView,
+)
 
 from .provider import QuadriviumProvider
 
@@ -8,7 +12,9 @@ class QuadriviumOAuth2Adapter(OAuth2Adapter):
     provider_id = QuadriviumProvider.id
 
     access_token_url = 'https://keycloak2.esmgquadrivium.nl/auth/realms/q/protocol/openid-connect/token'
-    authorize_url = 'https://keycloak2.esmgquadrivium.nl/auth/realms/q/protocol/openid-connect/auth'
+    authorize_url = (
+        'https://keycloak2.esmgquadrivium.nl/auth/realms/q/protocol/openid-connect/auth'
+    )
     profile_url = 'https://keycloak2.esmgquadrivium.nl/auth/realms/q/protocol/openid-connect/userinfo'
 
     def complete_login(self, request, app, token, **kwargs):

@@ -17,7 +17,9 @@ class DateRangeForm(forms.Form):
             initial = {}
 
         initial.setdefault('date_end', timezone.now())
-        initial.setdefault('date_start', initial['date_end'] - timezone.timedelta(days=365))
+        initial.setdefault(
+            'date_start', initial['date_end'] - timezone.timedelta(days=365)
+        )
 
         super().__init__(*args, initial=initial, **kwargs)
 
@@ -26,7 +28,9 @@ class DateRangeForm(forms.Form):
         date_start = cleaned_data.get('date_start')
         date_end = cleaned_data.get('date_end')
         if date_start and date_end and date_start > date_end:
-            raise ValidationError("The end date is further in the past than the starting date")
+            raise ValidationError(
+                "The end date is further in the past than the starting date"
+            )
         return cleaned_data
 
 
@@ -43,12 +47,15 @@ class ConcurrenflictFormMixin:
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields[self.concurrenflict_field_name] = forms.CharField(widget=forms.HiddenInput, label="",
-                                                                      required=False)
+        self.fields[self.concurrenflict_field_name] = forms.CharField(
+            widget=forms.HiddenInput, label="", required=False
+        )
         instance = kwargs.get('instance', None)
         if instance:
             self._concurrenflict_json_data = serializers.serialize('json', [instance])
-            self.fields[self.concurrenflict_field_name].initial = self._concurrenflict_json_data
+            self.fields[
+                self.concurrenflict_field_name
+            ].initial = self._concurrenflict_json_data
 
     def clean(self):  # noqa: C901
         # This function is too complex and ugly, should just get rid of it
@@ -58,13 +65,14 @@ class ConcurrenflictFormMixin:
         json_at_post = self._concurrenflict_json_data
         # we want to keep using the initial data set in __init__()
         self.data = self.data.copy()
-        self.data[self.add_prefix(self.concurrenflict_field_name)] = self._concurrenflict_json_data
+        self.data[
+            self.add_prefix(self.concurrenflict_field_name)
+        ] = self._concurrenflict_json_data
         have_diff = False
 
         # if json_at_post is None then this is an add() rather than a change(), so
         # there's no old record that could have changed while this one was being worked on
         if json_at_post and json_at_get and (json_at_post != json_at_get):
-
             json_data_before = json.loads(json_at_get)
             json_data_after = json.loads(json_at_post)
 
@@ -105,12 +113,16 @@ class ConcurrenflictFormMixin:
                     # ''' % {'html_name': fake_form[key].html_name}
 
                     if key in m2m_after:
-                        value_after_string = ', '.join([str(v) for v in value_after.all()])
+                        value_after_string = ', '.join(
+                            [str(v) for v in value_after.all()]
+                        )
                     else:
                         value_after_string = str(value_after)
                     # temp_field = fake_form[key]
                     msg = mark_safe(
-                        u'This field has been changed by someone else to: %s' % (value_after_string,))
+                        u'This field has been changed by someone else to: %s'
+                        % (value_after_string,)
+                    )
                     self.add_error(key, msg)
 
                     # These fields are no longer valid. Remove them from the
@@ -119,6 +131,9 @@ class ConcurrenflictFormMixin:
                         del cleaned_data[key]
 
         if have_diff:
-            self.add_error(NON_FIELD_ERRORS, "The data has been changed by someone else since you started editing it")
+            self.add_error(
+                NON_FIELD_ERRORS,
+                "The data has been changed by someone else since you started editing it",
+            )
 
         return cleaned_data

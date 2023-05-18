@@ -17,7 +17,8 @@ def patch_time(dt=None):
     """
     if dt is not None and not isinstance(dt, datetime.datetime) and callable(dt):
         raise ValueError(
-            "Patch time incorrectly called. Make sure you patched through @patch_time() and not @patch_time")
+            "Patch time incorrectly called. Make sure you patched through @patch_time() and not @patch_time"
+        )
 
     def wrapper_func(func):
         def inner(*args, **kwargs):
@@ -42,7 +43,6 @@ def mock_now(dt=None):
 
 
 class TestPatchMixin:
-
     @staticmethod
     def assert_has_no_call(mock: Mock, **kwargs):
         """Asserts that a given mock does not have a call with the (partially) given attributes.
@@ -57,7 +57,9 @@ class TestPatchMixin:
         except AssertionError:
             return
         else:
-            raise AssertionError(f"At least one undesired call was made with the given attributes: {kwargs}")
+            raise AssertionError(
+                f"At least one undesired call was made with the given attributes: {kwargs}"
+            )
 
     @staticmethod
     def assert_has_call(mock: Mock, **kwargs):
@@ -95,5 +97,7 @@ class TestPatchMixin:
                 valid_calls.append({'args': kall[0], **kall[1]})
 
         if not valid_calls:
-            raise AssertionError(f"No calls were made with the desired attributes: {kwargs}")
+            raise AssertionError(
+                f"No calls were made with the desired attributes: {kwargs}"
+            )
         return valid_calls
