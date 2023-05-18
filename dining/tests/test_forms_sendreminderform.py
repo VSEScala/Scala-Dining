@@ -1,13 +1,13 @@
 import threading
 from datetime import date, datetime
 
-from django.db import transaction, connections, OperationalError
+from django.db import OperationalError, connections, transaction
 from django.http import HttpRequest
 from django.test import TestCase, TransactionTestCase, skipUnlessDBFeature
 from django.utils import timezone
 
 from dining.forms import SendReminderForm
-from dining.models import DiningList, DiningEntry
+from dining.models import DiningEntry, DiningList
 from userdetails.models import Association, User
 
 

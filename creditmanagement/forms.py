@@ -1,4 +1,4 @@
-from typing import Tuple, Any
+from typing import Any, Tuple
 
 from dal_select2.widgets import ModelSelect2
 from django import forms
@@ -7,7 +7,7 @@ from django.db import transaction
 
 from creditmanagement.models import Account, Transaction
 from general.mail_control import send_templated_mail
-from userdetails.models import User, Association
+from userdetails.models import Association, User
 
 # Form fields which are used in transaction forms
 USER_FORM_FIELD = forms.ModelChoiceField(

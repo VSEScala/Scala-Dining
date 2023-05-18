@@ -1,25 +1,25 @@
 from allauth.account.views import LoginView
-from django.urls import path, include
+from django.urls import include, path
 
 from userdetails.views import (
-    RegisterView,
-    DiningJoinHistoryView,
     DiningClaimHistoryView,
+    DiningJoinHistoryView,
     PeopleAutocompleteView,
+    RegisterView,
 )
 from userdetails.views_association import (
-    AssociationTransactionListView,
-    AssociationTransactionsCSVView,
-    MembersOverview,
-    MembersEditView,
     AssociationOverview,
     AssociationSettingsView,
-    SiteDiningView,
-    SiteCreditView,
-    AutoCreateNegativeCreditsView,
     AssociationTransactionAddView,
-    SiteTransactionView,
+    AssociationTransactionListView,
+    AssociationTransactionsCSVView,
+    AutoCreateNegativeCreditsView,
+    MembersEditView,
+    MembersOverview,
     SiteCreditDetailView,
+    SiteCreditView,
+    SiteDiningView,
+    SiteTransactionView,
 )
 from userdetails.views_user_settings import SettingsProfileView
 

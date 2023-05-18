@@ -1,8 +1,8 @@
-from datetime import time, datetime
+from datetime import datetime, time
 from decimal import Decimal
 
 from django.conf import settings
-from django.core.exceptions import ValidationError, MultipleObjectsReturned
+from django.core.exceptions import MultipleObjectsReturned, ValidationError
 from django.core.validators import MinValueValidator
 from django.db import models
 from django.db.models import Sum
@@ -10,7 +10,7 @@ from django.utils import timezone
 
 from creditmanagement.models import Transaction
 from general.models import AbstractVisitTracker
-from userdetails.models import User, Association
+from userdetails.models import Association, User
 
 
 class DiningListManager(models.Manager):

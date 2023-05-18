@@ -1,7 +1,7 @@
 import datetime
+from unittest.mock import Mock, patch
 
 from django.utils import timezone
-from unittest.mock import patch, Mock
 
 __all__ = ["patch", "patch_time", "mock_now"]
 

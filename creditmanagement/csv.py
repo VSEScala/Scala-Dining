@@ -4,7 +4,7 @@ from typing import Iterable
 
 from django.utils.timezone import get_default_timezone
 
-from creditmanagement.models import Transaction, Account
+from creditmanagement.models import Account, Transaction
 
 
 def write_transactions_csv(

@@ -1,10 +1,10 @@
 from datetime import datetime
 from decimal import Decimal
-from typing import Union, Optional
+from typing import Optional, Union
 
 from django.core.validators import MinValueValidator
 from django.db import models
-from django.db.models import QuerySet, Sum, Q
+from django.db.models import Q, QuerySet, Sum
 from django.utils import timezone
 
 from userdetails.models import Association, User

@@ -4,22 +4,22 @@ from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import PermissionDenied
 from django.core.paginator import Paginator
-from django.db.models import Q, Count, Sum
-from django.http import HttpResponseRedirect, HttpResponse
+from django.db.models import Count, Q, Sum
+from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views import View
-from django.views.generic import ListView, TemplateView, FormView, DetailView
+from django.views.generic import DetailView, FormView, ListView, TemplateView
 
 from creditmanagement.csv import write_transactions_csv
 from creditmanagement.forms import ClearOpenExpensesForm, SiteWideTransactionForm
-from creditmanagement.models import Transaction, Account
+from creditmanagement.models import Account, Transaction
 from creditmanagement.views import TransactionFormView
-from dining.models import DiningList, DiningEntry
+from dining.models import DiningEntry, DiningList
 from general.views import DateRangeFilterMixin
 from userdetails.forms import AssociationSettingsForm
-from userdetails.models import UserMembership, Association, User
+from userdetails.models import Association, User, UserMembership
 
 
 class AssociationBoardMixin:

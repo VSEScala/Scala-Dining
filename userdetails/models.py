@@ -1,7 +1,7 @@
 from allauth.socialaccount.models import SocialApp
 from django.conf import settings
-from django.contrib.auth.models import AbstractUser, Group
-from django.contrib.auth.models import UserManager as DjangoUserManager, GroupManager
+from django.contrib.auth.models import AbstractUser, Group, GroupManager
+from django.contrib.auth.models import UserManager as DjangoUserManager
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils import timezone

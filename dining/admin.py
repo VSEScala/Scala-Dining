@@ -1,11 +1,11 @@
 from django.contrib import admin
 
 from dining.models import (
-    DiningDayAnnouncement,
-    DiningComment,
-    DiningList,
-    DiningEntry,
     DeletedList,
+    DiningComment,
+    DiningDayAnnouncement,
+    DiningEntry,
+    DiningList,
 )
 
 

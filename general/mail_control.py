@@ -2,7 +2,7 @@ from typing import List
 
 from django.contrib.sites.shortcuts import get_current_site
 from django.core import mail
-from django.core.mail import EmailMultiAlternatives, EmailMessage
+from django.core.mail import EmailMessage, EmailMultiAlternatives
 from django.http import HttpRequest
 from django.template.loader import render_to_string
 

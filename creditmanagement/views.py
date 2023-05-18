@@ -1,13 +1,13 @@
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.http import HttpResponseRedirect, HttpResponse
+from django.http import HttpResponse, HttpResponseRedirect
 from django.urls import reverse_lazy
-from django.views.generic import View, FormView
+from django.views.generic import FormView, View
 from django.views.generic.list import ListView
 
 from creditmanagement.csv import write_transactions_csv
 from creditmanagement.forms import TransactionForm
-from creditmanagement.models import Transaction, Account
+from creditmanagement.models import Account, Transaction
 
 
 class TransactionListView(LoginRequiredMixin, ListView):

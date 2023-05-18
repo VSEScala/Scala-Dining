@@ -1,6 +1,6 @@
 from datetime import timedelta
-from decimal import Decimal, ROUND_UP
-from typing import List, Dict, Literal
+from decimal import ROUND_UP, Decimal
+from typing import Dict, List, Literal
 
 from dal_select2.widgets import ModelSelect2, ModelSelect2Multiple
 from django import forms
@@ -10,22 +10,22 @@ from django.core.mail import EmailMessage
 from django.core.serializers import serialize
 from django.core.validators import MinValueValidator
 from django.db import transaction
-from django.db.models import OuterRef, Exists, QuerySet
+from django.db.models import Exists, OuterRef, QuerySet
 from django.forms import ValidationError
 from django.utils import timezone
 
-from creditmanagement.models import Transaction, Account
+from creditmanagement.models import Account, Transaction
 from dining.models import (
-    DiningList,
+    DeletedList,
     DiningComment,
     DiningEntry,
+    DiningList,
     PaymentReminderLock,
-    DeletedList,
 )
 from general.forms import ConcurrenflictFormMixin
 from general.mail_control import construct_templated_mail
 from general.util import SelectWithDisabled
-from userdetails.models import Association, UserMembership, User
+from userdetails.models import Association, User, UserMembership
 
 __all__ = [
     "CreateSlotForm",

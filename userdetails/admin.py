@@ -4,7 +4,7 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 
 from general.mail_control import send_templated_mail
-from userdetails.models import User, UserMembership, Association
+from userdetails.models import Association, User, UserMembership
 
 
 class AssociationLinks(admin.TabularInline):

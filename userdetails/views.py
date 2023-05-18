@@ -4,9 +4,9 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Value
 from django.db.models.functions import Concat
 from django.urls import reverse_lazy
-from django.views.generic import ListView, FormView
+from django.views.generic import FormView, ListView
 
-from dining.models import DiningList, DiningEntry
+from dining.models import DiningEntry, DiningList
 from userdetails.forms import RegisterUserForm
 from userdetails.models import User
 

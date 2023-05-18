@@ -3,7 +3,7 @@ from django.db import transaction
 from django.shortcuts import redirect
 from django.views.generic import TemplateView
 
-from userdetails.forms import UserForm, AssociationLinkForm
+from userdetails.forms import AssociationLinkForm, UserForm
 
 
 class SettingsProfileView(LoginRequiredMixin, TemplateView):

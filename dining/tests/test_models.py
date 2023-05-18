@@ -1,13 +1,12 @@
-from datetime import datetime, date
+from datetime import date, datetime
 from unittest.mock import patch
 
 from django.core.exceptions import ValidationError
 from django.test import TestCase
 from django.utils import timezone
 
-from dining.models import DiningEntry
-from dining.models import DiningList
-from userdetails.models import User, Association
+from dining.models import DiningEntry, DiningList
+from userdetails.models import Association, User
 
 
 class DiningListTestCase(TestCase):

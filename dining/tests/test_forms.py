@@ -1,4 +1,4 @@
-from datetime import timedelta, datetime, time, date
+from datetime import date, datetime, time, timedelta
 from decimal import Decimal
 
 from dal_select2.widgets import ModelSelect2, ModelSelect2Multiple
@@ -13,17 +13,17 @@ from creditmanagement.models import Account, Transaction
 from dining.forms import (
     CreateSlotForm,
     DiningEntryDeleteForm,
+    DiningEntryExternalForm,
+    DiningEntryInternalForm,
     DiningInfoForm,
+    DiningListDeleteForm,
     DiningPaymentForm,
     SendReminderForm,
-    DiningListDeleteForm,
-    DiningEntryInternalForm,
-    DiningEntryExternalForm,
 )
-from dining.models import DiningList, DiningEntry
+from dining.models import DiningEntry, DiningList
 from general.forms import ConcurrenflictFormMixin
 from userdetails.models import Association, User, UserMembership
-from utils.testing import TestPatchMixin, patch, FormValidityMixin
+from utils.testing import FormValidityMixin, TestPatchMixin, patch
 from utils.testing.patch_utils import patch_time
 
 

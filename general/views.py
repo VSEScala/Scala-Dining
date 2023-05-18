@@ -3,14 +3,14 @@ from os import getenv
 
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import ObjectDoesNotExist
-from django.http import HttpResponseForbidden, Http404
+from django.http import Http404, HttpResponseForbidden
 from django.shortcuts import render
-from django.template.loader import get_template, TemplateDoesNotExist
+from django.template.loader import TemplateDoesNotExist, get_template
 from django.utils import timezone
-from django.views.generic import View, ListView, TemplateView
+from django.views.generic import ListView, TemplateView, View
 
 from general.forms import DateRangeForm
-from general.models import SiteUpdate, PageVisitTracker
+from general.models import PageVisitTracker, SiteUpdate
 from userdetails.models import Association
 
 

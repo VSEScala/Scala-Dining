@@ -5,7 +5,7 @@ from django.db import transaction
 from django.db.models import Q
 from django.forms import ModelForm
 
-from userdetails.models import User, Association, UserMembership
+from userdetails.models import Association, User, UserMembership
 
 
 class RegisterUserForm(UserCreationForm):

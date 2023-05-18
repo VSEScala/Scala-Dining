@@ -8,11 +8,11 @@ from django.utils import timezone
 from creditmanagement.models import Transaction
 from dining.forms import (
     DiningEntryDeleteForm,
-    DiningEntryInternalForm,
     DiningEntryExternalForm,
+    DiningEntryInternalForm,
 )
-from dining.models import DiningList, DiningEntry
-from userdetails.models import User, Association, UserMembership
+from dining.models import DiningEntry, DiningList
+from userdetails.models import Association, User, UserMembership
 
 
 def _create_dining_list(**kwargs):

@@ -5,41 +5,41 @@ from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import NON_FIELD_ERRORS, PermissionDenied
 from django.db import transaction
-from django.db.models import Q, Count
+from django.db.models import Count, Q
 from django.http import (
     Http404,
-    HttpResponseRedirect,
-    HttpResponseForbidden,
     HttpResponse,
+    HttpResponseForbidden,
+    HttpResponseRedirect,
 )
-from django.shortcuts import redirect, get_object_or_404
+from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.http import url_has_allowed_host_and_scheme
-from django.views.generic import TemplateView, View, FormView
+from django.views.generic import FormView, TemplateView, View
 from django.views.generic.detail import SingleObjectMixin
 
 from dining.datesequence import sequenced_date
 from dining.forms import (
     CreateSlotForm,
-    DiningEntryDeleteForm,
     DiningCommentForm,
-    DiningInfoForm,
-    DiningPaymentForm,
-    DiningListDeleteForm,
-    SendReminderForm,
+    DiningEntryDeleteForm,
     DiningEntryExternalForm,
     DiningEntryInternalForm,
+    DiningInfoForm,
+    DiningListDeleteForm,
+    DiningPaymentForm,
+    SendReminderForm,
 )
 from dining.models import (
-    DiningList,
-    DiningDayAnnouncement,
-    DiningCommentVisitTracker,
-    DiningEntry,
     DiningComment,
+    DiningCommentVisitTracker,
+    DiningDayAnnouncement,
+    DiningEntry,
+    DiningList,
 )
 from general.mail_control import send_templated_mail
-from userdetails.models import User, Association
+from userdetails.models import Association, User
 
 
 def index(request):
