@@ -66,3 +66,8 @@ hr {
 input:checked + .collapser{
     height:auto;
 }
+
+.btn-outline-primary {
+    color: #3498db;
+    border-color: #3498db;
+}
