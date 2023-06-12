@@ -1,7 +1,11 @@
 name: Continuous integration
 
 # We might want to fine-tune this to prevent duplicate checks.
-on: [pull_request]
+on:
+  pull_request:
+  push:
+    branches:
+      - master
 
 # When a step fails, the next steps are not executed. This means that when a
 # test case fails, the coverage report will not be uploaded. This should be
