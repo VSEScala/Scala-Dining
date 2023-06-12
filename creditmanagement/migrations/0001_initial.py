@@ -14,171 +14,171 @@ class Migration(migrations.Migration):
 
     dependencies = [
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
-        ('userdetails', '0001_initial'),
+        ("userdetails", "0001_initial"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='PendingDiningTransaction',
+            name="PendingDiningTransaction",
             fields=[
                 (
-                    'id',
+                    "id",
                     models.AutoField(
                         auto_created=True,
                         primary_key=True,
                         serialize=False,
-                        verbose_name='ID',
+                        verbose_name="ID",
                     ),
                 ),
                 (
-                    'amount',
+                    "amount",
                     models.DecimalField(
                         decimal_places=2,
                         max_digits=4,
                         validators=[
-                            django.core.validators.MinValueValidator(Decimal('0.01'))
+                            django.core.validators.MinValueValidator(Decimal("0.01"))
                         ],
-                        verbose_name='Money transferred',
+                        verbose_name="Money transferred",
                     ),
                 ),
-                ('order_moment', models.DateTimeField(default=datetime.datetime.now)),
-                ('confirm_moment', models.DateTimeField(default=datetime.datetime.now)),
+                ("order_moment", models.DateTimeField(default=datetime.datetime.now)),
+                ("confirm_moment", models.DateTimeField(default=datetime.datetime.now)),
                 (
-                    'description',
-                    models.CharField(blank=True, default='', max_length=50),
+                    "description",
+                    models.CharField(blank=True, default="", max_length=50),
                 ),
             ],
             options={
-                'managed': False,
+                "managed": False,
             },
         ),
         migrations.CreateModel(
-            name='FixedTransaction',
+            name="FixedTransaction",
             fields=[
                 (
-                    'id',
+                    "id",
                     models.AutoField(
                         auto_created=True,
                         primary_key=True,
                         serialize=False,
-                        verbose_name='ID',
+                        verbose_name="ID",
                     ),
                 ),
                 (
-                    'amount',
+                    "amount",
                     models.DecimalField(
                         decimal_places=2,
                         max_digits=4,
                         validators=[
-                            django.core.validators.MinValueValidator(Decimal('0.01'))
+                            django.core.validators.MinValueValidator(Decimal("0.01"))
                         ],
-                        verbose_name='Money transferred',
+                        verbose_name="Money transferred",
                     ),
                 ),
-                ('order_moment', models.DateTimeField(default=datetime.datetime.now)),
-                ('confirm_moment', models.DateTimeField(default=datetime.datetime.now)),
+                ("order_moment", models.DateTimeField(default=datetime.datetime.now)),
+                ("confirm_moment", models.DateTimeField(default=datetime.datetime.now)),
                 (
-                    'description',
-                    models.CharField(blank=True, default='', max_length=50),
+                    "description",
+                    models.CharField(blank=True, default="", max_length=50),
                 ),
             ],
             options={
-                'abstract': False,
+                "abstract": False,
             },
         ),
         migrations.CreateModel(
-            name='PendingDiningListTracker',
+            name="PendingDiningListTracker",
             fields=[
                 (
-                    'id',
+                    "id",
                     models.AutoField(
                         auto_created=True,
                         primary_key=True,
                         serialize=False,
-                        verbose_name='ID',
+                        verbose_name="ID",
                     ),
                 ),
             ],
         ),
         migrations.CreateModel(
-            name='PendingTransaction',
+            name="PendingTransaction",
             fields=[
                 (
-                    'id',
+                    "id",
                     models.AutoField(
                         auto_created=True,
                         primary_key=True,
                         serialize=False,
-                        verbose_name='ID',
+                        verbose_name="ID",
                     ),
                 ),
                 (
-                    'amount',
+                    "amount",
                     models.DecimalField(
                         decimal_places=2,
                         max_digits=4,
                         validators=[
-                            django.core.validators.MinValueValidator(Decimal('0.01'))
+                            django.core.validators.MinValueValidator(Decimal("0.01"))
                         ],
-                        verbose_name='Money transferred',
+                        verbose_name="Money transferred",
                     ),
                 ),
-                ('order_moment', models.DateTimeField(default=datetime.datetime.now)),
-                ('confirm_moment', models.DateTimeField(default=datetime.datetime.now)),
+                ("order_moment", models.DateTimeField(default=datetime.datetime.now)),
+                ("confirm_moment", models.DateTimeField(default=datetime.datetime.now)),
                 (
-                    'description',
-                    models.CharField(blank=True, default='', max_length=50),
+                    "description",
+                    models.CharField(blank=True, default="", max_length=50),
                 ),
                 (
-                    'source_association',
+                    "source_association",
                     models.ForeignKey(
                         blank=True,
                         null=True,
                         on_delete=django.db.models.deletion.SET_NULL,
-                        related_name='pendingtransaction_transaction_source',
-                        to='userdetails.Association',
-                        verbose_name='The association giving the money',
+                        related_name="pendingtransaction_transaction_source",
+                        to="userdetails.Association",
+                        verbose_name="The association giving the money",
                     ),
                 ),
             ],
             options={
-                'abstract': False,
+                "abstract": False,
             },
         ),
         migrations.AddField(
-            model_name='pendingtransaction',
-            name='source_user',
+            model_name="pendingtransaction",
+            name="source_user",
             field=models.ForeignKey(
                 blank=True,
                 null=True,
                 on_delete=django.db.models.deletion.SET_NULL,
-                related_name='pendingtransaction_transaction_source',
+                related_name="pendingtransaction_transaction_source",
                 to=settings.AUTH_USER_MODEL,
-                verbose_name='The user giving the money',
+                verbose_name="The user giving the money",
             ),
         ),
         migrations.AddField(
-            model_name='pendingtransaction',
-            name='target_association',
+            model_name="pendingtransaction",
+            name="target_association",
             field=models.ForeignKey(
                 blank=True,
                 null=True,
                 on_delete=django.db.models.deletion.SET_NULL,
-                related_name='pendingtransaction_transaction_target',
-                to='userdetails.Association',
-                verbose_name='The association recieving the money',
+                related_name="pendingtransaction_transaction_target",
+                to="userdetails.Association",
+                verbose_name="The association recieving the money",
             ),
         ),
         migrations.AddField(
-            model_name='pendingtransaction',
-            name='target_user',
+            model_name="pendingtransaction",
+            name="target_user",
             field=models.ForeignKey(
                 blank=True,
                 null=True,
                 on_delete=django.db.models.deletion.SET_NULL,
-                related_name='pendingtransaction_transaction_target',
+                related_name="pendingtransaction_transaction_target",
                 to=settings.AUTH_USER_MODEL,
-                verbose_name='The user receiving the money',
+                verbose_name="The user receiving the money",
             ),
         ),
     ]

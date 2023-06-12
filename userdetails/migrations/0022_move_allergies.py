@@ -4,7 +4,7 @@ from django.db import migrations
 
 
 def forwards(apps, schema_editor):
-    UserDiningSettings = apps.get_model('dining', 'UserDiningSettings')
+    UserDiningSettings = apps.get_model("dining", "UserDiningSettings")
 
     for obj in UserDiningSettings.objects.all():
         user = obj.user
@@ -13,8 +13,8 @@ def forwards(apps, schema_editor):
 
 
 def backwards(apps, schema_editor):
-    UserDiningSettings = apps.get_model('dining', 'UserDiningSettings')
-    User = apps.get_model('userdetails', 'User')
+    UserDiningSettings = apps.get_model("dining", "UserDiningSettings")
+    User = apps.get_model("userdetails", "User")
 
     for obj in User.objects.all():
         UserDiningSettings.objects.create(user=obj, allergies=obj.allergies)
@@ -22,9 +22,9 @@ def backwards(apps, schema_editor):
 
 class Migration(migrations.Migration):
     dependencies = [
-        ('userdetails', '0021_auto_20221224_1346'),
+        ("userdetails", "0021_auto_20221224_1346"),
         # We need to make sure that the UserDiningSettings model exists, we depend on it.
-        ('dining', '0019_auto_20210320_1309'),
+        ("dining", "0019_auto_20210320_1309"),
     ]
 
     operations = [

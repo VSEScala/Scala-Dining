@@ -4,8 +4,8 @@ from django.db import migrations
 
 
 def move_added_by(apps, schema_editor):
-    DiningEntryUser = apps.get_model('dining', 'DiningEntryUser')
-    DiningEntryExternal = apps.get_model('dining', 'DiningEntryExternal')
+    DiningEntryUser = apps.get_model("dining", "DiningEntryUser")
+    DiningEntryExternal = apps.get_model("dining", "DiningEntryExternal")
 
     for entry in DiningEntryUser.objects.all():
         entry.created_by = entry.added_by if entry.added_by else entry.user
@@ -17,7 +17,7 @@ def move_added_by(apps, schema_editor):
 
 
 def reverse_added_by(apps, schema_editor):
-    DiningEntryUser = apps.get_model('dining', 'DiningEntryUser')
+    DiningEntryUser = apps.get_model("dining", "DiningEntryUser")
 
     for entry in DiningEntryUser.objects.all():
         entry.added_by = entry.created_by
@@ -26,8 +26,8 @@ def reverse_added_by(apps, schema_editor):
 
 class Migration(migrations.Migration):
     dependencies = [
-        ('dining', '0009_auto_20190508_0230'),
-        ('userdetails', '0014_remove_user_external_link'),
+        ("dining", "0009_auto_20190508_0230"),
+        ("userdetails", "0014_remove_user_external_link"),
     ]
 
     operations = [

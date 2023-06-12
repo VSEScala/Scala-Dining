@@ -7,61 +7,61 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
     dependencies = [
-        ('auth', '0009_alter_user_last_name_max_length'),
-        ('userdetails', '0001_initial'),
+        ("auth", "0009_alter_user_last_name_max_length"),
+        ("userdetails", "0001_initial"),
     ]
 
     operations = [
         migrations.RemoveField(
-            model_name='associationdetails',
-            name='association',
+            model_name="associationdetails",
+            name="association",
         ),
         migrations.DeleteModel(
-            name='Association',
+            name="Association",
         ),
         migrations.CreateModel(
-            name='Association',
+            name="Association",
             fields=[
                 (
-                    'group_ptr',
+                    "group_ptr",
                     models.OneToOneField(
                         auto_created=True,
                         on_delete=django.db.models.deletion.CASCADE,
                         parent_link=True,
                         primary_key=True,
                         serialize=False,
-                        to='auth.Group',
+                        to="auth.Group",
                     ),
                 ),
-                ('slug', models.SlugField(max_length=10)),
-                ('image', models.ImageField(blank=True, upload_to='')),
+                ("slug", models.SlugField(max_length=10)),
+                ("image", models.ImageField(blank=True, upload_to="")),
             ],
-            bases=('auth.group',),
+            bases=("auth.group",),
             managers=[
-                ('objects', django.contrib.auth.models.GroupManager()),
+                ("objects", django.contrib.auth.models.GroupManager()),
             ],
         ),
         migrations.DeleteModel(
-            name='AssociationDetails',
+            name="AssociationDetails",
         ),
         migrations.AlterField(
-            model_name='User',
-            name='groups',
+            model_name="User",
+            name="groups",
             field=models.ManyToManyField(
                 blank=True,
-                help_text='The groups this user belongs to. A user will get all permissions granted to each of their groups.',
-                related_name='user_set',
-                related_query_name='user',
-                to='auth.Group',
-                verbose_name='groups',
+                help_text="The groups this user belongs to. A user will get all permissions granted to each of their groups.",
+                related_name="user_set",
+                related_query_name="user",
+                to="auth.Group",
+                verbose_name="groups",
             ),
         ),
         migrations.AlterField(
-            model_name='UserMembership',
-            name='association',
+            model_name="UserMembership",
+            name="association",
             field=models.ForeignKey(
                 on_delete=django.db.models.deletion.CASCADE,
-                to='userdetails.Association',
+                to="userdetails.Association",
             ),
         ),
     ]

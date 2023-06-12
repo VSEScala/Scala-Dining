@@ -6,20 +6,24 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('dining', '0010_auto_20190508_0230'),
+        ("dining", "0010_auto_20190508_0230"),
     ]
 
     operations = [
         migrations.RemoveField(
-            model_name='diningentryuser',
-            name='added_by',
+            model_name="diningentryuser",
+            name="added_by",
         ),
         migrations.AlterField(
-            model_name='diningentry',
-            name='created_by',
-            field=models.ForeignKey(default=None, on_delete=django.db.models.deletion.PROTECT, related_name='created_dining_entries', to=settings.AUTH_USER_MODEL),
+            model_name="diningentry",
+            name="created_by",
+            field=models.ForeignKey(
+                default=None,
+                on_delete=django.db.models.deletion.PROTECT,
+                related_name="created_dining_entries",
+                to=settings.AUTH_USER_MODEL,
+            ),
             preserve_default=False,
         ),
     ]

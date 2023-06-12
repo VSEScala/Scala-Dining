@@ -5,17 +5,24 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('dining', '0020_delete_userdiningsettings'),
+        ("dining", "0020_delete_userdiningsettings"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='PaymentReminderLock',
+            name="PaymentReminderLock",
             fields=[
-                ('dining_list', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, primary_key=True, serialize=False, to='dining.dininglist')),
-                ('sent', models.DateTimeField(null=True)),
+                (
+                    "dining_list",
+                    models.OneToOneField(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        primary_key=True,
+                        serialize=False,
+                        to="dining.dininglist",
+                    ),
+                ),
+                ("sent", models.DateTimeField(null=True)),
             ],
         ),
     ]

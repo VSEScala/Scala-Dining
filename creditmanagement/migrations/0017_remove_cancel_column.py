@@ -8,32 +8,32 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
     dependencies = [
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
-        ('userdetails', '0022_move_allergies'),
-        ('creditmanagement', '0016_unfold_cancel_column'),
+        ("userdetails", "0022_move_allergies"),
+        ("creditmanagement", "0016_unfold_cancel_column"),
     ]
 
     operations = [
         migrations.RemoveField(
-            model_name='transaction',
-            name='cancelled',
+            model_name="transaction",
+            name="cancelled",
         ),
         migrations.RemoveField(
-            model_name='transaction',
-            name='cancelled_by',
+            model_name="transaction",
+            name="cancelled_by",
         ),
         migrations.AlterField(
-            model_name='account',
-            name='association',
+            model_name="account",
+            name="association",
             field=models.OneToOneField(
                 blank=True,
                 null=True,
                 on_delete=django.db.models.deletion.CASCADE,
-                to='userdetails.association',
+                to="userdetails.association",
             ),
         ),
         migrations.AlterField(
-            model_name='account',
-            name='user',
+            model_name="account",
+            name="user",
             field=models.OneToOneField(
                 blank=True,
                 null=True,
@@ -42,8 +42,8 @@ class Migration(migrations.Migration):
             ),
         ),
         migrations.AlterField(
-            model_name='transaction',
-            name='description',
+            model_name="transaction",
+            name="description",
             field=models.CharField(max_length=1000),
         ),
     ]

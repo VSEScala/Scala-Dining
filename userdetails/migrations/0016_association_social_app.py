@@ -6,20 +6,20 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
     dependencies = [
-        ('socialaccount', '0003_extra_data_default_dict'),
-        ('userdetails', '0015_auto_20190508_1905'),
+        ("socialaccount", "0003_extra_data_default_dict"),
+        ("userdetails", "0015_auto_20190508_1905"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='association',
-            name='social_app',
+            model_name="association",
+            name="social_app",
             field=models.ForeignKey(
                 blank=True,
-                help_text='A user automatically becomes member of the association if she signs up using this social app',
+                help_text="A user automatically becomes member of the association if she signs up using this social app",
                 null=True,
                 on_delete=django.db.models.deletion.PROTECT,
-                to='socialaccount.SocialApp',
+                to="socialaccount.SocialApp",
             ),
         ),
     ]

@@ -16,9 +16,9 @@ def compute_balance(Account, Transaction):
     """Computes the balance for all accounts and returns a list."""
     qs = Transaction.objects.filter(cancelled=None)
     return [
-        (qs.filter(target=a).aggregate(sum=Sum('amount'))['sum'] or Decimal('0.00'))
-        - (qs.filter(source=a).aggregate(sum=Sum('amount'))['sum'] or Decimal('0.00'))
-        for a in Account.objects.order_by('id')
+        (qs.filter(target=a).aggregate(sum=Sum("amount"))["sum"] or Decimal("0.00"))
+        - (qs.filter(source=a).aggregate(sum=Sum("amount"))["sum"] or Decimal("0.00"))
+        for a in Account.objects.order_by("id")
     ]
 
 
@@ -78,7 +78,7 @@ def forward(apps, schema_editor):
 
 class Migration(migrations.Migration):
     dependencies = [
-        ('creditmanagement', '0015_auto_20220428_2113'),
+        ("creditmanagement", "0015_auto_20220428_2113"),
     ]
 
     operations = [

@@ -12,33 +12,33 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
     dependencies = [
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
-        ('userdetails', '0019_auto_20200823_1602'),
-        ('creditmanagement', '0010_auto_20200817_1230'),
+        ("userdetails", "0019_auto_20200823_1602"),
+        ("creditmanagement", "0010_auto_20200817_1230"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='Account',
+            name="Account",
             fields=[
                 (
-                    'id',
+                    "id",
                     models.AutoField(
                         auto_created=True,
                         primary_key=True,
                         serialize=False,
-                        verbose_name='ID',
+                        verbose_name="ID",
                     ),
                 ),
                 (
-                    'association',
+                    "association",
                     models.OneToOneField(
                         null=True,
                         on_delete=django.db.models.deletion.PROTECT,
-                        to='userdetails.Association',
+                        to="userdetails.Association",
                     ),
                 ),
                 (
-                    'user',
+                    "user",
                     models.OneToOneField(
                         null=True,
                         on_delete=django.db.models.deletion.PROTECT,
@@ -48,61 +48,61 @@ class Migration(migrations.Migration):
             ],
         ),
         migrations.CreateModel(
-            name='Transaction',
+            name="Transaction",
             fields=[
                 (
-                    'id',
+                    "id",
                     models.AutoField(
                         auto_created=True,
                         primary_key=True,
                         serialize=False,
-                        verbose_name='ID',
+                        verbose_name="ID",
                     ),
                 ),
                 (
-                    'amount',
+                    "amount",
                     models.DecimalField(
                         decimal_places=2,
                         max_digits=8,
                         validators=[
-                            django.core.validators.MinValueValidator(Decimal('0.01'))
+                            django.core.validators.MinValueValidator(Decimal("0.01"))
                         ],
                     ),
                 ),
-                ('moment', models.DateTimeField(default=django.utils.timezone.now)),
-                ('description', models.CharField(max_length=150)),
-                ('cancelled', models.DateTimeField(null=True)),
+                ("moment", models.DateTimeField(default=django.utils.timezone.now)),
+                ("description", models.CharField(max_length=150)),
+                ("cancelled", models.DateTimeField(null=True)),
                 (
-                    'cancelled_by',
+                    "cancelled_by",
                     models.ForeignKey(
                         null=True,
                         on_delete=django.db.models.deletion.PROTECT,
-                        related_name='transaction_cancelled_set',
+                        related_name="transaction_cancelled_set",
                         to=settings.AUTH_USER_MODEL,
                     ),
                 ),
                 (
-                    'created_by',
+                    "created_by",
                     models.ForeignKey(
                         on_delete=django.db.models.deletion.PROTECT,
-                        related_name='transaction_set',
+                        related_name="transaction_set",
                         to=settings.AUTH_USER_MODEL,
                     ),
                 ),
                 (
-                    'source',
+                    "source",
                     models.ForeignKey(
                         on_delete=django.db.models.deletion.PROTECT,
-                        related_name='transaction_source_set',
-                        to='creditmanagement.Account',
+                        related_name="transaction_source_set",
+                        to="creditmanagement.Account",
                     ),
                 ),
                 (
-                    'target',
+                    "target",
                     models.ForeignKey(
                         on_delete=django.db.models.deletion.PROTECT,
-                        related_name='transaction_target_set',
-                        to='creditmanagement.Account',
+                        related_name="transaction_target_set",
+                        to="creditmanagement.Account",
                     ),
                 ),
             ],

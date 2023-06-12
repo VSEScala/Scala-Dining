@@ -8,26 +8,26 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
     dependencies = [
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
-        ('general', '0001_initial'),
+        ("general", "0001_initial"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='PageVisitTracker',
+            name="PageVisitTracker",
             fields=[
                 (
-                    'id',
+                    "id",
                     models.AutoField(
                         auto_created=True,
                         primary_key=True,
                         serialize=False,
-                        verbose_name='ID',
+                        verbose_name="ID",
                     ),
                 ),
-                ('timestamp', models.DateTimeField(auto_now_add=True)),
-                ('page', models.IntegerField()),
+                ("timestamp", models.DateTimeField(auto_now_add=True)),
+                ("page", models.IntegerField()),
                 (
-                    'user',
+                    "user",
                     models.ForeignKey(
                         on_delete=django.db.models.deletion.CASCADE,
                         to=settings.AUTH_USER_MODEL,
@@ -35,12 +35,12 @@ class Migration(migrations.Migration):
                 ),
             ],
             options={
-                'abstract': False,
+                "abstract": False,
             },
         ),
         migrations.AlterField(
-            model_name='siteupdate',
-            name='date',
+            model_name="siteupdate",
+            name="date",
             field=models.DateTimeField(auto_now_add=True, unique=True),
         ),
     ]

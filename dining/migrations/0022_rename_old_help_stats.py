@@ -4,25 +4,24 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('dining', '0021_create_paymentreminderlock'),
+        ("dining", "0021_create_paymentreminderlock"),
     ]
 
     operations = [
         migrations.RenameField(
-            model_name='diningwork',
-            old_name='has_cleaned',
-            new_name='has_cleaned_old',
+            model_name="diningwork",
+            old_name="has_cleaned",
+            new_name="has_cleaned_old",
         ),
         migrations.RenameField(
-            model_name='diningwork',
-            old_name='has_cooked',
-            new_name='has_cooked_old',
+            model_name="diningwork",
+            old_name="has_cooked",
+            new_name="has_cooked_old",
         ),
         migrations.RenameField(
-            model_name='diningwork',
-            old_name='has_shopped',
-            new_name='has_shopped_old',
+            model_name="diningwork",
+            old_name="has_shopped",
+            new_name="has_shopped_old",
         ),
     ]

@@ -4,15 +4,14 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('dining', '0019_auto_20210320_1309'),
+        ("dining", "0019_auto_20210320_1309"),
         # We need to make sure that the allergies have been copied over before we delete the UserDiningSettings model.
-        ('userdetails', '0022_move_allergies'),
+        ("userdetails", "0022_move_allergies"),
     ]
 
     operations = [
         migrations.DeleteModel(
-            name='UserDiningSettings',
+            name="UserDiningSettings",
         ),
     ]

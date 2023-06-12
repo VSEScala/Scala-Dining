@@ -8,26 +8,26 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
     dependencies = [
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
-        ('userdetails', '0020_auto_20210319_2310'),
-        ('creditmanagement', '0014_auto_20210320_0015'),
+        ("userdetails", "0020_auto_20210319_2310"),
+        ("creditmanagement", "0014_auto_20210320_0015"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='account',
-            name='association',
+            model_name="account",
+            name="association",
             field=models.OneToOneField(
                 null=True,
                 on_delete=django.db.models.deletion.CASCADE,
-                to='userdetails.association',
+                to="userdetails.association",
             ),
         ),
         migrations.AlterField(
-            model_name='account',
-            name='special',
+            model_name="account",
+            name="special",
             field=models.CharField(
                 blank=True,
-                choices=[('kitchen_cost', 'Kitchen cost')],
+                choices=[("kitchen_cost", "Kitchen cost")],
                 default=None,
                 max_length=30,
                 null=True,
@@ -35,8 +35,8 @@ class Migration(migrations.Migration):
             ),
         ),
         migrations.AlterField(
-            model_name='account',
-            name='user',
+            model_name="account",
+            name="user",
             field=models.OneToOneField(
                 null=True,
                 on_delete=django.db.models.deletion.CASCADE,

@@ -4,34 +4,33 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('dining', '0022_rename_old_help_stats'),
+        ("dining", "0022_rename_old_help_stats"),
     ]
 
     operations = [
         migrations.AlterModelOptions(
-            name='diningentry',
-            options={'verbose_name_plural': 'dining entries'},
+            name="diningentry",
+            options={"verbose_name_plural": "dining entries"},
         ),
         migrations.AddField(
-            model_name='diningentry',
-            name='external_name',
+            model_name="diningentry",
+            name="external_name",
             field=models.CharField(blank=True, max_length=100),
         ),
         migrations.AddField(
-            model_name='diningentry',
-            name='has_cleaned',
+            model_name="diningentry",
+            name="has_cleaned",
             field=models.BooleanField(default=False),
         ),
         migrations.AddField(
-            model_name='diningentry',
-            name='has_cooked',
+            model_name="diningentry",
+            name="has_cooked",
             field=models.BooleanField(default=False),
         ),
         migrations.AddField(
-            model_name='diningentry',
-            name='has_shopped',
+            model_name="diningentry",
+            name="has_shopped",
             field=models.BooleanField(default=False),
         ),
     ]

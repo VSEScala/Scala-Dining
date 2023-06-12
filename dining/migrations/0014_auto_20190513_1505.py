@@ -4,7 +4,7 @@ from django.db import migrations
 
 
 def move_claimant_purchaser(apps, schema_editor):
-    DiningList = apps.get_model('dining', 'DiningList')
+    DiningList = apps.get_model("dining", "DiningList")
     for dl in DiningList.objects.all():
         dl.owners.add(dl.claimed_by)
         if dl.purchaser:
@@ -12,15 +12,14 @@ def move_claimant_purchaser(apps, schema_editor):
 
 
 def move_back(apps, schema_editor):
-    DiningList = apps.get_model('dining', 'DiningList')
+    DiningList = apps.get_model("dining", "DiningList")
     for dl in DiningList.objects.all():
         dl.claimed_by = dl.owners.first()
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('dining', '0013_auto_20190513_1505'),
+        ("dining", "0013_auto_20190513_1505"),
     ]
 
     operations = [

@@ -5,16 +5,19 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('userdetails', '0002_auto_20190203_2324'),
-        ('dining', '0002_auto_20190203_2149'),
+        ("userdetails", "0002_auto_20190203_2324"),
+        ("dining", "0002_auto_20190203_2149"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='DiningList',
-            name='association',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='userdetails.Association', unique_for_date='date'),
+            model_name="DiningList",
+            name="association",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE,
+                to="userdetails.Association",
+                unique_for_date="date",
+            ),
         ),
     ]

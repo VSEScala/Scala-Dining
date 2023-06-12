@@ -7,30 +7,30 @@ import userdetails.models
 
 class Migration(migrations.Migration):
     dependencies = [
-        ('userdetails', '0020_auto_20210319_2310'),
+        ("userdetails", "0020_auto_20210319_2310"),
     ]
 
     operations = [
         migrations.AlterModelManagers(
-            name='association',
+            name="association",
             managers=[
-                ('objects', userdetails.models.AssociationManager()),
+                ("objects", userdetails.models.AssociationManager()),
             ],
         ),
         migrations.AlterModelManagers(
-            name='user',
+            name="user",
             managers=[
-                ('objects', userdetails.models.UserManager()),
+                ("objects", userdetails.models.UserManager()),
             ],
         ),
         migrations.AddField(
-            model_name='user',
-            name='allergies',
+            model_name="user",
+            name="allergies",
             field=models.CharField(
                 blank=True,
-                help_text='E.g. gluten or vegetarian. Leave empty if not applicable.',
+                help_text="E.g. gluten or vegetarian. Leave empty if not applicable.",
                 max_length=100,
-                verbose_name='food allergies or preferences',
+                verbose_name="food allergies or preferences",
             ),
         ),
     ]

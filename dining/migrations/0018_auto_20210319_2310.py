@@ -5,16 +5,20 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('creditmanagement', '0013_auto_20210319_2310'),
-        ('dining', '0017_auto_20200824_0138'),
+        ("creditmanagement", "0013_auto_20210319_2310"),
+        ("dining", "0017_auto_20200824_0138"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='diningentry',
-            name='transaction',
-            field=models.OneToOneField(blank=True, null=True, on_delete=django.db.models.deletion.PROTECT, to='creditmanagement.transaction'),
+            model_name="diningentry",
+            name="transaction",
+            field=models.OneToOneField(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.PROTECT,
+                to="creditmanagement.transaction",
+            ),
         ),
     ]

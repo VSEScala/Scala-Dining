@@ -10,26 +10,26 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.CreateModel(
-            name='SiteUpdate',
+            name="SiteUpdate",
             fields=[
                 (
-                    'id',
+                    "id",
                     models.AutoField(
                         auto_created=True,
                         primary_key=True,
                         serialize=False,
-                        verbose_name='ID',
+                        verbose_name="ID",
                     ),
                 ),
-                ('date', models.DateField(auto_now_add=True, unique=True)),
+                ("date", models.DateField(auto_now_add=True, unique=True)),
                 (
-                    'version',
+                    "version",
                     models.CharField(
-                        help_text='The current version', max_length=16, unique=True
+                        help_text="The current version", max_length=16, unique=True
                     ),
                 ),
-                ('title', models.CharField(max_length=140, unique=True)),
-                ('message', models.TextField()),
+                ("title", models.CharField(max_length=140, unique=True)),
+                ("message", models.TextField()),
             ],
         ),
     ]

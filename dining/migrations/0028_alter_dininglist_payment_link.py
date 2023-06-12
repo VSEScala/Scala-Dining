@@ -4,15 +4,18 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('dining', '0027_deletedlist_and_more'),
+        ("dining", "0027_deletedlist_and_more"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='dininglist',
-            name='payment_link',
-            field=models.URLField(blank=True, help_text='Link for payment, e.g. a Tikkie link.', max_length=2000),
+            model_name="dininglist",
+            name="payment_link",
+            field=models.URLField(
+                blank=True,
+                help_text="Link for payment, e.g. a Tikkie link.",
+                max_length=2000,
+            ),
         ),
     ]

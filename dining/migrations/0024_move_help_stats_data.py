@@ -53,9 +53,7 @@ def backwards(apps, schema_editor):
 
 class Migration(migrations.Migration):
     dependencies = [
-        ('dining', '0023_add_new_help_stats'),
+        ("dining", "0023_add_new_help_stats"),
     ]
 
-    operations = [
-        migrations.RunPython(forwards, backwards, elidable=True)
-    ]
+    operations = [migrations.RunPython(forwards, backwards, elidable=True)]

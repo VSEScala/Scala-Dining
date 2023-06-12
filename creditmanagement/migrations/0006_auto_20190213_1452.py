@@ -6,28 +6,28 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
     dependencies = [
-        ('creditmanagement', '0005_usercredit_view'),
+        ("creditmanagement", "0005_usercredit_view"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='fixedtransaction',
-            name='confirm_moment',
+            model_name="fixedtransaction",
+            name="confirm_moment",
             field=models.DateTimeField(blank=True, default=django.utils.timezone.now),
         ),
         migrations.AlterField(
-            model_name='fixedtransaction',
-            name='order_moment',
+            model_name="fixedtransaction",
+            name="order_moment",
             field=models.DateTimeField(default=django.utils.timezone.now),
         ),
         migrations.AlterField(
-            model_name='pendingtransaction',
-            name='confirm_moment',
+            model_name="pendingtransaction",
+            name="confirm_moment",
             field=models.DateTimeField(blank=True, default=django.utils.timezone.now),
         ),
         migrations.AlterField(
-            model_name='pendingtransaction',
-            name='order_moment',
+            model_name="pendingtransaction",
+            name="order_moment",
             field=models.DateTimeField(default=django.utils.timezone.now),
         ),
     ]
