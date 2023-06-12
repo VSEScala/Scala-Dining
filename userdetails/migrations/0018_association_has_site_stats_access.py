@@ -4,15 +4,14 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('userdetails', '0017_association_balance_update_instructions'),
+        ("userdetails", "0017_association_balance_update_instructions"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='association',
-            name='has_site_stats_access',
+            model_name="association",
+            name="has_site_stats_access",
             field=models.BooleanField(default=False),
         ),
     ]

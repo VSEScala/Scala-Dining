@@ -4,15 +4,14 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('userdetails', '0016_association_social_app'),
+        ("userdetails", "0016_association_social_app"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='association',
-            name='balance_update_instructions',
-            field=models.TextField(default='to be defined', max_length=512),
+            model_name="association",
+            name="balance_update_instructions",
+            field=models.TextField(default="to be defined", max_length=512),
         ),
     ]

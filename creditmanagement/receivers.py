@@ -1,9 +1,9 @@
 from django.db import DatabaseError
-from django.db.models.signals import post_save, post_migrate
+from django.db.models.signals import post_migrate, post_save
 from django.dispatch import receiver
 
 from creditmanagement.models import Account
-from userdetails.models import User, Association
+from userdetails.models import Association, User
 
 
 @receiver(post_save, sender=User)

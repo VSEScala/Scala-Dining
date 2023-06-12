@@ -4,10 +4,8 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('creditmanagement', '0002_auto_20190203_1923'),
+        ("creditmanagement", "0002_auto_20190203_1923"),
     ]
 
-    operations = [
-    ]
+    operations = []

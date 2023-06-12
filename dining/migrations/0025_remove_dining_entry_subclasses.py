@@ -4,15 +4,13 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('dining', '0024_move_help_stats_data'),
+        ("dining", "0024_move_help_stats_data"),
     ]
 
     operations = [
         # For some reason these RemoveField didn't work properly.
         # But I think that they are not necessary.
-
         # migrations.RemoveField(
         #     model_name='diningentryuser',
         #     name='diningentry_ptr',
@@ -22,12 +20,12 @@ class Migration(migrations.Migration):
         #     name='diningwork_ptr',
         # ),
         migrations.DeleteModel(
-            name='DiningEntryExternal',
+            name="DiningEntryExternal",
         ),
         migrations.DeleteModel(
-            name='DiningEntryUser',
+            name="DiningEntryUser",
         ),
         migrations.DeleteModel(
-            name='DiningWork',
+            name="DiningWork",
         ),
     ]

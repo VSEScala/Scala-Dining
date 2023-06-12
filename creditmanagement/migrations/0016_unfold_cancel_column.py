@@ -16,9 +16,9 @@ def compute_balance(Account, Transaction):
     """Computes the balance for all accounts and returns a list."""
     qs = Transaction.objects.filter(cancelled=None)
     return [
-        (qs.filter(target=a).aggregate(sum=Sum('amount'))['sum'] or Decimal('0.00'))
-        - (qs.filter(source=a).aggregate(sum=Sum('amount'))['sum'] or Decimal('0.00'))
-        for a in Account.objects.order_by('id')
+        (qs.filter(target=a).aggregate(sum=Sum("amount"))["sum"] or Decimal("0.00"))
+        - (qs.filter(source=a).aggregate(sum=Sum("amount"))["sum"] or Decimal("0.00"))
+        for a in Account.objects.order_by("id")
     ]
 
 
@@ -47,7 +47,7 @@ def forward(apps, schema_editor):
         u = User.objects.create(
             username="transaction_cancel_migration_user",
             email="invalid2@localhost",
-            first_name="Transaction Cancel Migration User"
+            first_name="Transaction Cancel Migration User",
         )
 
     for tx in Transaction.objects.exclude(cancelled=None):
@@ -57,7 +57,10 @@ def forward(apps, schema_editor):
             source=tx.target,
             target=tx.source,
             amount=tx.amount,
-            moment=tx.moment + timedelta(seconds=1),  # If the moment was exactly equal, ordering might go wrong
+            moment=tx.moment
+            + timedelta(
+                seconds=1
+            ),  # If the moment was exactly equal, ordering might go wrong
             description=f'Refund "{tx.description}"',
             created_by=u,
         )
@@ -75,9 +78,11 @@ def forward(apps, schema_editor):
 
 class Migration(migrations.Migration):
     dependencies = [
-        ('creditmanagement', '0015_auto_20220428_2113'),
+        ("creditmanagement", "0015_auto_20220428_2113"),
     ]
 
     operations = [
-        migrations.RunPython(forward, reverse_code=migrations.RunPython.noop, elidable=True)
+        migrations.RunPython(
+            forward, reverse_code=migrations.RunPython.noop, elidable=True
+        )
     ]

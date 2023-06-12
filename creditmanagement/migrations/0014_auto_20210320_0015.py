@@ -4,32 +4,31 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('creditmanagement', '0013_auto_20210319_2310'),
+        ("creditmanagement", "0013_auto_20210319_2310"),
     ]
 
     operations = [
         migrations.RemoveField(
-            model_name='pendingtransaction',
-            name='source_association',
+            model_name="pendingtransaction",
+            name="source_association",
         ),
         migrations.RemoveField(
-            model_name='pendingtransaction',
-            name='source_user',
+            model_name="pendingtransaction",
+            name="source_user",
         ),
         migrations.RemoveField(
-            model_name='pendingtransaction',
-            name='target_association',
+            model_name="pendingtransaction",
+            name="target_association",
         ),
         migrations.RemoveField(
-            model_name='pendingtransaction',
-            name='target_user',
+            model_name="pendingtransaction",
+            name="target_user",
         ),
         migrations.DeleteModel(
-            name='FixedTransaction',
+            name="FixedTransaction",
         ),
         migrations.DeleteModel(
-            name='PendingTransaction',
+            name="PendingTransaction",
         ),
     ]

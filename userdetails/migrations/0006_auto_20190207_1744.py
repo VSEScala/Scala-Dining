@@ -4,15 +4,19 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('userdetails', '0005_auto_20190207_1510'),
+        ("userdetails", "0005_auto_20190207_1510"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='user',
-            name='external_link',
-            field=models.CharField(default='', editable=False, help_text='When this is set, the account is linked to an external system.', max_length=150),
+            model_name="user",
+            name="external_link",
+            field=models.CharField(
+                default="",
+                editable=False,
+                help_text="When this is set, the account is linked to an external system.",
+                max_length=150,
+            ),
         ),
     ]

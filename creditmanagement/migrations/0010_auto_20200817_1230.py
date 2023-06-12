@@ -7,23 +7,31 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('creditmanagement', '0009_usercredit_view_update'),
+        ("creditmanagement", "0009_usercredit_view_update"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='fixedtransaction',
-            name='amount',
-            field=models.DecimalField(decimal_places=2, max_digits=5, validators=[django.core.validators.MinValueValidator(Decimal('0.01'))], verbose_name='Money transferred'),
+            model_name="fixedtransaction",
+            name="amount",
+            field=models.DecimalField(
+                decimal_places=2,
+                max_digits=5,
+                validators=[django.core.validators.MinValueValidator(Decimal("0.01"))],
+                verbose_name="Money transferred",
+            ),
         ),
         migrations.AlterField(
-            model_name='pendingtransaction',
-            name='amount',
-            field=models.DecimalField(decimal_places=2, max_digits=5, validators=[django.core.validators.MinValueValidator(Decimal('0.01'))], verbose_name='Money transferred'),
+            model_name="pendingtransaction",
+            name="amount",
+            field=models.DecimalField(
+                decimal_places=2,
+                max_digits=5,
+                validators=[django.core.validators.MinValueValidator(Decimal("0.01"))],
+                verbose_name="Money transferred",
+            ),
         ),
-
         # This migration contained a CreateView and DeleteView for the same model.
         # Please never do a delete and create of the same model in the same migration!!
         # It relies on the assumption that the migrations are applied in this order. If you checked that that is the

@@ -1,7 +1,9 @@
 # flake8: noqa: N802
 
+
 class FormValidityMixin:
     """A mixin for TestCase classes designed to add form functionality."""
+
     form_class = None
 
     def get_form_kwargs(self, **kwargs):
@@ -35,7 +37,9 @@ class FormValidityMixin:
         form = self.build_form(data, form_class=form_class, **kwargs)
 
         if not form.is_valid():
-            fail_message = "The form was not valid. At least one error was encountered: "
+            fail_message = (
+                "The form was not valid. At least one error was encountered: "
+            )
 
             invalidation_errors = form.errors.as_data()
             error_key = list(invalidation_errors.keys())[0]
@@ -65,8 +69,12 @@ class FormValidityMixin:
             errors = form.errors.as_data().get(field, [])
         else:
             # Each value in form.errors is a list of ValidationError instances. We flatten this list here.
-            errors = [item for sublist in form.errors.as_data().values() for item in sublist]
+            errors = [
+                item for sublist in form.errors.as_data().values() for item in sublist
+            ]
 
         # Verify that we have an error AND that all errors have the correct code.
         if not errors or not all((e.code == code for e in errors)):
-            raise AssertionError(f"Form did not contain an error with code '{code}', with field={field}.")
+            raise AssertionError(
+                f"Form did not contain an error with code '{code}', with field={field}."
+            )

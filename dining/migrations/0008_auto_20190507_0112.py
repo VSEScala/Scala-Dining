@@ -4,19 +4,18 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('dining', '0007_auto_20190423_1651'),
+        ("dining", "0007_auto_20190423_1651"),
     ]
 
     operations = [
         migrations.RenameModel(
-            old_name='DiningDayAnnouncements',
-            new_name='DiningDayAnnouncement',
+            old_name="DiningDayAnnouncements",
+            new_name="DiningDayAnnouncement",
         ),
         migrations.AlterField(
-            model_name='dininglist',
-            name='date',
+            model_name="dininglist",
+            name="date",
             field=models.DateField(),
         ),
     ]

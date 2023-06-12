@@ -3,3 +3,7 @@ flake8
 flake8-docstrings
 pep8-naming
 coverage
+autopep8
+isort
+black
+pre-commit

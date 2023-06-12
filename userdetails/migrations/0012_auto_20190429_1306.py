@@ -4,19 +4,21 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('userdetails', '0011_auto_20190429_1303'),
+        ("userdetails", "0011_auto_20190429_1303"),
     ]
 
     operations = [
         migrations.RemoveField(
-            model_name='association',
-            name='is_min_exception',
+            model_name="association",
+            name="is_min_exception",
         ),
         migrations.AddField(
-            model_name='association',
-            name='has_min_exception',
-            field=models.BooleanField(default=False, verbose_name='Whether this association has an exception to the minimum balance'),
+            model_name="association",
+            name="has_min_exception",
+            field=models.BooleanField(
+                default=False,
+                verbose_name="Whether this association has an exception to the minimum balance",
+            ),
         ),
     ]

@@ -4,15 +4,14 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('userdetails', '0003_auto_20190204_0025'),
+        ("userdetails", "0003_auto_20190204_0025"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='user',
-            name='external_link',
-            field=models.CharField(default='', editable=False, max_length=150),
+            model_name="user",
+            name="external_link",
+            field=models.CharField(default="", editable=False, max_length=150),
         ),
     ]

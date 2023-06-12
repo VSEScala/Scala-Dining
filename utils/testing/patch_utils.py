@@ -1,7 +1,7 @@
 import datetime
+from unittest.mock import Mock, patch
 
 from django.utils import timezone
-from unittest.mock import patch, Mock
 
 __all__ = ["patch", "patch_time", "mock_now"]
 
@@ -17,11 +17,12 @@ def patch_time(dt=None):
     """
     if dt is not None and not isinstance(dt, datetime.datetime) and callable(dt):
         raise ValueError(
-            "Patch time incorrectly called. Make sure you patched through @patch_time() and not @patch_time")
+            "Patch time incorrectly called. Make sure you patched through @patch_time() and not @patch_time"
+        )
 
     def wrapper_func(func):
         def inner(*args, **kwargs):
-            with patch('django.utils.timezone.now') as mock:
+            with patch("django.utils.timezone.now") as mock:
                 mock.side_effect = mock_now(dt=dt)
                 func(*args, **kwargs)
 
@@ -42,7 +43,6 @@ def mock_now(dt=None):
 
 
 class TestPatchMixin:
-
     @staticmethod
     def assert_has_no_call(mock: Mock, **kwargs):
         """Asserts that a given mock does not have a call with the (partially) given attributes.
@@ -57,7 +57,9 @@ class TestPatchMixin:
         except AssertionError:
             return
         else:
-            raise AssertionError(f"At least one undesired call was made with the given attributes: {kwargs}")
+            raise AssertionError(
+                f"At least one undesired call was made with the given attributes: {kwargs}"
+            )
 
     @staticmethod
     def assert_has_call(mock: Mock, **kwargs):
@@ -75,7 +77,7 @@ class TestPatchMixin:
         # Copy the dict so in the case of an error we can reconstruct the given kwargs
         call_kwargs = kwargs.copy()
         arg_dict = {}
-        for arg_key in filter(lambda kwarg: kwarg.startswith('arg_'), kwargs.keys()):
+        for arg_key in filter(lambda kwarg: kwarg.startswith("arg_"), kwargs.keys()):
             arg_dict[int(arg_key[4:]) - 1] = call_kwargs.pop(arg_key)
 
         # Construct a list of all valid calls
@@ -92,8 +94,10 @@ class TestPatchMixin:
                     valid = False
                     break
             if valid:
-                valid_calls.append({'args': kall[0], **kall[1]})
+                valid_calls.append({"args": kall[0], **kall[1]})
 
         if not valid_calls:
-            raise AssertionError(f"No calls were made with the desired attributes: {kwargs}")
+            raise AssertionError(
+                f"No calls were made with the desired attributes: {kwargs}"
+            )
         return valid_calls

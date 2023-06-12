@@ -3,17 +3,25 @@ from django.contrib.sites.models import Site
 from django.test import TestCase
 
 from userdetails.externalaccounts import _create_membership
-from userdetails.models import User, Association, UserMembership
+from userdetails.models import Association, User, UserMembership
 
 
 class CreateMembershipTestCase(TestCase):
     def setUp(self):
-        self.user = User.objects.create_user('ankie', 'ankie@cats.cat')
-        self.social_app = SocialApp.objects.create(provider='quadrivium', name='ESMG Quadrivium')
-        self.social_app.sites.add(Site.objects.first())  # Allauth needs a link to a Site
-        self.social_account = SocialAccount.objects.create(user=self.user, provider='quadrivium')
-        self.association = Association.objects.create(name='Q', slug='q', social_app=self.social_app)
-        self.association_not_linked = Association.objects.create(name='R', slug='r')
+        self.user = User.objects.create_user("ankie", "ankie@cats.cat")
+        self.social_app = SocialApp.objects.create(
+            provider="quadrivium", name="ESMG Quadrivium"
+        )
+        self.social_app.sites.add(
+            Site.objects.first()
+        )  # Allauth needs a link to a Site
+        self.social_account = SocialAccount.objects.create(
+            user=self.user, provider="quadrivium"
+        )
+        self.association = Association.objects.create(
+            name="Q", slug="q", social_app=self.social_app
+        )
+        self.association_not_linked = Association.objects.create(name="R", slug="r")
 
     def test_create_membership(self):
         _create_membership(self.social_account, None)
@@ -22,7 +30,9 @@ class CreateMembershipTestCase(TestCase):
 
     def test_verify(self):
         # Create unverified
-        membership = UserMembership.objects.create(related_user=self.user, association=self.association)
+        membership = UserMembership.objects.create(
+            related_user=self.user, association=self.association
+        )
         _create_membership(self.social_account, None)
         membership.refresh_from_db()
         self.assertTrue(membership.is_verified)

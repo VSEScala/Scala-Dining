@@ -16,9 +16,11 @@ def _create_membership(socialaccount, request):
     social_app = socialaccount.get_provider().get_app(request)
     linked_associations = Association.objects.filter(social_app=social_app)
     if not linked_associations:
-        warnings.warn('No associations linked to the external account')
+        warnings.warn("No associations linked to the external account")
     for association in linked_associations:
-        membership = UserMembership.objects.filter(related_user=user, association=association).first()
+        membership = UserMembership.objects.filter(
+            related_user=user, association=association
+        ).first()
         if membership:
             # There exists a membership already, verify it if needed
             if not membership.is_verified:
@@ -26,14 +28,18 @@ def _create_membership(socialaccount, request):
                 membership.verified_on = timezone.now()
                 membership.save()
         else:
-            UserMembership.objects.create(related_user=user, association=association, is_verified=True,
-                                          verified_on=timezone.now())
+            UserMembership.objects.create(
+                related_user=user,
+                association=association,
+                is_verified=True,
+                verified_on=timezone.now(),
+            )
 
 
 @receiver(user_signed_up)
 def automatic_association_link(sender, request, user, **kwargs):
     """Creates membership when someone signs up using an association account."""
-    sociallogin = kwargs.get('sociallogin', None)
+    sociallogin = kwargs.get("sociallogin", None)
     if not sociallogin:
         # Normal registration, not using association account
         return
@@ -54,5 +60,5 @@ class SocialAccountAdapter(DefaultSocialAccountAdapter):
 
     def save_user(self, request, sociallogin, form=None):
         u = super().save_user(request, sociallogin, form)
-        sociallogin.state['next'] = reverse('settings_account')
+        sociallogin.state["next"] = reverse("settings_account")
         return u

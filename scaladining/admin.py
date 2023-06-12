@@ -3,6 +3,7 @@ from django.contrib.admin import AdminSite
 
 class MyAdminSite(AdminSite):
     """Custom admin site for some minor branding."""
+
     site_header = "Scala app administration"
 
     # site_title = "Scala app admin panel"

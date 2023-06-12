@@ -4,15 +4,17 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('userdetails', '0006_auto_20190207_1744'),
+        ("userdetails", "0006_auto_20190207_1744"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='association',
-            name='is_choosable',
-            field=models.BooleanField(default=True, verbose_name='Whether this association can be chosen as membership by users'),
+            model_name="association",
+            name="is_choosable",
+            field=models.BooleanField(
+                default=True,
+                verbose_name="Whether this association can be chosen as membership by users",
+            ),
         ),
     ]

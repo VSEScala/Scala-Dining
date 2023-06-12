@@ -4,23 +4,22 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('dining', '0003_auto_20190203_2324'),
+        ("dining", "0003_auto_20190203_2324"),
     ]
 
     operations = [
         migrations.RemoveField(
-            model_name='dininglist',
-            name='dinner_cost_keep_single_constant',
+            model_name="dininglist",
+            name="dinner_cost_keep_single_constant",
         ),
         migrations.RemoveField(
-            model_name='dininglist',
-            name='dinner_cost_total',
+            model_name="dininglist",
+            name="dinner_cost_total",
         ),
         migrations.RenameField(
-            model_name='dininglist',
-            old_name='dinner_cost_single',
-            new_name='dining_cost',
+            model_name="dininglist",
+            old_name="dinner_cost_single",
+            new_name="dining_cost",
         ),
     ]

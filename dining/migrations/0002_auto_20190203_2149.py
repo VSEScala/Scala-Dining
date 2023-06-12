@@ -4,19 +4,22 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('dining', '0001_initial'),
+        ("dining", "0001_initial"),
     ]
 
     operations = [
         migrations.RemoveField(
-            model_name='dininglist',
-            name='tikkie_link',
+            model_name="dininglist",
+            name="tikkie_link",
         ),
         migrations.AddField(
-            model_name='dininglist',
-            name='payment_link',
-            field=models.CharField(blank=True, help_text='Link for payment, e.g. a Tikkie link.', max_length=100),
+            model_name="dininglist",
+            name="payment_link",
+            field=models.CharField(
+                blank=True,
+                help_text="Link for payment, e.g. a Tikkie link.",
+                max_length=100,
+            ),
         ),
     ]

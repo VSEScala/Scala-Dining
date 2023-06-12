@@ -32,9 +32,11 @@ class SelectWithDisabled(django.forms.Select):
         # Append disabled choices as singleton groups
         index = len(groups)
         for option_value, option_label in self.disabled_choices:
-            option = self.create_option(name, option_value, option_label, False, index, attrs=attrs)
+            option = self.create_option(
+                name, option_value, option_label, False, index, attrs=attrs
+            )
             # Modify option so that it is disabled
-            option['attrs']['disabled'] = 'disabled'
+            option["attrs"]["disabled"] = "disabled"
             # Add option to group
             groups.append((None, [option], index))
             index += 1

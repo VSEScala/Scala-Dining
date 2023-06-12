@@ -1,10 +1,10 @@
 from datetime import datetime
 from decimal import Decimal
-from typing import Union, Optional
+from typing import Optional, Union
 
 from django.core.validators import MinValueValidator
 from django.db import models
-from django.db.models import QuerySet, Sum, Q
+from django.db.models import Q, QuerySet, Sum
 from django.utils import timezone
 
 from userdetails.models import Association, User
@@ -26,21 +26,29 @@ class Account(models.Model):
 
     # An account can only have one of user or association or special
     user = models.OneToOneField(User, on_delete=models.CASCADE, blank=True, null=True)
-    association = models.OneToOneField(Association, on_delete=models.CASCADE, blank=True, null=True)
+    association = models.OneToOneField(
+        Association, on_delete=models.CASCADE, blank=True, null=True
+    )
 
     # Special accounts are used for bookkeeping
     # (The special accounts listed here are automatically created using a receiver.)
 
     SPECIAL_ACCOUNTS = [
-        ('kitchen_cost', 'Kitchen cost'),
+        ("kitchen_cost", "Kitchen cost"),
     ]
     SPECIAL_ACCOUNT_DESCRIPTION = {
-        'kitchen_cost': "Account which receives the kitchen payments. "
-                        "The balance indicates the money that is payed for kitchen usage "
-                        "(minus withdraws from this account).",
+        "kitchen_cost": "Account which receives the kitchen payments. "
+        "The balance indicates the money that is payed for kitchen usage "
+        "(minus withdraws from this account).",
     }
-    special = models.CharField(max_length=30, unique=True, blank=True, null=True, default=None,
-                               choices=SPECIAL_ACCOUNTS)
+    special = models.CharField(
+        max_length=30,
+        unique=True,
+        blank=True,
+        null=True,
+        default=None,
+        choices=SPECIAL_ACCOUNTS,
+    )
 
     objects = AccountManager()
 
@@ -48,8 +56,12 @@ class Account(models.Model):
         qs = Transaction.objects.all()
         # 2 separate queries for the source and target sums
         # If there are no rows, the value will be made 0.00
-        source_sum = qs.filter(source=self).aggregate(sum=Sum('amount'))['sum'] or Decimal('0.00')
-        target_sum = qs.filter(target=self).aggregate(sum=Sum('amount'))['sum'] or Decimal('0.00')
+        source_sum = qs.filter(source=self).aggregate(sum=Sum("amount"))[
+            "sum"
+        ] or Decimal("0.00")
+        target_sum = qs.filter(target=self).aggregate(sum=Sum("amount"))[
+            "sum"
+        ] or Decimal("0.00")
         return target_sum - source_sum
 
     get_balance.short_description = "Balance"  # (used in admin site)
@@ -77,7 +89,7 @@ class Account(models.Model):
             return None
 
         # Loop over all transactions from new to old, while reversing the balance
-        transactions = Transaction.objects.filter_account(self).order_by('-moment')
+        transactions = Transaction.objects.filter_account(self).order_by("-moment")
         for tx in transactions:
             if tx.source == self:
                 balance += tx.amount
@@ -113,13 +125,21 @@ class TransactionQuerySet(QuerySet):
 
 class Transaction(models.Model):
     # We do not enforce that source != target because those rows are not harmful.
-    source = models.ForeignKey(Account, on_delete=models.PROTECT, related_name='transaction_source_set')
-    target = models.ForeignKey(Account, on_delete=models.PROTECT, related_name='transaction_target_set')
+    source = models.ForeignKey(
+        Account, on_delete=models.PROTECT, related_name="transaction_source_set"
+    )
+    target = models.ForeignKey(
+        Account, on_delete=models.PROTECT, related_name="transaction_target_set"
+    )
     # Amount can only be (strictly) positive
-    amount = models.DecimalField(decimal_places=2, max_digits=8, validators=[MinValueValidator(Decimal('0.01'))])
+    amount = models.DecimalField(
+        decimal_places=2, max_digits=8, validators=[MinValueValidator(Decimal("0.01"))]
+    )
     moment = models.DateTimeField(default=timezone.now)
     description = models.CharField(max_length=1000)
-    created_by = models.ForeignKey(User, on_delete=models.PROTECT, related_name='transaction_set')
+    created_by = models.ForeignKey(
+        User, on_delete=models.PROTECT, related_name="transaction_set"
+    )
 
     objects = TransactionQuerySet.as_manager()
 

@@ -5,28 +5,26 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('userdetails', '0010_auto_20190304_2050'),
+        ("userdetails", "0010_auto_20190304_2050"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='UserOverview',
-            fields=[
-            ],
+            name="UserOverview",
+            fields=[],
             options={
-                'proxy': True,
-                'indexes': [],
+                "proxy": True,
+                "indexes": [],
             },
-            bases=('userdetails.user',),
+            bases=("userdetails.user",),
             managers=[
-                ('objects', django.contrib.auth.models.UserManager()),
+                ("objects", django.contrib.auth.models.UserManager()),
             ],
         ),
         migrations.AddField(
-            model_name='association',
-            name='is_min_exception',
+            model_name="association",
+            name="is_min_exception",
             field=models.BooleanField(default=False),
         ),
     ]

@@ -5,7 +5,7 @@ from django.db import transaction
 from django.db.models import Q
 from django.forms import ModelForm
 
-from userdetails.models import User, Association, UserMembership
+from userdetails.models import Association, User, UserMembership
 
 
 class RegisterUserForm(UserCreationForm):
@@ -16,26 +16,36 @@ class RegisterUserForm(UserCreationForm):
     # By default, this field is required.
     associations = forms.ModelMultipleChoiceField(
         queryset=Association.objects.filter(is_choosable=True),
-        widget=forms.CheckboxSelectMultiple()
+        widget=forms.CheckboxSelectMultiple(),
     )
 
     class Meta:
         model = User
-        fields = ('username', 'password1', 'password2', 'email', 'first_name', 'last_name', 'allergies')
-        field_classes = {'username': UsernameField}  # This adds HTML attributes for semantics, see UserCreationForm.
+        fields = (
+            "username",
+            "password1",
+            "password2",
+            "email",
+            "first_name",
+            "last_name",
+            "allergies",
+        )
+        field_classes = {
+            "username": UsernameField
+        }  # This adds HTML attributes for semantics, see UserCreationForm.
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['first_name'].required = True
-        self.fields['last_name'].required = True
+        self.fields["first_name"].required = True
+        self.fields["last_name"].required = True
 
         # Set headings used during rendering.
         #
         # I don't like doing this here instead of in the template or view, but
         # I don't know how to do that cleanly.
-        self.fields['username'].heading = 'Account details'
-        self.fields['first_name'].heading = 'Personal details'
-        self.fields['associations'].heading = 'Memberships'
+        self.fields["username"].heading = "Account details"
+        self.fields["first_name"].heading = "Personal details"
+        self.fields["associations"].heading = "Memberships"
 
     def save(self, commit=True):
         """Saves user and creates the memberships."""
@@ -43,8 +53,10 @@ class RegisterUserForm(UserCreationForm):
         if commit:
             with transaction.atomic():
                 user.save()
-                for association in self.cleaned_data['associations']:
-                    UserMembership.objects.create(related_user=user, association=association)
+                for association in self.cleaned_data["associations"]:
+                    UserMembership.objects.create(
+                        related_user=user, association=association
+                    )
         return user
 
 
@@ -53,22 +65,23 @@ class UserForm(ModelForm):
 
     class Meta:
         model = User
-        fields = ('username', 'name', 'email', 'allergies')
+        fields = ("username", "name", "email", "allergies")
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['name'].disabled = True
-        self.fields['name'].initial = str(self.instance)
-        self.fields['name'].help_text = "Contact the site administrator if you want to change your name."
-        self.fields['email'].disabled = True
-        self.fields['email'].required = False  # To hide the asterisk.
+        self.fields["name"].disabled = True
+        self.fields["name"].initial = str(self.instance)
+        self.fields[
+            "name"
+        ].help_text = "Contact the site administrator if you want to change your name."
+        self.fields["email"].disabled = True
+        self.fields["email"].required = False  # To hide the asterisk.
 
         # Define a heading used during rendering the form.
-        self.fields['allergies'].heading = "Dining"
+        self.fields["allergies"].heading = "Dining"
 
 
 class AssociationLinkForm(forms.Form):
-
     def __init__(self, user, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.user = user
@@ -78,14 +91,20 @@ class AssociationLinkForm(forms.Form):
         # 'distinct' is necessary because otherwise there will be a large
         # number of duplicate associations returned, resulting in a slow page
         # load.
-        associations = Association.objects.filter(
-            Q(is_choosable=True) | Q(usermembership__related_user=user)
-        ).distinct().order_by('slug')
+        associations = (
+            Association.objects.filter(
+                Q(is_choosable=True) | Q(usermembership__related_user=user)
+            )
+            .distinct()
+            .order_by("slug")
+        )
 
         for association in associations:
             # Find membership.
             try:
-                membership = UserMembership.objects.get(related_user=user, association=association)
+                membership = UserMembership.objects.get(
+                    related_user=user, association=association
+                )
             except UserMembership.DoesNotExist:
                 membership = None
 
@@ -126,7 +145,9 @@ class AssociationLinkForm(forms.Form):
 
             # Selected but no membership exists, we need to create it.
             if chosen and not membership:
-                UserMembership.objects.create(related_user=self.user, association=association)
+                UserMembership.objects.create(
+                    related_user=self.user, association=association
+                )
 
             # Selected but the membership was rejected, set as pending.
             #
@@ -144,4 +165,4 @@ class AssociationLinkForm(forms.Form):
 class AssociationSettingsForm(forms.ModelForm):
     class Meta:
         model = Association
-        fields = ['balance_update_instructions']
+        fields = ["balance_update_instructions"]

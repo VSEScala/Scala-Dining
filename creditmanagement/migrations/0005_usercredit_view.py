@@ -5,12 +5,10 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
-        ('userdetails', '0001_initial'),
-        ('creditmanagement', '0004_auto_20190203_2324'),
+        ("userdetails", "0001_initial"),
+        ("creditmanagement", "0004_auto_20190203_2324"),
     ]
 
-    operations = [
-    ]
+    operations = []

@@ -3,14 +3,14 @@ from os import getenv
 
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import ObjectDoesNotExist
-from django.http import HttpResponseForbidden, Http404
+from django.http import Http404, HttpResponseForbidden
 from django.shortcuts import render
-from django.template.loader import get_template, TemplateDoesNotExist
+from django.template.loader import TemplateDoesNotExist, get_template
 from django.utils import timezone
-from django.views.generic import View, ListView, TemplateView
+from django.views.generic import ListView, TemplateView, View
 
 from general.forms import DateRangeForm
-from general.models import SiteUpdate, PageVisitTracker
+from general.models import PageVisitTracker, SiteUpdate
 from userdetails.models import Association
 
 
@@ -22,20 +22,20 @@ class DateRangeFilterMixin:
     date_range_form = None
 
     def dispatch(self, request, *args, **kwargs):
-        if 'date_start' in request.GET and 'date_end' in request.GET:
+        if "date_start" in request.GET and "date_end" in request.GET:
             self.date_range_form = DateRangeForm(request.GET)
         else:
             self.date_range_form = DateRangeForm()
 
         if self.date_range_form.is_valid():
-            self.date_start = self.date_range_form.cleaned_data['date_start']
-            self.date_end = self.date_range_form.cleaned_data['date_end']
+            self.date_start = self.date_range_form.cleaned_data["date_start"]
+            self.date_end = self.date_range_form.cleaned_data["date_end"]
 
         return super().dispatch(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['date_range_form'] = self.date_range_form
+        context["date_range_form"] = self.date_range_form
         return context
 
 
@@ -46,27 +46,29 @@ class SiteUpdateView(LoginRequiredMixin, ListView):
     paginate_by = 4
 
     def get_queryset(self):
-        return SiteUpdate.objects.order_by('-date').all()
+        return SiteUpdate.objects.order_by("-date").all()
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         try:
-            latest_update = SiteUpdate.objects.latest('date').date
+            latest_update = SiteUpdate.objects.latest("date").date
         except ObjectDoesNotExist:
             latest_update = timezone.now()
 
-        context['latest_visit'] = PageVisitTracker.get_latest_visit('updates', self.request.user, update=True)
-        context['latest_update'] = latest_update
+        context["latest_visit"] = PageVisitTracker.get_latest_visit(
+            "updates", self.request.user, update=True
+        )
+        context["latest_update"] = latest_update
 
         return context
 
     @staticmethod
     def has_new_update(user):
         """Checks whether a new update for the given user is present."""
-        visit_timestamp = PageVisitTracker.get_latest_visit('updates', user)
+        visit_timestamp = PageVisitTracker.get_latest_visit("updates", user)
         if visit_timestamp is None:
             return False
-        return SiteUpdate.objects.latest('date').date > visit_timestamp
+        return SiteUpdate.objects.latest("date").date > visit_timestamp
 
 
 class HelpPageView(TemplateView):
@@ -76,13 +78,15 @@ class HelpPageView(TemplateView):
         """Loads app build date from file."""
         context = super().get_context_data(**kwargs)
 
-        build_date = getenv('BUILD_TIMESTAMP')
+        build_date = getenv("BUILD_TIMESTAMP")
         if build_date:
             build_date = datetime.fromtimestamp(float(build_date), timezone.utc)
-        context.update({
-            'build_date': build_date,
-            'commit_sha': getenv('COMMIT_SHA'),
-        })
+        context.update(
+            {
+                "build_date": build_date,
+                "commit_sha": getenv("COMMIT_SHA"),
+            }
+        )
         return context
 
 
@@ -94,15 +98,17 @@ class RulesPageView(View):
     def get(self, request):
         # Store the recent updates/visit data in the local context
         if request.user.is_authenticated:
-            self.context['latest_visit'] = PageVisitTracker.get_latest_visit('rules', request.user, update=True)
-        self.context['latest_update'] = self.change_date
+            self.context["latest_visit"] = PageVisitTracker.get_latest_visit(
+                "rules", request.user, update=True
+            )
+        self.context["latest_update"] = self.change_date
 
         return render(request, self.template, self.context)
 
     @staticmethod
     def has_new_update(user):
         """Checks whether a new update for the given user is present."""
-        visit_timestamp = PageVisitTracker.get_latest_visit('rules', user)
+        visit_timestamp = PageVisitTracker.get_latest_visit("rules", user)
         if visit_timestamp is None:
             return False
 
@@ -116,12 +122,15 @@ class UpgradeBalanceInstructionsView(TemplateView):
         context = super().get_context_data(**kwargs)
         if self.request.user.is_authenticated:
             # Separated for a possible prefilter to be implemented later (e.g. if active in kitchen)
-            associations = Association.objects.order_by('slug')
-            context['user_associations'] = associations.filter(usermembership__related_user=self.request.user)
-            context['other_associations'] = associations. \
-                exclude(id__in=context['user_associations'].values_list('id', flat=True))
+            associations = Association.objects.order_by("slug")
+            context["user_associations"] = associations.filter(
+                usermembership__related_user=self.request.user
+            )
+            context["other_associations"] = associations.exclude(
+                id__in=context["user_associations"].values_list("id", flat=True)
+            )
         else:
-            context['other_associations'] = Association.objects.all()
+            context["other_associations"] = Association.objects.all()
 
         return context
 
@@ -153,7 +162,9 @@ class EmailTemplateView(View):
         def __getitem__(self, key):
             item = self._dict.get(key, None)
             if item is None:
-                return EmailTemplateView.create_new_factory(name="{name}.{key}".format(name=self._name, key=key))
+                return EmailTemplateView.create_new_factory(
+                    name="{name}.{key}".format(name=self._name, key=key)
+                )
             else:
                 return item
 
@@ -178,7 +189,7 @@ class EmailTemplateView(View):
         if not request.user.is_superuser:
             return HttpResponseForbidden("You do not have permission to view this")
 
-        template_location = request.GET.get('template', None) + ".html"
+        template_location = request.GET.get("template", None) + ".html"
 
         try:
             get_template(template_location)
@@ -186,6 +197,6 @@ class EmailTemplateView(View):
             return Http404("Given template name not found")
 
         context = self.ContentFactory(dictionary=request.GET.dict())
-        context['request'] = request
-        context['user'] = request.user
+        context["request"] = request
+        context["user"] = request.user
         return render(None, template_location, context)

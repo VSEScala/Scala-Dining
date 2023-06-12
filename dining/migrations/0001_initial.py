@@ -2,160 +2,384 @@
 
 import datetime
 from decimal import Decimal
-from django.conf import settings
+
 import django.core.validators
-from django.db import migrations, models
 import django.db.models.deletion
 import django.utils.timezone
+from django.conf import settings
+from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
     dependencies = [
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
-        ('userdetails', '0001_initial'),
+        ("userdetails", "0001_initial"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='DiningComment',
+            name="DiningComment",
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('timestamp', models.DateTimeField(auto_now_add=True)),
-                ('message', models.TextField()),
-                ('pinned_to_top', models.BooleanField(default=False)),
+                (
+                    "id",
+                    models.AutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("timestamp", models.DateTimeField(auto_now_add=True)),
+                ("message", models.TextField()),
+                ("pinned_to_top", models.BooleanField(default=False)),
             ],
         ),
         migrations.CreateModel(
-            name='DiningCommentView',
+            name="DiningCommentView",
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('timestamp', models.DateTimeField(auto_now_add=True)),
+                (
+                    "id",
+                    models.AutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("timestamp", models.DateTimeField(auto_now_add=True)),
             ],
         ),
         migrations.CreateModel(
-            name='DiningDayAnnouncements',
+            name="DiningDayAnnouncements",
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('date', models.DateField()),
-                ('title', models.CharField(max_length=15)),
-                ('text', models.CharField(max_length=240)),
-                ('slots_occupy', models.IntegerField(default=0, help_text='The amount of slots this occupies')),
+                (
+                    "id",
+                    models.AutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("date", models.DateField()),
+                ("title", models.CharField(max_length=15)),
+                ("text", models.CharField(max_length=240)),
+                (
+                    "slots_occupy",
+                    models.IntegerField(
+                        default=0, help_text="The amount of slots this occupies"
+                    ),
+                ),
             ],
         ),
         migrations.CreateModel(
-            name='DiningEntry',
+            name="DiningEntry",
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('has_paid', models.BooleanField(default=False)),
+                (
+                    "id",
+                    models.AutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("has_paid", models.BooleanField(default=False)),
             ],
         ),
         migrations.CreateModel(
-            name='DiningList',
+            name="DiningList",
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('date', models.DateField(default=django.utils.timezone.now)),
-                ('sign_up_deadline', models.DateTimeField(help_text='The time before users need to sign up.')),
-                ('serve_time', models.TimeField(default=datetime.time(18, 0))),
-                ('dish', models.CharField(blank=True, default='', help_text='The dish made', max_length=30)),
-                ('adjustable_duration', models.DurationField(default=datetime.timedelta(2), help_text='The amount of time the dining list can be adjusted after its date')),
-                ('limit_signups_to_association_only', models.BooleanField(default=False, help_text='Whether only members of the given association can sign up')),
-                ('kitchen_cost', models.DecimalField(decimal_places=2, default=Decimal('0.50'), max_digits=10, validators=[django.core.validators.MinValueValidator(Decimal('0.00'))], verbose_name='kitchen cost per person')),
-                ('dinner_cost_total', models.DecimalField(decimal_places=2, default=0, max_digits=10, validators=[django.core.validators.MinValueValidator(Decimal('0.00'))], verbose_name='total dinner costs')),
-                ('dinner_cost_single', models.DecimalField(blank=True, decimal_places=2, default=0, max_digits=5, null=True, validators=[django.core.validators.MinValueValidator(Decimal('0.00'))], verbose_name='dinner cost per person')),
-                ('dinner_cost_keep_single_constant', models.BooleanField(default=False, verbose_name='Define costs from single price')),
-                ('auto_pay', models.BooleanField(default=False)),
-                ('tikkie_link', models.CharField(blank=True, max_length=50, null=True, verbose_name='tikkie hyperlink')),
-                ('min_diners', models.IntegerField(default=4, validators=[django.core.validators.MaxValueValidator(6)])),
-                ('max_diners', models.IntegerField(default=20, validators=[django.core.validators.MinValueValidator(12)])),
-                ('association', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='userdetails.Association', unique_for_date='date')),
-                ('claimed_by', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='dininglist_claimer', to=settings.AUTH_USER_MODEL)),
+                (
+                    "id",
+                    models.AutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("date", models.DateField(default=django.utils.timezone.now)),
+                (
+                    "sign_up_deadline",
+                    models.DateTimeField(
+                        help_text="The time before users need to sign up."
+                    ),
+                ),
+                ("serve_time", models.TimeField(default=datetime.time(18, 0))),
+                (
+                    "dish",
+                    models.CharField(
+                        blank=True, default="", help_text="The dish made", max_length=30
+                    ),
+                ),
+                (
+                    "adjustable_duration",
+                    models.DurationField(
+                        default=datetime.timedelta(2),
+                        help_text="The amount of time the dining list can be adjusted after its date",
+                    ),
+                ),
+                (
+                    "limit_signups_to_association_only",
+                    models.BooleanField(
+                        default=False,
+                        help_text="Whether only members of the given association can sign up",
+                    ),
+                ),
+                (
+                    "kitchen_cost",
+                    models.DecimalField(
+                        decimal_places=2,
+                        default=Decimal("0.50"),
+                        max_digits=10,
+                        validators=[
+                            django.core.validators.MinValueValidator(Decimal("0.00"))
+                        ],
+                        verbose_name="kitchen cost per person",
+                    ),
+                ),
+                (
+                    "dinner_cost_total",
+                    models.DecimalField(
+                        decimal_places=2,
+                        default=0,
+                        max_digits=10,
+                        validators=[
+                            django.core.validators.MinValueValidator(Decimal("0.00"))
+                        ],
+                        verbose_name="total dinner costs",
+                    ),
+                ),
+                (
+                    "dinner_cost_single",
+                    models.DecimalField(
+                        blank=True,
+                        decimal_places=2,
+                        default=0,
+                        max_digits=5,
+                        null=True,
+                        validators=[
+                            django.core.validators.MinValueValidator(Decimal("0.00"))
+                        ],
+                        verbose_name="dinner cost per person",
+                    ),
+                ),
+                (
+                    "dinner_cost_keep_single_constant",
+                    models.BooleanField(
+                        default=False, verbose_name="Define costs from single price"
+                    ),
+                ),
+                ("auto_pay", models.BooleanField(default=False)),
+                (
+                    "tikkie_link",
+                    models.CharField(
+                        blank=True,
+                        max_length=50,
+                        null=True,
+                        verbose_name="tikkie hyperlink",
+                    ),
+                ),
+                (
+                    "min_diners",
+                    models.IntegerField(
+                        default=4,
+                        validators=[django.core.validators.MaxValueValidator(6)],
+                    ),
+                ),
+                (
+                    "max_diners",
+                    models.IntegerField(
+                        default=20,
+                        validators=[django.core.validators.MinValueValidator(12)],
+                    ),
+                ),
+                (
+                    "association",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="userdetails.Association",
+                        unique_for_date="date",
+                    ),
+                ),
+                (
+                    "claimed_by",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        related_name="dininglist_claimer",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
         ),
         migrations.CreateModel(
-            name='DiningWork',
+            name="DiningWork",
             fields=[
-                ('w_id', models.AutoField(primary_key=True, serialize=False)),
-                ('has_shopped', models.BooleanField(default=False)),
-                ('has_cooked', models.BooleanField(default=False)),
-                ('has_cleaned', models.BooleanField(default=False)),
+                ("w_id", models.AutoField(primary_key=True, serialize=False)),
+                ("has_shopped", models.BooleanField(default=False)),
+                ("has_cooked", models.BooleanField(default=False)),
+                ("has_cleaned", models.BooleanField(default=False)),
             ],
         ),
         migrations.CreateModel(
-            name='UserDiningSettings',
+            name="UserDiningSettings",
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('allergies', models.CharField(blank=True, help_text='Leave empty if not applicable', max_length=100, verbose_name='Allergies or dietary restrictions')),
-                ('user', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, to=settings.AUTH_USER_MODEL)),
+                (
+                    "id",
+                    models.AutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "allergies",
+                    models.CharField(
+                        blank=True,
+                        help_text="Leave empty if not applicable",
+                        max_length=100,
+                        verbose_name="Allergies or dietary restrictions",
+                    ),
+                ),
+                (
+                    "user",
+                    models.OneToOneField(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
         ),
         migrations.CreateModel(
-            name='DiningEntryExternal',
+            name="DiningEntryExternal",
             fields=[
-                ('diningentry_ptr', models.OneToOneField(auto_created=True, on_delete=django.db.models.deletion.CASCADE, parent_link=True, primary_key=True, serialize=False, to='dining.DiningEntry')),
-                ('name', models.CharField(max_length=40)),
+                (
+                    "diningentry_ptr",
+                    models.OneToOneField(
+                        auto_created=True,
+                        on_delete=django.db.models.deletion.CASCADE,
+                        parent_link=True,
+                        primary_key=True,
+                        serialize=False,
+                        to="dining.DiningEntry",
+                    ),
+                ),
+                ("name", models.CharField(max_length=40)),
             ],
-            bases=('dining.diningentry',),
+            bases=("dining.diningentry",),
         ),
         migrations.CreateModel(
-            name='DiningEntryUser',
+            name="DiningEntryUser",
             fields=[
-                ('diningwork_ptr', models.OneToOneField(auto_created=True, on_delete=django.db.models.deletion.CASCADE, parent_link=True, to='dining.DiningWork')),
-                ('diningentry_ptr', models.OneToOneField(auto_created=True, on_delete=django.db.models.deletion.CASCADE, parent_link=True, primary_key=True, serialize=False, to='dining.DiningEntry')),
-                ('added_by', models.ForeignKey(blank=True, default=None, null=True, on_delete=django.db.models.deletion.SET_DEFAULT, related_name='added_entry_on_dining', to=settings.AUTH_USER_MODEL)),
+                (
+                    "diningwork_ptr",
+                    models.OneToOneField(
+                        auto_created=True,
+                        on_delete=django.db.models.deletion.CASCADE,
+                        parent_link=True,
+                        to="dining.DiningWork",
+                    ),
+                ),
+                (
+                    "diningentry_ptr",
+                    models.OneToOneField(
+                        auto_created=True,
+                        on_delete=django.db.models.deletion.CASCADE,
+                        parent_link=True,
+                        primary_key=True,
+                        serialize=False,
+                        to="dining.DiningEntry",
+                    ),
+                ),
+                (
+                    "added_by",
+                    models.ForeignKey(
+                        blank=True,
+                        default=None,
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_DEFAULT,
+                        related_name="added_entry_on_dining",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
-            bases=('dining.diningentry', 'dining.diningwork'),
+            bases=("dining.diningentry", "dining.diningwork"),
         ),
         migrations.AddField(
-            model_name='dininglist',
-            name='diners',
-            field=models.ManyToManyField(through='dining.DiningEntry', to=settings.AUTH_USER_MODEL),
+            model_name="dininglist",
+            name="diners",
+            field=models.ManyToManyField(
+                through="dining.DiningEntry", to=settings.AUTH_USER_MODEL
+            ),
         ),
         migrations.AddField(
-            model_name='dininglist',
-            name='purchaser',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='dininglist_purchaser', to=settings.AUTH_USER_MODEL),
+            model_name="dininglist",
+            name="purchaser",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="dininglist_purchaser",
+                to=settings.AUTH_USER_MODEL,
+            ),
         ),
         migrations.AddField(
-            model_name='diningentry',
-            name='dining_list',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='dining_entries', to='dining.DiningList'),
+            model_name="diningentry",
+            name="dining_list",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="dining_entries",
+                to="dining.DiningList",
+            ),
         ),
         migrations.AddField(
-            model_name='diningentry',
-            name='user',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to=settings.AUTH_USER_MODEL),
+            model_name="diningentry",
+            name="user",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE, to=settings.AUTH_USER_MODEL
+            ),
         ),
         migrations.AddField(
-            model_name='diningcommentview',
-            name='dining_list',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='dining.DiningList'),
+            model_name="diningcommentview",
+            name="dining_list",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE, to="dining.DiningList"
+            ),
         ),
         migrations.AddField(
-            model_name='diningcommentview',
-            name='user',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to=settings.AUTH_USER_MODEL),
+            model_name="diningcommentview",
+            name="user",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE, to=settings.AUTH_USER_MODEL
+            ),
         ),
         migrations.AddField(
-            model_name='diningcomment',
-            name='dining_list',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='dining.DiningList'),
+            model_name="diningcomment",
+            name="dining_list",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE, to="dining.DiningList"
+            ),
         ),
         migrations.AddField(
-            model_name='diningcomment',
-            name='poster',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to=settings.AUTH_USER_MODEL),
+            model_name="diningcomment",
+            name="poster",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE, to=settings.AUTH_USER_MODEL
+            ),
         ),
         migrations.CreateModel(
-            name='DiningListComment',
-            fields=[
-            ],
+            name="DiningListComment",
+            fields=[],
             options={
-                'proxy': True,
-                'indexes': [],
+                "proxy": True,
+                "indexes": [],
             },
-            bases=('dining.dininglist',),
+            bases=("dining.dininglist",),
         ),
     ]
