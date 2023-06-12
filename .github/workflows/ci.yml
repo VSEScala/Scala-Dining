@@ -52,6 +52,7 @@ jobs:
         run: flake8
       - uses: psf/black@stable
       - run: isort --check --diff .
+      - run: pip install pip-tools
       - run: pip-compile requirements.in
       - run: pip-compile dev-requirements.in
       - run: git diff --exit-code
