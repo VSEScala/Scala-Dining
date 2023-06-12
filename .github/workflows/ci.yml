@@ -69,6 +69,6 @@ jobs:
             requirements.txt
             dev-requirements.txt
       - run: pip install pip-tools
-      - run: pip-compile requirements.in #todo: check backtracking
-      - run: pip-compile dev-requirements.in
+      - run: pip-compile requirements.in --resolver=legacy #todo: check backtracking
+      - run: pip-compile dev-requirements.in --resolver=legacy
       - run: git diff --exit-code
