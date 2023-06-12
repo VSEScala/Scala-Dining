@@ -18,7 +18,7 @@ jobs:
       - name: Log in to the registry
         run: docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }} quadrivium.azurecr.io
       - name: Build image
-        run: >
+        run: >-
           docker build
             --cache-from $IMAGE_NAME:latest
             --tag $IMAGE_NAME:latest

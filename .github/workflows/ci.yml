@@ -56,7 +56,19 @@ jobs:
         run: flake8
       - uses: psf/black@stable
       - run: isort --check --diff .
+  pip-compile-check:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.8" #lowest supported python version by us.
+          cache: "pip"
+          cache-dependency-path: | #todo: check if update needed
+            requirements.txt
+            dev-requirements.txt
       - run: pip install pip-tools
-      - run: pip-compile requirements.in
+      - run: pip-compile requirements.in #todo: check backtracking
       - run: pip-compile dev-requirements.in
       - run: git diff --exit-code
