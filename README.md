@@ -12,16 +12,12 @@ Cooking website.
 - `python manage.py migrate`
 - `python manage.py runserver`
 
-### Docker
-
-- Install Docker and Docker Compose
-- `docker-compose build`
-- `docker-compose up`
-- `docker-compose exec app python manage.py migrate`
+The app can also be built and run with Docker.
 
 ## Development commands
 
 * Lint code: `flake8`
+* Blacken the code `black .`
 * Run unit tests: `python manage.py test`
 * Create superuser: `python manage.py createsuperuser`
 * Coverage: `coverage run manage.py test`

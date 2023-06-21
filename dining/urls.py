@@ -1,16 +1,15 @@
 from django.urls import include, path
 
-from . import views
-from .views import DayView, index
+from dining import views
 
 urlpatterns = [
-    path("", index, name="index"),
+    path("", views.index, name="index"),
     path("csv/", views.DailyDinersCSVView.as_view(), name="diners_csv"),
     path(
         "<int:year>/<int:month>/<int:day>/",
         include(
             [
-                path("", DayView.as_view(), name="day_view"),
+                path("", views.DayView.as_view(), name="day_view"),
                 path("add/", views.NewSlotView.as_view(), name="new_slot"),
                 path(
                     "<slug:identifier>/",
@@ -54,4 +53,5 @@ urlpatterns = [
     path(
         "entries/<int:pk>/delete/", views.EntryDeleteView.as_view(), name="entry_delete"
     ),
+    path("statistics/", views.StatisticsView.as_view(), name="statistics"),
 ]
