@@ -18,6 +18,7 @@ The app can also be built and run with Docker.
 
 * Lint code: `flake8`
 * Blacken the code `black .`
+* Sort the imports with `isort --ac .`
 * Run unit tests: `python manage.py test`
 * Create superuser: `python manage.py createsuperuser`
 * Coverage: `coverage run manage.py test`
