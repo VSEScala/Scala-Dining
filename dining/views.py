@@ -642,3 +642,62 @@ class SlotPaymentView(SlotMixin, SlotOwnerMixin, FormView):
         else:
             messages.success(self.request, "Diners have been informed")
         return super().form_valid(form)
+
+
+class StatisticsView(LoginRequiredMixin, TemplateView):
+    template_name = "dining_lists/statistics.html"
+
+    def get_range(self):
+        """Returns the user-defined date range or a default range."""
+        today = timezone.now().date()
+        # Default boundary is August 1st. We could also do September 1st but then we
+        # might miss some early year dining lists.
+        range_from = date(today.year - 1 if today.month < 8 else today.year, 8, 1)
+        range_to = range_from.replace(year=range_from.year + 1)
+        try:
+            range_from = date.fromisoformat(self.request.GET.get("from") or "")
+        except ValueError:
+            pass
+        try:
+            range_to = date.fromisoformat(self.request.GET.get("to") or "")
+        except ValueError:
+            pass
+        return range_from, range_to
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        range_from, range_to = self.get_range()
+
+        # Dining lists in the period
+        lists = DiningList.objects.filter(date__gte=range_from, date__lt=range_to)
+        # Users who dined in the given period (excludes external entries)
+        users = User.objects.filter(
+            diningentry__dining_list__in=lists, diningentry__external_name=""
+        ).distinct()
+        # Entries in given period
+        entries = DiningEntry.objects.filter(dining_list__in=lists)
+        # Filter on association
+        per_association = {
+            a: {
+                "users": users.filter(
+                    usermembership__association=a, usermembership__is_verified=True
+                ),
+                "lists": lists.filter(association=a),
+                "entries": entries.filter(dining_list__association=a),
+            }
+            for a in Association.objects.order_by("name")
+        }
+
+        context.update(
+            {
+                "range_from": range_from,
+                "range_to": range_to,
+                "lists": lists,
+                "users": users,
+                "entries": entries,
+                "per_association": per_association,
+                "next": range_to + (range_to - range_from),
+                "prev": range_from - (range_to - range_from),
+            }
+        )
+        return context

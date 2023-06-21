@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <h3>Date range</h3>
+    <p>
+        Currently set:
+        <strong>{{ range_from|date:"SHORT_DATE_FORMAT" }} – {{ range_to|date:"SHORT_DATE_FORMAT" }}</strong>
+    </p>
+
+    <form method="get" action="{% url "statistics" %}" class="form-inline">
+        <label for="rangeFrom" class="my-1 mr-2">From</label>
+        <input type="date" id="rangeFrom" name="from" value="{{ range_from.isoformat }}"
+               class="form-control my-1 mr-sm-2">
+        <label for="rangeTo" class="my-1 mr-2">To (exclusive)</label>
+        <input type="date" id="rangeTo" name="to" value="{{ range_to.isoformat }}"
+               class="form-control my-1 mr-sm-2">
+        <button type="submit" class="btn btn-primary my-1">Change</button>
+    </form>
+
+    <a href="{% url "statistics" %}?from={{ prev.isoformat }}&to={{ range_from.isoformat }}" class="btn btn-secondary">
+        « Previous
+    </a>
+
+    <a href="{% url "statistics" %}?from={{ range_to.isoformat }}&to={{ next.isoformat }}" class="btn btn-secondary">
+        Next »
+    </a>
+    <a href="{% url "statistics" %}" class="btn btn-secondary">
+        Reset
+    </a>
+
+    <h3 class="mt-3">Dining counts</h3>
+    <table class="table table-sm">
+        <thead>
+        <tr>
+            <th scope="col">Association</th>
+            <th scope="col">Lists</th>
+            <th scope="col">Individual diners*</th>
+            <th scope="col">Total diner count**</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for association, queryset in per_association.items %}
+            <tr>
+                <th scope="row">{{ association.name }}</th>
+                <td>{{ queryset.lists.count }}</td>
+                <td>{{ queryset.users.count }}</td>
+                <td>{{ queryset.entries.count }}</td>
+            </tr>
+        {% endfor %}
+        <tr>
+            <th scope="row"><em>Total</em></th>
+            <td><em>{{ lists.count }}</em></td>
+            <td><em>{{ users.count }}</em></td>
+            <td><em>{{ entries.count }}</em></td>
+        </tr>
+        </tbody>
+    </table>
+
+    <p>
+        <strong>*Individual diners:</strong> the number of individuals from each association who joined
+        a dining list in the given period.
+        When the same individual joined multiple lists this is counted as 1.
+        An individual is counted when
+        they joined <em>any</em> dining list, not necessarily a list of their own association.
+        Some individuals are member of multiple associations, in which case they are counted once for each
+        association. Therefore, the sum of all associations can be more than the total number of individuals.
+        Unverified members and guest diners are not counted.
+    </p>
+
+    <p>
+        <strong>**Total diner count:</strong> the sum of all diners for the lists that are <em>owned</em>
+        by the association,
+        in the given period.
+    </p>
+
+
+{% endblock %}
