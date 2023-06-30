@@ -56,6 +56,16 @@ jobs:
         run: flake8
       - uses: psf/black@stable
       - run: isort --check --diff .
+      - name: check if .gitignore ⊆ .prettierignore
+        run: |
+          gitignore=$(cat ./.gitignore)
+          prettierignore=$(cat ./.prettierignore)
+          [[ "$prettierignore" == "$gitignore"* ]]
+      - name: check formatting
+        uses: creyD/prettier_action@v4.3
+        with:
+          dry: true
+
   pip-compile-check:
     runs-on: ubuntu-22.04
     steps:
