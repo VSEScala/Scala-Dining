@@ -66,6 +66,7 @@ jobs:
         uses: creyD/prettier_action@v4.3
         with:
           dry: true
+          prettier_options: --check .
 
   pip-compile-check:
     runs-on: ubuntu-22.04
