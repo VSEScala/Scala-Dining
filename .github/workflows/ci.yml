@@ -60,6 +60,7 @@ jobs:
         run: |
           gitignore=$(cat ./.gitignore)
           prettierignore=$(cat ./.prettierignore)
+          # this should check the beginning of both files and check if they’re equal 
           [[ "$prettierignore" == "$gitignore"* ]]
       - name: check formatting
         uses: creyD/prettier_action@v4.3
