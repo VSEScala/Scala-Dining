@@ -1,11 +1,11 @@
 name: Continuous integration
 
-# We might want to fine-tune this to prevent duplicate checks.
 on:
   pull_request:
   push:
     branches:
       - master
+      - main # Not or current main branch, but can be enabled without bad side effects.
 
 # When a step fails, the next steps are not executed. This means that when a
 # test case fails, the coverage report will not be uploaded. This should be
@@ -63,12 +63,12 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: "3.8" #lowest supported python version by us.
+          python-version: "3.11" # the current version
           cache: "pip"
           cache-dependency-path: | #todo: check if update needed
             requirements.txt
             dev-requirements.txt
       - run: pip install pip-tools
-      - run: pip-compile requirements.in --resolver=legacy #todo: check backtracking
-      - run: pip-compile dev-requirements.in --resolver=legacy
+      - run: pip-compile requirements.in --resolver=backtracking
+      - run: pip-compile dev-requirements.in --resolver=backtracking
       - run: git diff --exit-code
