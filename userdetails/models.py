@@ -22,7 +22,7 @@ class User(AbstractUser):
     email = models.EmailField("email address", unique=True)
 
     allergies = models.CharField(
-        max_length=100,
+        max_length=1000,
         blank=True,
         help_text="E.g. gluten or vegetarian. Leave empty if not applicable.",
         verbose_name="food allergies or preferences",
