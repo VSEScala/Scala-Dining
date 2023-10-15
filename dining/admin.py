@@ -44,7 +44,7 @@ class DiningEntryAdmin(admin.ModelAdmin):
 class DiningListAdmin(admin.ModelAdmin):
     list_display = ("date", "association", "dish", "is_adjustable")
     list_filter = ("association", "date")
-    readonly_fields = ("date", "diners", "association")
+    readonly_fields = ("diners",)
     filter_horizontal = ("owners",)
 
 
