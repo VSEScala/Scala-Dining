@@ -36,9 +36,15 @@ for details.
 
 ## Code style
 
-The linter Flake8 expects the code, including docstrings, to follow the
+The linter Flake8 & isort expects the code, including docstrings, to follow the
 [Google Python Style Guide](https://google.github.io/styleguide/pyguide.html).
-See the file `.flake8` for the exact configuration.
+See the file [.flake8](.flake8) for the exact configuration.
+
+Futhermore the linter Black & isort expect the code to be formatted according to the
+[The Black Code Style](https://black.readthedocs.io/en/stable/the_black_code_style/).
+See the file [pyproject.toml](pyproject.toml) for the exact configuration.
+It’s possible to run them and make them (try to) fix your code with `black .` & `isort . --atomic`.
+
 
 To let PyCharm use the correct docstring format, change the setting at
 "Tools -> Python Integrated Tools -> Docstrings -> Docstring format" to Google.

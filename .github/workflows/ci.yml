@@ -1,7 +1,11 @@
 name: Continuous integration
 
-# We might want to fine-tune this to prevent duplicate checks.
-on: [pull_request]
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+      - main # Not or current main branch, but can be enabled without bad side effects.
 
 # When a step fails, the next steps are not executed. This means that when a
 # test case fails, the coverage report will not be uploaded. This should be
@@ -26,29 +30,57 @@ jobs:
           --health-retries 5
 
     steps:
-    - uses: actions/checkout@v3
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.11'
-        cache: 'pip'
-        cache-dependency-path: |
-          requirements.txt
-          dev-requirements.txt
-    - name: Install dependencies
-      # We use the psycopg2 binary package for testing.
-      # About --use-pep517: https://github.com/pypa/pip/issues/8559
-      run: pip install --use-pep517 -r requirements.txt -r dev-requirements.txt psycopg2-binary==2.9.5
-    - name: Run tests and collect coverage
-      run: coverage run manage.py test
-      env:
-        DINING_SECRET_KEY: hi
-        DINING_DEBUG: on
-        DINING_DATABASE_URL: postgres://postgres:postgres@localhost/postgres
-    # This is above flake8 so that we upload even if linting fails
-    - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v3
-    - name: Lint with flake8
-      run: flake8
-    - uses: psf/black@stable
-    - run: isort --check --diff .
+      - uses: actions/checkout@v3
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+          cache: "pip"
+          cache-dependency-path: |
+            requirements.txt
+            dev-requirements.txt
+      - name: Install dependencies
+        # We use the psycopg2 binary package for testing.
+        # About --use-pep517: https://github.com/pypa/pip/issues/8559
+        run: pip install --use-pep517 -r requirements.txt -r dev-requirements.txt psycopg2-binary==2.9.5
+      - name: Run tests and collect coverage
+        run: coverage run manage.py test
+        env:
+          DINING_SECRET_KEY: hi
+          DINING_DEBUG: on
+          DINING_DATABASE_URL: postgres://postgres:postgres@localhost/postgres
+      # This is above flake8 so that we upload even if linting fails
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+      - name: Lint with flake8
+        run: flake8
+      - uses: psf/black@stable
+      - run: isort --check --diff .
+      - name: check if .gitignore ⊆ .prettierignore
+        run: |
+          gitignore=$(cat ./.gitignore)
+          prettierignore=$(cat ./.prettierignore)
+          # this should check the beginning of both files and check if they’re equal 
+          [[ "$prettierignore" == "$gitignore"* ]]
+      - name: check formatting
+        uses: creyD/prettier_action@v4.3
+        with:
+          dry: true
+          prettier_options: --check .
+
+  pip-compile-check:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11" # the current version
+          cache: "pip"
+          cache-dependency-path: | #todo: check if update needed
+            requirements.txt
+            dev-requirements.txt
+      - run: pip install pip-tools
+      - run: pip-compile requirements.in --resolver=backtracking
+      - run: pip-compile dev-requirements.in --resolver=backtracking
+      - run: git diff --exit-code
