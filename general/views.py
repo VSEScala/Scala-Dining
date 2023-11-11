@@ -125,6 +125,10 @@ class UpgradeBalanceInstructionsView(TemplateView):
             associations = Association.objects.order_by("slug")
             context["user_associations"] = associations.filter(
                 usermembership__related_user=self.request.user
+            ).exclude(
+                # User wasn't verified and isn't pending (verification date is empty for pending users)
+                usermembership__is_verified=False,
+                usermembership__verified_on__isnull=False,
             )
             context["other_associations"] = associations.exclude(
                 id__in=context["user_associations"].values_list("id", flat=True)
