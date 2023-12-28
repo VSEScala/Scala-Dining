@@ -1,18 +1,18 @@
+from datetime import date
 from decimal import Decimal
 
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.core.exceptions import PermissionDenied
+from django.core.exceptions import BadRequest, PermissionDenied
 from django.core.paginator import Paginator
 from django.db.models import Count, Q, Sum
-from django.http import HttpResponse, HttpResponseRedirect
+from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
 from django.utils.http import url_has_allowed_host_and_scheme
-from django.views import View
+from django.utils.timezone import localdate
 from django.views.generic import DetailView, FormView, ListView, TemplateView
 
-from creditmanagement.csv import write_transactions_csv
 from creditmanagement.forms import ClearOpenExpensesForm, SiteWideTransactionForm
 from creditmanagement.models import Account, Transaction
 from creditmanagement.views import TransactionFormView
@@ -38,14 +38,13 @@ class AssociationBoardMixin:
         self.association = get_object_or_404(
             Association, slug=kwargs["association_name"]
         )
-        if not request.user.groups.filter(id=self.association.id):
+        if not request.user.is_board_of(self.association):
             raise PermissionDenied
         return super().dispatch(request, *args, **kwargs)
 
 
 class AssociationHasSiteAccessMixin:
     def dispatch(self, request, *args, **kwargs):
-        """Gets association and checks if user is board member."""
         if not self.association.has_site_stats_access:
             raise PermissionDenied("This association may not view this data")
         return super().dispatch(request, *args, **kwargs)
@@ -114,21 +113,6 @@ class AutoCreateNegativeCreditsView(
             tx.amount for tx in context["form"].transactions
         )
         return context
-
-
-class AssociationTransactionsCSVView(LoginRequiredMixin, AssociationBoardMixin, View):
-    """Returns a CSV file with all transactions."""
-
-    def get(self, request, *args, **kwargs):
-        response = HttpResponse(content_type="text/csv")
-        response[
-            "Content-Disposition"
-        ] = 'attachment; filename="association_transactions.csv"'
-        qs = Transaction.objects.filter_account(self.association.account).order_by(
-            "-moment"
-        )
-        write_transactions_csv(response, qs, self.association.account)
-        return response
 
 
 class MembersOverview(LoginRequiredMixin, AssociationBoardMixin, ListView):
@@ -329,17 +313,12 @@ class SiteTransactionView(
 class SiteCreditDetailView(
     AssociationBoardMixin,
     AssociationHasSiteAccessMixin,
-    DateRangeFilterMixin,
     DetailView,
 ):
-    """Shows details for an account.
-
-    Only allows displaying details for bookkeeping accounts.
-    """
+    """Shows details for *any* account."""
 
     template_name = "accounts/site_credit_detail.html"
     model = Account
-    slug_field = "special"  # Finds the object from the 'slug' URL parameter
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -352,11 +331,22 @@ class SiteCreditDetailView(
         page_obj = paginator.get_page(page_number)
         context["page_obj"] = page_obj
 
-        # Handle income/outcome flow
-        # We only handle and show the form if we're on page 1
-        if page_obj.number == 1 and self.date_range_form.is_valid():
+        # Handle income/outcome flow query params
+        range_from = self.request.GET.get("from")
+        range_to = self.request.GET.get("to")
+
+        # We only handle the params if we're on page 1
+        if page_obj.number == 1 and range_from and range_to:
+            try:
+                range_from = date.fromisoformat(range_from)
+                range_to = date.fromisoformat(range_to)
+            except ValueError:
+                raise BadRequest
+            if range_from > range_to:
+                raise BadRequest
+
             qs = Transaction.objects.filter(
-                moment__gte=self.date_start, moment__lte=self.date_end
+                moment__gte=range_from, moment__lte=range_to
             )
             influx = qs.filter(target=account).aggregate(sum=Sum("amount"))[
                 "sum"
@@ -365,10 +355,21 @@ class SiteCreditDetailView(
                 "sum"
             ] or Decimal("0.00")
 
-            context["dining_balance"] = {
-                "influx": influx,
-                "outflux": outflux,
-                "nettoflux": influx - outflux,
-            }
+            context.update(
+                {
+                    "dining_balance": {
+                        "influx": influx,
+                        "outflux": outflux,
+                        "nettoflux": influx - outflux,
+                    },
+                    "range_from": range_from.isoformat(),
+                    "range_to": range_to.isoformat(),
+                }
+            )
+
+        # Set default range
+        today = localdate()
+        context.setdefault("range_from", today.replace(year=today.year - 1).isoformat())
+        context.setdefault("range_to", today.isoformat())
 
         return context

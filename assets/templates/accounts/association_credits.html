@@ -17,7 +17,7 @@
                 Autocorrect negative credits
             </a>
         {% endif %}
-        <a href="{% url 'association_transactions_csv' association_name=association.slug %}"
+        <a href="{% url 'credits:transaction_csv' pk=association.account.pk %}"
            class="btn btn-secondary">
             <i class="fa fa-file-export"></i> Download CSV
         </a>

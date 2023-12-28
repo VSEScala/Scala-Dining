@@ -1,12 +1,13 @@
 from datetime import datetime
 from decimal import Decimal
-from typing import Optional, Union
+from typing import Iterator, Optional, Union
 
 from django.core.validators import MinValueValidator
 from django.db import models
 from django.db.models import Q, QuerySet, Sum
 from django.utils import timezone
 
+from creditmanagement.csv import transactions_csv
 from userdetails.models import Association, User
 
 
@@ -121,6 +122,10 @@ class TransactionQuerySet(QuerySet):
     def filter_account(self, account: Account):
         """Filters transactions that have the given account as source or target."""
         return self.filter(Q(source=account) | Q(target=account))
+
+    def csv(self) -> Iterator:
+        """Returns an iterator yielding a CSV file."""
+        return transactions_csv(self)
 
 
 class Transaction(models.Model):

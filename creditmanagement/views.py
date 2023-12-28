@@ -1,11 +1,12 @@
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.http import HttpResponse, HttpResponseRedirect
+from django.core.exceptions import PermissionDenied
+from django.http import HttpResponseRedirect, StreamingHttpResponse
+from django.shortcuts import get_object_or_404
 from django.urls import reverse_lazy
 from django.views.generic import FormView, View
 from django.views.generic.list import ListView
 
-from creditmanagement.csv import write_transactions_csv
 from creditmanagement.forms import TransactionForm
 from creditmanagement.models import Account, Transaction
 
@@ -21,16 +22,39 @@ class TransactionListView(LoginRequiredMixin, ListView):
 
 
 class TransactionCSVView(LoginRequiredMixin, View):
-    """Returns a CSV with transactions of the current user."""
+    """Returns a CSV with transactions."""
 
-    def get(self, request, *args, **kwargs):
-        response = HttpResponse(content_type="text/csv")
-        response["Content-Disposition"] = 'attachment; filename="user_transactions.csv"'
-        qs = Transaction.objects.filter_account(request.user.account).order_by(
-            "-moment"
+    def has_permission(self, account) -> bool:
+        """Whether the current user has permission to download the CSV.
+
+        * Normal users can only export their own account.
+        * Association board members can export the association transactions.
+        * Site-wide admins can export any account.
+
+        Args:
+            account: The account to export.
+        """
+        if self.request.user.has_site_stats_access():
+            return True
+        if account.user and account.user == self.request.user:
+            return True
+        if account.association and self.request.user.is_board_of(account.association):
+            return True
+        return False
+
+    def get(self, request, *args, pk=None, **kwargs):
+        account = get_object_or_404(Account, pk=pk)
+
+        if not self.has_permission(account):
+            raise PermissionDenied
+
+        # Stream CSV
+        qs = Transaction.objects.filter_account(account).order_by("-moment")
+        return StreamingHttpResponse(
+            qs.csv(),
+            content_type="text/csv",
+            headers={"Content-Disposition": 'attachment; filename="transactions.csv"'},
         )
-        write_transactions_csv(response, qs, request.user.account)
-        return response
 
 
 class TransactionFormView(FormView):
