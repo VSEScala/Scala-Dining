@@ -1,5 +1,5 @@
 from django import template
-from django.utils.safestring import mark_safe
+from django.utils.formats import localize
 
 register = template.Library()
 
@@ -7,9 +7,8 @@ register = template.Library()
 @register.filter
 def euro(value):
     """Format for euro values."""
-    amount = "{:.2f}".format(abs(value))
-    v = "{}€{}".format("-" if value < 0 else "", amount)
-    return mark_safe(v)
+    # Could surround this with `mark_safe` but is probably not necessary
+    return f"-€{localize(-value)}" if value < 0 else f"€{localize(value)}"
 
 
 @register.filter
