@@ -13,7 +13,7 @@
         <tbody>
         {% for tx in object_list %}
             <tr>
-                <td>{{ tx.moment }}</td>
+                <td>{{ tx.moment|date:"SHORT_DATE_FORMAT" }}</td>
                 <td>
                     {% if tx.source == account_self %}
                         {{ tx.target }}
