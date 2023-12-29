@@ -22,10 +22,10 @@ def transactions_csv(transactions) -> Iterator:
     yield writer.writerow(
         [
             "Date (yyyy-mm-dd)",
-            "Debtor name",
-            "Creditor name",
-            "Debtor type",
-            "Creditor type",
+            "Source account",
+            "Destination account",
+            "Source type",
+            "Destination type",
             "Amount",
             "Description",
             "Created by",
