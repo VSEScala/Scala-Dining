@@ -4,7 +4,7 @@ from typing import Optional, Union
 
 from django.core.validators import MinValueValidator
 from django.db import models
-from django.db.models import Q, QuerySet, Sum
+from django.db.models import Q, QuerySet, Sum, Case, When
 from django.utils import timezone
 
 from userdetails.models import Association, User
@@ -122,6 +122,59 @@ class TransactionQuerySet(QuerySet):
         """Filters transactions that have the given account as source or target."""
         return self.filter(Q(source=account) | Q(target=account))
 
+    def sum_by_account(self, group_users=False):
+        """Sums the amounts in this QuerySet, grouped by account.
+
+        Computes for each account that occurs in the QuerySet, the total
+        balance increase and decrease sum, over all transactions in this
+        QuerySet.
+
+        Args:
+            group_users: If True, user accounts are grouped together and given
+              key 'None'.
+
+        Returns:
+            A dictionary with as key the account id or None when the account is
+            for a user and group_users is True. The value is a tuple with the
+            increase and reduce sum (possibly 0).
+        """
+        # Annotate the grouping key
+        if group_users:
+            source_qs = self.annotate(
+                account=Case(
+                    # Set the group key to NULL for all user accounts
+                    When(source__user__isnull=False, then=None),
+                    default="source",
+                )
+            )
+
+            target_qs = self.annotate(
+                account=Case(
+                    When(target__user__isnull=False, then=None), default="target"
+                )
+            )
+        else:
+            source_qs = self.annotate(account="source")
+            target_qs = self.annotate(account="target")
+
+        # Group by account and aggregate
+        reduction = source_qs.values("account").annotate(sum=Sum("amount"))
+        increase = target_qs.values("account").annotate(sum=Sum("amount"))
+
+        # Combine on account key
+        combined = {e["account"]: {"increase_sum": e["sum"]} for e in increase}
+        for e in reduction:
+            combined.setdefault(e["account"], {})["reduction_sum"] = e["sum"]
+
+        # Convert to tuple
+        return {
+            account: (
+                val.get("increase_sum", Decimal("0.00")),
+                val.get("reduction_sum", Decimal("0.00")),
+            )
+            for account, val in combined.items()
+        }
+
 
 class Transaction(models.Model):
     # We do not enforce that source != target because those rows are not harmful.
@@ -153,3 +206,6 @@ class Transaction(models.Model):
             description=f'Refund "{self.description}"',
             created_by=reverted_by,
         )
+
+    def __str__(self):
+        return f"{self.source} -> {self.target} - {self.amount}"
