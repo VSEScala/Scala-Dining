@@ -40,15 +40,34 @@ class BalanceReportView(ReportAccessMixin, TemplateView):
     def period_boundaries(self):
         """Get periods.
 
+        Period boundaries *must* be touching, i.e. start of next period is the
+        same as the end of the current period.
+
         Yields:
             3-tuples with start of period, end of period, and display name.
         """
+        return self.period_boundaries_quarterly()
+
+    def period_boundaries_monthly(self):
         # Start of each period
         boundaries = [make_aware(datetime(self.get_year(), m, 1)) for m in range(1, 13)]
         # End of last period
         boundaries += [make_aware(datetime(self.get_year() + 1, 1, 1))]
 
         return ((a, b, a.strftime("%B")) for a, b in pairwise(boundaries))
+
+    def period_boundaries_quarterly(self):
+        year = self.get_year()
+
+        def q(quartile):
+            make_aware(datetime(year, (quartile - 1) * 3 + 1, 1))
+
+        yield q(1), q(2), "Q1 January, February, March"
+        yield q(2), q(3), "Q2 April, May, June"
+        yield q(3), q(4), "Q3 July, August, September"
+        yield q(4), make_aware(
+            datetime(year + 1, 1, 1)
+        ), "Q4 October, November, December"
 
     def get_report(self):
         """Computes the report values."""
@@ -78,7 +97,8 @@ class BalanceReportView(ReportAccessMixin, TemplateView):
                     "increase": increase,
                     "reduction": reduction,
                     "end_balance": running_balance.get(account, Decimal("0.00"))
-                                   + increase - reduction,
+                    + increase
+                    - reduction,
                 }
                 for account, (increase, reduction) in mutation.items()
             }
@@ -123,7 +143,9 @@ class BalanceReportView(ReportAccessMixin, TemplateView):
             bookkeeping.sort(key=lambda e: e[0].special)
             association.sort(key=lambda e: e[0].association.name)
 
-            report_display.append((period, bookkeeping, association, user_pile, period_name))
+            report_display.append(
+                (period, bookkeeping, association, user_pile, period_name)
+            )
 
         context.update(
             {
