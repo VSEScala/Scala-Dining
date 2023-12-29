@@ -60,7 +60,7 @@ class BalanceReportView(ReportAccessMixin, TemplateView):
         year = self.get_year()
 
         def q(quartile):
-            make_aware(datetime(year, (quartile - 1) * 3 + 1, 1))
+            return make_aware(datetime(year, (quartile - 1) * 3 + 1, 1))
 
         yield q(1), q(2), "Q1 January, February, March"
         yield q(2), q(3), "Q2 April, May, June"
