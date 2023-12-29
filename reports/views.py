@@ -27,9 +27,6 @@ class BalanceReportView(ReportAccessMixin, TemplateView):
 
     User accounts are aggregated as one large pile. Association and bookkeeping
     accounts are shown individually.
-
-    The period is monthly. For each account the opening balance is given, the
-    credit and debit amount in the given period, and the final balance.
     """
 
     template_name = "reports/balance.html"
@@ -41,13 +38,17 @@ class BalanceReportView(ReportAccessMixin, TemplateView):
             raise BadRequest
 
     def period_boundaries(self):
-        """Yields tuples with the start and end date of each period."""
-        # Start of each month
+        """Get periods.
+
+        Yields:
+            3-tuples with start of period, end of period, and display name.
+        """
+        # Start of each period
         boundaries = [make_aware(datetime(self.get_year(), m, 1)) for m in range(1, 13)]
-        # End of last month
+        # End of last period
         boundaries += [make_aware(datetime(self.get_year() + 1, 1, 1))]
 
-        return pairwise(boundaries)
+        return ((a, b, a.strftime("%B")) for a, b in pairwise(boundaries))
 
     def get_report(self):
         """Computes the report values."""
@@ -64,7 +65,7 @@ class BalanceReportView(ReportAccessMixin, TemplateView):
         }
 
         report = []
-        for left, right in boundaries:
+        for left, right, period_name in boundaries:
             # Compute credit and debit sum in the period
             mutation = tx.filter(moment__gte=left, moment__lt=right).sum_by_account(
                 group_users=True
@@ -87,7 +88,7 @@ class BalanceReportView(ReportAccessMixin, TemplateView):
                 (account, val["end_balance"]) for account, val in statements.items()
             )
 
-            report.append((left, statements))
+            report.append((left, statements, period_name))
         return report
 
     def get_context_data(self, **kwargs):
@@ -98,7 +99,7 @@ class BalanceReportView(ReportAccessMixin, TemplateView):
         report_display = []
         account = {}  # Cache for Account lookups
 
-        for period, statements in report:
+        for period, statements, period_name in report:
             # Retrieve Accounts from database
             for pk in statements:
                 if pk is not None and pk not in account:
@@ -122,7 +123,7 @@ class BalanceReportView(ReportAccessMixin, TemplateView):
             bookkeeping.sort(key=lambda e: e[0].special)
             association.sort(key=lambda e: e[0].association.name)
 
-            report_display.append((period, bookkeeping, association, user_pile))
+            report_display.append((period, bookkeeping, association, user_pile, period_name))
 
         context.update(
             {

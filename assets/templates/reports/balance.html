@@ -28,8 +28,8 @@
     </p>
 
 
-    {% for period, bookkeeping, association, user_pile in report_display %}
-        <h4>{{ period|date:"F" }}</h4>
+    {% for period, bookkeeping, association, user_pile, period_name in report_display %}
+        <h4>{{ period_name }}</h4>
         <table class="table table-sm">
             <thead>
             <tr>
