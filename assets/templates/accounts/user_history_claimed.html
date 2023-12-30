@@ -31,7 +31,7 @@
                         {{ entry.dish }}
                     </td>
                     <td>
-                        {{ entry.association.slug }}
+                        {{ entry.association.get_short_name }}
                     </td>
                     <td>
                         {{ entry.diners.count }}

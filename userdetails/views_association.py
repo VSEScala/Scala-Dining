@@ -36,7 +36,7 @@ class AssociationBoardMixin:
     def dispatch(self, request, *args, **kwargs):
         """Gets association and checks if user is board member."""
         self.association = get_object_or_404(
-            Association, slug=kwargs["association_name"]
+            Association, slug=kwargs["slug"]
         )
         if not request.user.groups.filter(id=self.association.id):
             raise PermissionDenied
@@ -76,7 +76,7 @@ class AssociationTransactionAddView(
     def get_success_url(self):
         return reverse(
             "association_credits",
-            kwargs={"association_name": self.kwargs.get("association_name")},
+            kwargs={"slug": self.kwargs.get("slug")},
         )
 
 
@@ -104,7 +104,7 @@ class AutoCreateNegativeCreditsView(
 
     def get_success_url(self):
         return reverse(
-            "association_credits", kwargs={"association_name": self.association.slug}
+            "association_credits", kwargs={"slug": self.association.slug}
         )
 
     def get_context_data(self, **kwargs):
@@ -206,7 +206,7 @@ class AssociationSettingsView(AssociationBoardMixin, TemplateView):
 
         return context
 
-    def post(self, request, association_name=None):
+    def post(self, request, *args, **kwargs):
         # Do form shenanigans
         form = AssociationSettingsForm(data=request.POST, instance=self.association)
 
@@ -312,7 +312,7 @@ class SiteTransactionView(
     def get_success_url(self):
         return reverse(
             "association_site_credit_stats",
-            kwargs={"association_name": self.kwargs["association_name"]},
+            kwargs={"slug": self.kwargs["slug"]},
         )
 
     def get_form_kwargs(self):
@@ -339,6 +339,7 @@ class SiteCreditDetailView(
 
     template_name = "accounts/site_credit_detail.html"
     model = Account
+    slug_url_kwarg = "account_slug"
     slug_field = "special"  # Finds the object from the 'slug' URL parameter
 
     def get_context_data(self, **kwargs):

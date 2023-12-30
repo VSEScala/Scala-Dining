@@ -50,9 +50,9 @@
                             {% endif %}
                             {% for association in user.boards %}
                                 <a class="dropdown-item {{ justify }}"
-                                   href="{% url 'association_overview' association_name=association.slug %}">
+                                   href="{% url 'association_overview' slug=association.slug %}">
                                     <span>
-                                        {{ association.slug }}
+                                        {{ association.get_short_name }}
                                         {% if association.requires_action %}
                                             <span class="badge badge-pill badge-warning">!</span>
                                         {% endif %}

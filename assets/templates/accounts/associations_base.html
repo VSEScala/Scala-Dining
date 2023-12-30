@@ -5,31 +5,31 @@
     <ul class="nav nav-tabs">
         <li class="nav-item">
             <a class="nav-link{% block tab_overview %}{% endblock %}"
-               href="{% url 'association_overview' association_name=association.slug %}">Overview
+               href="{% url 'association_overview' slug=association.slug %}">Overview
                 {% if notify_overview %}<span class="badge badge-pill badge-warning">!</span>{% endif %}
             </a>
         </li>
         <li class="nav-item">
             <a class="nav-link{% block tab_credits %}{% endblock %}"
-               href="{% url 'association_credits' association_name=association.slug %}">Credits</a>
+               href="{% url 'association_credits' slug=association.slug %}">Credits</a>
         </li>
         <li class="nav-item">
             <a class="nav-link{% block tab_members %}{% endblock %}"
-               href="{% url 'association_members' association_name=association.slug %}">Members</a>
+               href="{% url 'association_members' slug=association.slug %}">Members</a>
         </li>
         <li class="nav-item">
             <a class="nav-link{% block tab_settings %}{% endblock %}"
-               href="{% url 'association_settings' association_name=association.slug %}">Settings</a>
+               href="{% url 'association_settings' slug=association.slug %}">Settings</a>
         </li>
 
         {% if association.has_site_stats_access %}
             <li class="nav-item">
                 <a class="nav-link{% block tab_site_dining %}{% endblock %}"
-                   href="{% url 'association_site_dining_stats' association_name=association.slug %}">Site Dining</a>
+                   href="{% url 'association_site_dining_stats' slug=association.slug %}">Site Dining</a>
             </li>
             <li class="nav-item">
                 <a class="nav-link{% block tab_site_credits %}{% endblock %}"
-                   href="{% url 'association_site_credit_stats' association_name=association.slug %}">Site Credits</a>
+                   href="{% url 'association_site_credit_stats' slug=association.slug %}">Site Credits</a>
             </li>
         {% endif %}
     </ul>
