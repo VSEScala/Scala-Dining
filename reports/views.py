@@ -269,7 +269,56 @@ class CashFlowMatrixView(ReportAccessMixin, TemplateView):
 
 
 class StaleAccountsView(ReportAccessMixin, TemplateView):
-    pass
+    """Report on the sum of account balances grouped in a period."""
+
+    template_name = "reports/stale.html"
+
+    def get_report(self) -> dict[str, dict]:
+        # Get balance and latest transaction date for all accounts
+        data = Transaction.objects.sum_by_account(latest=True)
+
+        # Group by quartile and aggregate
+        report = {}
+        for increase, reduction, last_date in data.values():
+            # If we omit localdate the timezone would be UTC and items might end up in
+            # a different bucket.
+            date = localdate(last_date)
+            bucket = f"{date.year} Q{(date.month - 1) // 3 + 1}"
+            balance = increase - reduction
+
+            if balance:
+                init = {
+                    "positive_count": 0,
+                    "positive_sum": Decimal("0.00"),
+                    "negative_count": 0,
+                    "negative_sum": Decimal("0.00"),
+                }
+                report.setdefault(bucket, init)
+
+            # Update count and sum
+            if balance > 0:
+                report[bucket]["positive_count"] += 1
+                report[bucket]["positive_sum"] += balance
+            elif balance < 0:
+                report[bucket]["negative_count"] += 1
+                report[bucket]["negative_sum"] += balance
+
+        # Add totals
+        for counts in report.values():
+            counts["total_count"] = counts["positive_count"] + counts["negative_count"]
+            counts["total_sum"] = counts["positive_sum"] + counts["negative_sum"]
+
+        return report
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        # Format report as a list and sort
+        report_display = [(q, counts) for q, counts in self.get_report().items()]
+        report_display.sort(reverse=True)
+
+        context.update({"report_display": report_display})
+        return context
 
 
 class DinerReportView(TemplateView):
