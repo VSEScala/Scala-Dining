@@ -1,3 +1,4 @@
+from abc import ABC, abstractmethod
 from datetime import datetime
 
 from django.utils.timezone import make_aware
@@ -5,19 +6,22 @@ from django.utils.timezone import make_aware
 from creditmanagement.models import Transaction
 
 
-class Period:
+class Period(ABC):
+    @abstractmethod
     def get_period_start(self) -> datetime:
-        raise NotImplementedError
+        pass
 
     def get_period_end(self) -> datetime:
         return self.next().get_period_start()
 
+    @abstractmethod
     def get_display_name(self) -> str:
-        raise NotImplementedError
+        pass
 
+    @abstractmethod
     def next(self) -> "Period":
         """Returns the adjacent period directly after this one."""
-        raise NotImplementedError
+        pass
 
     def get_transactions(self, tx=None):
         """Filter transactions in this period."""
@@ -26,6 +30,9 @@ class Period:
         return tx.filter(
             moment__gte=self.get_period_start(), moment__lt=self.get_period_end()
         )
+
+    def __str__(self):
+        return self.get_display_name()
 
 
 class MonthPeriod(Period):
@@ -81,3 +88,17 @@ class QuarterPeriod(Period):
             "Q3 July, August, September",
             "Q4 October, November, December",
         )[self.quarter - 1]
+
+
+class YearPeriod(Period):
+    def __init__(self, year: int):
+        self.year = year
+
+    def get_period_start(self) -> datetime:
+        return make_aware(datetime(self.year, 1, 1))
+
+    def next(self) -> "Period":
+        return YearPeriod(self.year + 1)
+
+    def get_display_name(self) -> str:
+        return ""

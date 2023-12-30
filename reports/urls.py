@@ -9,6 +9,7 @@ urlpatterns = [
     path("balance/", views.BalanceView.as_view(), name="balance"),
     path("cashflow/", views.CashFlowIndexView.as_view(), name="cashflow_index"),
     path("cashflow/<int:pk>/", views.CashFlowView.as_view(), name="cashflow"),
+    path("cashflow2/", views.CashFlowMatrixView.as_view(), name="cashflow_matrix"),
     path("transactions/", views.TransactionsReportView.as_view(), name="transactions"),
     path("stale/", views.StaleAccountsView.as_view(), name="stale"),
 ]

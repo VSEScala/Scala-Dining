@@ -2,6 +2,7 @@
 
 {% block content %}
     <h2>Reports</h2>
+    <h4>Finance</h4>
     <div class="row">
         <div class="col-md-6">
             <div class="list-group">
@@ -9,7 +10,14 @@
                     Balance
                 </a>
                 <a href="{% url 'reports:cashflow_index' %}" class="list-group-item list-group-item-action">
-                    Cash flow
+                    Cash flow<br>
+                    <small class="text-muted">
+                        Deprecated: this report has been superseded by the cash flow matrix which
+                        provides the same info. This report will be removed.
+                    </small>
+                </a>
+                <a href="{% url 'reports:cashflow_matrix' %}" class="list-group-item list-group-item-action">
+                    Cash flow matrix
                 </a>
                 <a href="{% url 'reports:transactions' %}" class="list-group-item list-group-item-action">
                     Transactions

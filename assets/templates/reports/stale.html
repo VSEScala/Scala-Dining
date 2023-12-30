@@ -3,10 +3,16 @@
 {% block report %}
     <h2>Stale accounts</h2>
     <p class="lead">
-        This report groups all accounts on the site based on the latest transaction date of the account.
-        For instance, if a user did their latest transaction in January 2020,
-        they are added with their account balance to row 2020 Q1.
+        This report groups all <em>user</em> accounts on the site based on the
+        last transaction date of the account.
+        For instance, if the total number of accounts for 2020 Q1 was 48,
+        with a total balance of 61.50, it means that there are 48
+        users who made their latest transaction in quarter 1 of 2020
+        and their balances sum up to 61.50.
+    </p>
+    <p>
         Positive and negative account balances are shown separately.
+        Association and bookkeeping accounts are not included in the report.
     </p>
     <table class="table table-sm">
         <thead>

@@ -2,12 +2,12 @@ from decimal import Decimal
 
 from django.contrib.auth.mixins import UserPassesTestMixin
 from django.core.exceptions import BadRequest
-from django.db.models import Case, Sum, When
+from django.db.models import Case, Sum, When, Q
 from django.utils.timezone import localdate
 from django.views.generic import DetailView, TemplateView
 
 from creditmanagement.models import Account, Transaction
-from reports.period import Period, QuarterPeriod
+from reports.period import Period, QuarterPeriod, YearPeriod
 from userdetails.models import Association
 
 
@@ -34,7 +34,7 @@ class ReportsView(ReportAccessMixin, TemplateView):
         return context
 
 
-class PeriodMixin:
+class YearMixin:
     """Mixin for yearly reporting periods."""
 
     def get_year(self):
@@ -43,16 +43,13 @@ class PeriodMixin:
         except ValueError:
             raise BadRequest
 
-    def get_periods(self) -> list[Period]:
-        return QuarterPeriod.for_year(self.get_year())
-
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["year"] = self.get_year()
         return context
 
 
-class BalanceView(ReportAccessMixin, PeriodMixin, TemplateView):
+class BalanceView(ReportAccessMixin, YearMixin, TemplateView):
     """Periodical reports of the balance of all credit accounts.
 
     User accounts are aggregated as one large pile. Association and bookkeeping
@@ -63,7 +60,7 @@ class BalanceView(ReportAccessMixin, PeriodMixin, TemplateView):
 
     def get_report(self):
         """Computes the report values."""
-        periods = self.get_periods()
+        periods = QuarterPeriod.for_year(self.get_year())
 
         # Compute opening balance
         running_balance = {
@@ -140,7 +137,7 @@ class BalanceView(ReportAccessMixin, PeriodMixin, TemplateView):
         return context
 
 
-class CashFlowView(ReportAccessMixin, PeriodMixin, DetailView):
+class CashFlowView(ReportAccessMixin, YearMixin, DetailView):
     """Periodical reports of money entering and leaving a specific account.
 
     For a selected account, shows the flow of money to and from other accounts
@@ -195,11 +192,11 @@ class CashFlowView(ReportAccessMixin, PeriodMixin, DetailView):
             )
             for account in income.keys() | outgoings.keys()
         }
-        print(regroup)
         return regroup
 
     def get_report(self):
-        return [(p, self.get_period_statement(p)) for p in self.get_periods()]
+        periods = QuarterPeriod.for_year(self.get_year())
+        return [(p, self.get_period_statement(p)) for p in periods]
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -245,7 +242,7 @@ class CashFlowIndexView(ReportAccessMixin, TemplateView):
         return context
 
 
-class TransactionsReportView(ReportAccessMixin, PeriodMixin, TemplateView):
+class TransactionsReportView(ReportAccessMixin, YearMixin, TemplateView):
     """Report to view all transactions excluding those involving user accounts."""
 
     template_name = "reports/transactions.html"
@@ -264,8 +261,83 @@ class TransactionsReportView(ReportAccessMixin, PeriodMixin, TemplateView):
         return context
 
 
-class CashFlowMatrixView(ReportAccessMixin, TemplateView):
-    pass
+class CashFlowMatrixView(ReportAccessMixin, YearMixin, TemplateView):
+    template_name = "reports/cashflow_matrix.html"
+
+    def get_matrix(self, period):
+        """Computes the cash flow matrix and returns a two-dimensional dictionary."""
+        tx = period.get_transactions()
+
+        # Group by source/target combinations and sum the amount
+        qs = (
+            # Set the group key to NULL for all user accounts
+            tx.annotate(
+                source_key=Case(
+                    When(source__user__isnull=False, then=None),
+                    default="source",
+                ),
+                target_key=Case(
+                    When(target__user__isnull=False, then=None),
+                    default="target",
+                ),
+            )
+            .values("source_key", "target_key")
+            .annotate(sum=Sum("amount"))
+        )
+
+        # Convert to 2D matrix
+        matrix = {}
+        for cell in qs:
+            source = cell["source_key"]
+            target = cell["target_key"]
+            # Fetch Account from database
+            if source:
+                source = Account.objects.get(pk=source)
+            if target:
+                target = Account.objects.get(pk=target)
+
+            # Enter in matrix
+            matrix.setdefault(source, {})[target] = cell["sum"]
+
+        return matrix
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        # Accounts to display in the matrix
+        # TODO: change slug to short_name after #278 is merged
+        accounts = list(
+            Account.objects.filter(
+                Q(association__isnull=False) | Q(special__isnull=False)
+            ).order_by("special", "association__slug")
+        )
+        # We add a `None` account indicating all user accounts
+        accounts.append(None)
+
+        # Format the matrices as 2D tables for display in the template
+        tables = []
+        for period in [YearPeriod(self.get_year())]:
+            matrix = self.get_matrix(period)
+            table = [
+                (
+                    account_from,
+                    [
+                        (account_to, matrix.get(account_from, {}).get(account_to))
+                        for account_to in accounts
+                    ],
+                )
+                for account_from in accounts
+            ]
+            tables.append((period, table))
+
+        context.update(
+            {
+                "accounts": accounts,
+                "tables": tables,
+            }
+        )
+
+        return context
 
 
 class StaleAccountsView(ReportAccessMixin, TemplateView):
@@ -274,26 +346,32 @@ class StaleAccountsView(ReportAccessMixin, TemplateView):
     template_name = "reports/stale.html"
 
     def get_report(self) -> dict[str, dict]:
+        # tx = Transaction.objects.filter()
         # Get balance and latest transaction date for all accounts
         data = Transaction.objects.sum_by_account(latest=True)
 
+        # Exclude all non-user accounts (i.e. association and bookkeeping accounts)
+        exclude = set(a.pk for a in Account.objects.exclude(user__isnull=False))
+
         # Group by quartile and aggregate
         report = {}
-        for increase, reduction, last_date in data.values():
+        for pk, (increase, reduction, last_date) in data.items():
+            if pk in exclude:
+                continue
+
             # If we omit localdate the timezone would be UTC and items might end up in
             # a different bucket.
             date = localdate(last_date)
             bucket = f"{date.year} Q{(date.month - 1) // 3 + 1}"
             balance = increase - reduction
 
-            if balance:
-                init = {
+            if balance and bucket not in report:
+                report[bucket] = {
                     "positive_count": 0,
                     "positive_sum": Decimal("0.00"),
                     "negative_count": 0,
                     "negative_sum": Decimal("0.00"),
                 }
-                report.setdefault(bucket, init)
 
             # Update count and sum
             if balance > 0:

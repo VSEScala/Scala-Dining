@@ -1,0 +1,83 @@
+{% extends 'reports/base.html' %}
+
+{% block report %}
+    <h2>
+        Cash flow matrix
+        <small class="text-muted">{{ year }}</small>
+    </h2>
+
+    <div class="mb-3">
+        <a href="{% url 'reports:cashflow_matrix' %}?year={{ year|add:'-1' }}"
+           class="btn btn-secondary btn-sm">
+            <i class="fas fa-chevron-left"></i>
+            Previous year
+        </a>
+        <a href="{% url 'reports:cashflow_matrix' %}?year={{ year|add:'1' }}"
+           class="btn btn-secondary btn-sm">
+            <i class="fas fa-chevron-right"></i>
+            Next year
+        </a>
+    </div>
+
+    {% for period, table in tables %}
+        <h4 class="mt-4">{{ period }}</h4>
+        <div class="table-responsive">
+            <table class="table table-sm">
+                <thead>
+                <tr>
+                    <td colspan="2" class="border-0"></td>
+                    <th colspan="{{ accounts|length }}" class="text-center">To</th>
+                </tr>
+                <tr>
+                    <td colspan="2" class="border-0"></td>
+                    {% for account in accounts %}
+                        <th scope="col"
+                            style="width: 4.5rem;"
+                            class="{% if account.special %}bg-primary{% elif account.association %}bg-secondary{% else %}bg-dark{% endif %}">
+                            {% if account.special %}
+                                {{ account.get_special_display|truncatechars:6 }}
+                            {% elif account.association %}
+                                {# TODO: change slug to short_name after #278 is merged #}
+                                {{ account.association.slug|truncatechars:6 }}
+                            {% else %}
+                                Users
+                            {% endif %}
+                        </th>
+                    {% endfor %}
+                </tr>
+                </thead>
+                <tbody>
+                {% for account_from, row in table %}
+                    <tr>
+                        {% if forloop.first %}
+                            <th scope="row"
+                                class="align-middle"
+                                rowspan="{{ accounts|length }}">From
+                            </th>
+                        {% endif %}
+                        <th scope="row"
+                            class="{% if account_from.special %}bg-primary{% elif account_from.association %}bg-secondary{% else %}bg-dark{% endif %}">
+                            {% if account_from.association %}
+                                {{ account_from.association.slug }}
+                            {% elif account_from is None %}
+                                Users
+                            {% else %}
+                                {{ account_from }}
+                            {% endif %}
+                        </th>
+                        {% for account_to, amount in row %}
+                            <td>
+                                {% if account_from == account_to %}
+                                    ×
+                                {% else %}
+                                    {{ amount|default:"" }}
+                                {% endif %}
+                            </td>
+                        {% endfor %}
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% endfor %}
+{% endblock %}
