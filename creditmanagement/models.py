@@ -122,23 +122,18 @@ class TransactionQuerySet(QuerySet):
         """Filters transactions that have the given account as source or target."""
         return self.filter(Q(source=account) | Q(target=account))
 
-    def sum_by_account(self, group_users=False):
-        """Sums the amounts in this QuerySet, grouped by account.
-
-        Computes for each account that occurs in the QuerySet, the total
-        balance increase and decrease sum, over all transactions in this
-        QuerySet.
+    def group_by_account(self, group_users=False):
+        """Group transactions by source and target account.
 
         Args:
             group_users: If True, user accounts are grouped together and given
-              key 'None'.
+              key `None`.
 
         Returns:
-            A dictionary with as key the account id or None when the account is
-            for a user and group_users is True. The value is a tuple with the
-            increase and reduce sum (possibly 0).
+            A Transaction QuerySet tuple with respectively the source and
+            target grouped with key `account`.
         """
-        # Annotate the grouping key
+        # Annotate the grouping key `account`
         if group_users:
             source_qs = self.annotate(
                 account=Case(
@@ -147,7 +142,6 @@ class TransactionQuerySet(QuerySet):
                     default="source",
                 )
             )
-
             target_qs = self.annotate(
                 account=Case(
                     When(target__user__isnull=False, then=None), default="target"
@@ -157,9 +151,28 @@ class TransactionQuerySet(QuerySet):
             source_qs = self.annotate(account="source")
             target_qs = self.annotate(account="target")
 
-        # Group by account and aggregate
-        reduction = source_qs.values("account").annotate(sum=Sum("amount"))
-        increase = target_qs.values("account").annotate(sum=Sum("amount"))
+        # Group by `account`
+        return source_qs.values("account"), target_qs.values("account")
+
+    def sum_by_account(self, group_users=False):
+        """Sums the amounts in the QuerySet, grouped by account.
+
+        Computes for each account that occurs in the QuerySet, the total
+        balance increase and decrease sum, over all transactions in this
+        QuerySet.
+
+        Args:
+            group_users: See `TransactionQuerySet.group_by_account`.
+
+        Returns:
+            A dictionary with as key the account id or None when the account is
+            for a user and group_users is True. The value is a tuple with the
+            increase and reduce sum (possibly 0).
+        """
+        source_qs, target_qs = self.group_by_account(group_users=group_users)
+
+        reduction = source_qs.annotate(sum=Sum("amount"))
+        increase = target_qs.annotate(sum=Sum("amount"))
 
         # Combine on account key
         combined = {e["account"]: {"increase_sum": e["sum"]} for e in increase}
@@ -195,6 +208,10 @@ class Transaction(models.Model):
     )
 
     objects = TransactionQuerySet.as_manager()
+
+    # This model should not have a default ordering because that probably
+    # breaks stuff like `sum_by_account`. See
+    # https://stackoverflow.com/a/1341667/2373688
 
     def reversal(self, reverted_by: User):
         """Returns a reversal transaction for this transaction (unsaved)."""

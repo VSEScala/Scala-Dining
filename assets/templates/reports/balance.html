@@ -3,7 +3,7 @@
 {% block report %}
     <h2>
         Balance report
-        <small class="text-muted">Period: {{ year }}</small>
+        <small class="text-muted">{{ year }}</small>
     </h2>
 
     <div class="mb-3">
@@ -20,16 +20,17 @@
     </div>
 
     <p class="lead">
-        Bookkeeping accounts are shown in <span class="bg-primary">blue</span>.
-        Association accounts are <span class="bg-secondary">gray</span>.
-        All individual user balances are summed together and shown as <span class="bg-dark">a single row</span> at the
-        bottom.
+        Bookkeeping accounts are shown in <span class="bg-primary p-1 rounded">blue</span>.
+        Association accounts are <span class="bg-secondary p-1 rounded">gray</span>.
+        All individual user balances are summed together and shown as
+        <span class="bg-dark p-1 rounded">a single row</span> at the bottom.
         Accounts for which no transactions took place are omitted.
     </p>
 
 
-    {% for period, bookkeeping, association, user_pile, period_name in report_display %}
-        <h4>{{ period_name }}</h4>
+    {% for period, bookkeeping, association, user_pile in report_display %}
+        <h4>{{ period.get_display_name }}</h4>
+
         <table class="table table-sm">
             <thead>
             <tr>
@@ -45,8 +46,8 @@
                 <tr class="table-primary">
                     <td>{{ account.get_special_display }}</td>
                     <td class="text-right">{{ statement.start_balance }}</td>
-                    <td class="text-right">{{ statement.increase }}</td>
-                    <td class="text-right">{{ statement.reduction }}</td>
+                    <td class="text-right">{{ statement.increase|default:"–" }}</td>
+                    <td class="text-right">{{ statement.reduction|default:"–" }}</td>
                     <td class="text-right">{{ statement.end_balance }}</td>
 
                 </tr>
@@ -55,17 +56,17 @@
                 <tr class="table-secondary">
                     <td>{{ account.association.name }}</td>
                     <td class="text-right">{{ statement.start_balance }}</td>
-                    <td class="text-right">{{ statement.increase }}</td>
-                    <td class="text-right">{{ statement.reduction }}</td>
+                    <td class="text-right">{{ statement.increase|default:"–" }}</td>
+                    <td class="text-right">{{ statement.reduction|default:"–" }}</td>
                     <td class="text-right">{{ statement.end_balance }}</td>
                 </tr>
             {% endfor %}
             {% if user_pile %}
                 <tr class="table-dark">
-                    <td>All user accounts combined</td>
+                    <td>User accounts</td>
                     <td class="text-right">{{ user_pile.start_balance }}</td>
-                    <td class="text-right">{{ user_pile.increase }}</td>
-                    <td class="text-right">{{ user_pile.reduction }}</td>
+                    <td class="text-right">{{ user_pile.increase|default:"–" }}</td>
+                    <td class="text-right">{{ user_pile.reduction|default:"–" }}</td>
                     <td class="text-right">{{ user_pile.end_balance }}</td>
                 </tr>
             {% endif %}
