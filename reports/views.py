@@ -1,14 +1,12 @@
-from datetime import datetime
 from decimal import Decimal
-from itertools import pairwise, chain
 
 from django.contrib.auth.mixins import UserPassesTestMixin
 from django.core.exceptions import BadRequest
-from django.db.models import Sum, Case, When
-from django.utils.timezone import localdate, make_aware
-from django.views.generic import TemplateView, DetailView
+from django.db.models import Case, Sum, When
+from django.utils.timezone import localdate
+from django.views.generic import DetailView, TemplateView
 
-from creditmanagement.models import Transaction, Account
+from creditmanagement.models import Account, Transaction
 from reports.period import Period, QuarterPeriod
 from userdetails.models import Association
 
@@ -249,17 +247,20 @@ class CashFlowIndexView(ReportAccessMixin, TemplateView):
 
 class TransactionsReportView(ReportAccessMixin, PeriodMixin, TemplateView):
     """Report to view all transactions excluding those involving user accounts."""
+
     template_name = "reports/transactions.html"
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context.update({
-            "transactions": Transaction.objects.filter(
-                moment__year=self.get_year(),
-                source__user__isnull=True,
-                target__user__isnull=True,
-            ).order_by("moment")
-        })
+        context.update(
+            {
+                "transactions": Transaction.objects.filter(
+                    moment__year=self.get_year(),
+                    source__user__isnull=True,
+                    target__user__isnull=True,
+                ).order_by("moment")
+            }
+        )
         return context
 
 

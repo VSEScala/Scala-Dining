@@ -4,7 +4,7 @@ from typing import Optional, Union
 
 from django.core.validators import MinValueValidator
 from django.db import models
-from django.db.models import Q, QuerySet, Sum, Case, When
+from django.db.models import Case, Q, QuerySet, Sum, When
 from django.utils import timezone
 
 from userdetails.models import Association, User
