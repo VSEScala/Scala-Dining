@@ -4,6 +4,7 @@ from decimal import Decimal
 from django.core.exceptions import NON_FIELD_ERRORS
 from django.test import TestCase
 from django.utils import timezone
+from django.utils.timezone import make_aware
 
 from creditmanagement.models import Transaction
 from dining.forms import (
@@ -40,7 +41,7 @@ class DiningEntryInternalFormTestCase(TestCase):
         self.dining_list = DiningList.objects.create(
             date=date(2089, 1, 1),
             association=self.association,
-            sign_up_deadline=datetime(2088, 1, 1, tzinfo=timezone.utc),
+            sign_up_deadline=make_aware(datetime(2088, 1, 1)),
         )
         self.dining_list.owners.add(self.user)
         self.dining_entry = DiningEntry(
@@ -54,21 +55,21 @@ class DiningEntryInternalFormTestCase(TestCase):
 
     def test_dining_list_not_adjustable(self):
         self.dining_list.date = date(2000, 1, 2)
-        self.dining_list.sign_up_deadline = datetime(2000, 1, 1, tzinfo=timezone.utc)
+        self.dining_list.sign_up_deadline = make_aware(datetime(2000, 1, 1))
         self.assertFalse(self.form.is_valid())
         self.assertTrue(self.form.has_error(NON_FIELD_ERRORS, "closed"))
 
     def test_dining_list_closed(self):
-        self.dining_list.sign_up_deadline = datetime(
-            2000, 1, 1, tzinfo=timezone.utc
+        self.dining_list.sign_up_deadline = make_aware(
+            datetime(2000, 1, 1)
         )  # Close list
         self.assertFalse(self.form.is_valid())
         self.assertTrue(self.form.has_error(NON_FIELD_ERRORS, "closed"))
 
     def test_dining_list_closed_owner(self):
         """Tests closed exception for list owner."""
-        self.dining_list.sign_up_deadline = datetime(
-            2000, 1, 1, tzinfo=timezone.utc
+        self.dining_list.sign_up_deadline = make_aware(
+            datetime(2000, 1, 1)
         )  # Close list
         self.dining_entry.created_by = self.user  # Entry creator is dining list owner
         self.assertTrue(self.form.is_valid())
@@ -147,7 +148,7 @@ class DiningEntryExternalFormTestCase(TestCase):
         self.dining_list = DiningList.objects.create(
             date=date(2089, 1, 1),
             association=self.association,
-            sign_up_deadline=datetime(2088, 1, 1, tzinfo=timezone.utc),
+            sign_up_deadline=make_aware(datetime(2088, 1, 1)),
         )
         self.dining_list.owners.add(self.user)
         self.dining_entry = DiningEntry(
@@ -168,7 +169,7 @@ class DiningEntryDeleteFormTestCase(TestCase):
         self.dining_list = DiningList.objects.create(
             date=date(2100, 1, 1),
             association=self.association,
-            sign_up_deadline=datetime(2100, 1, 1, tzinfo=timezone.utc),
+            sign_up_deadline=make_aware(datetime(2100, 1, 1)),
         )
         self.dining_list.owners.add(self.user1)
         self.entry = DiningEntry(
@@ -195,11 +196,11 @@ class DiningEntryDeleteFormTestCase(TestCase):
         self.assertTrue(self.form.is_valid())
 
     def test_dining_list_closed(self):
-        self.dining_list.sign_up_deadline = datetime(2001, 1, 1, tzinfo=timezone.utc)
+        self.dining_list.sign_up_deadline = make_aware(datetime(2001, 1, 1))
         self.assertFalse(self.form.is_valid())
 
     def test_dining_list_closed_exception(self):
-        self.dining_list.sign_up_deadline = datetime(2001, 1, 1, tzinfo=timezone.utc)
+        self.dining_list.sign_up_deadline = make_aware(datetime(2001, 1, 1))
         form = DiningEntryDeleteForm(self.entry, self.user1, {})
         self.assertTrue(form.is_valid())
 

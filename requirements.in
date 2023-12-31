@@ -1,16 +1,14 @@
 Django
 django-widget-tweaks
-django-allauth  # For Quadrivium login using OIDC.
+
+# For Quadrivium login using OIDC
+# TODO: update further
+django-allauth<=0.54.0
+
 django-autocomplete-light
 environs[django]
 whitenoise  # Used for static files in production.
 Pillow  # Used by Django for media files?
-
-# Python versions 3.8 and lower require this backport for Django>=4.
-#
-# The production deployment with the Docker image uses Python 3.10, thus this
-# package is not installed in the production image.
-backports.zoneinfo ; python_version < "3.9"
 
 # See https://fontawesome.com/docs/web/use-with/python-django
 fontawesomefree

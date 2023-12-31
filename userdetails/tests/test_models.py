@@ -2,7 +2,7 @@ from datetime import datetime
 
 from django.core.exceptions import ValidationError
 from django.test import TestCase
-from django.utils import timezone
+from django.utils.timezone import make_aware, now
 
 from userdetails.models import Association, User, UserMembership
 
@@ -34,7 +34,7 @@ class UserTestCase(TestCase):
             related_user=self.user,
             association=association,
             is_verified=True,
-            verified_on=timezone.now(),
+            verified_on=now(),
         )
         self.assertFalse(self.user.has_min_balance_exception())
 
@@ -44,7 +44,7 @@ class UserTestCase(TestCase):
             related_user=self.user,
             association=association,
             is_verified=True,
-            verified_on=timezone.now(),
+            verified_on=now(),
         )
         self.assertTrue(self.user.has_min_balance_exception())
 
@@ -59,6 +59,24 @@ class UserTestCase(TestCase):
             User(username="Noortje").full_clean()
         exception = cm.exception
         self.assertEqual(exception.error_dict["username"][0].code, "unique")
+
+    def test_has_site_stats_access(self):
+        association1 = Association.objects.create(name="A1", has_site_stats_access=True)
+        association2 = Association.objects.create(
+            name="A2", has_site_stats_access=False
+        )
+
+        # No groups
+        self.assertFalse(self.user.has_site_stats_access())
+        self.user.groups.add(association1)
+        # User is board of the group with site access
+        self.assertTrue(self.user.has_site_stats_access())
+        self.user.groups.add(association2)
+        # User is board of both groups
+        self.assertTrue(self.user.has_site_stats_access())
+        self.user.groups.remove(association1)
+        # User is board of the group without site access
+        self.assertFalse(self.user.has_site_stats_access())
 
 
 class UserMembershipTestCase(TestCase):
@@ -90,7 +108,7 @@ class UserMembershipTestCase(TestCase):
             related_user=self.user,
             association=self.association,
             is_verified=True,
-            verified_on=datetime(2020, 2, 1, tzinfo=timezone.utc),
+            verified_on=make_aware(datetime(2020, 2, 1)),
         )
         self.assertIs(membership.get_verified_state(), True)
         membership.set_pending()
@@ -101,10 +119,10 @@ class UserMembershipTestCase(TestCase):
             related_user=self.user,
             association=self.association,
             is_verified=True,
-            verified_on=datetime(2020, 1, 1, tzinfo=timezone.utc),
+            verified_on=make_aware(datetime(2020, 1, 1)),
         )
         self.assertFalse(membership.is_frozen())
-        membership.verified_on = timezone.now()
+        membership.verified_on = now()
         self.assertTrue(membership.is_frozen())
 
     def test_is_rejected(self):
@@ -117,7 +135,7 @@ class UserMembershipTestCase(TestCase):
             related_user=self.user,
             association=self.association,
             is_verified=True,
-            verified_on=datetime(2020, 1, 1, tzinfo=timezone.utc),
+            verified_on=make_aware(datetime(2020, 1, 1)),
         )
         self.assertFalse(membership.is_rejected())
         membership.is_verified = False

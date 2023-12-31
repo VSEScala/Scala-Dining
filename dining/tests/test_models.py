@@ -4,6 +4,7 @@ from unittest.mock import patch
 from django.core.exceptions import ValidationError
 from django.test import TestCase
 from django.utils import timezone
+from django.utils.timezone import make_aware
 
 from dining.models import DiningEntry, DiningList
 from userdetails.models import Association, User
@@ -18,7 +19,7 @@ class DiningListTestCase(TestCase):
     def setUp(self):
         self.dining_list = DiningList(
             date=date(2123, 1, 2),
-            sign_up_deadline=datetime(2100, 2, 2, tzinfo=timezone.utc),
+            sign_up_deadline=make_aware(datetime(2100, 2, 2)),
             association=self.association,
         )
 
@@ -26,25 +27,25 @@ class DiningListTestCase(TestCase):
         list = DiningList.objects.create(
             date=date(2015, 1, 1),
             association=self.association,
-            sign_up_deadline=datetime(2015, 1, 1, 17, 00, tzinfo=timezone.utc),
+            sign_up_deadline=make_aware(datetime(2015, 1, 1, 17, 00)),
         )
 
         with patch.object(
             timezone,
             "now",
-            return_value=datetime(2015, 1, 1, 16, 59, tzinfo=timezone.utc),
+            return_value=make_aware(datetime(2015, 1, 1, 16, 59)),
         ):
             self.assertTrue(list.is_open())
         with patch.object(
             timezone,
             "now",
-            return_value=datetime(2015, 1, 1, 17, 00, tzinfo=timezone.utc),
+            return_value=make_aware(datetime(2015, 1, 1, 17, 00)),
         ):
             self.assertFalse(list.is_open())
         with patch.object(
             timezone,
             "now",
-            return_value=datetime(2015, 1, 1, 17, 1, tzinfo=timezone.utc),
+            return_value=make_aware(datetime(2015, 1, 1, 17, 1)),
         ):
             self.assertFalse(list.is_open())
 
@@ -74,7 +75,7 @@ class DiningListCleanTestCase(TestCase):
     def setUp(self):
         self.dining_list = DiningList(
             date=date(2123, 1, 2),
-            sign_up_deadline=datetime(2100, 2, 2, tzinfo=timezone.utc),
+            sign_up_deadline=make_aware(datetime(2100, 2, 2)),
             association=self.association,
         )
 
@@ -93,7 +94,7 @@ class DiningEntryTestCase(TestCase):
         cls.dining_list = DiningList.objects.create(
             date=date(2123, 2, 1),
             association=Association.objects.create(slug="assoc"),
-            sign_up_deadline=datetime(2100, 1, 1, tzinfo=timezone.utc),
+            sign_up_deadline=make_aware(datetime(2100, 1, 1)),
         )
 
     def test_clean_valid_entry(self):
