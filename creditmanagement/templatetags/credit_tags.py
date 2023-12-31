@@ -7,7 +7,6 @@ register = template.Library()
 @register.filter
 def euro(value):
     """Format for euro values."""
-    # Could surround this with `mark_safe` but is probably not necessary
     return f"-€{localize(-value)}" if value < 0 else f"€{localize(value)}"
 
 
