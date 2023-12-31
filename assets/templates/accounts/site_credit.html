@@ -25,7 +25,7 @@
                     <td>{{ a.name }}</td>
                     <td class="text-right">{{ a.account.get_balance }}</td>
                     <td class="text-right">
-                        <a href="{% url 'association_site_credit_detail' association_name=association.slug pk=a.account.pk %}">
+                        <a href="{% url 'association_site_credit_detail' slug=association.slug pk=a.account.pk %}">
                             Details
                         </a>
                     </td>
