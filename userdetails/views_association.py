@@ -35,9 +35,7 @@ class AssociationBoardMixin:
 
     def dispatch(self, request, *args, **kwargs):
         """Gets association and checks if user is board member."""
-        self.association = get_object_or_404(
-            Association, slug=kwargs["slug"]
-        )
+        self.association = get_object_or_404(Association, slug=kwargs["slug"])
         if not request.user.is_board_of(self.association):
             raise PermissionDenied
         return super().dispatch(request, *args, **kwargs)
@@ -102,9 +100,7 @@ class AutoCreateNegativeCreditsView(
         return super().form_valid(form)
 
     def get_success_url(self):
-        return reverse(
-            "association_credits", kwargs={"slug": self.association.slug}
-        )
+        return reverse("association_credits", kwargs={"slug": self.association.slug})
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

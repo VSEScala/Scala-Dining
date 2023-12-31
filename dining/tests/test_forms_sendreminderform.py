@@ -4,7 +4,6 @@ from datetime import date, datetime
 from django.db import OperationalError, connections, transaction
 from django.http import HttpRequest
 from django.test import TestCase, TransactionTestCase, skipUnlessDBFeature
-from django.utils import timezone
 from django.utils.timezone import make_aware
 
 from dining.forms import SendReminderForm
