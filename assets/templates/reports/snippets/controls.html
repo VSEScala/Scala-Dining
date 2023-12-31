@@ -1,0 +1,38 @@
+{% comment %}
+Reporting period controls.
+
+Context variables:
+    url: Needs to be set to the current page url.
+    use_views: When True, the view controls (yearly/quarterly/monthly) will be shown,
+        else they will be hidden.
+    year: The current year.
+    view: The current view.
+{% endcomment %}
+<div class="mb-3">
+    <a href="{{ url }}?view={{ period.view_name }}&period={{ period.previous.url_param }}"
+       class="btn btn-secondary btn-sm">
+        <i class="fas fa-chevron-left"></i>
+        Previous period
+    </a>
+    <a href="{{ url }}?view={{ period.view_name }}&period={{ period.next.url_param }}"
+       class="btn btn-secondary btn-sm">
+        <i class="fas fa-chevron-right"></i>
+        Next period
+    </a>
+    {% if view_choice %}
+        <div class="btn-group btn-group-sm">
+            <a href="{{ url }}?view=yearly&period={{ period.to_year.url_param }}"
+               class="btn btn-secondary {% if period.view_name == 'yearly' %}disabled{% endif %}">
+                Yearly
+            </a>
+            <a href="{{ url }}?view=quarterly&period={{ period.to_quarter.url_param }}"
+               class="btn btn-secondary {% if period.view_name == 'quarterly' %}disabled{% endif %}">
+                Quarterly
+            </a>
+            <a href="{{ url }}?view=monthly&period={{ period.to_month.url_param }}"
+               class="btn btn-secondary {% if period.view_name == 'monthly' %}disabled{% endif %}">
+                Monthly
+            </a>
+        </div>
+    {% endif %}
+</div>

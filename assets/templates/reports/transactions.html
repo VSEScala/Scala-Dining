@@ -1,21 +1,9 @@
 {% extends 'reports/base.html' %}
 
 {% block report %}
-    <h2>Transactions <small class="text-muted">{{ year }}</small></h2>
+    <h2>Transactions <small class="text-muted">{{ period }}</small></h2>
 
-    <div class="mb-3">
-        <a href="{% url 'reports:transactions' %}?year={{ year|add:'-1' }}"
-           class="btn btn-secondary btn-sm">
-            <i class="fas fa-chevron-left"></i>
-            Previous year
-        </a>
-        <a href="{% url 'reports:transactions' %}?year={{ year|add:'1' }}"
-           class="btn btn-secondary btn-sm">
-            <i class="fas fa-chevron-right"></i>
-            Next year
-        </a>
-    </div>
-
+    {% url 'reports:transactions' as url %}{% include 'reports/snippets/controls.html' %}
 
     <p class="lead">
         Site transactions between any association or bookkeeping account, <em>excluding</em>

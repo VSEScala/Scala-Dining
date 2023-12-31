@@ -1,0 +1,32 @@
+{% extends 'reports/base.html' %}
+
+{% block report %}
+    <h2>Membership counts</h2>
+    <table class="table table-sm">
+    <thead>
+    <tr>
+        <th scope="col">Association</th>
+        <th scope="col" class="text-right">Verified</th>
+        <th scope="col" class="text-right">Rejected</th>
+        <th scope="col" class="text-right">Pending</th>
+    </tr>
+    </thead>
+    <tbody>
+    {% for association, pending, verified, rejected in report %}
+        <tr>
+            <th scope="row">{{ association }}</th>
+            <td class="text-right">{{ verified }}</td>
+            <td class="text-right">{{ rejected }}</td>
+            <td class="text-right">{{ pending|default:"–" }}</td>
+        </tr>
+    {% endfor %}
+    </tbody>
+    </table>
+
+{#    <h4>Freewheelers</h4>#}
+{#    <p>#}
+{#        These users have joined dining lists while they were not a member of any association.#}
+{#        #}
+{#    </p>#}
+
+{% endblock %}

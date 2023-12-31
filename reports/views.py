@@ -2,13 +2,13 @@ from decimal import Decimal
 
 from django.contrib.auth.mixins import UserPassesTestMixin
 from django.core.exceptions import BadRequest
-from django.db.models import Case, Sum, When, Q
-from django.utils.timezone import localdate
+from django.db.models import Case, Q, Sum, When
+from django.utils.timezone import localdate, now
 from django.views.generic import DetailView, TemplateView
 
 from creditmanagement.models import Account, Transaction
-from reports.period import Period, QuarterPeriod, YearPeriod
-from userdetails.models import Association
+from reports.period import Period
+from userdetails.models import Association, UserMembership
 
 
 class ReportAccessMixin(UserPassesTestMixin):
@@ -34,22 +34,47 @@ class ReportsView(ReportAccessMixin, TemplateView):
         return context
 
 
-class YearMixin:
-    """Mixin for yearly reporting periods."""
+class PeriodMixin:
+    """Mixin for yearly reporting periods.
 
-    def get_year(self):
+    Attributes:
+        view_choice: Boolean that enables or disables choosing a different view.
+    """
+
+    default_view = "yearly"
+    view_choice = True
+
+    def get_period(self) -> Period:
+        view = self.request.GET.get("view", self.default_view)
+
+        # When view_choice is False we can only use the default view
+        if not self.view_choice and view != self.default_view:
+            raise BadRequest
+
         try:
-            return int(self.request.GET.get("year", localdate().year))
+            period_class = Period.get_class(view)
+
+            if "period" in self.request.GET:
+                return period_class.from_url_param(self.request.GET["period"])
+            else:
+                return period_class.current()
         except ValueError:
             raise BadRequest
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context["year"] = self.get_year()
+        context["view_choice"] = self.view_choice
+        if self.period:
+            context["period"] = self.period
         return context
 
+    def get(self, request, *args, **kwargs):
+        # Add period to this instance
+        self.period = self.get_period()
+        return super().get(request, *args, **kwargs)
 
-class BalanceView(ReportAccessMixin, YearMixin, TemplateView):
+
+class BalanceView(ReportAccessMixin, PeriodMixin, TemplateView):
     """Periodical reports of the balance of all credit accounts.
 
     User accounts are aggregated as one large pile. Association and bookkeeping
@@ -59,85 +84,64 @@ class BalanceView(ReportAccessMixin, YearMixin, TemplateView):
     template_name = "reports/balance.html"
 
     def get_report(self):
-        """Computes the report values."""
-        periods = QuarterPeriod.for_year(self.get_year())
+        """Computes the balance statements."""
+        if self.period.start() > now():
+            # If the start of period is in the future, we cannot compute the start
+            # balance and there are no statements.
+            return {}
 
-        # Compute opening balance
-        running_balance = {
-            account: increase - reduction
-            for account, (increase, reduction) in Transaction.objects.filter(
-                moment__lt=periods[0].get_period_start()
-            )
-            .sum_by_account(group_users=True)
-            .items()
+        # All transactions before current period
+        before_tx = Transaction.objects.filter(moment__lt=self.period.start())
+        # All transactions in this period
+        period_tx = self.period.get_transactions()
+
+        # Compute opening balance from all transaction before the current period
+        opening = before_tx.sum_by_account(group_users=True)  # type: dict
+        # Compute increase and reduction sum in this period
+        mutation = period_tx.sum_by_account(group_users=True)  # type: dict
+
+        # Add opening balances to report
+        statements = {
+            account: {"start_balance": increase - reduction}
+            for account, (increase, reduction) in opening.items()
         }
 
-        report = []
-        for period in periods:
-            # Compute credit and debit sum in the period
-            mutation = period.get_transactions().sum_by_account(group_users=True)
-
-            # Compile report for this period
-            statements = {
-                account: {
-                    "start_balance": running_balance.get(account, Decimal("0.00")),
+        # Add mutations to report
+        for account, (increase, reduction) in mutation.items():
+            statement = statements.setdefault(account, {"start_balance": None})
+            start = statement["start_balance"] or Decimal("0.00")
+            statement.update(
+                {
                     "increase": increase,
                     "reduction": reduction,
-                    "end_balance": running_balance.get(account, Decimal("0.00"))
-                    + increase
-                    - reduction,
+                    "end_balance": start + increase - reduction,
                 }
-                for account, (increase, reduction) in mutation.items()
-            }
-
-            # Update running balance
-            running_balance.update(
-                (account, val["end_balance"]) for account, val in statements.items()
             )
 
-            report.append((period, statements))
-        return report
+        return statements
 
     def get_context_data(self, **kwargs):
         # This function just regroups and sorts the values for display
-
         context = super().get_context_data(**kwargs)
 
-        # For the template: retrieve each Account instance, regroup by type and sort
-        report_display = []
-        account = {}  # Cache for Account lookups
+        # The accounts to display in the report
+        accounts = list(
+            Account.objects.exclude(user__isnull=False).order_by(
+                "special", "association__slug"
+            )
+        )
+        accounts.append(None)  # User pile
 
-        for period, statements in self.get_report():
-            # Retrieve Accounts from database
-            for pk in statements:
-                if pk is not None and pk not in account:
-                    account[pk] = Account.objects.get(pk=pk)
-
-            # Split by type
-            bookkeeping = []
-            association = []
-            user_pile = None
-            for pk, statement in statements.items():
-                if pk is None:
-                    user_pile = statement
-                elif account[pk].special:
-                    bookkeeping.append((account[pk], statement))
-                elif account[pk].association:
-                    association.append((account[pk], statement))
-                else:
-                    raise RuntimeError  # Unreachable
-
-            # Sort bookkeeping and association by name
-            bookkeeping.sort(key=lambda e: e[0].special)
-            association.sort(key=lambda e: e[0].association.name)
-
-            report_display.append((period, bookkeeping, association, user_pile))
-
-        context["report_display"] = report_display
+        # Add statements to context
+        statements = self.get_report()
+        context["rows"] = [
+            (account, statements.get(getattr(account, "pk", None), {}))
+            for account in accounts
+        ]
         return context
 
 
-class CashFlowView(ReportAccessMixin, YearMixin, DetailView):
+class CashFlowView(ReportAccessMixin, PeriodMixin, DetailView):
     """Periodical reports of money entering and leaving a specific account.
 
     For a selected account, shows the flow of money to and from other accounts
@@ -148,9 +152,9 @@ class CashFlowView(ReportAccessMixin, YearMixin, DetailView):
     model = Account
     context_object_name = "account"
 
-    def get_period_statement(self, period):
+    def get_statements(self):
         """Returns a dictionary from Account or None to an income/outgoings tuple."""
-        tx = period.get_transactions()
+        tx = self.period.get_transactions()
         # Aggregate income and outgoings
         income = (
             tx.filter(target=self.object)
@@ -194,35 +198,27 @@ class CashFlowView(ReportAccessMixin, YearMixin, DetailView):
         }
         return regroup
 
-    def get_report(self):
-        periods = QuarterPeriod.for_year(self.get_year())
-        return [(p, self.get_period_statement(p)) for p in periods]
-
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        report_display = []
-        for period, statements in self.get_report():
-            # Convert to list of tuples
-            statements2 = [
-                (account, inc, out) for account, (inc, out) in statements.items()
-            ]
-            # Sort in 3 steps to have first the bookkeeping accounts in
-            # alphabetical order, then the association accounts in order and
-            # then the user pile.
-            #
-            # This works because sort is stable.
-            statements2.sort(
-                key=lambda v: v[0].association.name if v[0] and v[0].association else ""
-            )
-            statements2.sort(
-                key=lambda v: v[0].special if v[0] and v[0].special else ""
-            )
-            statements2.sort(
-                key=lambda v: 2 if v[0] is None else 1 if v[0].association else 0
-            )
 
-            report_display.append((period, statements2))
-        context["report_display"] = report_display
+        # Convert to list of tuples
+        statements = [
+            (account, inc, out) for account, (inc, out) in self.get_statements().items()
+        ]
+        # Sort in 3 steps to have first the bookkeeping accounts in
+        # alphabetical order, then the association accounts in order and
+        # then the user pile.
+        #
+        # This works because sort is stable.
+        statements.sort(
+            key=lambda v: v[0].association.name if v[0] and v[0].association else ""
+        )
+        statements.sort(key=lambda v: v[0].special if v[0] and v[0].special else "")
+        statements.sort(
+            key=lambda v: 2 if v[0] is None else 1 if v[0].association else 0
+        )
+
+        context["statements"] = statements
         return context
 
 
@@ -242,31 +238,34 @@ class CashFlowIndexView(ReportAccessMixin, TemplateView):
         return context
 
 
-class TransactionsReportView(ReportAccessMixin, YearMixin, TemplateView):
+class TransactionsReportView(ReportAccessMixin, PeriodMixin, TemplateView):
     """Report to view all transactions excluding those involving user accounts."""
 
     template_name = "reports/transactions.html"
+    default_view = "yearly"
+    view_choice = False
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context.update(
             {
-                "transactions": Transaction.objects.filter(
-                    moment__year=self.get_year(),
+                "transactions": self.period.get_transactions()
+                .filter(
                     source__user__isnull=True,
                     target__user__isnull=True,
-                ).order_by("moment")
+                )
+                .order_by("moment")
             }
         )
         return context
 
 
-class CashFlowMatrixView(ReportAccessMixin, YearMixin, TemplateView):
+class CashFlowMatrixView(ReportAccessMixin, PeriodMixin, TemplateView):
     template_name = "reports/cashflow_matrix.html"
 
-    def get_matrix(self, period):
+    def get_matrix(self):
         """Computes the cash flow matrix and returns a two-dimensional dictionary."""
-        tx = period.get_transactions()
+        tx = self.period.get_transactions()
 
         # Group by source/target combinations and sum the amount
         qs = (
@@ -315,28 +314,18 @@ class CashFlowMatrixView(ReportAccessMixin, YearMixin, TemplateView):
         accounts.append(None)
 
         # Format the matrices as 2D tables for display in the template
-        tables = []
-        for period in [YearPeriod(self.get_year())]:
-            matrix = self.get_matrix(period)
-            table = [
-                (
-                    account_from,
-                    [
-                        (account_to, matrix.get(account_from, {}).get(account_to))
-                        for account_to in accounts
-                    ],
-                )
-                for account_from in accounts
-            ]
-            tables.append((period, table))
-
-        context.update(
-            {
-                "accounts": accounts,
-                "tables": tables,
-            }
-        )
-
+        matrix = self.get_matrix()
+        table = [
+            (
+                account_from,
+                [
+                    (account_to, matrix.get(account_from, {}).get(account_to))
+                    for account_to in accounts
+                ],
+            )
+            for account_from in accounts
+        ]
+        context.update({"accounts": accounts, "table": table})
         return context
 
 
@@ -399,7 +388,37 @@ class StaleAccountsView(ReportAccessMixin, TemplateView):
         return context
 
 
-class DinerReportView(TemplateView):
+class DinerReportView(ReportAccessMixin, TemplateView):
     """Reports on diner counts."""
 
     pass
+
+
+class MembershipCountView(ReportAccessMixin, TemplateView):
+    """Simply shows the number of members per association."""
+
+    template_name = "reports/memberships.html"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        mem = UserMembership.objects.all()
+        report = [
+            (
+                association,
+                # Pending memberships
+                mem.filter(association=association, verified_on__isnull=True).count(),
+                # Verified memberships
+                mem.filter(association=association, is_verified=True).count(),
+                # Declined memberships
+                mem.filter(
+                    association=association,
+                    is_verified=False,
+                    verified_on__isnull=False,
+                ).count(),
+            )
+            for association in Association.objects.order_by("name")
+        ]
+
+        context.update({"report": report})
+        return context

@@ -7,50 +7,37 @@
 {% block report %}
     <h2>
         Cash flow
-        <small class="text-muted">{{ account }} / {{ year }}</small>
+        <small class="text-muted">{{ account }} / {{ period }}</small>
     </h2>
+
+    {% url 'reports:cashflow' pk=account.pk as url %}{% include 'reports/snippets/controls.html' %}
 
     <p class="lead">
         Inflow is in the direction from the opposite account towards
-        the <em>{{ account }}</em> account. Outflow is in the other direction.
+        the <strong>{{ account }}</strong> account. Outflow is in the other direction.
     </p>
 
-    <div class="mb-3">
-        <a href="{% url 'reports:cashflow' pk=account.pk %}?year={{ year|add:'-1' }}"
-           class="btn btn-secondary btn-sm">
-            <i class="fas fa-chevron-left"></i>
-            Previous year
-        </a>
-        <a href="{% url 'reports:cashflow' pk=account.pk %}?year={{ year|add:'1' }}"
-           class="btn btn-secondary btn-sm">
-            <i class="fas fa-chevron-right"></i>
-            Next year
-        </a>
-    </div>
-
-    {% for period, statements in report_display %}
-        <h4>{{ period.get_display_name }}</h4>
-        <table class="table table-sm">
-            <thead>
-            <tr>
-                <th scope="col">Opposite account</th>
-                <th scope="col" class="text-right w-25">Inflow</th>
-                <th scope="col" class="text-right w-25">Outflow</th>
+    <table class="table table-sm">
+        <thead>
+        <tr>
+            <th scope="col">Opposite account</th>
+            <th scope="col" class="text-right w-25">Inflow</th>
+            <th scope="col" class="text-right w-25">Outflow</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for account, inflow, outflow in statements %}
+            <tr class="{% if account.special %}table-primary{% elif account.association %}table-secondary{% else %}table-dark{% endif %}">
+                <td>
+                    {% if account %}{{ account }}
+                        <a href="{% url 'reports:cashflow' pk=account.pk %}?view={{ period.view_name }}&period={{ period.url_param }}">»</a>
+                    {% else %}User accounts
+                    {% endif %}
+                </td>
+                <td class="text-right">{{ inflow|default:"–" }}</td>
+                <td class="text-right">{{ outflow|default:"–" }}</td>
             </tr>
-            </thead>
-            <tbody>
-            {% for account, inflow, outflow in statements %}
-                <tr class="{% if account.special %}table-primary{% elif account.association %}table-secondary{% else %}table-dark{% endif %}">
-                    <td>
-                        {% if account %}{{ account }} <a href="{% url 'reports:cashflow' pk=account.pk %}?year={{ year }}">»</a>
-                        {% else %}User accounts
-                        {% endif %}
-                    </td>
-                    <td class="text-right">{{ inflow|default:"–" }}</td>
-                    <td class="text-right">{{ outflow|default:"–" }}</td>
-                </tr>
-            {% endfor %}
-            </tbody>
-        </table>
-    {% endfor %}
+        {% endfor %}
+        </tbody>
+    </table>
 {% endblock %}

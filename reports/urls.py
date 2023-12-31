@@ -12,4 +12,5 @@ urlpatterns = [
     path("cashflow2/", views.CashFlowMatrixView.as_view(), name="cashflow_matrix"),
     path("transactions/", views.TransactionsReportView.as_view(), name="transactions"),
     path("stale/", views.StaleAccountsView.as_view(), name="stale"),
+    path("memberships/", views.MembershipCountView.as_view(), name="memberships"),
 ]
