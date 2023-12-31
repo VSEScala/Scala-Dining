@@ -15,14 +15,20 @@
             <thead>
             <tr>
                 <th scope="col">Association</th>
-                <th scope="col">Balance</th>
+                <th scope="col" class="text-right w-25">Balance</th>
+                <th scope="col" class="text-right w-25">#</th>
             </tr>
             </thead>
             <tbody>
             {% for a in associations %}
                 <tr>
                     <td>{{ a.name }}</td>
-                    <td>{{ a.account.get_balance }}</td>
+                    <td class="text-right">{{ a.account.get_balance }}</td>
+                    <td class="text-right">
+                        <a href="{% url 'association_site_credit_detail' association_name=association.slug pk=a.account.pk %}">
+                            Details
+                        </a>
+                    </td>
                 </tr>
             {% endfor %}
             </tbody>
@@ -39,7 +45,8 @@
             <thead>
             <tr>
                 <th scope="col">Account</th>
-                <th scope="col">Balance</th>
+                <th scope="col" class="text-right w-25">Balance</th>
+                <th scope="col" class="text-right w-25">#</th>
             </tr>
             </thead>
             <tbody>
@@ -49,12 +56,13 @@
                         {{ a.get_special_display }}
                         <br>
                         <small class="text-muted">{{ a.get_special_description }}</small>
-                        <br>
-                        <a href="{% url 'association_site_credit_detail' association_name=association.slug slug=a.special %}">
-                            Account details
+                    </td>
+                    <td class="text-right">{{ a.get_balance }}</td>
+                    <td class="text-right">
+                        <a href="{% url 'association_site_credit_detail' association_name=association.slug pk=a.pk %}">
+                            Details
                         </a>
                     </td>
-                    <td>{{ a.get_balance }}</td>
                 </tr>
             {% endfor %}
             </tbody>

@@ -123,7 +123,6 @@ class DailyDinersCSVView(LoginRequiredMixin, View):
         # Get the end date
         date_end = request.GET.get("to", None)
         if date_end:
-            # Why do you use datetime here and not date?
             date_end = datetime.strptime(date_end, "%d/%m/%y")
         else:
             date_end = timezone.now()

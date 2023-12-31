@@ -1,4 +1,4 @@
-from django.urls import path
+from django.urls import include, path
 
 from creditmanagement.views import (
     TransactionAddView,
@@ -9,7 +9,18 @@ from creditmanagement.views import (
 app_name = "credits"
 
 urlpatterns = [
-    path("transactions/", TransactionListView.as_view(), name="transaction_list"),
-    path("transactions/add/", TransactionAddView.as_view(), name="transaction_add"),
-    path("transactions/csv/", TransactionCSVView.as_view(), name="transaction_csv"),
+    path(
+        "transactions/",
+        include(
+            [
+                path("", TransactionListView.as_view(), name="transaction_list"),
+                path("add/", TransactionAddView.as_view(), name="transaction_add"),
+                path(
+                    "csv/<int:pk>/",
+                    TransactionCSVView.as_view(),
+                    name="transaction_csv",
+                ),
+            ]
+        ),
+    ),
 ]
