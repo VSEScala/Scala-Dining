@@ -315,7 +315,6 @@ class SiteCreditDetailView(
 
     template_name = "accounts/site_credit_detail.html"
     model = Account
-    slug_url_kwarg = "account_slug"
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
