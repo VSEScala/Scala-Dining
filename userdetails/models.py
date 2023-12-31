@@ -67,7 +67,6 @@ class User(AbstractUser):
                 return True
         return False
 
-    @cached_property
     def boards(self):
         """Returns all associations of which this member has board access."""
         return Association.objects.filter(user=self).all()
@@ -75,7 +74,7 @@ class User(AbstractUser):
     @cached_property
     def requires_action(self):
         """Whether some action is required by the user."""
-        for board in self.boards:
+        for board in self.boards():
             if board.requires_action:
                 return True
         return False
@@ -104,9 +103,18 @@ class User(AbstractUser):
     def has_admin_site_access(self):
         return self.is_active and (self.has_any_perm() or self.is_superuser)
 
-    def is_board_of(self, association_id):
-        """Returns if user is a board member of association identified by given id."""
-        return self.groups.filter(id=association_id).exists()
+    def is_board_of(self, association):
+        """Returns if the user is a board member of the given association."""
+        return association in self.boards()
+
+    def has_site_stats_access(self):
+        """Returns true if the user can manage credits site-wide.
+
+        This means this user can view side-wide statistics for all
+        associations, can view all transactions, and can create any arbitrary
+        transaction.
+        """
+        return True in (b.has_site_stats_access for b in self.boards())
 
     def is_verified_member_of(self, association):
         """Returns if the user is a verified member of the association."""

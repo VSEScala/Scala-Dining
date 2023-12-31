@@ -5,6 +5,7 @@ from django.db import OperationalError, connections, transaction
 from django.http import HttpRequest
 from django.test import TestCase, TransactionTestCase, skipUnlessDBFeature
 from django.utils import timezone
+from django.utils.timezone import make_aware
 
 from dining.forms import SendReminderForm
 from dining.models import DiningEntry, DiningList
@@ -23,7 +24,7 @@ class SendReminderFormTestCase(TestCase):
         cls.dining_list = DiningList.objects.create(
             date=date(2020, 1, 1),
             association=Association.objects.create(slug="assoc"),
-            sign_up_deadline=datetime(2020, 1, 1, 12, 0, tzinfo=timezone.utc),
+            sign_up_deadline=make_aware(datetime(2020, 1, 1, 12, 0)),
         )
         cls.user = User.objects.create()
 
@@ -131,7 +132,7 @@ class SendReminderFormLockTestCase(TransactionTestCase):
             dining_list=DiningList.objects.create(
                 date=date(2020, 1, 1),
                 association=Association.objects.create(slug="assoc"),
-                sign_up_deadline=datetime(2020, 1, 1, 12, 0, tzinfo=timezone.utc),
+                sign_up_deadline=make_aware(datetime(2020, 1, 1, 12, 0)),
             ),
         )
         request = HttpRequest()

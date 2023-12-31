@@ -25,6 +25,7 @@ from dining.models import (
 from general.forms import ConcurrenflictFormMixin
 from general.mail_control import construct_templated_mail
 from general.util import SelectWithDisabled
+from scaladining.fields import DateTimeControlField
 from userdetails.models import Association, User, UserMembership
 
 __all__ = [
@@ -219,6 +220,7 @@ class DiningInfoForm(ConcurrenflictFormMixin, ServeTimeCheckMixin, forms.ModelFo
     class Meta:
         model = DiningList
         fields = ["owners", "dish", "serve_time", "max_diners", "sign_up_deadline"]
+        field_classes = {"sign_up_deadline": DateTimeControlField}
         widgets = {
             "owners": ModelSelect2Multiple(
                 url="people_autocomplete", attrs={"data-minimum-input-length": "1"}
@@ -228,7 +230,6 @@ class DiningInfoForm(ConcurrenflictFormMixin, ServeTimeCheckMixin, forms.ModelFo
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields["serve_time"].widget.input_type = "time"
-        self.fields["sign_up_deadline"].widget.input_type = "datetime-local"
         self.set_bounds(
             "serve_time", "min", settings.KITCHEN_USE_START_TIME.strftime("%H:%M")
         )

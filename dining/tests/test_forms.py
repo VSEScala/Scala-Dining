@@ -7,7 +7,7 @@ from django.core.exceptions import NON_FIELD_ERRORS
 from django.forms import ModelForm
 from django.http import HttpRequest
 from django.test import TestCase
-from django.utils import timezone
+from django.utils.timezone import make_aware, now
 
 from creditmanagement.models import Account, Transaction
 from dining.forms import (
@@ -35,10 +35,10 @@ class CreateSlotFormTestCase(TestCase):
             related_user=self.user1,
             association=self.association1,
             is_verified=True,
-            verified_on=timezone.now(),
+            verified_on=now(),
         )
         # Date two days in the future
-        self.dining_date = timezone.now().date() + timedelta(days=2)
+        self.dining_date = now().date() + timedelta(days=2)
         self.form_data = {
             "dish": "Kwark",
             "association": str(self.association1.pk),
@@ -125,7 +125,7 @@ class CreateSlotFormTestCase(TestCase):
             related_user=self.user1,
             association=association,
             is_verified=True,
-            verified_on=timezone.now(),
+            verified_on=now(),
         )
         self.assertTrue(self.form.is_valid())
 
@@ -485,7 +485,7 @@ class TestDiningEntryDeleteForm(FormValidityMixin, TestCase):
         # We create a new dining list because self.dining_list is not adjustable which makes the form invalid.
         dining_list = DiningList.objects.create(
             date=date(2123, 4, 5),
-            sign_up_deadline=datetime(2123, 4, 5, tzinfo=timezone.utc),
+            sign_up_deadline=make_aware(datetime(2123, 4, 5)),
             association=self.dining_list.association,
         )
 
