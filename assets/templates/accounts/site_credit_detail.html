@@ -5,7 +5,7 @@
 
 {% block details %}
     <p>
-        <a href="{% url "association_site_credit_stats" association_name=association.slug %}"
+        <a href="{% url "association_site_credit_stats" slug=association.slug %}"
            class="btn btn-secondary">
             <i class="fas fa-arrow-left"></i> Back
         </a>
@@ -41,7 +41,7 @@
         <h3>Income/outcome flow</h3>
         <form method="get"
               class="form-inline mb-2"
-              action="{% url "association_site_credit_detail" association_name=association.slug pk=object.pk %}">
+              action="{% url "association_site_credit_detail" slug=association.slug pk=object.pk %}">
             <label for="rangeFromInput" class="my-1 mr-2">From</label>
             <input type="date"
                    id="rangeFromInput"

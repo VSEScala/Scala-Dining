@@ -25,9 +25,9 @@ services:
       POSTGRES_PASSWORD: dining
       POSTGRES_DB: dining
     volumes:
-      - db2:/var/lib/postgresql/data
+      - db:/var/lib/postgresql/data
     ports:
       - 5432:5432
 
 volumes:
-  db2:
+  db:
