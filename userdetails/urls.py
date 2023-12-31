@@ -24,7 +24,7 @@ from userdetails.views_user_settings import SettingsProfileView
 
 urlpatterns = [
     path(
-        "association/<slug:association_name>/",
+        "association/<slug:slug>/",
         include(
             [
                 path("", AssociationOverview.as_view(), name="association_overview"),

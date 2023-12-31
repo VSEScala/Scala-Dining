@@ -142,9 +142,11 @@ class AssociationManager(GroupManager):
 
 
 class Association(Group):
-    slug = models.SlugField(max_length=10)
+    short_name = models.CharField(max_length=150, blank=True)
+    slug = models.SlugField(help_text="The slug is used in URLs.")
     image = models.ImageField(blank=True, null=True)
     icon_image = models.ImageField(blank=True, null=True)
+
     is_choosable = models.BooleanField(
         default=True,
         help_text="If checked, this association can be chosen as membership by users.",
@@ -180,6 +182,9 @@ class Association(Group):
         return UserMembership.objects.filter(
             association=self, verified_on__isnull=True
         ).exists()
+
+    def get_short_name(self):
+        return self.short_name or self.name
 
 
 class UserMembership(models.Model):

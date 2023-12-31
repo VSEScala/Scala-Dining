@@ -4,7 +4,7 @@
 
 {% block details %}
     <p>
-        <a href="{% url 'association_site_transaction_add' association_name=association.slug %}"
+        <a href="{% url 'association_site_transaction_add' slug=association.slug %}"
            class="btn btn-primary">
             <i class="fas fa-plus"></i> New site-wide transaction
         </a>
@@ -59,7 +59,7 @@
                     </td>
                     <td class="text-right">{{ a.get_balance }}</td>
                     <td class="text-right">
-                        <a href="{% url 'association_site_credit_detail' association_name=association.slug pk=a.pk %}">
+                        <a href="{% url 'association_site_credit_detail' slug=association.slug pk=a.pk %}">
                             Details
                         </a>
                     </td>

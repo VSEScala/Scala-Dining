@@ -121,8 +121,7 @@ class UpgradeBalanceInstructionsView(TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         if self.request.user.is_authenticated:
-            # Separated for a possible prefilter to be implemented later (e.g. if active in kitchen)
-            associations = Association.objects.order_by("slug")
+            associations = Association.objects.order_by("short_name")
             context["user_associations"] = associations.filter(
                 usermembership__related_user=self.request.user
             ).exclude(
