@@ -1,3 +1,4 @@
+{% load l10n %}
 {% load humanize %}
 <tr>
     <td>{{ entry.related_user.get_username }}</td>
@@ -15,7 +16,7 @@
     {# Verify button #}
     <td>
         {% if not entry.is_verified %}
-            <button type="submit" name="validate-yes-{{ entry.id }}" class="btn btn-block btn-outline-success">
+            <button type="submit" name="validate-yes-{{ entry.id|unlocalize }}" class="btn btn-block btn-outline-success">
                 {# Only icon because the button is not wide enough for text. #}
                 <i class="fa fa-check-circle"></i>
             </button>
@@ -24,7 +25,7 @@
     {# Deny button #}
     <td>
         {% if entry.is_verified or not entry.verified_on %}
-            <button type="submit" name="validate-no-{{ entry.id }}" class="btn btn-block btn-outline-danger">
+            <button type="submit" name="validate-no-{{ entry.id|unlocalize }}" class="btn btn-block btn-outline-danger">
                 <i class="fa fa-times-circle"></i>
             </button>
         {% endif %}

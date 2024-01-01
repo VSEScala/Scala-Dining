@@ -137,9 +137,12 @@ LANGUAGE_CODE = "en-us"
 FORMAT_MODULE_PATH = "scaladining.formats"
 
 USE_I18N = False
-USE_THOUSAND_SEPARATOR = True
-# USE_TZ is True by default from Django 5.0
-USE_TZ = True
+
+# This setting (USE_THOUSAND_SEPARATOR) is a bit dangerous, because it will apply to
+# integers in hidden inputs. So a hidden primary key in a form might get value `46.235`
+# while it should be `46235`. Use the `unlocalize` template filter to prevent this.
+#
+# USE_THOUSAND_SEPARATOR = True
 
 AUTHENTICATION_BACKENDS = [
     "django.contrib.auth.backends.ModelBackend",
