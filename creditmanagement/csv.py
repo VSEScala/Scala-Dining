@@ -2,6 +2,7 @@
 import csv
 from typing import Iterator
 
+from django.db.models import QuerySet
 from django.utils.timezone import localdate
 
 
@@ -12,12 +13,24 @@ class Echo:
         return value
 
 
-def transactions_csv(transactions) -> Iterator:
+def transactions_csv(transactions: QuerySet) -> Iterator:
     """Returns an iterator that yields the transaction CSV rows.
 
     Args:
-        transactions: List or QuerySet of transactions.
+        transactions: A QuerySet of transactions. Cannot be a list, because we will
+            modify the query to fetch related fields.
     """
+    # This speeds up the query by >100x
+    transactions = transactions.select_related(
+        "source",
+        "target",
+        "created_by",
+        "source__user",
+        "source__association",
+        "target__user",
+        "target__association",
+    )
+
     writer = csv.writer(Echo())
     yield writer.writerow(
         [
