@@ -1,4 +1,5 @@
 {% extends 'dining_lists/dining_slot.html' %}
+{% load l10n %}
 {% load dining_tags credit_tags humanize %}
 
 {% block tab_info %}active{% endblock %}
@@ -119,7 +120,7 @@
                     {% url 'entry_add' day=date.day month=date.month year=date.year identifier=dining_list.association.slug as url %}
                     <form method="post" action="{{ url }}?next={{ request.path_info }}">
                         {% csrf_token %}
-                        <input type="hidden" name="user" value="{{ user.pk }}">
+                        <input type="hidden" name="user" value="{{ user.pk|unlocalize }}">
                         <button type="submit" class="btn btn-block btn-primary">Sign up</button>
                     </form>
                 {% endif %}

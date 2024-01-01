@@ -1,6 +1,6 @@
 {% extends 'dining_lists/dining_slot.html' %}
 
-{% load dining_tags %}
+{% load dining_tags l10n %}
 
 {% block tab_list %}active{% endblock %}
 
@@ -27,10 +27,10 @@
                                     {% if membership.association.icon_image %}
                                         <i class="membership_icon">
                                                 <img src="{{ membership.association.icon_image.url }}"
-                                                     alt="{{ membership.association.slug }}">
+                                                     alt="{{ membership.association.get_short_name }}">
                                             </i>
                                     {% else %}
-                                        <i>{{ membership.association.slug|slice:":1" }}</i>
+                                        <i>{{ membership.association.get_short_name|slice:":1" }}</i>
                                     {% endif %}
                                 {% endfor %}
                             {% endif %}
@@ -44,7 +44,7 @@
                                   action="{% url 'slot_list' day=date.day month=date.month year=date.year identifier=dining_list.association.slug %}"
                                   class="stats-form d-inline-block mt-1 mt-md-0">
                                 {% csrf_token %}
-                                <input type="hidden" name="entry_id" value="{{ entry.pk }}">
+                                <input type="hidden" name="entry_id" value="{{ entry.pk|unlocalize }}">
                                 <input type="hidden" name="shopped_val" value="{% if entry.has_shopped %}1{% endif %}">
                                 <input type="hidden" name="cooked_val" value="{% if entry.has_cooked %}1{% endif %}">
                                 <input type="hidden" name="cleaned_val" value="{% if entry.has_cleaned %}1{% endif %}">

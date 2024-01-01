@@ -5,15 +5,57 @@
 
 {% block details %}
     <p>
-        Account: <strong>{{ object }}</strong>
-        ({% if object.association %}association{% elif object.user %}user{% else %}bookkeeping account{% endif %}).
-        Balance: <strong>{{ object.get_balance|euro }}</strong>.
+        <a href="{% url "association_site_credit_stats" slug=association.slug %}"
+           class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Back
+        </a>
     </p>
+
+    <div class="row mb-3">
+        <div class="col-md-2"><strong>Account</strong></div>
+        <div class="col-md-10">
+            {{ object }}
+            <br>
+            <small class="text-muted">
+                {% if object.association %}Association{% elif object.user %}User{% else %}Bookkeeping account{% endif %}
+            </small>
+        </div>
+    </div>
+
+    <div class="row mb-3">
+        <div class="col-md-2"><strong>Balance</strong></div>
+        <div class="col-md-10">{{ object.get_balance|euro }}</div>
+    </div>
+
+    <div class="mb-3">
+        <a href="{% url "credits:transaction_csv" pk=object.pk %}"
+           class="btn btn-secondary">
+            <i class="fa fa-file-export"></i>
+            Download CSV
+        </a>
+    </div>
+
     {# We only handle and show the form if we're on page 1 #}
     {% if page_obj.number == 1 %}
-        <h3>Retrieve income/outcome flow</h3>
-        <form method="get">
-            {% include "snippets/bootstrap_form_one_line.html" with horizontal=True form=date_range_form submit_value='Retrieve' %}
+        <hr>
+        <h3>Income/outcome flow</h3>
+        <form method="get"
+              class="form-inline mb-2"
+              action="{% url "association_site_credit_detail" slug=association.slug pk=object.pk %}">
+            <label for="rangeFromInput" class="my-1 mr-2">From</label>
+            <input type="date"
+                   id="rangeFromInput"
+                   name="from"
+                   value="{{ range_from }}"
+                   class="form-control my-1 mr-sm-2">
+            <label for="rangeToInput" class="my-1 mr-2">To</label>
+            <input type="date"
+                   id="rangeToInput"
+                   name="to"
+                   value="{{ range_to }}"
+                   class="form-control my-1 mr-sm-2">
+            <button type="submit"
+                    class="btn btn-primary">Retrieve</button>
         </form>
 
         <div class="table-responsive">
@@ -35,6 +77,7 @@
             </table>
         </div>
     {% endif %}
+    <hr>
     <h3>All transactions</h3>
     {% include 'credit_management/transaction_table.html' with object_list=page_obj.object_list account_self=object %}
 

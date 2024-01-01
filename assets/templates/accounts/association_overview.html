@@ -7,7 +7,7 @@
     <h3>New member requests</h3>
     {% if pending_memberships %}
         <form method="post"
-              action="{% url 'association_members_edit' association_name=association.slug %}?next={{ request.path }}">
+              action="{% url 'association_members_edit' slug=association.slug %}?next={{ request.path }}">
             <div class="table-responsive">
                 {% csrf_token %}
                 <table class="table table-hover">
@@ -34,7 +34,7 @@
         </div>
     </div>
     <p class="mt-3">
-        <a href="{% url 'association_transaction_add' association_name=association.slug %}" class="btn btn-primary">
+        <a href="{% url 'association_transaction_add' slug=association.slug %}" class="btn btn-primary">
             <i class="fas fa-plus"></i> Money transfer
         </a>
     </p>

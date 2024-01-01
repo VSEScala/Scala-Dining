@@ -25,13 +25,13 @@
             {% for entry in object_list %}
                 <tr>
                     <td>
-                        {{ entry.date }}
+                        {{ entry.date|date:"SHORT_DATE_FORMAT" }}
                     </td>
                     <td>
                         {{ entry.dish }}
                     </td>
                     <td>
-                        {{ entry.association.slug }}
+                        {{ entry.association.get_short_name }}
                     </td>
                     <td>
                         {{ entry.diners.count }}

@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from os import getenv
 
 from django.contrib.auth.mixins import LoginRequiredMixin
@@ -6,7 +6,7 @@ from django.db.models import ObjectDoesNotExist
 from django.http import Http404, HttpResponseForbidden
 from django.shortcuts import render
 from django.template.loader import TemplateDoesNotExist, get_template
-from django.utils import timezone
+from django.utils.timezone import make_aware, now
 from django.views.generic import ListView, TemplateView, View
 
 from general.forms import DateRangeForm
@@ -53,7 +53,7 @@ class SiteUpdateView(LoginRequiredMixin, ListView):
         try:
             latest_update = SiteUpdate.objects.latest("date").date
         except ObjectDoesNotExist:
-            latest_update = timezone.now()
+            latest_update = now()
 
         context["latest_visit"] = PageVisitTracker.get_latest_visit(
             "updates", self.request.user, update=True
@@ -93,7 +93,7 @@ class HelpPageView(TemplateView):
 class RulesPageView(View):
     template = "general/rules_and_regulations.html"
     context = {}
-    change_date = timezone.make_aware(datetime(2019, 4, 14, 22, 20))
+    change_date = make_aware(datetime(2019, 4, 14, 22, 20))
 
     def get(self, request):
         # Store the recent updates/visit data in the local context
@@ -121,8 +121,7 @@ class UpgradeBalanceInstructionsView(TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         if self.request.user.is_authenticated:
-            # Separated for a possible prefilter to be implemented later (e.g. if active in kitchen)
-            associations = Association.objects.order_by("slug")
+            associations = Association.objects.order_by("short_name")
             context["user_associations"] = associations.filter(
                 usermembership__related_user=self.request.user
             ).exclude(

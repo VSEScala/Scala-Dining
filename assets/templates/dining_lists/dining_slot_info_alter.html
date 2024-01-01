@@ -1,4 +1,5 @@
 {% extends 'dining_lists/dining_slot.html' %}
+{% load l10n %}
 
 {% block details %}
     <p><a href="{{ dining_list.get_absolute_url }}">← Back to dining list</a></p>
@@ -22,7 +23,7 @@
         document.getElementById('infoForm').addEventListener('submit', function (event) {
             let selectedOptions = document.getElementById('id_info-owners').selectedOptions;
             for (let i = 0; i < selectedOptions.length; i++) {
-                if (selectedOptions[i].value === '{{ user.pk }}') {
+                if (selectedOptions[i].value === '{{ user.pk|unlocalize }}') {
                     // Current user is owner
                     return;
                 }

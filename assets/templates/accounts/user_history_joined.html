@@ -22,13 +22,13 @@
             {% for entry in object_list %}
                 <tr>
                     <td>
-                        {{ entry.dining_list.date }}
+                        {{ entry.dining_list.date|date:"SHORT_DATE_FORMAT" }}
                     </td>
                     <td>
                         {{ entry.dining_list.dish }}
                     </td>
                     <td>
-                        {{ entry.dining_list.association.slug }}
+                        {{ entry.dining_list.association.get_short_name }}
                     </td>
                     <td>
                         {% if entry.has_shopped %} Shop {% endif %}

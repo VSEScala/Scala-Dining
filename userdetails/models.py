@@ -67,7 +67,6 @@ class User(AbstractUser):
                 return True
         return False
 
-    @cached_property
     def boards(self):
         """Returns all associations of which this member has board access."""
         return Association.objects.filter(user=self).all()
@@ -75,7 +74,7 @@ class User(AbstractUser):
     @cached_property
     def requires_action(self):
         """Whether some action is required by the user."""
-        for board in self.boards:
+        for board in self.boards():
             if board.requires_action:
                 return True
         return False
@@ -104,9 +103,18 @@ class User(AbstractUser):
     def has_admin_site_access(self):
         return self.is_active and (self.has_any_perm() or self.is_superuser)
 
-    def is_board_of(self, association_id):
-        """Returns if user is a board member of association identified by given id."""
-        return self.groups.filter(id=association_id).exists()
+    def is_board_of(self, association):
+        """Returns if the user is a board member of the given association."""
+        return association in self.boards()
+
+    def has_site_stats_access(self):
+        """Returns true if the user can manage credits site-wide.
+
+        This means this user can view side-wide statistics for all
+        associations, can view all transactions, and can create any arbitrary
+        transaction.
+        """
+        return True in (b.has_site_stats_access for b in self.boards())
 
     def is_verified_member_of(self, association):
         """Returns if the user is a verified member of the association."""
@@ -134,9 +142,11 @@ class AssociationManager(GroupManager):
 
 
 class Association(Group):
-    slug = models.SlugField(max_length=10)
+    short_name = models.CharField(max_length=150, blank=True)
+    slug = models.SlugField(help_text="The slug is used in URLs.")
     image = models.ImageField(blank=True, null=True)
     icon_image = models.ImageField(blank=True, null=True)
+
     is_choosable = models.BooleanField(
         default=True,
         help_text="If checked, this association can be chosen as membership by users.",
@@ -172,6 +182,9 @@ class Association(Group):
         return UserMembership.objects.filter(
             association=self, verified_on__isnull=True
         ).exists()
+
+    def get_short_name(self):
+        return self.short_name or self.name
 
 
 class UserMembership(models.Model):

@@ -12,7 +12,6 @@ from userdetails.views_association import (
     AssociationSettingsView,
     AssociationTransactionAddView,
     AssociationTransactionListView,
-    AssociationTransactionsCSVView,
     AutoCreateNegativeCreditsView,
     MembersEditView,
     MembersOverview,
@@ -25,7 +24,7 @@ from userdetails.views_user_settings import SettingsProfileView
 
 urlpatterns = [
     path(
-        "association/<slug:association_name>/",
+        "association/<slug:slug>/",
         include(
             [
                 path("", AssociationOverview.as_view(), name="association_overview"),
@@ -42,11 +41,6 @@ urlpatterns = [
                                 "process_negatives/",
                                 AutoCreateNegativeCreditsView.as_view(),
                                 name="association_process_negatives",
-                            ),
-                            path(
-                                "csv/",
-                                AssociationTransactionsCSVView.as_view(),
-                                name="association_transactions_csv",
                             ),
                             path(
                                 "add/",
@@ -87,7 +81,7 @@ urlpatterns = [
                                 name="association_site_transaction_add",
                             ),
                             path(
-                                "credit/account/<slug:slug>/",
+                                "credit/account/<int:pk>/",
                                 SiteCreditDetailView.as_view(),
                                 name="association_site_credit_detail",
                             ),

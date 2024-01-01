@@ -1,3 +1,4 @@
+{% load l10n %}
 {% load dining_tags %}
 
 <div class="col-12 mx-0 my-2 btn d-inline-flex text-left
@@ -34,7 +35,7 @@
             {% url 'slot_details' day=date.day month=date.month year=date.year identifier=slot.association.slug as next%}
             <form method="post" action="{{ url }}?next={{ next }}" class="btn-block col-2 slot-signup d-none d-md-inline-flex">
                 {% csrf_token %}
-                <input type="hidden" name="user" value="{{ user.pk }}">
+                <input type="hidden" name="user" value="{{ user.pk|unlocalize }}">
                 <button type="submit" class="btn-block btn btn-primary slot-signup"></button>
             </form>
         {% else %}

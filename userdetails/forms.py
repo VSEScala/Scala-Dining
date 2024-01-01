@@ -96,7 +96,7 @@ class AssociationLinkForm(forms.Form):
                 Q(is_choosable=True) | Q(usermembership__related_user=user)
             )
             .distinct()
-            .order_by("slug")
+            .order_by("short_name")
         )
 
         for association in associations:

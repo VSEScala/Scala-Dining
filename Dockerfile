@@ -1,16 +1,16 @@
-FROM python:3.11
+FROM python:3.12
 
-# Python settings
 ENV PYTHONUNBUFFERED=1
 
 WORKDIR /app/src
 
-# The production dependencies are gunicorn and psycopg2.
-# The version number is pinned but it should be safe to upgrade.
-RUN pip install --no-cache-dir gunicorn==20.1.0 psycopg2==2.9.5
+# First copy only the requirements to cache them early.
+#
+# Gunicorn and psycopg are necessary in production only.
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt gunicorn==21.2.0 psycopg[binary]==3.1.16
 
+# Copy the rest
 COPY . .
 
 # Collect static files
@@ -24,9 +24,4 @@ ARG BUILD_TIMESTAMP
 ENV COMMIT_SHA=$COMMIT_SHA
 ENV BUILD_TIMESTAMP=$BUILD_TIMESTAMP
 
-# Create user
-RUN useradd -u 1001 appuser && chown appuser /app/media
-USER appuser
-
-# By default launch gunicorn on :8000
 CMD ["gunicorn", "-w", "3", "-b", "0.0.0.0:8000", "scaladining.wsgi"]
