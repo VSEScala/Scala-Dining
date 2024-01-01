@@ -1,6 +1,6 @@
 # This is so over-engineered :')
 from abc import ABC, abstractmethod
-from datetime import datetime
+from datetime import MAXYEAR, MINYEAR, datetime
 
 from django.utils.timezone import localdate, make_aware
 
@@ -97,7 +97,7 @@ class MonthPeriod(Period):
     view_name = "monthly"
 
     def __init__(self, year: int, month: int):
-        if month < 1 or month > 12:
+        if year < MINYEAR or year > MAXYEAR or month < 1 or month > 12:
             raise ValueError
         self.year = year
         self.month = month
@@ -149,7 +149,7 @@ class QuarterPeriod(Period):
     view_name = "quarterly"
 
     def __init__(self, year: int, quarter: int):
-        if quarter < 1 or quarter > 4:
+        if year < MINYEAR or year > MAXYEAR or quarter < 1 or quarter > 4:
             raise ValueError
         self.year = year
         self.quarter = quarter
@@ -201,6 +201,8 @@ class YearPeriod(Period):
     view_name = "yearly"
 
     def __init__(self, year: int):
+        if year < MINYEAR or year > MAXYEAR:
+            raise ValueError
         self.year = year
 
     def start(self) -> datetime:

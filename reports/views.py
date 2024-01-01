@@ -13,9 +13,7 @@ from userdetails.models import Association, UserMembership
 
 class ReportAccessMixin(UserPassesTestMixin):
     def test_func(self):
-        # TODO rewrite to self.request.user.has_site_stats_access() when PR #276 is merged
-        boards = Association.objects.filter(user=self.request.user)
-        return True in (b.has_site_stats_access for b in boards)
+        return self.request.user.has_site_stats_access()
 
 
 class ReportsView(ReportAccessMixin, TemplateView):
@@ -127,7 +125,7 @@ class BalanceView(ReportAccessMixin, PeriodMixin, TemplateView):
         # The accounts to display in the report
         accounts = list(
             Account.objects.exclude(user__isnull=False).order_by(
-                "special", "association__slug"
+                "special", "association__short_name"
             )
         )
         accounts.append(None)  # User pile
@@ -304,11 +302,10 @@ class CashFlowMatrixView(ReportAccessMixin, PeriodMixin, TemplateView):
         context = super().get_context_data(**kwargs)
 
         # Accounts to display in the matrix
-        # TODO: change slug to short_name after #278 is merged
         accounts = list(
             Account.objects.filter(
                 Q(association__isnull=False) | Q(special__isnull=False)
-            ).order_by("special", "association__slug")
+            ).order_by("special", "association__short_name")
         )
         # We add a `None` account indicating all user accounts
         accounts.append(None)

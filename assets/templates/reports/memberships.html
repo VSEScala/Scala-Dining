@@ -14,7 +14,7 @@
     <tbody>
     {% for association, pending, verified, rejected in report %}
         <tr>
-            <th scope="row">{{ association }}</th>
+            <th scope="row">{{ association.get_short_name }}</th>
             <td class="text-right">{{ verified }}</td>
             <td class="text-right">{{ rejected }}</td>
             <td class="text-right">{{ pending|default:"–" }}</td>

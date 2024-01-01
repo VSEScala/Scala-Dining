@@ -5,14 +5,6 @@
 
     {% url 'reports:balance' as url %}{% include 'reports/snippets/controls.html' %}
 
-    <p class="lead">
-        Bookkeeping accounts are shown in <span class="bg-primary p-1 rounded">blue</span>.
-        Association accounts are <span class="bg-secondary p-1 rounded">gray</span>.
-        All individual user balances are summed together and shown as
-        <span class="bg-dark p-1 rounded">a single row</span> at the bottom.
-        Accounts for which no transactions took place are omitted.
-    </p>
-
     <table class="table table-sm">
         <thead>
         <tr>
@@ -30,8 +22,10 @@
                     {% if account.special %}
                         {{ account.get_special_display }}
                     {% elif account.association %}
-                        {{ account.association.slug }}
-                    {% else %}User accounts
+                        {{ account.association.get_short_name }}
+                    {% else %}
+                        User accounts<br>
+                        <small class="text-muted">Sum of the balances of all user accounts.</small>
                     {% endif %}
                 </td>
                 <td class="text-right">{{ statement.start_balance|default_if_none:"" }}</td>

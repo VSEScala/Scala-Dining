@@ -25,8 +25,14 @@
         {% for tx in transactions %}
             <tr>
                 <td>{{ tx.moment|date:"d-m" }}</td>
-                <td class="{% if tx.source.special %}bg-primary{% endif %}">{{ tx.source }}</td>
-                <td class="{% if tx.target.special %}bg-primary{% endif %}">{{ tx.target }}</td>
+                <td class="{% if tx.source.special %}bg-primary{% endif %}">
+                    {% if tx.source.association %}{{ tx.source.association.get_short_name }}
+                    {% else %}{{ tx.source }}{% endif %}
+                </td>
+                <td class="{% if tx.target.special %}bg-primary{% endif %}">
+                    {% if tx.target.association %}{{ tx.target.association.get_short_name }}
+                    {% else %}{{ tx.target }}{% endif %}
+                </td>
                 <td class="text-right">{{ tx.amount }}</td>
                 <td>{{ tx.description }}</td>
                 <td>{{ tx.created_by }}</td>

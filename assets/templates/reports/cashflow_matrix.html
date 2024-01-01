@@ -25,8 +25,7 @@
                         {% if account.special %}
                             {{ account.get_special_display|truncatechars:6 }}
                         {% elif account.association %}
-                            {# TODO: change slug to short_name after #278 is merged #}
-                            {{ account.association.slug|truncatechars:6 }}
+                            {{ account.association.get_short_name|truncatechars:6 }}
                         {% else %}
                             Users
                         {% endif %}
@@ -45,12 +44,12 @@
                     {% endif %}
                     <th scope="row"
                         class="{% if account_from.special %}bg-primary{% elif account_from.association %}bg-secondary{% else %}bg-dark{% endif %}">
-                        {% if account_from.association %}
-                            {{ account_from.association.slug }}
-                        {% elif account_from is None %}
-                            Users
+                        {% if account_from.special %}
+                            {{ account_from.get_special_display }}
+                        {% elif account_from.association %}
+                            {{ account_from.association.get_short_name }}
                         {% else %}
-                            {{ account_from }}
+                            Users
                         {% endif %}
                     </th>
                     {% for account_to, amount in row %}
