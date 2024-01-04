@@ -11,6 +11,7 @@ services:
       DINING_SECRET_KEY: hallo
       DINING_ALLOWED_HOSTS: "*"
       DINING_DATABASE_URL: postgres://dining:dining@db/dining
+      DINING_SITE_BANNER: "Development"
     depends_on:
       - db
     volumes:

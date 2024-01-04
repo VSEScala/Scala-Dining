@@ -1,7 +1,7 @@
 {% extends 'reports/base.html' %}
 
 {% block report %}
-    <h2>Transactions <small class="text-muted">{{ period }}</small></h2>
+    <h2>Site transactions <small class="text-muted">{{ period }}</small></h2>
 
     {% url 'reports:transactions' as url %}{% include 'reports/snippets/controls.html' %}
 

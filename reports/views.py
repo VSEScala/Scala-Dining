@@ -1,12 +1,15 @@
 from decimal import Decimal
+from itertools import chain
+from urllib.parse import urlencode
 
 from django.contrib.auth.mixins import UserPassesTestMixin
 from django.core.exceptions import BadRequest
-from django.db.models import Case, Q, Sum, When
+from django.db.models import Case, Count, Q, Sum, When
 from django.utils.timezone import localdate, now
 from django.views.generic import DetailView, TemplateView
 
 from creditmanagement.models import Account, Transaction
+from reports import queries
 from reports.period import Period
 from userdetails.models import Association, UserMembership
 
@@ -55,13 +58,22 @@ class PeriodMixin:
             if "period" in self.request.GET:
                 return period_class.from_url_param(self.request.GET["period"])
             else:
-                return period_class.current()
+                return period_class.from_datetime(now())
         except ValueError:
             raise BadRequest
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context["view_choice"] = self.view_choice
+        # Save the query strings to the context for use in template URLs.
+        query = urlencode(
+            [(k, v) for k, v in self.request.GET.items() if k not in ("period", "view")]
+        )
+        context.update(
+            {
+                "view_choice": self.view_choice,
+                "additional_query": f"&{query}" if query else "",
+            }
+        )
         if self.period:
             context["period"] = self.period
         return context
@@ -385,10 +397,113 @@ class StaleAccountsView(ReportAccessMixin, TemplateView):
         return context
 
 
-class DinerReportView(ReportAccessMixin, TemplateView):
+class DinersView(ReportAccessMixin, PeriodMixin, TemplateView):
     """Reports on diner counts."""
 
-    pass
+    template_name = "reports/diners.html"
+
+    def get_report(self):
+        """Get diner report.
+
+        Returns:
+            A list with tuple (association, {metric: value}).
+        """
+        # This method queries all individual metrics and merges them together.
+        qs = self.period.get_dining_lists()
+        verified_only = "all_members" not in self.request.GET
+        include_guests = "include_guests" in self.request.GET
+
+        report = {a.pk: {"object": a} for a in Association.objects.all()}
+
+        # Count number of dining lists per association
+        for e in qs.values("association").annotate(dining_list_count=Count("id")):
+            report[e["association"]].update(e)
+
+        # Merge diner counts
+        for e in queries.diner_counts(qs, verified_only=verified_only):
+            report[e["association"]].update(e)
+        # Merge kitchen usage
+        for e in queries.kitchen_usage(
+            qs, verified_only=verified_only, include_guests=include_guests
+        ):
+            report[e["membership_association"]].update(
+                {
+                    "not_weighted_usage": e["not_weighted_usage"],
+                    "weighted_usage": round(e["weighted_usage"], 1),
+                }
+            )
+
+        # Compute kitchen usage percentages
+        total_not_weighted = sum(
+            (e.get("not_weighted_usage", 0) for e in report.values())
+        )
+        total_weighted = sum((e.get("weighted_usage", 0) for e in report.values()))
+        for e in report.values():
+            if "not_weighted_usage" in e:
+                e["not_weighted_percentage"] = round(
+                    (e["not_weighted_usage"] / total_not_weighted) * 100
+                )
+                e["weighted_percentage"] = round(
+                    (e["weighted_usage"] / total_weighted) * 100
+                )
+
+        # Merge joined and owned members count
+        joined, owned = queries.dining_members_count(qs, verified_only=verified_only)
+        for e in chain(joined, owned):
+            report[e["association"]].update(e)
+
+        # Help stats
+        for e in queries.count_help_stats(qs):
+            report[e["dining_list__association"]].update(e)
+
+        # Compute summary/totals
+        totals = {
+            "dining_list_count": sum(
+                (e.get("dining_list_count", 0) for e in report.values())
+            ),
+            "total_diners": sum(e.get("total_diners", 0) for e in report.values()),
+            "association_diners": sum(
+                e.get("association_diners", 0) for e in report.values()
+            ),
+            "outside_diners": sum(e.get("outside_diners", 0) for e in report.values()),
+            "guests": sum(e.get("guests", 0) for e in report.values()),
+            "not_weighted_usage": total_not_weighted,
+            "weighted_usage": round(total_weighted, 1),
+            "joined": sum(e.get("joined", 0) for e in report.values()),
+            "owned": sum(e.get("owned", 0) for e in report.values()),
+            "shop": sum(e.get("shop", 0) for e in report.values()),
+            "cook": sum(e.get("cook", 0) for e in report.values()),
+            "clean": sum(e.get("clean", 0) for e in report.values()),
+        }
+
+        # Convert to list and sort
+        report = [(e["object"], e) for e in report.values()]
+        sorted(report, key=lambda e: e[0].get_short_name())
+        # Add summary/totals row
+        report.append((None, totals))
+        return report
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["report"] = self.get_report()
+        return context
+
+
+class LeaderboardView(ReportAccessMixin, PeriodMixin, TemplateView):
+    """Find out who are the power users."""
+
+    template_name = "reports/leaderboard.html"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        joiners, owners = queries.power_users(self.period.get_dining_lists())
+        context.update(
+            {
+                "joiners": joiners.filter(joined_lists__gt=0)[:10],
+                "owners": owners.filter(owned_lists__gt=0)[:10],
+            }
+        )
+        return context
 
 
 class MembershipCountView(ReportAccessMixin, TemplateView):

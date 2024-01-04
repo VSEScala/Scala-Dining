@@ -1,0 +1,160 @@
+{% extends 'reports/base.html' %}
+
+{% block report %}
+    <h2>Diners report <small class="text-muted">{{ period }}</small></h2>
+    {% url 'reports:diners' as url %}
+    {% include 'reports/snippets/controls.html' %}
+
+    <div class="table-responsive">
+        <table class="table table-sm">
+            <thead>
+            <tr>
+                <td colspan="2" class="border-0"></td>
+                <th scope="col" colspan="4" class="text-center bg-secondary">Cooked for</th>
+                <th scope="col" colspan="4" class="text-center">Kitchen usage<sup>1</sup></th>
+
+            </tr>
+            <tr>
+                <th scope="col">Association</th>
+                <th scope="col" class="text-right">Lists</th>
+                <th scope="col" class="text-right bg-secondary">Total</th>
+                <th scope="col" class="text-right bg-secondary">Own members</th>
+                <th scope="col" class="text-right bg-secondary">Other members</th>
+                <th scope="col" class="text-right bg-secondary">Guests</th>
+                <th scope="col" class="text-center" colspan="2">Not weighted</th>
+                <th scope="col" class="text-center" colspan="2">Weighted</th>
+                <th scope="col" class="text-right">Joiners<sup>2</sup></th>
+                <th scope="col" class="text-right">Owners<sup>2</sup></th>
+                <th scope="col" class="text-right">Shop/cook/clean</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for association, metrics in report %}
+                <tr class="{% if association is None %}table-secondary{% endif %}">
+                    <th scope="row">
+                        {% if association is None %}<em>Totals</em>
+                        {% else %}{{ association.get_short_name }}{% endif %}
+                    </th>
+                    <td class="text-right">{{ metrics.dining_list_count }}</td>
+                    <td class="text-right">{{ metrics.total_diners }}</td>
+                    <td class="text-right">{{ metrics.association_diners }}</td>
+                    <td class="text-right">{{ metrics.outside_diners }}</td>
+                    <td class="text-right">{{ metrics.guests }}</td>
+                    <td class="text-right">
+                        {{ metrics.not_weighted_usage }}
+                    </td>
+                    <td class="text-left">
+                        {% if metrics.not_weighted_percentage %}{{ metrics.not_weighted_percentage }}%{% endif %}
+                    </td>
+                    <td class="text-right">
+                        {{ metrics.weighted_usage }}
+                    </td>
+                    <td class="text-left">
+                        {% if metrics.weighted_percentage %}{{ metrics.weighted_percentage }}%{% endif %}
+                    </td>
+                    <td class="text-right">{{ metrics.joined }}</td>
+                    <td class="text-right">{{ metrics.owned }}</td>
+                    <td class="text-right">
+                        {% if metrics.shop is not None %}
+                            {{ metrics.shop }}/{{ metrics.cook }}/{{ metrics.clean }}
+                        {% endif %}
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <h4>Settings</h4>
+    <div class="row mb-3">
+        <div class="col-sm-2">
+            <strong>Memberships</strong>
+        </div>
+        <div class="col-sm-10">
+            <div class="btn-group btn-group-sm">
+                {# @formatter:off #}
+                <a href="{{ url }}?view={{ period.view_name }}&period={{ period.url_param }}{% if request.GET.include_guests %}&include_guests=on{% endif %}"
+                {# @formatter:on #}
+                   class="btn btn-secondary {% if not request.GET.all_members %}disabled{% endif %}">
+                    {% if not request.GET.all_members %}<i class="fas fa-check"></i>{% endif %}
+                    Verified only
+                </a>
+                {# @formatter:off #}
+                <a href="{{ url }}?view={{ period.view_name }}&period={{ period.url_param }}&all_members=on{% if request.GET.include_guests %}&include_guests=on{% endif %}"
+                {# @formatter:on #}
+                   class="btn btn-secondary {% if request.GET.all_members %}disabled{% endif %}">
+                    {% if request.GET.all_members %}<i class="fas fa-check"></i>{% endif %}
+                    Verified, rejected and pending
+                </a>
+            </div>
+            <small class="text-muted d-block mt-1">
+                This affects all columns that use memberships, in particular kitchen usage, individuals and owners.
+                When selecting 'verified only', note that some associations change the membership to rejected
+                when a diner left an association. These diners are not included in the count even though they were
+                likely
+                a verified member at the time!
+            </small>
+        </div>
+    </div>
+
+    <div class="row mb-3">
+        <div class="col-sm-2">
+            <strong>Guests</strong>
+        </div>
+        <div class="col-sm-10">
+            <div class="btn-group btn-group-sm">
+                {# @formatter:off #}
+                <a href="{{ url }}?view={{ period.view_name }}&period={{ period.url_param }}{% if request.GET.all_members %}&all_members=on{% endif %}"
+                {# @formatter:on #}
+                   class="btn btn-secondary {% if not request.GET.include_guests %}disabled{% endif %}">
+                    {% if not request.GET.include_guests %}<i class="fas fa-check"></i>{% endif %}
+                    Not included
+                </a>
+                {# @formatter:off #}
+                <a href="{{ url }}?view={{ period.view_name }}&period={{ period.url_param }}&include_guests=on{% if request.GET.all_members %}&all_members=on{% endif %}"
+                {# @formatter:on #}
+                   class="btn btn-secondary {% if request.GET.include_guests %}disabled{% endif %}">
+                    {% if request.GET.include_guests %}<i class="fas fa-check"></i>{% endif %}
+                    Included
+                </a>
+            </div>
+            <small class="text-muted d-block mt-1">
+                Whether to include guests when calculating the kitchen usage.
+                A guest counts towards the association(s) of the diner who added the guest.
+            </small>
+
+        </div>
+    </div>
+
+    {# The purpose of this grid is to make the lines not too long for readability. #}
+    <div class="row">
+        <div class="col-md-8">
+
+            <h4><sup>1</sup>Kitchen usage</h4>
+            <p>
+                The kitchen usage counts the
+                number of times a member of the association joined a dining list.
+                In the <strong>weighted</strong> column, members who are a member of
+                two or more associations are only counted for 1/(number of associations) instead
+                of once for each association.
+            </p>
+            <p>
+                Example: Roan is a member of the Knights and Q and joined 2 lists.
+                Anne is a member of only Q and also joined 2 lists.
+                The kitchen usage for Knights/Q in the non-weighted case is 4/2 (67%/33%).
+                In the weighted case it is 3/2 (60%/40%)
+            </p>
+        </div>
+        <div class="col-md-6"></div>
+        <div class="col-md-8">
+            <h4><sup>2</sup>Joiners and owners</h4>
+            <p>
+                The joiner and owner counts are the number of members of the association
+                who respectively joined or owned a dining list in the current period at least once.
+                The percentage is taken over the total number of members in the association.
+            </p>
+
+        </div>
+    </div>
+
+{% endblock %}

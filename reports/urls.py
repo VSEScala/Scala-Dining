@@ -13,4 +13,6 @@ urlpatterns = [
     path("transactions/", views.TransactionsReportView.as_view(), name="transactions"),
     path("stale/", views.StaleAccountsView.as_view(), name="stale"),
     path("memberships/", views.MembershipCountView.as_view(), name="memberships"),
+    path("diners/", views.DinersView.as_view(), name="diners"),
+    path("leaderboard/", views.LeaderboardView.as_view(), name="leaderboard"),
 ]

@@ -11,6 +11,17 @@
                 <a href="{% url 'reports:balance' %}" class="list-group-item list-group-item-action">
                     Balance
                 </a>
+                <a href="{% url 'reports:cashflow_matrix' %}" class="list-group-item list-group-item-action">
+                    Cash flow matrix
+                </a>
+                <a href="{% url 'reports:transactions' %}" class="list-group-item list-group-item-action">
+                    Site transactions
+                </a>
+                <a href="{% url 'reports:stale' %}" class="list-group-item list-group-item-action">
+                    Stale accounts
+                </a>
+            </div>
+            <div class="list-group mt-3">
                 <a href="{% url 'reports:cashflow_index' %}" class="list-group-item list-group-item-action">
                     Cash flow<br>
                     <small class="text-muted">
@@ -18,22 +29,20 @@
                         provides the same info. This report will be removed.
                     </small>
                 </a>
-                <a href="{% url 'reports:cashflow_matrix' %}" class="list-group-item list-group-item-action">
-                    Cash flow matrix
-                </a>
-                <a href="{% url 'reports:transactions' %}" class="list-group-item list-group-item-action">
-                    Transactions
-                </a>
-                <a href="{% url 'reports:stale' %}" class="list-group-item list-group-item-action">
-                    Stale accounts
-                </a>
             </div>
         </div>
+
         <div class="col-md-6">
             <h4>Dining</h4>
             <div class="list-group">
+                <a href="{% url 'reports:diners' %}" class="list-group-item list-group-item-action">
+                    Diners
+                </a>
                 <a href="{% url 'reports:memberships' %}" class="list-group-item list-group-item-action">
                     Membership counts
+                </a>
+                <a href="{% url 'reports:leaderboard' %}" class="list-group-item list-group-item-action">
+                    Leaderboard
                 </a>
             </div>
         </div>
