@@ -17,7 +17,6 @@ from userdetails.views_association import (
     MembersOverview,
     SiteCreditDetailView,
     SiteCreditView,
-    SiteDiningView,
     SiteTransactionView,
 )
 from userdetails.views_user_settings import SettingsProfileView
@@ -65,11 +64,6 @@ urlpatterns = [
                     "site_stats/",
                     include(
                         [
-                            path(
-                                "dining/",
-                                SiteDiningView.as_view(),
-                                name="association_site_dining_stats",
-                            ),
                             path(
                                 "credit/",
                                 SiteCreditView.as_view(),
