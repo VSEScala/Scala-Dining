@@ -42,7 +42,7 @@
                             {# Help stats rendered as buttons #}
                             <form method="post"
                                   action="{% url 'slot_list' day=date.day month=date.month year=date.year identifier=dining_list.association.slug %}"
-                                  class="stats-form d-inline-block mt-1 mt-md-0">
+                                  class="remember-scroll d-inline-block mt-1 mt-md-0">
                                 {% csrf_token %}
                                 <input type="hidden" name="entry_id" value="{{ entry.pk|unlocalize }}">
                                 <input type="hidden" name="shopped_val" value="{% if entry.has_shopped %}1{% endif %}">
@@ -134,33 +134,6 @@
             </div>
         </form>
     {% endif %}
-    {# Script for remembering the scroll position whenever stats are changed #}
-    <script>
-        function storeScroll() {
-            /**
-             * Saves current scroll position.
-             */
-            sessionStorage.setItem('scroll', window.scrollY.toString());
-        }
-
-        function restoreScroll() {
-            /**
-             * Scrolls to a saved position, if any.
-             */
-            let scroll = sessionStorage.getItem('scroll');
-            if (scroll) {
-                window.scroll(0, parseFloat(scroll));
-            }
-            sessionStorage.removeItem('scroll');
-        }
-
-        document.addEventListener('DOMContentLoaded', function () {
-            restoreScroll();
-            document.querySelectorAll('.stats-form').forEach(function (form) {
-                form.addEventListener('submit', storeScroll);
-            });
-        });
-    </script>
 {% endblock details %}
 
 

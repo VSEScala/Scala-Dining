@@ -466,21 +466,22 @@ class SlotInfoView(
         return kwargs
 
     def get_success_url(self):
-        return self.reverse("slot_details") + "#comments"
+        return self.reverse("slot_details")
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context.update(
             {
-                "comments": self.dining_list.comments.order_by(
+                "comments": self.dining_list.comments.select_related("poster").order_by(
                     "-pinned_to_top", "-timestamp"
-                ).all(),
+                ),
                 "last_visited": DiningCommentVisitTracker.get_latest_visit(
                     user=self.request.user, dining_list=self.dining_list, update=True
                 ),
                 "number_of_allergies": self.dining_list.internal_dining_entries()
                 .exclude(user__allergies="")
                 .count(),
+                "is_owner": self.dining_list.is_owner(self.request.user),
             }
         )
         return context
@@ -507,10 +508,7 @@ class SlotInfoView(
                 comment.save()
             else:
                 raise BadRequest
-            # return redirect(self.dining_list)
-            return HttpResponseRedirect(
-                self.dining_list.get_absolute_url() + "#comments"
-            )
+            return redirect(self.dining_list)
         else:
             return super().post(request, *args, **kwargs)
 
