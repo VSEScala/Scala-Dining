@@ -3,7 +3,9 @@ from django.conf import settings
 from django.contrib.auth.models import AbstractUser, Group, GroupManager
 from django.contrib.auth.models import UserManager as DjangoUserManager
 from django.core.exceptions import ValidationError
+from django.core.mail import EmailMessage
 from django.db import models
+from django.template import loader
 from django.utils import timezone
 from django.utils.functional import cached_property
 
@@ -58,7 +60,7 @@ class User(AbstractUser):
             self.username
         )
 
-    def is_verified(self):
+    def is_verified(self) -> bool:
         """Whether this user is verified as part of a Scala association."""
         links = UserMembership.objects.filter(related_user=self)
 
@@ -66,6 +68,8 @@ class User(AbstractUser):
             if membership.is_verified:
                 return True
         return False
+
+    is_verified.boolean = True
 
     def boards(self):
         """Returns all associations of which this member has board access."""
@@ -92,13 +96,11 @@ class User(AbstractUser):
         return RulesPageView.has_new_update(self)
 
     def has_any_perm(self):
-        """Returns true if the user has one or more permissions."""
-        for group in self.groups.all():
-            if group.permissions.count() > 0:
-                return True
-        if self.user_permissions.count() > 0:
-            return True
-        return False
+        """Returns true if the user has one or more permissions.
+
+        We don't use nor check for user permissions.
+        """
+        return self.groups.filter(permissions__isnull=False).exists()
 
     def has_admin_site_access(self):
         return self.is_active and (self.has_any_perm() or self.is_superuser)
@@ -115,6 +117,8 @@ class User(AbstractUser):
         transaction.
         """
         return True in (b.has_site_stats_access for b in self.boards())
+
+    has_site_stats_access.boolean = True
 
     def is_verified_member_of(self, association):
         """Returns if the user is a verified member of the association."""
@@ -133,6 +137,40 @@ class User(AbstractUser):
             for membership in self.get_verified_memberships()
         ]
         return True in exceptions
+
+    def send_email(
+        self,
+        email_template_name: str,
+        subject_template_name: str,
+        context: dict = None,
+        user_context_name="recipient",
+        **kwargs
+    ):
+        """Sends a rendered e-mail message to this user.
+
+        This function renders text-based mails only because HTML e-mails are a pain to
+        work with.
+
+        Args:
+            email_template_name: The message template file. Must be text format.
+            subject_template_name: The subject template file.
+            context: Context used for rendering.
+            user_context_name: The name of the user context variable.
+            **kwargs: Parameters for the EmailMessage class.
+        """
+        if context is None:
+            context = {}
+        context[user_context_name] = self
+        subject = loader.render_to_string(subject_template_name, context).strip()
+        message = loader.render_to_string(email_template_name, context).strip()
+        EmailMessage(
+            subject,
+            message,
+            to=[self.email],
+            # This header prevents 'conversation view' in GMail in case of multiple messages
+            headers={"X-Entity-Ref-ID": "null"},
+            **kwargs
+        ).send()
 
 
 class AssociationManager(GroupManager):

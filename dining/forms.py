@@ -532,12 +532,71 @@ class DiningListDeleteForm(forms.ModelForm):
 
 class DiningCommentForm(forms.ModelForm):
     message = forms.CharField(
-        max_length=10000, label="Comment", widget=forms.Textarea(attrs={"rows": "3"})
+        max_length=10000,
+        label="Write new comment",
+        widget=forms.Textarea(attrs={"rows": "2"}),
     )
 
     class Meta:
         model = DiningComment
-        fields = ["message"]
+        fields = ("message", "email_sent")
+
+    def __init__(self, *args, email_all_diners: bool = False, **kwargs):
+        """Comment form.
+
+        Args:
+            email_all_diners: If True, the send e-mail field sends to all diners. If
+                False, it sends only to the owners.
+        """
+        super().__init__(*args, **kwargs)
+        self.email_all_diners = email_all_diners
+        if email_all_diners:
+            self.fields["email_sent"].label = "Send e-mail to all diners"
+            self.fields["email_sent"].help_text = (
+                "Sends an e-mail notification to all diners on the list with the comment message. "
+                "Your e-mail address will be included in the message."
+            )
+        else:
+            self.fields["email_sent"].label = "Send e-mail to cooks"
+            self.fields["email_sent"].help_text = (
+                "Sends an e-mail notification to the cooks with the comment message. "
+                "Your e-mail address will be included in the message."
+            )
+
+    def send_email(self):
+        """Sends the notification email.
+
+        Will be automatically called on save.
+        """
+        comment = self.instance  # type: DiningComment
+        if self.email_all_diners:
+            # This also includes the current user
+            recipients = [e.user for e in comment.dining_list.internal_dining_entries()]
+        else:
+            recipients = list(comment.dining_list.owners.all())
+
+        for recipient in recipients:
+            recipient.send_email(
+                email_template_name="mail/comment_notification.txt",
+                subject_template_name="mail/comment_notification_subject.txt",
+                context={
+                    "comment": comment,
+                    "email_all_diners": self.email_all_diners,
+                },
+                # Include sender user e-mail address in the message
+                reply_to=[comment.poster.email],
+            )
+
+    def save(self, commit=True):
+        comment = super().save(commit=False)  # type: DiningComment
+
+        if commit:
+            with transaction.atomic():
+                comment.save()
+                if comment.email_sent:
+                    self.send_email()
+
+        return comment
 
 
 class SendReminderForm(forms.Form):

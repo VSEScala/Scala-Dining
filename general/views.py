@@ -65,10 +65,12 @@ class SiteUpdateView(LoginRequiredMixin, ListView):
     @staticmethod
     def has_new_update(user):
         """Checks whether a new update for the given user is present."""
-        visit_timestamp = PageVisitTracker.get_latest_visit("updates", user)
-        if visit_timestamp is None:
-            return False
-        return SiteUpdate.objects.latest("date").date > visit_timestamp
+        # Disabled to reduces queries on page load
+        return False
+        # visit_timestamp = PageVisitTracker.get_latest_visit("updates", user)
+        # if visit_timestamp is None:
+        #     return False
+        # return SiteUpdate.objects.latest("date").date > visit_timestamp
 
 
 class HelpPageView(TemplateView):
@@ -108,11 +110,13 @@ class RulesPageView(View):
     @staticmethod
     def has_new_update(user):
         """Checks whether a new update for the given user is present."""
-        visit_timestamp = PageVisitTracker.get_latest_visit("rules", user)
-        if visit_timestamp is None:
-            return False
-
-        return RulesPageView.change_date > visit_timestamp
+        # Disabled to reduce queries on page load
+        return False
+        # visit_timestamp = PageVisitTracker.get_latest_visit("rules", user)
+        # if visit_timestamp is None:
+        #     return False
+        #
+        # return RulesPageView.change_date > visit_timestamp
 
 
 class UpgradeBalanceInstructionsView(TemplateView):

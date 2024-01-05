@@ -4,6 +4,7 @@ from django.urls import include, path
 from userdetails.views import (
     DiningClaimHistoryView,
     DiningJoinHistoryView,
+    EmailTestView,
     PeopleAutocompleteView,
     RegisterView,
 )
@@ -123,4 +124,5 @@ urlpatterns = [
         PeopleAutocompleteView.as_view(),
         name="people_autocomplete",
     ),
+    path("emailtest/", EmailTestView.as_view(), name="email_test"),
 ]

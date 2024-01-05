@@ -9,6 +9,7 @@ Args:
     field: The field to render.
     horizontal: See above.
     hide_asterisk: Hides the red 'required' asterisk.
+    label_add_class: Additional label classes.
 {% endcomment %}
 {% load widget_tweaks %}
 {% load static %}
@@ -25,7 +26,8 @@ Args:
         {% include 'snippets/bootstrap_form/modelselect2.html' %}
     {% else %}
         {# Default Bootstrap field (prob some text input) #}
-        <label for="{{ field.id_for_label }}" class="{% if horizontal %}col-sm-2 col-form-label{% endif %}">
+        <label for="{{ field.id_for_label }}"
+               class="{% if horizontal %}col-sm-2 col-form-label{% endif %} {{ label_add_class }}">
             {{ field.label }}
             {% if field.field.required and not hide_asterisk %}
                 <span class="text-danger">*</span>
