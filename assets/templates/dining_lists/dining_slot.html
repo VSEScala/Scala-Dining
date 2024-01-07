@@ -11,15 +11,15 @@
     {# Add space to bottom for the navigation tabs #}
     <div style="margin-bottom: 150px;">{% block details%}{% endblock details %}</div>
 
-    {# Navigation tabs #}
-    <div class="fixed-bottom bg-light">
+    <div class="fixed-bottom bg-light text-dark">
         <div class="container text-center">
-            <p class="lead">
-                {{ dining_list.association }} - {{ dining_list.date|date:"l j F" }}
+            <p class="lead my-1">
+                {{ dining_list.association }} – {{ dining_list.date|date:"l"|capfirst }} {{ dining_list.date|date:"DATE_FORMAT" }}
             </p>
             <div class="row">
                 <div class="col px-1">
-                    <a class="btn btn-primary btn-block dining-nav {% block tab_info %}{% endblock %}"
+                    <a class="btn btn-primary btn-block {% block tab_info %}{% endblock %}"
+                       style="border-radius: 10px 10px 0 0;"
                        href="{% url 'slot_details' day=date.day month=date.month year=date.year identifier=dining_list.association.slug %}">
                         <span class="h4">
                             <i class="fas fa-info"></i>
@@ -34,7 +34,8 @@
                     </a>
                 </div>
                 <div class="col px-1">
-                    <a class="btn btn-primary btn-block dining-nav {% block tab_list %}{% endblock %}"
+                    <a class="btn btn-primary btn-block {% block tab_list %}{% endblock %}"
+                       style="border-radius: 10px 10px 0 0;"
                        href="{% url 'slot_list' day=date.day month=date.month year=date.year identifier=dining_list.association.slug %}">
                         <span class="h4">
                             <i class="fas fa-list-ul"></i>
@@ -43,7 +44,8 @@
                     </a>
                 </div>
                 <div class="col px-1">
-                    <a class="btn btn-primary btn-block dining-nav {% block tab_allergy %}{% endblock %}"
+                    <a class="btn btn-primary btn-block {% block tab_allergy %}{% endblock %}"
+                       style="border-radius: 10px 10px 0 0;"
                        href="{% url 'slot_allergy' day=date.day month=date.month year=date.year identifier=dining_list.association.slug %}">
                         <span class="h4">
                             <i class="fas fa-sticky-note"></i>
