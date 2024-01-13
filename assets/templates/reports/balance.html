@@ -1,0 +1,39 @@
+{% extends 'reports/base.html' %}
+
+{% block report %}
+    <h2>Balance report <small class="text-muted">{{ period }}</small></h2>
+
+    {% url 'reports:balance' as url %}{% include 'reports/snippets/controls.html' %}
+
+    <table class="table table-sm">
+        <thead>
+        <tr>
+            <th scope="col">Account</th>
+            <th scope="col" class="text-right">Start balance</th>
+            <th scope="col" class="text-right">Increase</th>
+            <th scope="col" class="text-right">Reduction</th>
+            <th scope="col" class="text-right">End balance</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for account, statement in rows %}
+            <tr class="{% if account.special %}table-primary{% elif account.association %}table-secondary{% else %}table-dark{% endif %}">
+                <td>
+                    {% if account.special %}
+                        {{ account.get_special_display }}
+                    {% elif account.association %}
+                        {{ account.association.get_short_name }}
+                    {% else %}
+                        User accounts<br>
+                        <small class="text-muted">Sum of the balances of all user accounts.</small>
+                    {% endif %}
+                </td>
+                <td class="text-right">{{ statement.start_balance|default_if_none:"" }}</td>
+                <td class="text-right">{{ statement.increase|default_if_none:"" }}</td>
+                <td class="text-right">{{ statement.reduction|default_if_none:"" }}</td>
+                <td class="text-right">{{ statement.end_balance|default_if_none:"" }}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+{% endblock %}

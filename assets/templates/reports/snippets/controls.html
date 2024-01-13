@@ -1,0 +1,32 @@
+{% comment %}
+Reporting period controls.
+
+Context variables:
+    url: Needs to be set to the current page url.
+    use_views: When True, the view controls (yearly/quarterly/monthly) will be shown,
+        else they will be hidden.
+    year: The current year.
+    view: The current view.
+{% endcomment %}
+<div class="mb-3">
+    <a href="{{ url }}?view={{ period.view_name }}&period={{ period.previous.url_param }}{{ additional_query }}"
+       class="btn btn-secondary btn-sm">
+        <i class="fas fa-chevron-left"></i>
+        Previous period
+    </a>
+    <a href="{{ url }}?view={{ period.view_name }}&period={{ period.next.url_param }}{{ additional_query }}"
+       class="btn btn-secondary btn-sm">
+        <i class="fas fa-chevron-right"></i>
+        Next period
+    </a>
+    {% if view_choice %}
+        <div class="btn-group btn-group-sm">
+            {% for p in period.get_switcher %}
+                <a href="{{ url }}?view={{ p.view_name }}&period={{ p.url_param }}{{ additional_query }}"
+                   class="btn btn-secondary {% if p.view_name == period.view_name %}disabled{% endif %}">
+                    {{ p.view_display_name }}
+                </a>
+            {% endfor %}
+        </div>
+    {% endif %}
+</div>

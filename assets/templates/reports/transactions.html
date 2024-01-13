@@ -1,0 +1,43 @@
+{% extends 'reports/base.html' %}
+
+{% block report %}
+    <h2>Site transactions <small class="text-muted">{{ period }}</small></h2>
+
+    {% url 'reports:transactions' as url %}{% include 'reports/snippets/controls.html' %}
+
+    <p class="lead">
+        Site transactions between any association or bookkeeping account, <em>excluding</em>
+        transactions to or from any user account.
+        These excluded transactions are usually deposits, withdrawals or kitchen payments.
+    </p>
+    <table class="table table-sm">
+        <thead>
+        <tr>
+            <th scope="col">Date (dd-mm)</th>
+            <th scope="col">Source</th>
+            <th scope="col">Destination</th>
+            <th scope="col" class="text-right">Amount</th>
+            <th scope="col">Description</th>
+            <th scope="col">Created by</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for tx in transactions %}
+            <tr>
+                <td>{{ tx.moment|date:"d-m" }}</td>
+                <td class="{% if tx.source.special %}bg-primary{% endif %}">
+                    {% if tx.source.association %}{{ tx.source.association.get_short_name }}
+                    {% else %}{{ tx.source }}{% endif %}
+                </td>
+                <td class="{% if tx.target.special %}bg-primary{% endif %}">
+                    {% if tx.target.association %}{{ tx.target.association.get_short_name }}
+                    {% else %}{{ tx.target }}{% endif %}
+                </td>
+                <td class="text-right">{{ tx.amount }}</td>
+                <td>{{ tx.description }}</td>
+                <td>{{ tx.created_by }}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+{% endblock %}

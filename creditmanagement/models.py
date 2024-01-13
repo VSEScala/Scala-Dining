@@ -1,11 +1,11 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from decimal import Decimal
 from typing import Iterator, Optional, Union
 
 from django.core.validators import MinValueValidator
 from django.db import models
-from django.db.models import Q, QuerySet, Sum
-from django.utils import timezone
+from django.db.models import Case, F, Max, Q, QuerySet, Sum, When
+from django.utils.timezone import now
 
 from creditmanagement.csv import transactions_csv
 from userdetails.models import Association, User
@@ -127,6 +127,96 @@ class TransactionQuerySet(QuerySet):
         """Returns an iterator yielding a CSV file."""
         return transactions_csv(self)
 
+    def group_by_account(self, group_users=False, key="account"):
+        """Group transactions by source and target account.
+
+        Args:
+            group_users: If True, user accounts are grouped together and given
+                key `None`.
+            key: The name given to the account ID annotation.
+
+        Returns:
+            A Transaction QuerySet tuple with respectively the source and
+            target grouped by account.
+        """
+        if group_users:
+            # Set the group key to NULL for all user accounts
+            source_query = Case(
+                When(source__user__isnull=False, then=None), default="source"
+            )
+            target_query = Case(
+                When(target__user__isnull=False, then=None), default="target"
+            )
+        else:
+            source_query = F("source")
+            target_query = F("target")
+
+        # Annotate and group by key
+        return (
+            self.annotate(**{key: source_query}).values(key),
+            self.annotate(**{key: target_query}).values(key),
+        )
+
+    def sum_by_account(
+        self, group_users=False, latest=False
+    ) -> dict[int | None, tuple[Decimal, Decimal] | tuple[Decimal, Decimal, datetime]]:
+        """Sums the amounts in the QuerySet, grouped by account.
+
+        Computes for each account that occurs in the QuerySet, the total
+        balance increase and decrease sum, over all transactions in this
+        QuerySet.
+
+        Args:
+            group_users: See `TransactionQuerySet.group_by_account`.
+            latest: When `True`, include the last transaction date in the tuple.
+
+        Returns:
+            A dictionary with as key the account id or None when the account is
+            for a user and group_users is True. The value is a tuple with the
+            increase and reduce sum (possibly 0).
+        """
+        source_qs, target_qs = self.group_by_account(group_users=group_users)
+
+        reduction = source_qs.annotate(reduction=Sum("amount"))
+        increase = target_qs.annotate(increase=Sum("amount"))
+
+        if latest:
+            reduction = reduction.annotate(last_source_tx=Max("moment"))
+            increase = increase.annotate(last_target_tx=Max("moment"))
+
+        # Merge on account key
+        merged = {e["account"]: dict(e) for e in reduction}
+        for e in increase:
+            merged.setdefault(e["account"], {}).update(e)
+
+        # Convert to (increase, reduction) tuple
+        result = {
+            account: (
+                val.get("increase", Decimal("0.00")),
+                val.get("reduction", Decimal("0.00")),
+            )
+            for account, val in merged.items()
+        }
+
+        if latest:
+            # Add latest transaction moment
+            #
+            # The tuple becomes (increase, reduction, last_date)
+            min_date = datetime(1, 1, 1, tzinfo=timezone.utc)
+            result = {
+                account: (
+                    increase,
+                    reduction,
+                    max(
+                        merged[account].get("last_source_tx", min_date),
+                        merged[account].get("last_target_tx", min_date),
+                    ),
+                )
+                for account, (increase, reduction) in result.items()
+            }
+
+        return result
+
 
 class Transaction(models.Model):
     # We do not enforce that source != target because those rows are not harmful.
@@ -140,13 +230,17 @@ class Transaction(models.Model):
     amount = models.DecimalField(
         decimal_places=2, max_digits=8, validators=[MinValueValidator(Decimal("0.01"))]
     )
-    moment = models.DateTimeField(default=timezone.now)
+    moment = models.DateTimeField(default=now)
     description = models.CharField(max_length=1000)
     created_by = models.ForeignKey(
         User, on_delete=models.PROTECT, related_name="transaction_set"
     )
 
     objects = TransactionQuerySet.as_manager()
+
+    # This model should not have a default ordering because that probably
+    # breaks stuff like `sum_by_account`. See
+    # https://stackoverflow.com/a/1341667/2373688
 
     def reversal(self, reverted_by: User):
         """Returns a reversal transaction for this transaction (unsaved)."""
@@ -158,3 +252,6 @@ class Transaction(models.Model):
             description=f'Refund "{self.description}"',
             created_by=reverted_by,
         )
+
+    def __str__(self):
+        return f"{self.source} -> {self.target} - {self.amount}"

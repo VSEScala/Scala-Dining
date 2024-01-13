@@ -5,7 +5,7 @@ from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import BadRequest, PermissionDenied
 from django.core.paginator import Paginator
-from django.db.models import Count, Q, Sum
+from django.db.models import Q, Sum
 from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
@@ -16,8 +16,6 @@ from django.views.generic import DetailView, FormView, ListView, TemplateView
 from creditmanagement.forms import ClearOpenExpensesForm, SiteWideTransactionForm
 from creditmanagement.models import Account, Transaction
 from creditmanagement.views import TransactionFormView
-from dining.models import DiningEntry, DiningList
-from general.views import DateRangeFilterMixin
 from userdetails.forms import AssociationSettingsForm
 from userdetails.models import Association, User, UserMembership
 
@@ -200,66 +198,6 @@ class AssociationSettingsView(AssociationBoardMixin, TemplateView):
         context = self.get_context_data()
         context["form"] = form
         return render(request, self.template_name, context)
-
-
-class SiteDiningView(
-    AssociationBoardMixin,
-    AssociationHasSiteAccessMixin,
-    DateRangeFilterMixin,
-    TemplateView,
-):
-    template_name = "accounts/site_dining_stats.html"
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-
-        if self.date_range_form.is_valid():
-            dining_lists = DiningList.objects.filter(
-                date__gte=self.date_start, date__lte=self.date_end
-            )
-            association_stats = {}
-
-            # Get general data for each association
-            for association in Association.objects.all():
-                # Some general statistics
-                cooked_for = DiningEntry.objects.filter(
-                    dining_list__association=association, dining_list__in=dining_lists
-                )
-                memberships = UserMembership.objects.filter(
-                    association=association, is_verified=True
-                )
-                members = User.objects.filter(usermembership__in=memberships)
-
-                cooked_for_own = cooked_for.filter(user__in=members)
-
-                association_stats[association.id] = {
-                    "association": association,
-                    "lists_claimed": dining_lists.filter(
-                        association=association
-                    ).count(),
-                    "cooked_for": cooked_for.count(),
-                    "cooked_for_own": cooked_for_own.count(),
-                    "weighted_eaters": 0,
-                }
-            # Get general data for all members. Note: this is done here as the length of members is significantly longer
-            # than the number of associations so this should be quicker
-            users = User.objects.filter(
-                diningentry__dining_list__in=dining_lists
-            ).annotate(dining_entry_count=Count("diningentry"))
-
-            for user in users:
-                memberships = UserMembership.objects.filter(
-                    is_verified=True, related_user=user
-                )
-                if memberships:
-                    user_weight = user.dining_entry_count / memberships.count()
-
-                    for membership in memberships:
-                        association_stats[membership.association_id][
-                            "weighted_eaters"
-                        ] += user_weight
-            context["stats"] = association_stats
-        return context
 
 
 class SiteCreditView(

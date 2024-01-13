@@ -24,10 +24,6 @@
 
         {% if association.has_site_stats_access %}
             <li class="nav-item">
-                <a class="nav-link{% block tab_site_dining %}{% endblock %}"
-                   href="{% url 'association_site_dining_stats' slug=association.slug %}">Site Dining</a>
-            </li>
-            <li class="nav-item">
                 <a class="nav-link{% block tab_site_credits %}{% endblock %}"
                    href="{% url 'association_site_credit_stats' slug=association.slug %}">Site Credits</a>
             </li>
