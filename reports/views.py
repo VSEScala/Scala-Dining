@@ -16,7 +16,10 @@ from userdetails.models import Association, UserMembership
 
 class ReportAccessMixin(UserPassesTestMixin):
     def test_func(self):
-        return self.request.user.has_site_stats_access()
+        return (
+            self.request.user.is_authenticated
+            and self.request.user.has_site_stats_access()
+        )
 
 
 class ReportsView(ReportAccessMixin, TemplateView):
