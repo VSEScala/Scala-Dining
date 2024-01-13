@@ -3,7 +3,7 @@ from datetime import date, datetime
 
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.core.exceptions import NON_FIELD_ERRORS, PermissionDenied
+from django.core.exceptions import NON_FIELD_ERRORS, BadRequest, PermissionDenied
 from django.db import transaction
 from django.db.models import Count, Q
 from django.http import (
@@ -91,24 +91,18 @@ class DayMixin:
 
 
 class DayView(LoginRequiredMixin, DayMixin, TemplateView):
-    """Shows the dining lists on a given date.
-
-    Task:
-    -   display all occupied dining slots
-    -   allow for additional dining slots to be made if place is available
-    """
+    """Shows the dining lists on a given date."""
 
     template_name = "dining_lists/dining_day.html"
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-
-        context["dining_lists"] = DiningList.objects.filter(date=self.date)
-        context["Announcements"] = DiningDayAnnouncement.objects.filter(date=self.date)
-
-        # Make the view clickable
-        context["interactive"] = True
-
+        context.update(
+            {
+                "dining_lists": DiningList.objects.filter(date=self.date),
+                "announcements": DiningDayAnnouncement.objects.filter(date=self.date),
+            }
+        )
         return context
 
 
@@ -258,7 +252,7 @@ class UpdateSlotViewTrackerMixin:
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         # Get the amount of messages
-        context["comments_total"] = self.dining_list.diningcomment_set.count()
+        context["comments_total"] = self.dining_list.comments.count()
         # Get the amount of unread messages
         view_time = DiningCommentVisitTracker.get_latest_visit(
             user=self.request.user, dining_list=self.dining_list
@@ -266,7 +260,7 @@ class UpdateSlotViewTrackerMixin:
         if view_time is None:
             context["comments_unread"] = context["comments_total"]
         else:
-            context["comments_unread"] = self.dining_list.diningcomment_set.filter(
+            context["comments_unread"] = self.dining_list.comments.filter(
                 timestamp__gte=view_time
             ).count()
 
@@ -466,6 +460,7 @@ class SlotInfoView(
                 "instance": DiningComment(
                     dining_list=self.dining_list, poster=self.request.user
                 ),
+                "email_all_diners": self.dining_list.is_owner(self.request.user),
             }
         )
         return kwargs
@@ -477,15 +472,16 @@ class SlotInfoView(
         context = super().get_context_data(**kwargs)
         context.update(
             {
-                "comments": self.dining_list.diningcomment_set.order_by(
+                "comments": self.dining_list.comments.select_related("poster").order_by(
                     "-pinned_to_top", "timestamp"
-                ).all(),
+                ),
                 "last_visited": DiningCommentVisitTracker.get_latest_visit(
                     user=self.request.user, dining_list=self.dining_list, update=True
                 ),
                 "number_of_allergies": self.dining_list.internal_dining_entries()
                 .exclude(user__allergies="")
                 .count(),
+                "is_owner": self.dining_list.is_owner(self.request.user),
             }
         )
         return context
@@ -493,6 +489,28 @@ class SlotInfoView(
     def form_valid(self, form):
         form.save()
         return super().form_valid(form)
+
+    def post(self, request, *args, **kwargs):
+        """This method handles comment actions."""
+        comment_action = request.POST.get("comment_action")
+        if comment_action:
+            comment = get_object_or_404(DiningComment, pk=request.POST.get("pk"))
+            # Deletion
+            if comment_action == "delete":
+                if not comment.can_delete(self.request.user):
+                    raise PermissionDenied
+                comment.mark_deleted()
+            # Pinning
+            elif comment_action == "pin" or comment_action == "unpin":
+                if not comment.can_pin(self.request.user):
+                    raise PermissionDenied
+                comment.pinned_to_top = comment_action == "pin"
+                comment.save()
+            else:
+                raise BadRequest
+            return redirect(self.dining_list)
+        else:
+            return super().post(request, *args, **kwargs)
 
 
 class SlotAllergyView(SlotMixin, TemplateView):

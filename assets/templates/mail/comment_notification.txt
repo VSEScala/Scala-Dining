@@ -1,0 +1,10 @@
+{% load settings %}
+
+{{ comment.poster }} posted the following comment:
+
+{{ comment.message }}
+
+You can respond to {{ comment.poster }} by replying to this e-mail.
+
+View the dining list here:
+{% settings_value 'BASE_URL' %}{{ comment.dining_list.get_absolute_url }}

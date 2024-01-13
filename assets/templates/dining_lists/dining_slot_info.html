@@ -11,25 +11,29 @@
         </a>
     </p>
 
-    {% if dining_list.dish %}
-        <div class="row mb-3">
-            <div class="col-md-2"><strong><i class="fas fa-utensils fa-fw"></i> Dish</strong></div>
-            <div class="col-md-10">{{ dining_list.dish }}</div>
-        </div>
-    {% endif %}
+    <h3>
+        {{ dining_list.dish }}
+        {% if is_owner %}
+            <a class="btn btn-primary"
+               href="{% url 'slot_change' day=date.day month=date.month year=date.year identifier=dining_list.association.slug %}">
+                <i class="fas fa-edit"></i> Edit
+            </a>
+        {% endif %}
+
+    </h3>
 
     <div class="row mb-3">
         <div class="col-md-2">
-            <strong><i class="fas fa-user fa-fw"></i> Cook{{ dining_list.owners.count|pluralize }}</strong>
+            <strong>Cook{{ dining_list.owners.count|pluralize }}</strong>
         </div>
         <div class="col-md-10">
             {{ dining_list.owners.all|join:", " }}<br><small>{{ dining_list.association }}</small>
         </div>
     </div>
     <div class="row mb-3">
-        <div class="col-md-2"><strong><i class="fas fa-clock fa-fw"></i> Served at</strong></div>
+        <div class="col-md-2"><strong>Served at</strong></div>
         <div class="col-md-10">
-            {{ dining_list.date|date:"l j F Y"|capfirst }} {{ dining_list.serve_time|date:"H:i" }}
+            {{ dining_list.serve_time|date:"H:i" }}
         </div>
     </div>
     {% if dining_list.dining_cost %}
@@ -52,12 +56,12 @@
         </div>
     {% endif %}
     <div class="row mb-3">
-        <div class="col-md-2"><strong>{# <i class="fas fa-euro-sign fa-fw"></i> #} Kitchen cost</strong></div>
+        <div class="col-md-2"><strong>Kitchen cost</strong></div>
         <div class="col-md-10">{{ dining_list.kitchen_cost|euro }}<br><small>Automatically subtracted</small>
         </div>
     </div>
     <div class="row mb-3">
-        <div class="col-md-2"><strong><i class="fas fa-users fa-fw"></i> Diners</strong></div>
+        <div class="col-md-2"><strong>Diners</strong></div>
         <div class="col-md-10">
             {{ dining_list.dining_entries.count }}<br>
             <small>Maximum: {{ dining_list.max_diners }}</small>
@@ -84,14 +88,6 @@
 {#            {% endif %}#}
 {#        </div>#}
 
-    {% if dining_list|is_owner:user %}
-        <a class="btn btn-primary btn-block"
-           href="{% url 'slot_change' day=date.day month=date.month year=date.year identifier=dining_list.association.slug %}">
-            <i class="fas fa-edit"></i> Change information
-        </a>
-    {% endif %}
-
-    <hr>
 
     {# Current user status #}
     {% if dining_list|has_joined:user %}
@@ -105,20 +101,22 @@
     {% endif %}
 
     {# Join/leave/add others buttons #}
-    <div class="row mt-3">
+    <div class="row">
         {# Join/leave #}
         <div class="col-md-6">
             {% with entry=dining_list|get_entry:user %}
                 {% if entry %}
                     {% if entry|can_delete_entry:user %}
-                        <form method="post" action="{% url 'entry_delete' pk=entry.pk %}?next={{ request.path_info }}">
+                        <form method="post"
+                              class="remember-scroll"
+                              action="{% url 'entry_delete' pk=entry.pk %}?next={{ request.path_info }}">
                             {% csrf_token %}
                             <button type="submit" class="btn btn-block btn-outline-warning">Sign out</button>
                         </form>
                     {% endif %}
                 {% elif dining_list|can_join:user %}
                     {% url 'entry_add' day=date.day month=date.month year=date.year identifier=dining_list.association.slug as url %}
-                    <form method="post" action="{{ url }}?next={{ request.path_info }}">
+                    <form method="post" class="remember-scroll" action="{{ url }}?next={{ request.path_info }}">
                         {% csrf_token %}
                         <input type="hidden" name="user" value="{{ user.pk|unlocalize }}">
                         <button type="submit" class="btn btn-block btn-primary">Sign up</button>
@@ -135,14 +133,84 @@
         </div>
     </div>
 
-    <hr>
+    <h4 id="comments" class="mt-4">Comments {% if comments %}({{ comments|length }}){% endif %}</h4>
+
     {% for comment in comments %}
-        {% include 'snippets/snippet_comments.html' %}
+        {% if comment.deleted %}
+            <div class="card mt-3 text-muted">
+                <div class="card-body"><em>Comment deleted</em></div>
+            </div>
+        {% else %}
+            <div class="card mt-3 {% if comment.pinned_to_top %}border-info{% endif %}">
+                <h5 class="card-header d-flex align-items-center">
+                    <span>
+                        {% if comment.timestamp > last_visited %}<span class="badge badge-warning">New</span>{% endif %}
+                        {% if comment.pinned_to_top %}<i class="fas fa-thumbtack fa-fw text-info"></i>{% endif %}
+                        {% if comment.email_sent %}<i class="fas fa-paper-plane fa-fw"></i>{% endif %}
+                        {{ comment.poster }}
+                        <small class="text-muted">{{ comment.timestamp|naturaltime }}</small>
+                    </span>
+
+                    <span class="ml-auto d-flex">
+                        {# Pin button #}
+                        {% if is_owner %}
+                            <form method="post"
+                                  class="mr-1 remember-scroll"
+                                  action="{{ dining_list.get_absolute_url }}">
+                                {% csrf_token %}
+                                <input type="hidden" name="pk" value="{{ comment.pk|unlocalize }}">
+                                <button type="submit"
+                                        name="comment_action"
+                                        value="{% if comment.pinned_to_top %}unpin{% else %}pin{% endif %}"
+                                        class="btn btn-outline-light btn-sm">
+                                    {% if comment.pinned_to_top %}Unpin{% else %}Pin{% endif %}
+                                </button>
+                            </form>
+                        {% endif %}
+                        {# Delete button #}
+                        {% if comment.poster == user or is_owner %}
+                            <form method="post"
+                                  class="remember-scroll"
+                                  onsubmit="return confirm('Do you want to delete this comment?')"
+                                  action="{{ dining_list.get_absolute_url }}">
+                                {% csrf_token %}
+                                <input type="hidden" name="pk" value="{{ comment.pk|unlocalize }}">
+                                <button type="submit"
+                                        name="comment_action"
+                                        value="delete"
+                                        class="btn btn-outline-light btn-sm">
+                                    <span class="sr-only">Delete</span>
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </form>
+                        {% endif %}
+                    </span>
+                </h5>
+                <div class="card-body dining-list-comment">{{ comment.message|urlize|linebreaks }}</div>
+            </div>
+        {% endif %}
+    {% empty %}
+        <div class="card mt-3 text-muted">
+            <div class="card-body">No comments</div>
+        </div>
     {% endfor %}
+
     <form method="post"
+          class="mt-3 remember-scroll"
+            {# This onsubmit prevents double form submissions. It works surprisingly well. #}
+          onsubmit="if (this.dataset.submitted === '1') { event.preventDefault() } else { this.dataset.submitted = '1' }"
           action="{% url 'slot_details' day=date.day month=date.month year=date.year identifier=dining_list.association.slug %}">
         {% csrf_token %}
-        {% include 'snippets/bootstrap_form.html' with hide_asterisk=True %}
-        <button type="submit" class="btn btn-primary">Post comment</button>
+        {% include 'snippets/bootstrap_form_non_field_errors.html' %}
+        {% include 'snippets/bootstrap_form_field.html' with field=form.message label_add_class="sr-only" %}
+        <div class="row">
+            <div class="col-3 col-sm-2">
+                <button type="submit" class="btn btn-primary btn-block">Post</button>
+            </div>
+            <div class="col-9 col-sm-10" style="margin-bottom: -1rem;">
+                {% include 'snippets/bootstrap_form_field.html' with field=form.email_sent %}
+
+            </div>
+        </div>
     </form>
 {% endblock details %}

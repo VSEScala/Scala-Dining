@@ -1,0 +1,3 @@
+{% load settings %}
+Recipient: {{ recipient }}
+Index URL: {% settings_value 'BASE_URL' %}{% url 'index' %}

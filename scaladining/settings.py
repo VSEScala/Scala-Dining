@@ -92,7 +92,8 @@ TEMPLATES = [
 ]
 
 # https://docs.djangoproject.com/en/4.1/ref/settings/#internal-ips
-INTERNAL_IPS = env.list("DINING_INTERNAL_IPS", default="")
+if "DINING_INTERNAL_IP" in os.environ:
+    INTERNAL_IPS = [os.environ["DINING_INTERNAL_IP"]]
 
 WSGI_APPLICATION = "scaladining.wsgi.application"
 
@@ -191,3 +192,6 @@ SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 DEFAULT_AUTO_FIELD = "django.db.models.AutoField"
 
 SITE_BANNER = env.str("DINING_SITE_BANNER", default=None)
+
+# The base URL without trailing /, i.e. https://dining.studentencultuur.nl
+BASE_URL = os.environ.get("DINING_BASE_URL", "http://localhost:8000")

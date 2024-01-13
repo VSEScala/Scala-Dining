@@ -8,6 +8,10 @@ from django.template.loader import render_to_string
 
 from userdetails.models import User
 
+"""
+Deprecated: the method User.send_email() is simpler and can replace the functions in this module.
+"""
+
 
 def get_mail_context(
     recipient: User, extra_context: dict = None, request: HttpRequest = None
@@ -59,6 +63,7 @@ def construct_templated_mail(
     return messages
 
 
+# Deprecated
 def send_templated_mail(
     template_dir: str, recipients, context: dict = None, request=None
 ):

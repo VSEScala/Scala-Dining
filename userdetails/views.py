@@ -1,9 +1,13 @@
 from dal_select2.views import Select2QuerySetView
 from django.contrib.auth import login
-from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.db.models import Value
 from django.db.models.functions import Concat
+from django.http import HttpResponse
 from django.urls import reverse_lazy
+from django.utils.decorators import method_decorator
+from django.views import View
+from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import FormView, ListView
 
 from dining.models import DiningEntry, DiningList
@@ -58,3 +62,22 @@ class PeopleAutocompleteView(LoginRequiredMixin, Select2QuerySetView):
 
     def get_result_label(self, result):
         return result.get_full_name()
+
+
+@method_decorator(csrf_exempt, name="dispatch")
+class EmailTestView(UserPassesTestMixin, View):
+    """When POSTed, sends a test e-mail to the current user."""
+
+    def test_func(self):
+        """Requires the user to be a superuser."""
+        return self.request.user.is_superuser
+
+    def get(self, request):
+        # Not really valid HTML5 but browsers don't seem to mind
+        return HttpResponse(
+            "<form method='post'><button type='submit'>Send</button></form>"
+        )
+
+    def post(self, request):
+        self.request.user.send_email("mail/test.txt", "mail/test_subject.txt")
+        return HttpResponse("<p>E-mail sent</p>")

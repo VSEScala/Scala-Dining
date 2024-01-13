@@ -1,10 +1,6 @@
-from django.contrib import admin
-
-from general.models import SiteUpdate
-
-
-class SiteUpdateAdmin(admin.ModelAdmin):
-    pass
+# from django.contrib import admin
+#
+# from general.models import SiteUpdate
 
 
-admin.site.register(SiteUpdate, SiteUpdateAdmin)
+# admin.site.register(SiteUpdate, SiteUpdateAdmin)

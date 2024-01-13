@@ -1,4 +1,4 @@
-{% with balance=user.account.get_balance %}
+{% with balance=user.account.balance %}
     {% if not user.has_min_balance_exception and balance < 0 %}
         <div class="alert d-flex justify-content-between align-items-center {% if balance < MINIMUM_BALANCE_FOR_DINING_SIGN_UP %}alert-danger{% else %}alert-warning{% endif %}"
              role="alert">

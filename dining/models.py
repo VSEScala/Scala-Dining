@@ -1,4 +1,4 @@
-from datetime import datetime, time
+from datetime import datetime, time, timedelta
 from decimal import Decimal
 
 from django.conf import settings
@@ -7,6 +7,7 @@ from django.core.validators import MinValueValidator
 from django.db import models
 from django.db.models import Sum
 from django.utils import timezone
+from django.utils.timezone import now
 
 from creditmanagement.models import Transaction
 from general.models import AbstractVisitTracker
@@ -165,6 +166,11 @@ class DiningList(models.Model):
                     }
                 )
 
+    def recently_commented(self) -> bool:
+        """Returns True if the last comment is posted less than 12h ago."""
+        last = self.comments.order_by("-timestamp").first()
+        return last and last.timestamp > now() - timedelta(hours=12)
+
 
 class DiningEntryManager(models.Manager):
     def internal(self):
@@ -236,11 +242,32 @@ class DiningEntry(models.Model):
 
 
 class DiningComment(models.Model):
-    dining_list = models.ForeignKey(DiningList, on_delete=models.CASCADE)
+    dining_list = models.ForeignKey(
+        DiningList, on_delete=models.CASCADE, related_name="comments"
+    )
     timestamp = models.DateTimeField(default=timezone.now)
-    poster = models.ForeignKey(User, on_delete=models.PROTECT)
+    poster = models.ForeignKey(User, on_delete=models.PROTECT, related_name="comments")
     message = models.TextField()
     pinned_to_top = models.BooleanField(default=False)
+    email_sent = models.BooleanField(
+        default=False,
+        help_text="Whether an e-mail notification was sent for this comment.",
+    )
+    deleted = models.BooleanField(default=False)
+
+    def can_delete(self, user) -> bool:
+        """Returns True if the user is the owner or poster."""
+        return self.poster == user or self.dining_list.is_owner(user)
+
+    def can_pin(self, user) -> bool:
+        """Returns True if the user is owner of the dining list."""
+        return self.dining_list.is_owner(user)
+
+    def mark_deleted(self):
+        """Marks as deleted and saves."""
+        self.pinned_to_top = False
+        self.deleted = True
+        self.save()
 
 
 class DiningCommentVisitTracker(AbstractVisitTracker):

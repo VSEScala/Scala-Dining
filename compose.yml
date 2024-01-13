@@ -12,6 +12,7 @@ services:
       DINING_ALLOWED_HOSTS: "*"
       DINING_DATABASE_URL: postgres://dining:dining@db/dining
       DINING_SITE_BANNER: "Development"
+      DINING_INTERNAL_IP: 172.18.0.1
     depends_on:
       - db
     volumes:

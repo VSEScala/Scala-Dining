@@ -54,13 +54,19 @@ class DiningDayAnnouncementAdmin(admin.ModelAdmin):
     list_filter = ("date", "slots_occupy")
 
 
-admin.site.register(DiningComment)
+@admin.register(DiningComment)
+class DiningCommentAdmin(admin.ModelAdmin):
+    list_display = ("dining_list", "timestamp", "poster", "message", "deleted")
+    search_fields = ("message",)
+    readonly_fields = ("dining_list", "timestamp", "poster", "email_sent")
+    ordering = ("-timestamp",)
+
+    def has_add_permission(self, request):
+        return False
 
 
 @admin.register(DeletedList)
 class DeletedListAdmin(admin.ModelAdmin):
-    # list_display = ('date', 'deleted_by')
-
     def has_add_permission(self, request):
         return False
 

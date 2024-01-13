@@ -1,0 +1,1 @@
+New comment for the dining list on {{ comment.dining_list.date|date:"SHORT_DATE_FORMAT" }}

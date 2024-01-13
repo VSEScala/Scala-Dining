@@ -5,6 +5,7 @@ from typing import Iterator, Optional, Union
 from django.core.validators import MinValueValidator
 from django.db import models
 from django.db.models import Case, F, Max, Q, QuerySet, Sum, When
+from django.utils.functional import cached_property
 from django.utils.timezone import now
 
 from creditmanagement.csv import transactions_csv
@@ -65,7 +66,9 @@ class Account(models.Model):
         ] or Decimal("0.00")
         return target_sum - source_sum
 
-    get_balance.short_description = "Balance"  # (used in admin site)
+    @cached_property
+    def balance(self) -> Decimal:
+        return self.get_balance()
 
     def get_entity(self) -> Union[User, Association, None]:
         """Returns the user or association for this account.
