@@ -52,6 +52,19 @@ class DiningList(models.Model):
     serve_time = models.TimeField(default=time(18, 00))
 
     dish = models.CharField(default="", max_length=100, blank=True)
+    dish_kind = models.CharField(
+        verbose_name="kind of dish",
+        max_length=20,
+        blank=True,
+        choices=[
+            ("", "Not specified"),
+            ("meat", "🍗 Contains meat"),
+            ("fish", "🐟 Contains fish"),
+            ("vegetarian", "🥕 Vegetarian"),
+            ("vegan", "🌿 Vegan"),
+        ],
+    )
+
     # The days adjustable is implemented to prevent adjustment in credits or aid due to a deletion of a user account.
     adjustable_duration = models.DurationField(
         default=settings.TRANSACTION_PENDING_DURATION,

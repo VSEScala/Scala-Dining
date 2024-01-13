@@ -5,13 +5,11 @@
 {% block tab_info %}active{% endblock %}
 
 {% block details %}
-    <p>
-        <a href="{% url 'day_view' day=dining_list.date.day month=dining_list.date.month year=dining_list.date.year %}">
-            ← Back to day
-        </a>
-    </p>
+    <a href="{% url 'day_view' day=dining_list.date.day month=dining_list.date.month year=dining_list.date.year %}">
+        ← Back to day
+    </a>
 
-    <h3>
+    <h3 class="mt-3">
         {{ dining_list.dish }}
         {% if is_owner %}
             <a class="btn btn-primary"
@@ -19,8 +17,11 @@
                 <i class="fas fa-edit"></i> Edit
             </a>
         {% endif %}
-
     </h3>
+
+    {% if dining_list.dish_kind %}
+        <h5 class="mb-3"><span class="badge badge-secondary">{{ dining_list.get_dish_kind_display }}</span></h5>
+    {% endif %}
 
     <div class="row mb-3">
         <div class="col-md-2">
@@ -30,6 +31,7 @@
             {{ dining_list.owners.all|join:", " }}<br><small>{{ dining_list.association }}</small>
         </div>
     </div>
+
     <div class="row mb-3">
         <div class="col-md-2"><strong>Served at</strong></div>
         <div class="col-md-10">
@@ -209,7 +211,6 @@
             </div>
             <div class="col-9 col-sm-10" style="margin-bottom: -1rem;">
                 {% include 'snippets/bootstrap_form_field.html' with field=form.email_sent %}
-
             </div>
         </div>
     </form>

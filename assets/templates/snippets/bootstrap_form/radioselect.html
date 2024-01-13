@@ -10,7 +10,8 @@
         <div class="custom-control custom-radio mb-2">
             {# django-widget-tweaks does not support the CheckboxSelectMultiple widget, #}
             {# therefore we have to render it manually, which is ugly. #}
-            <input type="radio" name="{{ field.name }}" value="{{ radio.data.value }}"
+            <input type="radio" name="{% if form.prefix %}{{ form.prefix }}-{% endif %}{{ field.name }}"
+                   value="{{ radio.data.value }}"
                    class="custom-control-input {% if form.is_bound %}{% if field.errors %}
                    is-invalid{% else %}is-valid{% endif %}{% endif %}"
                    id="{{ radio.id_for_label }}" {% if radio.data.selected %}checked{% endif %}
