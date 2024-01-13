@@ -2,7 +2,7 @@
  * UX utility: add the `remember-scroll` class to a form element on the page to restore
  * the scroll position after a POST redirect.
  */
-document.addEventListener('DOMContentLoaded', function () {
+window.addEventListener('load', function () {
     // If there is a saved scroll position, apply it
     let scroll = sessionStorage.getItem('scrollPosition');
     if (scroll) {
