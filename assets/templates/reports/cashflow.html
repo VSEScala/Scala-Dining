@@ -1,0 +1,43 @@
+{% extends 'reports/base.html' %}
+
+{% block nav %}
+    <a href="{% url 'reports:cashflow_index' %}">← Choose account</a>
+{% endblock %}
+
+{% block report %}
+    <h2>
+        Cash flow
+        <small class="text-muted">{{ account }} / {{ period }}</small>
+    </h2>
+
+    {% url 'reports:cashflow' pk=account.pk as url %}{% include 'reports/snippets/controls.html' %}
+
+    <p class="lead">
+        Inflow is in the direction from the opposite account towards
+        the <strong>{{ account }}</strong> account. Outflow is in the other direction.
+    </p>
+
+    <table class="table table-sm">
+        <thead>
+        <tr>
+            <th scope="col">Opposite account</th>
+            <th scope="col" class="text-right w-25">Inflow</th>
+            <th scope="col" class="text-right w-25">Outflow</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for account, inflow, outflow in statements %}
+            <tr class="{% if account.special %}table-primary{% elif account.association %}table-secondary{% else %}table-dark{% endif %}">
+                <td>
+                    {% if account %}{{ account }}
+                        <a href="{% url 'reports:cashflow' pk=account.pk %}?view={{ period.view_name }}&period={{ period.url_param }}">»</a>
+                    {% else %}User accounts
+                    {% endif %}
+                </td>
+                <td class="text-right">{{ inflow|default:"–" }}</td>
+                <td class="text-right">{{ outflow|default:"–" }}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+{% endblock %}

@@ -191,5 +191,7 @@ SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 DEFAULT_AUTO_FIELD = "django.db.models.AutoField"
 
+SITE_BANNER = env.str("DINING_SITE_BANNER", default=None)
+
 # The base URL without trailing /, i.e. https://dining.studentencultuur.nl
 BASE_URL = os.environ.get("DINING_BASE_URL", "http://localhost:8000")

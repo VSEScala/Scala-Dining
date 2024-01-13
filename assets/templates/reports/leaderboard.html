@@ -1,0 +1,77 @@
+{% extends 'reports/base.html' %}
+
+{% block report %}
+    <h2>Leaderboard <small class="text-muted">{{ period }}</small></h2>
+    {% include 'reports/snippets/controls.html' %}
+    <div class="row">
+        <div class="col-md-6">
+            <h4>Joined lists</h4>
+            <table class="table table-sm">
+                <thead>
+                <tr>
+                    <th scope="col">#</th>
+                    <th scope="col">Diner</th>
+                    <th scope="col" class="text-right">Lists joined</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for u in joiners %}
+                    <tr>
+                        <th scope="row">{{ forloop.counter }}</th>
+                        <td>
+                            {{ u }}<br>
+                            <small class="text-muted">
+                                {% for m in u.get_verified_memberships %}
+                                    {% if not forloop.first %}|{% endif %}
+                                    {{ m.association.get_short_name }}
+                                {% endfor %}
+                            </small>
+                        </td>
+                        <td class="text-right">
+                            {{ u.joined_lists }}
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+
+        </div>
+        <div class="col-md-6">
+            <h4>Owned lists</h4>
+            <table class="table table-sm">
+                <thead>
+                <tr>
+                    <th scope="col">#</th>
+                    <th scope="col">Diner</th>
+                    <th scope="col" class="text-right">Lists owned</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for u in owners %}
+                    <tr>
+                        <th scope="row">{{ forloop.counter }}</th>
+                        <td>
+                            {{ u }}
+                            <br>
+                            <small class="text-muted">
+                                {% for m in u.get_verified_memberships %}
+                                    {% if not forloop.first %}|{% endif %}
+                                    {{ m.association.get_short_name }}
+                                {% endfor %}
+                            </small>
+                        </td>
+                        <td class="text-right">
+                            {{ u.owned_lists }}
+                            <br>
+                        </td>
+                    </tr>
+                {% endfor %}
+
+                </tbody>
+            </table>
+
+        </div>
+    </div>
+
+
+{% endblock %}

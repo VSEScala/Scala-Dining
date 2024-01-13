@@ -9,34 +9,8 @@ from django.template.loader import TemplateDoesNotExist, get_template
 from django.utils.timezone import make_aware, now
 from django.views.generic import ListView, TemplateView, View
 
-from general.forms import DateRangeForm
 from general.models import PageVisitTracker, SiteUpdate
 from userdetails.models import Association
-
-
-class DateRangeFilterMixin:
-    """A mixin that retrieves a date range from GET query params."""
-
-    date_start = None
-    date_end = None
-    date_range_form = None
-
-    def dispatch(self, request, *args, **kwargs):
-        if "date_start" in request.GET and "date_end" in request.GET:
-            self.date_range_form = DateRangeForm(request.GET)
-        else:
-            self.date_range_form = DateRangeForm()
-
-        if self.date_range_form.is_valid():
-            self.date_start = self.date_range_form.cleaned_data["date_start"]
-            self.date_end = self.date_range_form.cleaned_data["date_end"]
-
-        return super().dispatch(request, *args, **kwargs)
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context["date_range_form"] = self.date_range_form
-        return context
 
 
 class SiteUpdateView(LoginRequiredMixin, ListView):

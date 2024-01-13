@@ -1,0 +1,67 @@
+{% extends 'reports/base.html' %}
+
+{% block report %}
+    <h2>
+        Cash flow matrix
+        <small class="text-muted">{{ period }}</small>
+    </h2>
+
+    {% url 'reports:cashflow_matrix' as url %}{% include 'reports/snippets/controls.html' %}
+
+    <div class="table-responsive">
+        <table class="table table-sm">
+            <thead>
+            <tr>
+                <td colspan="2" class="border-0"></td>
+                <th colspan="{{ accounts|length }}" class="text-center">To</th>
+            </tr>
+            <tr>
+                <td colspan="2" class="border-0"></td>
+                {% for account in accounts %}
+                    <th scope="col"
+                        style="width: 4.5rem;"
+                        class="text-center {% if account.special %}table-primary{% elif account.association %}
+                            table-secondary{% else %}table-dark{% endif %}">
+                        {% if account.special %}
+                            {{ account.get_special_display|truncatechars:6 }}
+                        {% elif account.association %}
+                            {{ account.association.get_short_name|truncatechars:6 }}
+                        {% else %}
+                            Users
+                        {% endif %}
+                    </th>
+                {% endfor %}
+            </tr>
+            </thead>
+            <tbody>
+            {% for account_from, row in table %}
+                <tr>
+                    {% if forloop.first %}
+                        <th scope="row"
+                            class="align-middle"
+                            rowspan="{{ accounts|length }}">From
+                        </th>
+                    {% endif %}
+                    <th scope="row"
+                        class="{% if account_from.special %}bg-primary{% elif account_from.association %}bg-secondary{% else %}bg-dark{% endif %}">
+                        {% if account_from.special %}
+                            {{ account_from.get_special_display }}
+                        {% elif account_from.association %}
+                            {{ account_from.association.get_short_name }}
+                        {% else %}
+                            Users
+                        {% endif %}
+                    </th>
+                    {% for account_to, amount in row %}
+                        {% if account_from == account_to %}
+                            <td class="text-center">×</td>
+                        {% else %}
+                            <td class="text-right">{{ amount|default:"" }}</td>
+                        {% endif %}
+                    {% endfor %}
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endblock %}

@@ -1,0 +1,48 @@
+{% extends 'reports/base.html' %}
+
+{% block report %}
+    <h2>Stale accounts</h2>
+    <p class="lead">
+        This report groups all <em>user</em> accounts on the site based on the
+        last transaction date of the account.
+        For instance, if the total number of accounts for 2020 Q1 was 48,
+        with a total balance of 61.50, it means that there are 48
+        users who made their latest transaction in quarter 1 of 2020
+        and their balances sum up to 61.50.
+    </p>
+    <p>
+        Positive and negative account balances are shown separately.
+        Association and bookkeeping accounts are not included in the report.
+    </p>
+    <table class="table table-sm">
+        <thead>
+        <tr>
+            <td></td>
+            <th scope="col" class="text-center" colspan="3">Number of accounts</th>
+            <th scope="col" class="text-center" colspan="3">Sum of account balances</th>
+        </tr>
+        <tr>
+            <th scope="col">Last transaction</th>
+            <th scope="col" class="text-right">Pos.</th>
+            <th scope="col" class="text-right">Neg.</th>
+            <th scope="col" class="text-right">Total</th>
+            <th scope="col" class="text-right">Pos.</th>
+            <th scope="col" class="text-right">Neg.</th>
+            <th scope="col" class="text-right">Total</th>
+        </tr>
+        </thead>
+    <tbody>
+    {% for quartile, counts in report_display %}
+        <tr>
+        <td>{{ quartile }}</td>
+        <td class="text-right">{{ counts.positive_count }}</td>
+        <td class="text-right">{{ counts.negative_count }}</td>
+        <td class="text-right">{{ counts.total_count }}</td>
+        <td class="text-right">{{ counts.positive_sum }}</td>
+        <td class="text-right">{{ counts.negative_sum }}</td>
+        <td class="text-right">{{ counts.total_sum }}</td>
+        </tr>
+    {% endfor %}
+    </tbody>
+    </table>
+{% endblock %}

@@ -1,0 +1,6 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    {% block nav %}<a href="{% url 'reports:index' %}">← View all reports</a>{% endblock %}
+    {% block report %}{% endblock %}
+{% endblock %}
