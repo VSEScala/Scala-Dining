@@ -473,7 +473,7 @@ class SlotInfoView(
         context.update(
             {
                 "comments": self.dining_list.comments.select_related("poster").order_by(
-                    "-pinned_to_top", "-timestamp"
+                    "-pinned_to_top", "timestamp"
                 ),
                 "last_visited": DiningCommentVisitTracker.get_latest_visit(
                     user=self.request.user, dining_list=self.dining_list, update=True

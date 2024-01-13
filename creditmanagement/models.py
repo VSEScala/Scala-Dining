@@ -5,8 +5,8 @@ from typing import Iterator, Optional, Union
 from django.core.validators import MinValueValidator
 from django.db import models
 from django.db.models import Case, F, Max, Q, QuerySet, Sum, When
-from django.utils.timezone import now
 from django.utils.functional import cached_property
+from django.utils.timezone import now
 
 from creditmanagement.csv import transactions_csv
 from userdetails.models import Association, User
