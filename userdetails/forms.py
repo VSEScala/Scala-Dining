@@ -5,6 +5,7 @@ from django.db import transaction
 from django.db.models import Q
 from django.forms import ModelForm
 
+from userdetails.allergens import ALLERGENS
 from userdetails.models import Association, User, UserMembership
 
 
@@ -25,27 +26,25 @@ class RegisterUserForm(UserCreationForm):
             "username",
             "password1",
             "password2",
-            "email",
             "first_name",
             "last_name",
-            "allergies",
+            "email",
+            # Expands to all allergen fields
+            *(allergen.model_field for allergen in ALLERGENS),
+            "other_allergy",
+            "food_preferences",
         )
-        field_classes = {
-            "username": UsernameField
-        }  # This adds HTML attributes for semantics, see UserCreationForm.
+        field_classes = {"username": UsernameField}
+        widgets = {
+            "food_preferences": forms.TextInput(
+                attrs={"list": "food_preference_options"}
+            )
+        }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields["first_name"].required = True
         self.fields["last_name"].required = True
-
-        # Set headings used during rendering.
-        #
-        # I don't like doing this here instead of in the template or view, but
-        # I don't know how to do that cleanly.
-        self.fields["username"].heading = "Account details"
-        self.fields["first_name"].heading = "Personal details"
-        self.fields["associations"].heading = "Memberships"
 
     def save(self, commit=True):
         """Saves user and creates the memberships."""
@@ -61,26 +60,28 @@ class RegisterUserForm(UserCreationForm):
 
 
 class UserForm(ModelForm):
-    name = forms.CharField(required=False)
-
     class Meta:
         model = User
-        fields = ("username", "name", "email", "other_allergy", "food_preferences")
+        fields = (
+            "username",
+            "other_allergy",
+            "food_preferences",
+            # This expands to all allergen model fields
+            *(allergen.model_field for allergen in ALLERGENS),
+        )
         widgets = {
             "food_preferences": forms.TextInput(
                 attrs={"list": "food_preference_options"}
             )
         }
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.fields["name"].disabled = True
-        self.fields["name"].initial = str(self.instance)
-        self.fields[
-            "name"
-        ].help_text = "Contact the site administrator if you want to change your name."
-        self.fields["email"].disabled = True
-        self.fields["email"].required = False  # To hide the asterisk.
+    def save(self, commit=True):
+        """Clears the no longer used allergies field on the model and saves."""
+        user = super().save(commit=False)
+        if commit:
+            user.allergies = ""
+            user.save()
+        return user
 
 
 class AssociationLinkForm(forms.Form):

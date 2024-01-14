@@ -5,6 +5,7 @@ from django.contrib.admin.widgets import FilteredSelectMultiple
 from django.contrib.auth.admin import GroupAdmin, UserAdmin
 from django.contrib.auth.models import Group
 
+from userdetails.allergens import ALLERGENS
 from userdetails.models import Association, User, UserMembership
 
 # Association model
@@ -125,7 +126,17 @@ class CustomUserAdmin(UserAdmin):
         ),
         (
             "Personal info",
-            {"fields": ("first_name", "last_name", "email", "allergies")},
+            {"fields": ("first_name", "last_name", "email")},
+        ),
+        (
+            "Food allergies or preferences",
+            {
+                "fields": (
+                    *(a.model_field for a in ALLERGENS),
+                    "other_allergy",
+                    "food_preferences",
+                )
+            },
         ),
         ("Important dates", {"fields": ("last_login", "date_joined")}),
     )

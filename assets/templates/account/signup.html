@@ -1,18 +1,46 @@
 {% extends 'account/base.html' %}
+{% load allergens %}
 {% load static %}
 
 {% block content %}
     <form method="post" action="{% url 'account_signup' %}">
         {% csrf_token %}
-        {% include "snippets/bootstrap_form.html" with horizontal=True %}
+        {% include 'snippets/bootstrap_form_non_field_errors.html' %}
+        {% include 'snippets/bootstrap_form_field.html' with horizontal=True field=form.username %}
+        {% include 'snippets/bootstrap_form_field.html' with horizontal=True field=form.password1 %}
+        {% include 'snippets/bootstrap_form_field.html' with horizontal=True field=form.password2 %}
+
+        <h3>Personal info</h3>
+        {% include 'snippets/bootstrap_form_field.html' with horizontal=True field=form.first_name %}
+        {% include 'snippets/bootstrap_form_field.html' with horizontal=True field=form.last_name %}
+        {% include 'snippets/bootstrap_form_field.html' with horizontal=True field=form.email %}
+
+        <h3>Memberships</h3>
+        {% include 'snippets/bootstrap_form_field.html' with horizontal=True field=form.associations %}
+
+        <h3>Food allergies or preferences</h3>
+        <div class="row mb-3">
+            <div class="col-sm-2">Allergies</div>
+            <div class="col-sm-10">
+                {% allergens_checkboxes %}
+            </div>
+        </div>
+        {% include 'snippets/bootstrap_form_field.html' with horizontal=True field=form.other_allergy %}
+        {% include 'snippets/bootstrap_form_field.html' with horizontal=True field=form.food_preferences %}
+        <datalist id="food_preference_options">
+            <option value="Vegetarian"></option>
+            <option value="Vegan"></option>
+            <option value="Pescetarian"></option>
+        </datalist>
+
         <p><span class="text-danger">*</span> required</p>
         <h3>Terms of service</h3>
         <p>
-            We care for your privacy, though due to the nature of the service we will openly display
-            your name on the dining lists you subscribe on. For full details check our
+            Your name will be openly displayed on dining lists that you join.
+            For full details check out the
             <a target="_blank" rel="noopener noreferrer"
-               href="{% static "files/Scala Dining App - Privacy Policy 8-4-17.pdf" %}">privacy policy</a>.
-            By using the site, you automatically agree to the
+               href="{% static "files/Scala Dining App - Privacy Policy 8-4-17.pdf" %}">privacy policy</a>
+            and
             <a target="_blank" rel="noopener noreferrer"
                href="{% static "files/Scala Dining App - User Agreement 8-4-17.pdf" %}">user agreement</a>.
         </p>
@@ -20,7 +48,7 @@
         <div class="custom-control custom-checkbox mb-3">
             <input type="checkbox" class="custom-control-input" id="tosCheck" required="required">
             <label class="custom-control-label" for="tosCheck">
-                I understand and accept the privacy policy and the user agreement.
+                I accept the privacy policy and user agreement.
             </label>
         </div>
         <button type="submit" class="btn btn-block btn-primary">Register</button>

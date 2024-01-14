@@ -21,10 +21,9 @@ class UserManager(DjangoUserManager):
 
 
 class User(AbstractUser):
-    email = models.EmailField("email address", unique=True)
+    email = models.EmailField("e-mail address", unique=True)
 
-    # Food allergies or preferences settings
-
+    # This field is no longer used and replaced by the fields below
     allergies = models.CharField(
         max_length=1000,
         blank=True,
@@ -32,30 +31,33 @@ class User(AbstractUser):
         verbose_name="food allergies or preferences",
     )
 
-    allergen_gluten = models.BooleanField(default=False)
-    allergen_egg = models.BooleanField(default=False)
-    allergen_fish = models.BooleanField(default=False)
-    allergen_peanuts = models.BooleanField(default=False)
-    allergen_nuts = models.BooleanField(default=False)
-    allergen_soya = models.BooleanField(default=False)
-    allergen_milk = models.BooleanField(default=False)
-    allergen_crustaceans = models.BooleanField(default=False)
-    allergen_molluscs = models.BooleanField(default=False)
-    allergen_celery = models.BooleanField(default=False)
-    allergen_mustard = models.BooleanField(default=False)
-    allergen_sesame = models.BooleanField(default=False)
-    allergen_sulphite = models.BooleanField(default=False)
-    allergen_lupin = models.BooleanField(default=False)
+    # Food allergies or preferences settings
+    allergen_gluten = models.BooleanField("gluten", default=False)
+    allergen_egg = models.BooleanField("egg", default=False)
+    allergen_fish = models.BooleanField("fish", default=False)
+    allergen_peanuts = models.BooleanField("peanuts", default=False)
+    allergen_nuts = models.BooleanField("nuts", default=False)
+    allergen_soya = models.BooleanField("soya", default=False)
+    allergen_milk = models.BooleanField("milk", default=False)
+    allergen_crustaceans = models.BooleanField("crustaceans", default=False)
+    allergen_molluscs = models.BooleanField("molluscs", default=False)
+    allergen_celery = models.BooleanField("celery", default=False)
+    allergen_mustard = models.BooleanField("mustard", default=False)
+    allergen_sesame = models.BooleanField("sesame", default=False)
+    allergen_sulphite = models.BooleanField("sulphite", default=False)
+    allergen_lupin = models.BooleanField("lupin", default=False)
 
     other_allergy = models.CharField(
+        verbose_name="other allergies",
         max_length=200,
         blank=True,
         help_text="If you have an other allergy not listed above, enter it here.",
     )
     food_preferences = models.CharField(
+        verbose_name="preferences",
         max_length=200,
         blank=True,
-        help_text="Preferences like vegetarian or vegan.",
+        help_text="Vegetarian, vegan or other food preferences.",
     )
 
     objects = UserManager()

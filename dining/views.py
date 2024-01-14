@@ -39,7 +39,9 @@ from dining.models import (
     DiningList,
 )
 from general.mail_control import send_templated_mail
+from userdetails.allergens import ALLERGENS
 from userdetails.models import Association, User
+from userdetails.templatetags.allergens import get_allergens
 
 
 def index(request):
@@ -422,11 +424,8 @@ class SlotListView(SlotMixin, TemplateView):
         if not self.can_edit_stats():
             raise PermissionDenied
 
-        # The code above checks that the user is allowed to edit this dining
-        # list. It does not check whether the given dining entry ID is actually
-        # part of the dining list. To check that, we provide the dining list to
-        # get_object_or_404(). If we did not do that, the user could change all
-        # dining entries across all lists.
+        # It is necessary to specify the dining list below, otherwise it's possible to
+        # change dining entries on *any* dining list.
 
         entry = get_object_or_404(
             DiningEntry, id=request.POST.get("entry_id"), dining_list=self.dining_list
@@ -470,6 +469,19 @@ class SlotInfoView(
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        # Collect all allergens
+        entries = list(
+            self.dining_list.internal_dining_entries().select_related("user")
+        )
+        allergens = [
+            a for a in ALLERGENS if any(getattr(e.user, a.model_field) for e in entries)
+        ]
+        # We wrap it in a set first to remove duplicates
+        other_allergies = list(
+            set(e.user.other_allergy for e in entries if e.user.other_allergy)
+        )
+        sorted(other_allergies)
+
         context.update(
             {
                 "comments": self.dining_list.comments.select_related("poster").order_by(
@@ -478,9 +490,8 @@ class SlotInfoView(
                 "last_visited": DiningCommentVisitTracker.get_latest_visit(
                     user=self.request.user, dining_list=self.dining_list, update=True
                 ),
-                "number_of_allergies": self.dining_list.internal_dining_entries()
-                .exclude(user__allergies="")
-                .count(),
+                "allergens": allergens,
+                "other_allergies": other_allergies,
                 "is_owner": self.dining_list.is_owner(self.request.user),
             }
         )
@@ -518,9 +529,16 @@ class SlotAllergyView(SlotMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        entries = self.dining_list.internal_dining_entries().exclude(user__allergies="")
+        users = list(
+            User.objects.filter(
+                diningentry__in=self.dining_list.internal_dining_entries()
+            ).order_by("first_name", "last_name")
+        )
         context.update(
-            {"allergy_entries": entries.order_by("user__first_name", "user__last_name")}
+            {
+                "allergies": [u for u in users if u.other_allergy or get_allergens(u)],
+                "preferences": [u for u in users if u.food_preferences],
+            }
         )
         return context
 
