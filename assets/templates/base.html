@@ -136,6 +136,22 @@
     </nav>
 
     <div class="container mt-3 mb-5">
+{#        {% if user.allergies and request.path != '/accounts/settings/' %}#}
+        {% if user.allergies %}
+            <div class="alert alert-info">
+                <p>
+                    <i class="fas fa-exclamation-circle"></i>
+                    Food preferences and allergies have changed. Please
+                    enter them again in your user profile.
+                </p>
+                <a href="{% url 'settings_account' %}#allergies"
+                   class="stretched-link btn btn-primary text-decoration-none">
+                    To user profile
+                </a>
+            </div>
+        {% endif %}
+
+
         {% include 'snippets/negative_balance_alert.html' %}
         {% if messages %}
             {% for message in messages %}

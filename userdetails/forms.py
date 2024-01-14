@@ -65,7 +65,12 @@ class UserForm(ModelForm):
 
     class Meta:
         model = User
-        fields = ("username", "name", "email", "allergies")
+        fields = ("username", "name", "email", "other_allergy", "food_preferences")
+        widgets = {
+            "food_preferences": forms.TextInput(
+                attrs={"list": "food_preference_options"}
+            )
+        }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -76,9 +81,6 @@ class UserForm(ModelForm):
         ].help_text = "Contact the site administrator if you want to change your name."
         self.fields["email"].disabled = True
         self.fields["email"].required = False  # To hide the asterisk.
-
-        # Define a heading used during rendering the form.
-        self.fields["allergies"].heading = "Dining"
 
 
 class AssociationLinkForm(forms.Form):

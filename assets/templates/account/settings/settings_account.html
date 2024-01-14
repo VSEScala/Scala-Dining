@@ -1,13 +1,65 @@
 {% extends 'account/settings/settings_base.html' %}
 
+{% load allergens %}
+
 {% block tab_account %}active{% endblock %}
 
 {% block details %}
     <form method="post" action="{% url 'settings_account' %}">
-        <h3>Account</h3>
+        {#        <h3>Account</h3>#}
         {% csrf_token %}
-        {% include "snippets/bootstrap_form.html" with horizontal=True %}
-        <h3>Memberships</h3>
+        {% include 'snippets/bootstrap_form_non_field_errors.html' %}
+        {% include 'snippets/bootstrap_form_field.html' with horizontal=True field=form.username %}
+        {% include 'snippets/bootstrap_form_field.html' with horizontal=True field=form.name %}
+        {% include 'snippets/bootstrap_form_field.html' with horizontal=True field=form.email %}
+
+        <h3 class="mt-3" id="allergies">Allergies or preferences</h3>
+        {#        {% include 'snippets/bootstrap_form_field.html' with horizontal=True field=form.allergies %}#}
+
+        {% if user.allergies %}
+            <div class="form-group row text-muted">
+                <label for="old_allergies_field" class="col-sm-2 col-form-label">
+                    Previous value
+                </label>
+                <div class="col-sm-10">
+                    <input id="old_allergies_field"
+                           type="text"
+                           class="form-control-plaintext text-muted"
+                           value="{{ user.allergies }}"
+                           readonly>
+                </div>
+            </div>
+        {% endif %}
+
+
+        <div class="row mb-3">
+            <div class="col-sm-2">
+                Allergens
+            </div>
+            <div class="col-sm-10">
+                {% allergens_checkboxes %}
+                {% comment %}
+                <small class="text-muted">
+                    For more info on allergens visit
+                    <a href="https://www.voedingscentrum.nl/encyclopedie/allergenen.aspx"
+                       target="_blank">Voedingscentrum</a>
+                    (in Dutch).
+                </small>
+                {% endcomment %}
+            </div>
+        </div>
+
+        {% include 'snippets/bootstrap_form_field.html' with horizontal=True field=form.other_allergy %}
+        {% include 'snippets/bootstrap_form_field.html' with horizontal=True field=form.food_preferences %}
+
+        <datalist id="food_preference_options">
+            <option value="Vegetarian"></option>
+            <option value="Vegan"></option>
+            <option value="Pescetarian"></option>
+        </datalist>
+
+
+        <h3 class="mt-3">Memberships</h3>
         {% include "account/snippet_associations_form.html" with form=association_links_form %}
         <button type="submit" class="btn btn-primary btn-block">Save</button>
     </form>

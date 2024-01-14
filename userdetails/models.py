@@ -23,11 +23,39 @@ class UserManager(DjangoUserManager):
 class User(AbstractUser):
     email = models.EmailField("email address", unique=True)
 
+    # Food allergies or preferences settings
+
     allergies = models.CharField(
         max_length=1000,
         blank=True,
         help_text="E.g. gluten or vegetarian. Leave empty if not applicable.",
         verbose_name="food allergies or preferences",
+    )
+
+    allergen_gluten = models.BooleanField(default=False)
+    allergen_egg = models.BooleanField(default=False)
+    allergen_fish = models.BooleanField(default=False)
+    allergen_peanuts = models.BooleanField(default=False)
+    allergen_nuts = models.BooleanField(default=False)
+    allergen_soya = models.BooleanField(default=False)
+    allergen_milk = models.BooleanField(default=False)
+    allergen_crustaceans = models.BooleanField(default=False)
+    allergen_molluscs = models.BooleanField(default=False)
+    allergen_celery = models.BooleanField(default=False)
+    allergen_mustard = models.BooleanField(default=False)
+    allergen_sesame = models.BooleanField(default=False)
+    allergen_sulphite = models.BooleanField(default=False)
+    allergen_lupin = models.BooleanField(default=False)
+
+    other_allergy = models.CharField(
+        max_length=200,
+        blank=True,
+        help_text="If you have an other allergy not listed above, enter it here.",
+    )
+    food_preferences = models.CharField(
+        max_length=200,
+        blank=True,
+        help_text="Preferences like vegetarian or vegan.",
     )
 
     objects = UserManager()
