@@ -1,5 +1,5 @@
 from datetime import timedelta
-from decimal import ROUND_UP, Decimal
+from decimal import Decimal
 from typing import Dict, List, Literal
 
 from dal_select2.widgets import ModelSelect2, ModelSelect2Multiple
@@ -8,7 +8,6 @@ from django.conf import settings
 from django.core import mail
 from django.core.mail import EmailMessage
 from django.core.serializers import serialize
-from django.core.validators import MinValueValidator
 from django.db import transaction
 from django.db.models import Exists, OuterRef, QuerySet
 from django.forms import ValidationError
@@ -243,56 +242,13 @@ class DiningInfoForm(ConcurrenflictFormMixin, ServeTimeCheckMixin, forms.ModelFo
 
 
 class DiningPaymentForm(ConcurrenflictFormMixin, forms.ModelForm):
-    dining_cost_total = forms.DecimalField(
-        decimal_places=2,
-        max_digits=5,
-        required=False,
-        validators=[MinValueValidator(Decimal("0"))],
-        help_text="Only one of dinner cost total or dinner cost per person should be provided",
-    )
-
     class Meta:
         model = DiningList
-        fields = ["dining_cost_total", "dining_cost", "payment_link"]
+        fields = ["dining_cost", "payment_link"]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields["payment_link"].widget.input_type = "url"
-
-    def clean(self):
-        """This cleaning calculates the person dining cost from the total dining cost."""
-        cleaned_data = super().clean()
-        dinner_cost_total = cleaned_data.get("dining_cost_total")
-        dining_cost = cleaned_data.get("dining_cost")
-
-        # Sanity check: do not allow both dinner cost total and dinner cost per person
-        if dinner_cost_total and dining_cost:
-            msg = (
-                "Please only provide either dinner cost total or dinner cost per person"
-            )
-            self.add_error(
-                "dining_cost_total", ValidationError(msg, code="duplicate_cost")
-            )
-            self.add_error("dining_cost", ValidationError(msg, code="duplicate_cost"))
-        elif dinner_cost_total:
-            # Total dinner cost provided: calculate dining cost per person and apply
-            if self.instance.diners.count() > 0:
-                cost = dinner_cost_total / self.instance.diners.count()
-            else:
-                msg = "Can't calculate dinner cost per person as there are no diners"
-                raise ValidationError(
-                    {"dining_cost_total": ValidationError(msg, code="costs_no_diners")}
-                )
-
-            # Round up to remove missing cents
-            cost = Decimal(cost).quantize(Decimal(".01"), rounding=ROUND_UP)
-            cleaned_data.update(
-                {
-                    "dining_cost_total": None,
-                    "dining_cost": cost,
-                }
-            )
-        return cleaned_data
 
 
 class DiningEntryInternalForm(forms.ModelForm):
