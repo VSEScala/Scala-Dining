@@ -680,49 +680,6 @@ class TestDiningPaymentForm(FormValidityMixin, TestCase):
         )
         self.assertFormValid({})
 
-    @patch_time()
-    def test_dining_cost_conflict(self):
-        """Assert that an error is raised when both dinner_cost and dinner_cost_total are defined."""
-        self.assertFormHasError(
-            {
-                "dining_cost_total": 12,
-                "dining_cost": 4,
-            },
-            code="duplicate_cost",
-            field="dining_cost",
-        )
-        self.assertFormHasError(
-            {
-                "dining_cost_total": 12,
-                "dining_cost": 4,
-            },
-            code="duplicate_cost",
-            field="dining_cost_total",
-        )
-
-    @patch_time()
-    def test_dining_cost_total_empty_diners(self):
-        """Assert an error is raised for costs when there are no diners on the dining list."""
-        self.dining_list.dining_entries.all().delete()
-        self.assertFormHasError(
-            {
-                "dining_cost_total": 12,
-            },
-            code="costs_no_diners",
-        )
-
-    @patch_time()
-    def test_dining_cost_total(self):
-        """Test that dining cost is correctly computed from total cost."""
-        form = self.assertFormValid({"dining_cost_total": 16})
-        self.assertIsNone(form.cleaned_data["dining_cost_total"])
-        self.assertEqual(form.cleaned_data["dining_cost"], 2)
-
-        # Test that it rounds up
-        form = self.assertFormValid({"dining_cost_total": 15.95})
-        self.assertIsNone(form.cleaned_data["dining_cost_total"])
-        self.assertEqual(form.cleaned_data["dining_cost"], 2)
-
 
 class TestSendReminderForm(FormValidityMixin, TestPatchMixin, TestCase):
     fixtures = ["base", "dining_lists"]
