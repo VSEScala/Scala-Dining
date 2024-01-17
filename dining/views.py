@@ -538,13 +538,11 @@ class SlotOwnerMixin:
         return super().dispatch(request, *args, **kwargs)
 
 
-# Could possibly use the Django built-in FormView or ModelFormView in combination with FormSet
 class SlotInfoChangeView(SlotMixin, SlotOwnerMixin, TemplateView):
     template_name = "dining_lists/dining_slot_info_alter.html"
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-
         context.update(
             {
                 "info_form": DiningInfoForm(instance=self.dining_list, prefix="info"),
@@ -556,21 +554,6 @@ class SlotInfoChangeView(SlotMixin, SlotOwnerMixin, TemplateView):
         return context
 
     def post(self, request, *args, **kwargs):
-        context = self.get_context_data(**kwargs)
-
-        """
-        ## Story time
-        This suffered from the most awesome bug. Earlier, one form would be saved if it was valid, even when the other
-        form wasn't valid. E.g. when the info form was not valid while the payment form is actually valid, the payment
-        form would get saved. However the payment form uses the same dining list instance as for the info form, and
-        invalid field values of the info form do get applied to the dining list instance, they are just normally not
-        saved in the database because the form would be invalid. However the payment form is valid and therefore saves
-        the dining list anyway, with the invalid field values.
-
-        An explicit include of only fields that were part of the form during saving prevented the bug from manifesting
-        (perhaps it was meant that way?).
-        """
-
         info_form = DiningInfoForm(
             request.POST, instance=self.dining_list, prefix="info"
         )
@@ -578,21 +561,18 @@ class SlotInfoChangeView(SlotMixin, SlotOwnerMixin, TemplateView):
             request.POST, instance=self.dining_list, prefix="payment"
         )
 
-        # Save and redirect if forms are valid, stay otherwise
         if info_form.is_valid() and payment_form.is_valid():
             info_form.save()
             payment_form.save()
-            messages.success(request, "Changes successfully saved")
+            return redirect(self.dining_list)
 
-            return HttpResponseRedirect(self.reverse("slot_details"))
-
+        context = self.get_context_data(**kwargs)
         context.update(
             {
                 "info_form": info_form,
                 "payment_form": payment_form,
             }
         )
-
         return self.render_to_response(context)
 
 

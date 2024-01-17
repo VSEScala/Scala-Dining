@@ -78,7 +78,12 @@
             <div class="card-body">
                 <h5 class="card-title">
                     <a href="{{ list.get_absolute_url }}"
-                       class="text-decoration-none text-reset stretched-link">{{ list.dish }}</a>
+                       class="text-decoration-none text-reset stretched-link">
+                        {{ list.dish }}
+                        {% if list.dish_kind %}
+                            <span class="badge badge-secondary">{{ list.get_dish_kind_display }}</span>
+                        {% endif %}
+                    </a>
                 </h5>
                 <div class="row">
                     <div class="col-md-6">

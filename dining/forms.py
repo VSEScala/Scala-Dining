@@ -88,7 +88,8 @@ class ServeTimeCheckMixin:
 class CreateSlotForm(ServeTimeCheckMixin, forms.ModelForm):
     class Meta:
         model = DiningList
-        fields = ("dish", "association", "max_diners", "serve_time")
+        fields = ("dish", "dish_kind", "association", "max_diners", "serve_time")
+        widgets = {"dish_kind": forms.RadioSelect}
 
     def __init__(self, creator: User, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -219,12 +220,20 @@ class CreateSlotForm(ServeTimeCheckMixin, forms.ModelForm):
 class DiningInfoForm(ConcurrenflictFormMixin, ServeTimeCheckMixin, forms.ModelForm):
     class Meta:
         model = DiningList
-        fields = ["owners", "dish", "serve_time", "max_diners", "sign_up_deadline"]
+        fields = [
+            "owners",
+            "dish",
+            "dish_kind",
+            "serve_time",
+            "max_diners",
+            "sign_up_deadline",
+        ]
         field_classes = {"sign_up_deadline": DateTimeControlField}
         widgets = {
             "owners": ModelSelect2Multiple(
                 url="people_autocomplete", attrs={"data-minimum-input-length": "1"}
             ),
+            "dish_kind": forms.RadioSelect,
         }
 
     def __init__(self, *args, **kwargs):
