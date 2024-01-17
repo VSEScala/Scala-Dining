@@ -1,6 +1,7 @@
 {% extends 'dining_lists/dining_slot.html' %}
 {% load l10n %}
 {% load dining_tags credit_tags humanize %}
+{% load static %}
 
 {% block tab_info %}active{% endblock %}
 
@@ -69,6 +70,37 @@
             <small>Maximum: {{ dining_list.max_diners }}</small>
         </div>
     </div>
+    {% if allergens or other_allergies %}
+        <div class="row mb-3">
+            <div class="col-md-2"><strong>Diner allergies</strong></div>
+            <div class="col-md-10">
+                {% for allergen in allergens %}
+                    <div class="mb-1 d-flex align-items-center">
+                        <img src="{% static allergen.icon %}"
+                             style="width: 2.5rem; height: 2.5rem;"
+                             alt="Allergen icon">
+                        <span style="margin-left: 0.25rem;">
+                            {{ allergen.name_en }} / {{ allergen.name_nl }}
+                        </span>
+                    </div>
+                {% endfor %}
+                {% if other_allergies %}
+                    <ul class="my-0" style="padding-left: 2.75rem;">
+                        {% for allergy in other_allergies %}
+                            <li>{{ allergy }}</li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+                <small class="text-muted">
+                    Diners should confirm with the cook that no allergens exist in the meal.
+                    If cooks want to check for allergens,
+                    <a href="https://www.voedingscentrum.nl/encyclopedie/allergenen.aspx"
+                       target="_blank">Voedingscentrum</a>
+                    could be a helpful resource (in Dutch).
+                </small>
+            </div>
+        </div>
+    {% endif %}
     {% if dining_list.is_open %}
         <p class="text-success">
             Open till {{ dining_list.sign_up_deadline|naturalday:"l j F Y" }}
@@ -77,19 +109,6 @@
     {% else %}
         <p class="text-danger">Dining list is closed, contact one of the cooks if you want to join</p>
     {% endif %}
-
-{# Dropped on request of the board. #}
-{# Association image #}
-{#        <div class="col-md-2 d-none d-md-flex">#}
-{# (Image is in separate div so that it is inside of the column padding) #}
-{#            {% if dining_list.association.image %}#}
-{#                <!-- This has been dropped on request of the board#}
-{#                <div class="slot_image w-100" style="background-image: url({{ dining_list.association.image.url }});">#}
-{#                </div>#}
-{#                -->#}
-{#            {% endif %}#}
-{#        </div>#}
-
 
     {# Current user status #}
     {% if dining_list|has_joined:user %}
@@ -135,7 +154,7 @@
         </div>
     </div>
 
-    <h4 id="comments" class="mt-4">Comments {% if comments %}({{ comments|length }}){% endif %}</h4>
+    <h4 id="comments" class="mt-4">Comments ({{ comments|length }})</h4>
 
     {% for comment in comments %}
         {% if comment.deleted %}
@@ -191,10 +210,6 @@
                 <div class="card-body dining-list-comment">{{ comment.message|urlize|linebreaks }}</div>
             </div>
         {% endif %}
-    {% empty %}
-        <div class="card mt-3 text-muted">
-            <div class="card-body">No comments</div>
-        </div>
     {% endfor %}
 
     <form method="post"

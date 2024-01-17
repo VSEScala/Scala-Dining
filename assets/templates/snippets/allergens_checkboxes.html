@@ -1,0 +1,32 @@
+{% load static %}
+<div class="row">
+    {% for allergen, field in allergens %}
+        <div class="col-sm-6 mb-2">
+            {# I'm using some exact measurements here to align the icons center. It's ugly. #}
+            {# If you have something better please change it. #}
+            <div class="custom-control custom-checkbox"
+                 style="margin-top: 0.5rem; margin-bottom: 0.5rem;">
+                <input type="checkbox"
+                       class="custom-control-input {% if field.form.is_bound %}
+                       {% if field.errors %}is-invalid{% else %}is-valid{% endif %}{% endif %}"
+                       name="{{ field.html_name }}"
+                       {% if field.value %}checked{% endif %}
+                       id="id_{{ allergen.model_field }}">
+                <label class="custom-control-label"
+                       style="padding-left: 2.75rem;  {# icon width + 0.25rem #}
+                               position: relative;
+                               line-height: 1.5;"
+                       for="id_{{ allergen.model_field }}">
+                    <img src="{% static allergen.icon %}" alt="Allergen icon"
+                         style="position: absolute;
+                                 top: -0.5rem;  {# -1 * margin-bottom #}
+                                 left: 0;
+                                 width: 2.5rem;
+                                 height: 2.5rem;  {# margin-top + (line-height * 1rem) + margin-bottom #}
+                                 ">
+                    {{ allergen.name_en }} / {{ allergen.name_nl }}
+                </label>
+            </div>
+        </div>
+    {% endfor %}
+</div>
