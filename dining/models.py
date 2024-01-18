@@ -58,7 +58,7 @@ class DiningList(models.Model):
         blank=True,
         choices=[
             ("", "Not specified"),
-            ("meat", "With meat"),
+            ("meat", "🍗 With meat"),
             ("fish", "🐟 With fish"),
             ("vegetarian", "🥕 Vegetarian"),
             ("vegan", "🌿 Vegan"),
