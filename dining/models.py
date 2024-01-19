@@ -58,10 +58,12 @@ class DiningList(models.Model):
         blank=True,
         choices=[
             ("", "Not specified"),
-            ("meat", "🍗 Contains meat"),
-            ("fish", "🐟 Contains fish"),
+            ("meat", "🍗 With meat"),
+            ("fish", "🐟 With fish"),
             ("vegetarian", "🥕 Vegetarian"),
             ("vegan", "🌿 Vegan"),
+            ("meat_or_vegetarian", "Meat or vegetarian"),
+            ("meat_or_vegan", "Meat or vegan"),
         ],
     )
 
