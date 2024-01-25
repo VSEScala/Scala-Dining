@@ -1,5 +1,4 @@
 from decimal import Decimal
-from itertools import chain
 from urllib.parse import urlencode
 
 from django.contrib.auth.mixins import UserPassesTestMixin
