@@ -1,5 +1,4 @@
 from decimal import Decimal
-from itertools import chain
 from urllib.parse import urlencode
 
 from django.contrib.auth.mixins import UserPassesTestMixin
@@ -450,14 +449,14 @@ class DinersView(ReportAccessMixin, PeriodMixin, TemplateView):
                     (e["weighted_usage"] / total_weighted) * 100
                 )
 
-        # Merge joined and owned members count
-        joined, owned = queries.dining_members_count(qs, verified_only=verified_only)
-        for e in chain(joined, owned):
-            report[e["association"]].update(e)
-
-        # Help stats
-        for e in queries.count_help_stats(qs):
-            report[e["dining_list__association"]].update(e)
+        # # Merge joined and owned members count
+        # joined, owned = queries.dining_members_count(qs, verified_only=verified_only)
+        # for e in chain(joined, owned):
+        #     report[e["association"]].update(e)
+        #
+        # # Help stats
+        # for e in queries.count_help_stats(qs):
+        #     report[e["dining_list__association"]].update(e)
 
         # Compute summary/totals
         totals = {
@@ -472,11 +471,6 @@ class DinersView(ReportAccessMixin, PeriodMixin, TemplateView):
             "guests": sum(e.get("guests", 0) for e in report.values()),
             "not_weighted_usage": total_not_weighted,
             "weighted_usage": round(total_weighted, 1),
-            "joined": sum(e.get("joined", 0) for e in report.values()),
-            "owned": sum(e.get("owned", 0) for e in report.values()),
-            "shop": sum(e.get("shop", 0) for e in report.values()),
-            "cook": sum(e.get("cook", 0) for e in report.values()),
-            "clean": sum(e.get("clean", 0) for e in report.values()),
         }
 
         # Convert to list and sort

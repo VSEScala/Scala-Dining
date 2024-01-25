@@ -23,9 +23,6 @@
                 <th scope="col" class="text-right bg-secondary">Guests</th>
                 <th scope="col" class="text-center" colspan="2">Not weighted</th>
                 <th scope="col" class="text-center" colspan="2">Weighted</th>
-                <th scope="col" class="text-right">Joiners<sup>2</sup></th>
-                <th scope="col" class="text-right">Owners<sup>2</sup></th>
-                <th scope="col" class="text-right">Shop/cook/clean</th>
             </tr>
             </thead>
             <tbody>
@@ -51,13 +48,6 @@
                     </td>
                     <td class="text-left">
                         {% if metrics.weighted_percentage %}{{ metrics.weighted_percentage }}%{% endif %}
-                    </td>
-                    <td class="text-right">{{ metrics.joined }}</td>
-                    <td class="text-right">{{ metrics.owned }}</td>
-                    <td class="text-right">
-                        {% if metrics.shop is not None %}
-                            {{ metrics.shop }}/{{ metrics.cook }}/{{ metrics.clean }}
-                        {% endif %}
                     </td>
                 </tr>
             {% endfor %}
@@ -145,16 +135,14 @@
                 In the weighted case it is 3/2 (60%/40%)
             </p>
         </div>
-        <div class="col-md-6"></div>
-        <div class="col-md-8">
-            <h4><sup>2</sup>Joiners and owners</h4>
-            <p>
-                The joiner and owner counts are the number of members of the association
-                who respectively joined or owned a dining list in the current period at least once.
-                The percentage is taken over the total number of members in the association.
-            </p>
-
-        </div>
+        {#        <div class="col-md-6"></div>#}
+        {#        <div class="col-md-8">#}
+        {#            <h4><sup>2</sup>Joiners and owners</h4>#}
+        {#            <p>#}
+        {#                The joiner and owner counts are the number of members of the association#}
+        {#                who respectively joined or owned a dining list in the current period at least once.#}
+        {#                The percentage is taken over the total number of members in the association.#}
+        {#            </p>#}
+        {#        </div>#}
     </div>
-
 {% endblock %}
