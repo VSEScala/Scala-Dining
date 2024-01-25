@@ -111,7 +111,7 @@ def kitchen_usage(
     """Computes weighted and non-weighted kitchen usage.
 
     Returns:
-        A dictionary QuerySet with the keys `association_membership` (int),
+        A dictionary QuerySet with the keys `membership_association` (int),
         `weighted_usage` (float) and `not_weighted_usage` (int).
     """
     # Weight per user is 1.0 / (number of memberships)
@@ -126,7 +126,9 @@ def kitchen_usage(
         .values("weight")
     )
 
-    q = Q(dining_list__in=dining_lists)
+    # We filter dining entries from the given dining lists, and only entries that have
+    # at least one membership.
+    q = Q(dining_list__in=dining_lists, user__usermembership__isnull=False)
     if verified_only:
         q &= Q(user__usermembership__is_verified=True)
     if not include_guests:
@@ -196,6 +198,7 @@ GROUP BY
 """
 
 
+# CURRENTLY NOT USED!
 def dining_members_count(
     dining_lists: QuerySet, verified_only=True
 ) -> tuple[QuerySet, QuerySet]:
@@ -256,6 +259,7 @@ GROUP BY
 """
 
 
+# CURRENTLY NOT USED!
 def count_help_stats(dining_lists: QuerySet) -> QuerySet:
     """Counts help stats per association."""
     return (
