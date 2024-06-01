@@ -180,6 +180,7 @@ ACCOUNT_LOGIN_ON_PASSWORD_RESET = True
 ACCOUNT_SESSION_REMEMBER = True
 ACCOUNT_UNIQUE_EMAIL = True
 SOCIALACCOUNT_ADAPTER = "userdetails.externalaccounts.SocialAccountAdapter"
+SOCIALACCOUNT_LOGIN_ON_GET = True
 
 # HTTP security
 if env.bool("DINING_COOKIE_SECURE", default=False):
