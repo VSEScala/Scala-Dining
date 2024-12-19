@@ -42,8 +42,14 @@ class DiningEntryAdmin(admin.ModelAdmin):
 
 @admin.register(DiningList)
 class DiningListAdmin(admin.ModelAdmin):
-    list_display = ("date", "association", "dish", "is_adjustable")
-    list_filter = ("association", "date")
+    list_display = (
+        "date",
+        "association",
+        "dish",
+        "is_adjustable",
+        "limit_signups_to_association_only",
+    )
+    list_filter = ("association", "date", "limit_signups_to_association_only")
     readonly_fields = ("diners",)
     filter_horizontal = ("owners",)
 
