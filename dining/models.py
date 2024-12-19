@@ -74,7 +74,7 @@ class DiningList(models.Model):
     )
     # Todo: implement limit in the views.
     limit_signups_to_association_only = models.BooleanField(
-        "Association only",
+        "association only",
         default=False,
         help_text="Whether only members of the given association can sign up.",
     )
