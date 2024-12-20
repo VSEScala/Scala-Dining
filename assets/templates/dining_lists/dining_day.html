@@ -54,6 +54,12 @@
         </div>
     </div>
 
+    {% if date.help_text %}
+        <div class="text-center">
+            <small class="text-muted"><i class="fas fa-info-circle"></i> {{ date.help_text }}</small>
+        </div>
+    {% endif %}
+
     {# In the future warning #}
     {% if date_diff >= 7 %}
         <div class="text-center">
@@ -62,6 +68,7 @@
             </small>
         </div>
     {% endif %}
+
 
     {% for announcement in announcements %}
         <div class="col-12 row mx-0 my-3 px-0 py-3 alert alert-secondary">
@@ -115,7 +122,7 @@
         </div>
     {% endfor %}
 
-    {% if date|dining_list_creation_open %}
+    {% if date.allow_dining_list_creation and date|dining_list_creation_open %}
         {% if user|can_create_dining_list:date %}
             <a href="{% url 'new_slot' year=date.year month=date.month day=date.day %}"
                class="btn btn-block btn-primary mt-3">

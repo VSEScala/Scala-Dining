@@ -187,6 +187,11 @@ class NewSlotView(LoginRequiredMixin, DayMixin, TemplateView):
 
     template_name = "dining_lists/dining_add.html"
 
+    def init_date(self):
+        super().init_date()
+        if not self.date.allow_dining_list_creation():
+            raise Http404("Invalid date")
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data()
         context.update(
