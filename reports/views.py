@@ -200,9 +200,7 @@ class CashFlowView(ReportAccessMixin, PeriodMixin, DetailView):
         outgoings = {v["account"]: v["sum"] for v in outgoings}
         regroup = {
             # Retrieve Account from db
-            Account.objects.get(pk=account)
-            if account
-            else None: (
+            Account.objects.get(pk=account) if account else None: (
                 income.get(account),
                 outgoings.get(account),
             )

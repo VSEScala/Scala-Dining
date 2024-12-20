@@ -152,9 +152,9 @@ class DailyDinersCSVView(LoginRequiredMixin, View):
         # Create the CSV file
         # Set up
         response = HttpResponse(content_type="text/csv")
-        response[
-            "Content-Disposition"
-        ] = 'attachment; filename="association_members.csv"'
+        response["Content-Disposition"] = (
+            'attachment; filename="association_members.csv"'
+        )
         csv_writer = csv.writer(response)
 
         # Write header
@@ -337,9 +337,11 @@ class EntryAddView(LoginRequiredMixin, DiningListMixin, TemplateView):
                 for error in errors:
                     messages.error(
                         request,
-                        "{}: {}".format(field, error)
-                        if field != NON_FIELD_ERRORS
-                        else error,
+                        (
+                            "{}: {}".format(field, error)
+                            if field != NON_FIELD_ERRORS
+                            else error
+                        ),
                     )
 
         # Always redirect to the dining list page

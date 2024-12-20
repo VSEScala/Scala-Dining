@@ -24,15 +24,17 @@ def diner_counts(dining_lists: QuerySet, verified_only=True) -> QuerySet:
     # memberships, they will have two rows with the same dining entry.
     association_count = Count(
         "dining_entries",
-        filter=Q(
-            dining_entries__external_name="",
-            dining_entries__user__usermembership__association=F("association"),
-            dining_entries__user__usermembership__is_verified=True,
-        )
-        if verified_only
-        else Q(
-            dining_entries__external_name="",
-            dining_entries__user__usermembership__association=F("association"),
+        filter=(
+            Q(
+                dining_entries__external_name="",
+                dining_entries__user__usermembership__association=F("association"),
+                dining_entries__user__usermembership__is_verified=True,
+            )
+            if verified_only
+            else Q(
+                dining_entries__external_name="",
+                dining_entries__user__usermembership__association=F("association"),
+            )
         ),
         distinct=True,
     )

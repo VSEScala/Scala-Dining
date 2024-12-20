@@ -1,4 +1,5 @@
 """Just some function to create a transactions CSV."""
+
 import csv
 from typing import Iterator
 
@@ -45,13 +46,12 @@ def transactions_csv(transactions: QuerySet) -> Iterator:
         ]
     )
 
-    get_account_type = (
-        lambda account: "User"
-        if account.user
-        else "Association"
-        if account.association
-        else "Special"
-    )
+    def get_account_type(account):
+        return (
+            "User"
+            if account.user
+            else "Association" if account.association else "Special"
+        )
 
     for t in transactions:
         yield writer.writerow(
