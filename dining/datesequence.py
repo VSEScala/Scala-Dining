@@ -71,7 +71,7 @@ class DoNotAllowWeekendDiningListCreationSequencedDate(BaseSequencedDate):
 
     def help_text(self) -> str:
         if self.weekday() >= 5:
-            return "Dining lists in the weekend may be possible upon request but cannot be created yourself."
+            return "Dining lists in the weekend may be possible upon request but cannot be created yourself"
         return super().help_text()
 
 
