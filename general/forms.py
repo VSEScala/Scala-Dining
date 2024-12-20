@@ -53,9 +53,9 @@ class ConcurrenflictFormMixin:
         instance = kwargs.get("instance", None)
         if instance:
             self._concurrenflict_json_data = serializers.serialize("json", [instance])
-            self.fields[
-                self.concurrenflict_field_name
-            ].initial = self._concurrenflict_json_data
+            self.fields[self.concurrenflict_field_name].initial = (
+                self._concurrenflict_json_data
+            )
 
     def clean(self):  # noqa: C901
         # This function is too complex and ugly, should just get rid of it
@@ -65,9 +65,9 @@ class ConcurrenflictFormMixin:
         json_at_post = self._concurrenflict_json_data
         # we want to keep using the initial data set in __init__()
         self.data = self.data.copy()
-        self.data[
-            self.add_prefix(self.concurrenflict_field_name)
-        ] = self._concurrenflict_json_data
+        self.data[self.add_prefix(self.concurrenflict_field_name)] = (
+            self._concurrenflict_json_data
+        )
         have_diff = False
 
         # if json_at_post is None then this is an add() rather than a change(), so

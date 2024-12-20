@@ -5,6 +5,7 @@ The backward function is a noop. It does not reconstruct the cancelled column.
 For sanity check, we compare all balances before and after the migration to
 make sure they have not changed.
 """
+
 from datetime import timedelta
 from decimal import Decimal
 
