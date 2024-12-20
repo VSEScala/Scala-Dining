@@ -41,6 +41,12 @@ class BaseSequencedDate(date):
             raise ValueError("Date is not in the sequence")
         return cls(d.year, d.month, d.day)
 
+    def allow_dining_list_creation(self) -> bool:
+        return True
+
+    def help_text(self) -> str:
+        return ""
+
 
 class WeekdaySequencedDate(BaseSequencedDate):
     """Sequence consisting of all weekdays but not weekends."""
@@ -59,6 +65,16 @@ class WeekdaySequencedDate(BaseSequencedDate):
         return super().upcoming(d)
 
 
+class DoNotAllowWeekendDiningListCreationSequencedDate(BaseSequencedDate):
+    def allow_dining_list_creation(self) -> bool:
+        return self.weekday() < 5
+
+    def help_text(self) -> str:
+        if self.weekday() >= 5:
+            return "Dining lists in the weekend may be possible upon request but cannot be created yourself."
+        return super().help_text()
+
+
 # Date sequence class that is in use in the application. Can change this into a Django setting to have it
 # deployment specific (could e.g. exclude summer holiday)
-sequenced_date = WeekdaySequencedDate
+sequenced_date = DoNotAllowWeekendDiningListCreationSequencedDate
