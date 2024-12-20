@@ -58,6 +58,7 @@ class DiningListAdmin(admin.ModelAdmin):
 class DiningDayAnnouncementAdmin(admin.ModelAdmin):
     list_display = ("title", "date", "slots_occupy")
     list_filter = ("date", "slots_occupy")
+    ordering = ("-date",)
 
 
 @admin.register(DiningComment)
