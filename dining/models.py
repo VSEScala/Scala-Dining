@@ -337,7 +337,7 @@ class DiningCommentVisitTracker(AbstractVisitTracker):
 class DiningDayAnnouncement(models.Model):
     date = models.DateField()
     title = models.CharField(max_length=100)
-    text = models.TextField()
+    text = models.TextField(blank=True)
     slots_occupy = models.IntegerField(
         default=0, help_text="The amount of slots this occupies"
     )
