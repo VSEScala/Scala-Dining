@@ -151,6 +151,21 @@
             </div>
         {% endif %}
 
+        {# Banner for invalid e-mails #}
+        {% if user.has_invalid_email %}
+            <div class="alert alert-warning">
+                <p>
+                    <i class="fas fa-exclamation-triangle"></i>
+                    It seems that your e-mail address does not work anymore.
+                    Please update your profile by adding a new e-mail address and making it primary.
+                    If your e-mail address is correct and this notice is in error, please let us know via
+                    <a href="mailto:diningapp@studentencultuur.nl">diningapp@studentencultuur.nl</a>.
+                </p>
+                <a href="{% url 'account_email' %}" class="stretched-link btn btn-secondary text-decoration-none">
+                    Update e-mail
+                </a>
+            </div>
+        {% endif %}
 
         {% include 'snippets/negative_balance_alert.html' %}
         {% if messages %}

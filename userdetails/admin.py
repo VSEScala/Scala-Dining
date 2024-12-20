@@ -6,7 +6,7 @@ from django.contrib.auth.admin import GroupAdmin, UserAdmin
 from django.contrib.auth.models import Group
 
 from userdetails.allergens import ALLERGENS
-from userdetails.models import Association, User, UserMembership
+from userdetails.models import Association, InvalidEmail, User, UserMembership
 
 # Association model
 
@@ -155,3 +155,10 @@ class CustomUserAdmin(UserAdmin):
 # Unregister Django group and allauth EmailAddress
 admin.site.unregister(Group)
 admin.site.unregister(EmailAddress)
+
+
+@admin.register(InvalidEmail)
+class InvalidEmailAdmin(admin.ModelAdmin):
+
+    def has_change_permission(self, request, obj=None):
+        return False

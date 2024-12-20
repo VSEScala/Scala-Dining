@@ -125,6 +125,10 @@ class User(AbstractUser):
 
         return RulesPageView.has_new_update(self)
 
+    @cached_property
+    def has_invalid_email(self) -> bool:
+        return InvalidEmail.objects.filter(email=self.email).exists()
+
     def has_any_perm(self):
         """Returns true if the user has one or more permissions.
 
@@ -316,3 +320,15 @@ class UserMembership(models.Model):
 
     def is_pending(self):
         return self.get_verified_state() is None
+
+
+class InvalidEmail(models.Model):
+    """Some e-mails do not work (anymore) and mails sent to it are returned to the dining mailbox."""
+
+    email = models.EmailField(
+        unique=True,
+        help_text="A user with this e-mail address will be shown a notice indicating that their e-mail address is invalid.",
+    )
+
+    def __str__(self):
+        return self.email
