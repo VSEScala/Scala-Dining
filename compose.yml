@@ -10,22 +10,20 @@ services:
       DINING_DEBUG: "true"
       DINING_SECRET_KEY: hallo
       DINING_ALLOWED_HOSTS: "*"
-      DINING_DATABASE_URL: postgres://dining:dining@db/dining
+      DINING_DATABASE_URL: postgres://postgres:postgres@db/postgres
       DINING_SITE_BANNER: "Development"
       DINING_INTERNAL_IP: 172.18.0.1
-    depends_on:
-      - db
     volumes:
       - .:/app/src
     ports:
       - 8000:8000
 
   db:
-    image: postgres:12
+    image: postgres:17
     environment:
-      POSTGRES_USER: dining
-      POSTGRES_PASSWORD: dining
-      POSTGRES_DB: dining
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
     volumes:
       - db:/var/lib/postgresql/data
     ports:

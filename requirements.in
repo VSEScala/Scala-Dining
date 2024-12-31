@@ -1,4 +1,4 @@
-Django<=5.0.0
+Django
 django-widget-tweaks
 
 # For Quadrivium login using OIDC
