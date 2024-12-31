@@ -1,4 +1,4 @@
-FROM python:3.12
+FROM python:3.13
 
 ENV PYTHONUNBUFFERED=1
 
@@ -8,7 +8,7 @@ WORKDIR /app/src
 #
 # Gunicorn and psycopg are necessary in production only.
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt gunicorn==21.2.0 psycopg[binary]==3.1.16
+RUN pip install --no-cache-dir -r requirements.txt gunicorn==23.0.0 psycopg[binary]==3.2.3
 
 # Copy the rest
 COPY . .
