@@ -29,5 +29,5 @@ jobs:
             "."
       - name: Push image to registry
         run: docker push $IMAGE_NAME:latest
-      - name: Trigger re-deploy
-        run: curl -X POST ${{ secrets.UPDATE_WEBHOOK }}
+      # - name: Trigger re-deploy
+      #   run: curl -X POST ${{ secrets.UPDATE_WEBHOOK }}
