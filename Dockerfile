@@ -1,4 +1,5 @@
 FROM python:3.13
+LABEL org.opencontainers.image.source=https://github.com/VSEScala/Scala-Dining
 
 ENV PYTHONUNBUFFERED=1
 
@@ -14,10 +15,8 @@ ENV DINING_STATIC_ROOT=/app/static DINING_MEDIA_ROOT=/app/media DINING_SECRET_KE
 RUN mkdir /app/media && python manage.py collectstatic --noinput
 ENV DINING_SECRET_KEY=''
 
-# Make commit hash and build date available inside container
+# Make commit hash available inside container
 ARG COMMIT_SHA
-ARG BUILD_TIMESTAMP
 ENV COMMIT_SHA=$COMMIT_SHA
-ENV BUILD_TIMESTAMP=$BUILD_TIMESTAMP
 
 CMD ["gunicorn", "-w", "3", "-b", "0.0.0.0:8000", "scaladining.wsgi"]

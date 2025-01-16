@@ -54,12 +54,8 @@ class HelpPageView(TemplateView):
         """Loads app build date from file."""
         context = super().get_context_data(**kwargs)
 
-        build_date = getenv("BUILD_TIMESTAMP")
-        if build_date:
-            build_date = datetime.fromtimestamp(float(build_date), timezone.utc)
         context.update(
             {
-                "build_date": build_date,
                 "commit_sha": getenv("COMMIT_SHA"),
             }
         )

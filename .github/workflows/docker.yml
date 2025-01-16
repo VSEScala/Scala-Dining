@@ -9,15 +9,18 @@ jobs:
   dockerbuild:
     runs-on: ubuntu-latest
     steps:
-      - name: Login to Docker Hub
+      - name: Login to GitHub Container Registry
         uses: docker/login-action@v3
         with:
-          username: ${{ vars.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
       - name: Build and push
         uses: docker/build-push-action@v6
         with:
           push: true
-          tags: mhvis/scaladining:latest
+          tags: ghcr.io/vsescala/scala-dining:latest
+          build-args: |
+            COMMIT_SHA=${{ github.sha }}
