@@ -32,7 +32,7 @@ jobs:
             dev-requirements.txt
       - name: Install dependencies
         # About --use-pep517: https://github.com/pypa/pip/issues/8559
-        run: pip install --use-pep517 -r requirements.txt -r dev-requirements.txt psycopg[binary]==3.2.3
+        run: pip install --use-pep517 -r requirements.txt -r dev-requirements.txt
       - name: Run tests
         run: python manage.py test
         env:

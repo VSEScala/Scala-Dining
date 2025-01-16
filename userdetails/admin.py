@@ -160,5 +160,7 @@ admin.site.unregister(EmailAddress)
 @admin.register(InvalidEmail)
 class InvalidEmailAdmin(admin.ModelAdmin):
 
+    list_display = ("email", "email_exists")
+
     def has_change_permission(self, request, obj=None):
         return False

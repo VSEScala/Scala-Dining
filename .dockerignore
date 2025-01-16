@@ -6,4 +6,4 @@ __pycache__
 Dockerfile
 db.sqlite3
 .env
-docker-compose.override.yml
+compose.override.yml

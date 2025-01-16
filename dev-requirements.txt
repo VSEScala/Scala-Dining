@@ -4,15 +4,15 @@
 #
 #    pip-compile dev-requirements.in
 #
-autopep8==2.3.1
+autopep8==2.3.2
     # via -r dev-requirements.in
 black==24.10.0
     # via -r dev-requirements.in
 cfgv==3.4.0
     # via pre-commit
-click==8.1.7
+click==8.1.8
     # via black
-coverage==7.6.9
+coverage==7.6.10
     # via -r dev-requirements.in
 distlib==0.3.9
     # via virtualenv
@@ -25,7 +25,7 @@ flake8==7.1.1
     #   pep8-naming
 flake8-docstrings==1.7.0
     # via -r dev-requirements.in
-identify==2.6.3
+identify==2.6.5
     # via pre-commit
 isort==5.13.2
     # via -r dev-requirements.in
@@ -37,7 +37,7 @@ nodeenv==1.9.1
     # via pre-commit
 packaging==24.2
     # via
-    #   -c /home/maarten/data/quadrivium/qq/repos/scala-dining-webapp/requirements.txt
+    #   -c /home/maarten/projects/scala-dining/requirements.txt
     #   black
 pathspec==0.12.1
     # via black
@@ -67,7 +67,7 @@ tomli==2.2.1
     #   black
 typing-extensions==4.12.2
     # via
-    #   -c /home/maarten/data/quadrivium/qq/repos/scala-dining-webapp/requirements.txt
+    #   -c /home/maarten/projects/scala-dining/requirements.txt
     #   black
-virtualenv==20.28.0
+virtualenv==20.29.0
     # via pre-commit

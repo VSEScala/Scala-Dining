@@ -13,10 +13,17 @@ services:
       DINING_DATABASE_URL: postgres://postgres:postgres@db/postgres
       DINING_SITE_BANNER: "Development"
       DINING_INTERNAL_IP: 172.18.0.1
-    volumes:
-      - .:/app/src
     ports:
       - 8000:8000
+    depends_on:
+      - db
+    develop:
+      watch:
+        - action: sync
+          path: .
+          target: /app/src
+        - action: rebuild
+          path: ./requirements.txt
 
   db:
     image: postgres:17

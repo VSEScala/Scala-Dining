@@ -332,3 +332,8 @@ class InvalidEmail(models.Model):
 
     def __str__(self):
         return self.email
+
+    def email_exists(self) -> bool:
+        return User.objects.filter(email=self.email).exists()
+
+    email_exists.boolean = True

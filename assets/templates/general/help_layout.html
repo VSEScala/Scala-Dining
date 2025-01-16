@@ -203,26 +203,23 @@
         <div class="col-md-4">
             <h2>About</h2>
             <p>
-                Scala Dining app
+                Version:
+                {% if commit_sha %}
+                    <a href="https://github.com/VSEScala/Scala-Dining/commit/{{ commit_sha }}"
+                       target="_blank" rel="noopener noreferrer" title="{{ commit_sha }}">
+                        {{ commit_sha|slice:":7" }}
+                    </a>
+                {% else %}
+                    unknown
+                {% endif %}
             </p>
-            <ul>
-                <li>
-                    Commit:
-                    {% if commit_sha %}
-                        <a href="https://github.com/DutcherNL/Scala-Dining-WebApp/commit/{{ commit_sha }}"
-                           target="_blank" rel="noopener noreferrer" title="{{ commit_sha }}">
-                            {{ commit_sha|slice:":7" }}
-                        </a>
-                    {% endif %}
-                </li>
-                <li>Build date: {{ build_date|date:"SHORT_DATETIME_FORMAT" }}</li>
-            </ul>
             <p>
                 Found a bug? Send an email to
                 <a href="mailto:diningapp@studentencultuur.nl">diningapp@studentencultuur.nl</a>
                 or open an issue on the
-                <a href="https://github.com/DutcherNL/Scala-Dining-WebApp" target="_blank" rel="noopener noreferrer">
-                    <i class="fab fa-github"></i> GitHub repository</a>
+                <a href="https://github.com/VSEScala/Scala-Dining" target="_blank" rel="noopener noreferrer">
+                    <i class="fab fa-github"></i> GitHub repository
+                </a>
             </p>
         </div>
     </div>

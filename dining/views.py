@@ -315,11 +315,14 @@ class EntryAddView(LoginRequiredMixin, DiningListMixin, TemplateView):
 
             # The entry is for another existing user, send a mail to them.
             if entry.is_internal() and entry.user != request.user:
-                send_templated_mail(
-                    "mail/dining_entry_added_by",
-                    entry.user,
-                    context={"entry": entry, "dining_list": entry.dining_list},
-                    request=request,
+                entry.user.send_email(
+                    "mail/dining_entry_added_by.txt",
+                    "mail/dining_entry_added_by_subject.txt",
+                    context={
+                        "entry": entry,
+                        "dining_list": entry.dining_list,
+                    },
+                    reply_to=[request.user.email],
                 )
                 messages.success(
                     request,

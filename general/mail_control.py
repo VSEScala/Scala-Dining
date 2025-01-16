@@ -32,7 +32,7 @@ def get_mail_context(
 
 
 def construct_templated_mail(
-    template_dir: str, recipients, context: dict = None, request=None
+    template_dir: str, recipients, context: dict = None, request=None, **kwargs
 ) -> List[EmailMessage]:
     """Constructs email messages.
 
@@ -56,7 +56,7 @@ def construct_templated_mail(
         )
         # Create message
         message = EmailMultiAlternatives(
-            subject=subject, body=text_body, to=[recipient.email]
+            subject=subject, body=text_body, to=[recipient.email], **kwargs
         )
         message.attach_alternative(html_body, "text/html")
         messages.append(message)
