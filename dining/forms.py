@@ -632,6 +632,7 @@ class SendReminderForm(forms.Form):
                     "is_reminder": is_reminder,
                 },
                 request=request,
+                reply_to=[request.user.email],
             )
         )
 
@@ -648,6 +649,7 @@ class SendReminderForm(forms.Form):
                         "guests": guests,
                     },
                     request=request,
+                    reply_to=[request.user.email],
                 )
             )
         return messages

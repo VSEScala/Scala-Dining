@@ -1,0 +1,16 @@
+{% load dining_tags settings %}
+
+Hi {{ recipient.first_name }}
+
+{{ entry.created_by }} has just added you to the following dining list:
+
+Date: {{ dining_list.date }}
+By: {{ dining_list|short_owners_string }}
+Association: {{ dining_list.association }}
+{% if dining_list.dish %}Dish: {{ dining_list.dish }}
+{% endif %}Served: {{ dining_list.serve_time }}
+
+You can view the dining list here:
+{% settings_value 'BASE_URL' %}{{ dining_list.get_absolute_url }}
+
+Enjoy your dinner!

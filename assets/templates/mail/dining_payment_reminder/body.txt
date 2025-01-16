@@ -1,17 +1,18 @@
-{% load dining_tags %}
-Hi {{recipient.first_name}}
+{% load dining_tags settings %}Hi {{recipient.first_name}}
 
-You recently dined with the following dining_list:
+You recently dined with the following dining list:
+
 Date: {{dining_list.date}}
 Dish: {{dining_list.dish}}
 By: {{dining_list|short_owners_string}}
-On behalf of: {{dining_list.association}}
+Association: {{dining_list.association}}
 
-{% if is_reminder %}However, according to our administration, you have not yet paid for the meal itself.{%endif%}
 {{ reminder }} kindly asks you if you could pay {% if dining_list.dining_cost %}€{{dining_list.dining_cost}}{% else %}your share{%endif%}.
 {% if dining_list.payment_link %}
 You can do that here:
-{{ dining_list.payment_link }}
-{%endif%}
+{{ dining_list.payment_link }}{%endif%}
+
+View the dining list here:
+{% settings_value 'BASE_URL' %}{{ comment.dining_list.get_absolute_url }}
 
 Enjoy your day!

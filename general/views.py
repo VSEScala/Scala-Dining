@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime
 from os import getenv
 
 from django.contrib.auth.mixins import LoginRequiredMixin
