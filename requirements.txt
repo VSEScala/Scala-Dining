@@ -20,7 +20,7 @@ dj-database-url==2.3.0
     # via environs
 dj-email-url==1.0.6
     # via environs
-django==5.1.4
+django==5.1.5
     # via
     #   -r requirements.in
     #   dj-database-url
@@ -34,20 +34,28 @@ django-cache-url==3.4.5
     # via environs
 django-widget-tweaks==1.5.0
     # via -r requirements.in
-environs[django]==11.2.1
+environs[django]==14.1.0
     # via -r requirements.in
 fontawesomefree==6.6.0
     # via -r requirements.in
+gunicorn==23.0.0
+    # via -r requirements.in
 idna==3.10
     # via requests
-marshmallow==3.23.2
+marshmallow==3.25.1
     # via environs
 oauthlib==3.2.2
     # via requests-oauthlib
 packaging==24.2
-    # via marshmallow
-pillow==11.0.0
+    # via
+    #   gunicorn
+    #   marshmallow
+pillow==11.1.0
     # via -r requirements.in
+psycopg[binary]==3.2.4
+    # via -r requirements.in
+psycopg-binary==3.2.4
+    # via psycopg
 pycparser==2.22
     # via cffi
 pyjwt[crypto]==2.10.1
@@ -68,6 +76,8 @@ typing-extensions==4.12.2
     # via
     #   asgiref
     #   dj-database-url
+    #   environs
+    #   psycopg
 urllib3==2.3.0
     # via requests
 whitenoise==6.8.2

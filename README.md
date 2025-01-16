@@ -1,26 +1,32 @@
 # Scala Dining
 
-Cooking website.
+🍲🥗🍣
 
-## Set-up
+## Get started with Docker
 
-### Local Python
+If you have Docker installed, you can run the app with the following command:
 
-- Create and activate an virtual environment
-- Copy `.env.example` to `.env` and adjust as wanted
-- `pip install -r requirements.txt -r dev-requirements.txt`
-- `python manage.py migrate`
-- `python manage.py runserver`
+```bash
+docker compose up --watch
+```
 
-The app can also be built and run with Docker.
+When it's running, migrate the database and create a superuser:
+
+```bash
+docker compose exec app python manage.py migrate
+docker compose exec app python manage.py createsuperuser
+```
+
 
 ## Development commands
+
+These commands require a local Python environment with the dependencies from 
+`requirements.txt` and `dev-requirements.txt` installed.
 
 * Lint code: `flake8`
 * Blacken the code: `black .`
 * Sort the imports: `isort --ac .`
 * Run unit tests: `python manage.py test`
-* Create superuser: `python manage.py createsuperuser`
 * Coverage: `coverage run manage.py test`
   * Command line report: `coverage report`
   * Generate HTML report: `coverage html`

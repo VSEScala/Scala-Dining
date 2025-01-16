@@ -23,6 +23,7 @@ def file_parser(value):
         return f.read()
 
 
+# TODO: do not use an .env file anymore, and use os.environ instead of environs.Env
 env.read_env(path=os.path.join(BASE_DIR, ".env"), recurse=False)
 
 DEBUG = env.bool("DINING_DEBUG", default=False)
@@ -31,7 +32,7 @@ SECRET_KEY = env.str("DINING_SECRET_KEY", default="") or env.file(
     "DINING_SECRET_KEY_FILE"
 )
 
-ALLOWED_HOSTS = env.list("DINING_ALLOWED_HOSTS", default="")
+ALLOWED_HOSTS = ["*"] if DEBUG else [os.environ.get("DINING_ALLOWED_HOST", "")]
 
 AUTH_USER_MODEL = "userdetails.User"
 

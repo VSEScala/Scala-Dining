@@ -1,14 +1,17 @@
-Django
-django-widget-tweaks
+django<6
+django-widget-tweaks<2
 
 # For Quadrivium login using OIDC
 # TODO: update further
 django-allauth<=0.54.0
 
-django-autocomplete-light
-environs[django]
-whitenoise  # Used for static files in production.
-Pillow  # Used by Django for media files?
+django-autocomplete-light<4
+environs[django]<15
+whitenoise<7
+Pillow
 
 # See https://fontawesome.com/docs/web/use-with/python-django
 fontawesomefree
+
+gunicorn<24
+psycopg[binary]<4
