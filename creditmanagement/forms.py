@@ -100,13 +100,6 @@ class TransactionForm(forms.ModelForm):
         if self.instance.target == self.instance.source:
             raise ValidationError("Receiver cannot be the same as the origin.")
 
-        # Check balance!!
-        # We block transactions made by this form that make a user account balance negative
-        # (Note that there's a race condition here, but it is not an issue in practice.)
-        source = self.instance.source  # type: Account
-        if source.user and source.get_balance() < cleaned_data.get("amount"):
-            raise ValidationError("Your balance is insufficient.")
-
         return cleaned_data
 
 
