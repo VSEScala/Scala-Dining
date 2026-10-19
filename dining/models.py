@@ -114,6 +114,14 @@ class DiningList(models.Model):
 
     objects = DiningListManager()
 
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["date", "association"],
+                name="unique_dining_list_date_association",
+            )
+        ]
+
     def is_owner(self, user: User) -> bool:
         """Returns whether given user has all rights to this dining list.
 
@@ -228,6 +236,13 @@ class DiningEntry(models.Model):
 
     class Meta:
         verbose_name_plural = "dining entries"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["dining_list", "user"],
+                condition=models.Q(external_name=""),
+                name="unique_internal_dining_entry_user",
+            )
+        ]
 
     def get_name(self):
         """Return name of diner."""
