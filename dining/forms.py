@@ -51,6 +51,27 @@ def _clean_form(form):
         raise ValidationError(validation_errors)
 
 
+def _get_account_with_balance_check(
+    user: User,
+    minimum_balance: Decimal,
+    error_message: str,
+    error_code: str,
+    lock: bool = True,
+) -> Account:
+    """Verifies that user has sufficient balance or an exemption, optionally under row lock.
+
+    Returns:
+        The (optionally locked) Account instance.
+
+    Raises:
+        ValidationError: If balance is below minimum_balance and user has no exemption.
+    """
+    account = Account.get_with_lock(user.account.pk) if lock else user.account
+    if not account.has_sufficient_balance(minimum_balance, allow_user_exception=True):
+        raise ValidationError(error_message, code=error_code)
+    return account
+
+
 class ServeTimeCheckMixin:
     """Mixin which gives errors on the serve_time if it is not within the kitchen opening hours."""
 
@@ -160,13 +181,13 @@ class CreateSlotForm(ServeTimeCheckMixin, forms.ModelForm):
             raise ValidationError("All dining slots are already occupied on this day")
 
         # Check if user has enough money to claim a slot
-        min_balance_exception = creator.has_min_balance_exception()
-        if (
-            not min_balance_exception
-            and creator.account.get_balance()
-            < settings.MINIMUM_BALANCE_FOR_DINING_SLOT_CLAIM
-        ):
-            raise ValidationError("Your balance is too low to claim a slot")
+        _get_account_with_balance_check(
+            creator,
+            settings.MINIMUM_BALANCE_FOR_DINING_SLOT_CLAIM,
+            "Your balance is too low to claim a slot",
+            "insufficient_balance",
+            lock=False,
+        )
 
         # Check if user does not already own another dining list this day
         if DiningList.objects.filter(date=self.instance.date, owners=creator).exists():
@@ -197,14 +218,6 @@ class CreateSlotForm(ServeTimeCheckMixin, forms.ModelForm):
 
         if commit:
             with transaction.atomic():
-                if DiningList.objects.filter(
-                    date=instance.date, association=instance.association
-                ).exists():
-                    raise ValidationError(
-                        "A dining list for this association already exists on this date",
-                        code="association_exists",
-                    )
-
                 if DiningList.objects.available_slots(instance.date) <= 0:
                     raise ValidationError(
                         "All dining slots are already occupied on this day",
@@ -219,18 +232,13 @@ class CreateSlotForm(ServeTimeCheckMixin, forms.ModelForm):
                         code="already_owns_list",
                     )
 
-                if not self.creator.has_min_balance_exception():
-                    creator_account = Account.objects.select_for_update().get(
-                        pk=self.creator.account.pk
-                    )
-                    if (
-                        creator_account.get_balance()
-                        < settings.MINIMUM_BALANCE_FOR_DINING_SLOT_CLAIM
-                    ):
-                        raise ValidationError(
-                            "Your balance is too low to claim a slot",
-                            code="insufficient_balance",
-                        )
+                _get_account_with_balance_check(
+                    self.creator,
+                    settings.MINIMUM_BALANCE_FOR_DINING_SLOT_CLAIM,
+                    "Your balance is too low to claim a slot",
+                    "insufficient_balance",
+                    lock=True,
+                )
 
                 instance.save()
                 # Make creator owner
@@ -350,13 +358,13 @@ class DiningEntryInternalForm(forms.ModelForm):
                 )
 
         # User balance check
-        if (
-            not user.has_min_balance_exception()
-            and user.account.get_balance() < settings.MINIMUM_BALANCE_FOR_DINING_SIGN_UP
-        ):
-            raise ValidationError(
-                "The balance of the user is too low to add", code="no_money"
-            )
+        _get_account_with_balance_check(
+            user,
+            settings.MINIMUM_BALANCE_FOR_DINING_SIGN_UP,
+            "The balance of the user is too low to add",
+            "no_money",
+            lock=False,
+        )
 
         return cleaned_data
 
@@ -379,20 +387,13 @@ class DiningEntryInternalForm(forms.ModelForm):
         if amount == Decimal("0.00"):
             return None
 
-        if not instance.user.has_min_balance_exception():
-            source_account = Account.objects.select_for_update().get(
-                pk=instance.user.account.pk
-            )
-            if (
-                source_account.get_balance()
-                < settings.MINIMUM_BALANCE_FOR_DINING_SIGN_UP
-            ):
-                raise ValidationError(
-                    "The balance of the user is too low to add",
-                    code="no_money",
-                )
-        else:
-            source_account = instance.user.account
+        source_account = _get_account_with_balance_check(
+            instance.user,
+            settings.MINIMUM_BALANCE_FOR_DINING_SIGN_UP,
+            "The balance of the user is too low to add",
+            "no_money",
+            lock=True,
+        )
 
         return Transaction.objects.create(
             source=source_account,
@@ -433,17 +434,6 @@ class DiningEntryInternalForm(forms.ModelForm):
                 if not dining_list.is_owner(creator) and not dining_list.has_room():
                     raise ValidationError("Dining list is full", code="full")
 
-                if not instance.external_name:
-                    if (
-                        DiningEntry.objects.internal()
-                        .filter(dining_list=dining_list, user=instance.user)
-                        .exists()
-                    ):
-                        raise ValidationError(
-                            "User is already on this dining list",
-                            code="user_already_present",
-                        )
-
                 tx = self._create_kitchen_cost_transaction(dining_list, instance)
                 if tx:
                     instance.transaction = tx
@@ -470,6 +460,16 @@ class DiningEntryExternalForm(DiningEntryInternalForm):
 
     def get_user(self):
         return self.instance.user
+
+
+def _delete_dining_entry_and_refund(entry: DiningEntry, deleter: User):
+    """Reverses the entry's transaction (if any) and deletes the entry."""
+    tx = entry.transaction
+    if tx:
+        entry.transaction = None
+        entry.save(update_fields=["transaction"])
+        tx.reversal(deleter).save()
+    entry.delete()
 
 
 class DiningEntryDeleteForm(forms.Form):
@@ -522,12 +522,7 @@ class DiningEntryDeleteForm(forms.Form):
             )
             if not entry:
                 return False
-            tx = entry.transaction
-            if tx:
-                entry.transaction = None
-                entry.save(update_fields=["transaction"])
-                tx.reversal(self.deleter).save()
-            entry.delete()
+            _delete_dining_entry_and_refund(entry, self.deleter)
             return True
         # Todo: Inform other of removal logic here instead of in the view
 
@@ -575,6 +570,12 @@ class DiningListDeleteForm(forms.ModelForm):
             if not dining_list:
                 return False
 
+            if not dining_list.is_adjustable():
+                raise ValidationError(
+                    "The dining list is locked, changes can no longer be made",
+                    code="locked",
+                )
+
             entries = list(
                 DiningEntry.objects.select_for_update().filter(dining_list=dining_list)
             )
@@ -589,15 +590,7 @@ class DiningListDeleteForm(forms.ModelForm):
 
             # Delete entries
             for entry in entries:
-                entry.dining_list = (
-                    dining_list  # Populate cached relation to avoid N+1 queries
-                )
-                form = DiningEntryDeleteForm(entry, deleted_by, {})
-                if not form.is_valid():
-                    raise RuntimeError(
-                        "Could not validate dining entry while deleting a dining list"
-                    )
-                form.execute()
+                _delete_dining_entry_and_refund(entry, deleted_by)
 
             # Delete dining list
             dining_list.delete()

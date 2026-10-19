@@ -38,3 +38,18 @@ class CreditTestCase(TestCase):
         tx.reversal(self.u).save()
         self.assertEqual(self.a1.get_balance(), Decimal("0.00"))
         self.assertEqual(self.a2.get_balance(), Decimal("0.00"))
+
+    def test_has_sufficient_balance_non_user_account(self):
+        """Non-user accounts (associations, special) are always considered to have sufficient balance."""
+        self.assertTrue(self.a1.has_sufficient_balance(Decimal("100.00")))
+
+    def test_has_sufficient_balance_user_account(self):
+        """User accounts check whether balance >= required_balance."""
+        user_account = self.u.account
+        self.assertTrue(user_account.has_sufficient_balance(Decimal("0.00")))
+        self.assertFalse(user_account.has_sufficient_balance(Decimal("0.01")))
+
+    def test_get_with_lock(self):
+        """Account.get_with_lock fetches the instance."""
+        locked = Account.get_with_lock(self.a1.pk)
+        self.assertEqual(locked.pk, self.a1.pk)
