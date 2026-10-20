@@ -70,6 +70,28 @@ class Account(models.Model):
     def balance(self) -> Decimal:
         return self.get_balance()
 
+    @classmethod
+    def get_with_lock(cls, pk: int) -> "Account":
+        """Fetches the account row with a SELECT FOR UPDATE lock."""
+        return cls.objects.select_for_update().get(pk=pk)
+
+    def has_sufficient_balance(
+        self,
+        required_balance: Decimal = Decimal("0.00"),
+        allow_user_exception: bool = False,
+    ) -> bool:
+        """Returns True if the account meets the required balance threshold.
+
+        - Association and special accounts (where user is None) are exempt.
+        - User accounts with has_min_balance_exception() are exempt if allow_user_exception=True.
+        - Otherwise, checks whether balance >= required_balance.
+        """
+        if self.user:
+            if allow_user_exception and self.user.has_min_balance_exception():
+                return True
+            return self.get_balance() >= required_balance
+        return True
+
     def get_entity(self) -> Union[User, Association, None]:
         """Returns the user or association for this account.
 

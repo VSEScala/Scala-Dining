@@ -3,8 +3,13 @@ from datetime import date, datetime
 
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.core.exceptions import NON_FIELD_ERRORS, BadRequest, PermissionDenied
-from django.db import transaction
+from django.core.exceptions import (
+    NON_FIELD_ERRORS,
+    BadRequest,
+    PermissionDenied,
+    ValidationError,
+)
+from django.db import IntegrityError, transaction
 from django.db.models import Count, Q
 from django.http import (
     Http404,
@@ -211,9 +216,17 @@ class NewSlotView(LoginRequiredMixin, DayMixin, TemplateView):
         )
 
         if context["slot_form"].is_valid():
-            dining_list = context["slot_form"].save()
-            messages.success(request, "You successfully created a new dining list")
-            return redirect(dining_list)
+            try:
+                dining_list = context["slot_form"].save()
+                messages.success(request, "You successfully created a new dining list")
+                return redirect(dining_list)
+            except (ValidationError, IntegrityError) as e:
+                if isinstance(e, ValidationError):
+                    context["slot_form"].add_error(None, e)
+                else:
+                    context["slot_form"].add_error(
+                        None, "Could not create dining list due to a conflict."
+                    )
 
         return self.render_to_response(context)
 
@@ -296,6 +309,34 @@ class EntryAddView(LoginRequiredMixin, DiningListMixin, TemplateView):
         )
         return context
 
+    def _notify_entry_added(self, request, entry):
+        # The entry is for another existing user, send a mail to them.
+        if entry.is_internal() and entry.user != request.user:
+            entry.user.send_email(
+                "mail/dining_entry_added_by.txt",
+                "mail/dining_entry_added_by_subject.txt",
+                context={
+                    "entry": entry,
+                    "dining_list": entry.dining_list,
+                },
+                reply_to=[request.user.email],
+            )
+            messages.success(
+                request,
+                "You successfully added {} to the dining list".format(
+                    entry.user.get_short_name()
+                ),
+            )
+
+        # The entry is for an external diner, provide a message.
+        if entry.is_external():
+            messages.success(
+                request,
+                "You successfully added {} to the dining list".format(
+                    entry.external_name
+                ),
+            )
+
     def post(self, request, *args, **kwargs):
         # This post method always redirects, does not show the form again on validation errors, so that we don't have
         #  to write HTML for displaying these errors (they are already in a Django message).
@@ -311,34 +352,20 @@ class EntryAddView(LoginRequiredMixin, DiningListMixin, TemplateView):
             form = DiningEntryInternalForm(request.POST, instance=entry)
 
         if form.is_valid():
-            entry = form.save()
+            try:
+                entry = form.save()
+            except (ValidationError, IntegrityError) as e:
+                if isinstance(e, ValidationError):
+                    for msg in e.messages:
+                        messages.error(request, msg)
+                else:
+                    messages.error(
+                        request,
+                        "Could not add entry to the dining list due to a conflict.",
+                    )
+                return redirect(self.dining_list)
 
-            # The entry is for another existing user, send a mail to them.
-            if entry.is_internal() and entry.user != request.user:
-                entry.user.send_email(
-                    "mail/dining_entry_added_by.txt",
-                    "mail/dining_entry_added_by_subject.txt",
-                    context={
-                        "entry": entry,
-                        "dining_list": entry.dining_list,
-                    },
-                    reply_to=[request.user.email],
-                )
-                messages.success(
-                    request,
-                    "You successfully added {} to the dining list".format(
-                        entry.user.get_short_name()
-                    ),
-                )
-
-            # The entry is for an external diner, provide a message.
-            if entry.is_external():
-                messages.success(
-                    request,
-                    "You successfully added {} to the dining list".format(
-                        entry.external_name
-                    ),
-                )
+            self._notify_entry_added(request, entry)
         else:
             # The form was invalid, put the errors in a message.
             for field, errors in form.errors.items():
@@ -365,35 +392,36 @@ class EntryDeleteView(LoginRequiredMixin, SingleObjectMixin, View):
         # Process deletion
         form = DiningEntryDeleteForm(entry, request.user, {})
         if form.is_valid():
-            form.execute()
-
-            # Success message
-            if entry.is_internal() and entry.user == request.user:
-                success_msg = "You are removed from the dining list"
-            elif entry.is_external():
-                success_msg = "The external diner is removed from the dining list"
-            else:
-                success_msg = "The user is removed from the dining list"
-            messages.success(request, success_msg)
-
-            # Send a mail when someone else does the removal
-            if entry.user != request.user:
-                context = {
-                    "entry": entry,
-                    "dining_list": entry.dining_list,
-                    "remover": request.user,
-                }
-                if entry.is_external():
-                    send_templated_mail(
-                        "mail/dining_entry_external_removed_by",
-                        entry.user,
-                        context,
-                        request,
-                    )
+            if form.execute():
+                # Success message
+                if entry.is_internal() and entry.user == request.user:
+                    success_msg = "You are removed from the dining list"
+                elif entry.is_external():
+                    success_msg = "The external diner is removed from the dining list"
                 else:
-                    send_templated_mail(
-                        "mail/dining_entry_removed_by", entry.user, context, request
-                    )
+                    success_msg = "The user is removed from the dining list"
+                messages.success(request, success_msg)
+
+                # Send a mail when someone else does the removal
+                if entry.user != request.user:
+                    context = {
+                        "entry": entry,
+                        "dining_list": entry.dining_list,
+                        "remover": request.user,
+                    }
+                    if entry.is_external():
+                        send_templated_mail(
+                            "mail/dining_entry_external_removed_by",
+                            entry.user,
+                            context,
+                            request,
+                        )
+                    else:
+                        send_templated_mail(
+                            "mail/dining_entry_removed_by", entry.user, context, request
+                        )
+            else:
+                messages.info(request, "This dining entry was already removed")
 
         else:
             for error in form.non_field_errors():
@@ -630,8 +658,10 @@ class SlotDeleteView(SlotMixin, SlotOwnerMixin, FormView):
 
     def form_valid(self, form):
         with transaction.atomic():
-            form.execute_and_notify(self.request, self.get_day_view_url())
-            messages.success(self.request, "Dining list is deleted")
+            if form.execute_and_notify(self.request, self.get_day_view_url()):
+                messages.success(self.request, "Dining list is deleted")
+            else:
+                messages.info(self.request, "Dining list was already deleted")
         return super().form_valid(form)
 
 

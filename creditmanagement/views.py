@@ -1,7 +1,6 @@
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.core.exceptions import PermissionDenied
-from django.db import transaction
+from django.core.exceptions import PermissionDenied, ValidationError
 from django.http import HttpResponseRedirect, StreamingHttpResponse
 from django.shortcuts import get_object_or_404
 from django.urls import reverse_lazy
@@ -74,16 +73,11 @@ class TransactionFormView(FormView):
         return kwargs
 
     def form_valid(self, form):
-        with transaction.atomic():
-            # Lock the source account row so concurrent transactions from the
-            # same source are serialized. Without this, two concurrent
-            # submissions could both read a sufficient balance and both save,
-            # together overdrawing the account.
-            source = Account.objects.select_for_update().get(pk=form.instance.source_id)
-            if source.user and source.get_balance() < form.instance.amount:
-                form.add_error(None, "Your balance is insufficient.")
-                return self.form_invalid(form)
+        try:
             form.save()
+        except ValidationError as e:
+            form.add_error(None, e)
+            return self.form_invalid(form)
         messages.add_message(
             self.request, messages.SUCCESS, "Transaction has been successfully created."
         )
