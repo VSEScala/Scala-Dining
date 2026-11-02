@@ -100,7 +100,26 @@ class TransactionForm(forms.ModelForm):
         if self.instance.target == self.instance.source:
             raise ValidationError("Receiver cannot be the same as the origin.")
 
+        # Check balance
+        amount = cleaned_data.get("amount")
+        if (
+            amount
+            and self.instance.source
+            and not self.instance.source.has_sufficient_balance(amount)
+        ):
+            raise ValidationError("Your balance is insufficient.")
+
         return cleaned_data
+
+    def save(self, commit: bool = True):
+        instance = super().save(commit=False)
+        if commit:
+            with transaction.atomic():
+                source = Account.get_with_lock(instance.source_id)
+                if not source.has_sufficient_balance(instance.amount):
+                    raise ValidationError("Your balance is insufficient.")
+                instance.save()
+        return instance
 
 
 class SiteWideTransactionForm(forms.ModelForm):

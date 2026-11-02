@@ -1,6 +1,6 @@
 from datetime import timedelta
 from decimal import Decimal
-from typing import Dict, List, Literal
+from typing import Dict, List, Literal, Optional
 
 from dal_select2.widgets import ModelSelect2, ModelSelect2Multiple
 from django import forms
@@ -49,6 +49,27 @@ def _clean_form(form):
                 ["{}: {}".format(field, error) for error in errors]
             )
         raise ValidationError(validation_errors)
+
+
+def _get_account_with_balance_check(
+    user: User,
+    minimum_balance: Decimal,
+    error_message: str,
+    error_code: str,
+    lock: bool = True,
+) -> Account:
+    """Verifies that user has sufficient balance or an exemption, optionally under row lock.
+
+    Returns:
+        The (optionally locked) Account instance.
+
+    Raises:
+        ValidationError: If balance is below minimum_balance and user has no exemption.
+    """
+    account = Account.get_with_lock(user.account.pk) if lock else user.account
+    if not account.has_sufficient_balance(minimum_balance, allow_user_exception=True):
+        raise ValidationError(error_message, code=error_code)
+    return account
 
 
 class ServeTimeCheckMixin:
@@ -160,13 +181,13 @@ class CreateSlotForm(ServeTimeCheckMixin, forms.ModelForm):
             raise ValidationError("All dining slots are already occupied on this day")
 
         # Check if user has enough money to claim a slot
-        min_balance_exception = creator.has_min_balance_exception()
-        if (
-            not min_balance_exception
-            and creator.account.get_balance()
-            < settings.MINIMUM_BALANCE_FOR_DINING_SLOT_CLAIM
-        ):
-            raise ValidationError("Your balance is too low to claim a slot")
+        _get_account_with_balance_check(
+            creator,
+            settings.MINIMUM_BALANCE_FOR_DINING_SLOT_CLAIM,
+            "Your balance is too low to claim a slot",
+            "insufficient_balance",
+            lock=False,
+        )
 
         # Check if user does not already own another dining list this day
         if DiningList.objects.filter(date=self.instance.date, owners=creator).exists():
@@ -188,11 +209,37 @@ class CreateSlotForm(ServeTimeCheckMixin, forms.ModelForm):
 
         return cleaned_data
 
-    def save(self, commit=True):
+    def save(self, commit: bool = True) -> DiningList:
+        """Saves the dining list, adds the creator as owner, and creates their dining entry.
+
+        Atomically validates slot availability, ownership constraints, and creator balance.
+        """
         instance = super().save(commit=False)  # type: DiningList
 
         if commit:
             with transaction.atomic():
+                if DiningList.objects.available_slots(instance.date) <= 0:
+                    raise ValidationError(
+                        "All dining slots are already occupied on this day",
+                        code="day_full",
+                    )
+
+                if DiningList.objects.filter(
+                    date=instance.date, owners=self.creator
+                ).exists():
+                    raise ValidationError(
+                        "User already owns a dining list on this day",
+                        code="already_owns_list",
+                    )
+
+                _get_account_with_balance_check(
+                    self.creator,
+                    settings.MINIMUM_BALANCE_FOR_DINING_SLOT_CLAIM,
+                    "Your balance is too low to claim a slot",
+                    "insufficient_balance",
+                    lock=True,
+                )
+
                 instance.save()
                 # Make creator owner
                 instance.owners.add(self.creator)
@@ -311,31 +358,84 @@ class DiningEntryInternalForm(forms.ModelForm):
                 )
 
         # User balance check
-        if (
-            not user.has_min_balance_exception()
-            and user.account.get_balance() < settings.MINIMUM_BALANCE_FOR_DINING_SIGN_UP
-        ):
-            raise ValidationError(
-                "The balance of the user is too low to add", code="no_money"
-            )
+        _get_account_with_balance_check(
+            user,
+            settings.MINIMUM_BALANCE_FOR_DINING_SIGN_UP,
+            "The balance of the user is too low to add",
+            "no_money",
+            lock=False,
+        )
 
         return cleaned_data
 
-    def save(self, commit=True):
-        """Creates a kitchen cost transaction and saves the entry."""
+    def _create_kitchen_cost_transaction(
+        self, dining_list: DiningList, instance: DiningEntry
+    ) -> Optional[Transaction]:
+        """Creates the kitchen cost transaction under account lock if kitchen cost is non-zero.
+
+        Args:
+            dining_list: The locked DiningList instance.
+            instance: The DiningEntry model instance being created.
+
+        Returns:
+            The created Transaction, or None if kitchen cost is zero.
+
+        Raises:
+            ValidationError: If the user balance is below the minimum required balance.
+        """
+        amount = dining_list.kitchen_cost
+        if amount == Decimal("0.00"):
+            return None
+
+        source_account = _get_account_with_balance_check(
+            instance.user,
+            settings.MINIMUM_BALANCE_FOR_DINING_SIGN_UP,
+            "The balance of the user is too low to add",
+            "no_money",
+            lock=True,
+        )
+
+        return Transaction.objects.create(
+            source=source_account,
+            target=Account.objects.get(special="kitchen_cost"),
+            amount=amount,
+            description="Kitchen cost for {}".format(dining_list),
+            created_by=instance.created_by,
+        )
+
+    def save(self, commit: bool = True) -> DiningEntry:
+        """Creates a kitchen cost transaction and saves the entry.
+
+        Atomically verifies list openness, capacity, uniqueness, and account balance under row locks.
+        """
         instance = super().save(commit=False)  # type: DiningEntry
         if commit:
             with transaction.atomic():
-                amount = instance.dining_list.kitchen_cost
-                # Skip transaction if dining list is free
-                if amount != Decimal("0.00"):
-                    tx = Transaction.objects.create(
-                        source=instance.user.account,
-                        target=Account.objects.get(special="kitchen_cost"),
-                        amount=amount,
-                        description="Kitchen cost for {}".format(instance.dining_list),
-                        created_by=instance.created_by,
+                # Lock dining list
+                dining_list = (
+                    DiningList.objects.select_for_update()
+                    .filter(pk=instance.dining_list_id)
+                    .first()
+                )
+                if not dining_list:
+                    raise ValidationError(
+                        "Dining list no longer exists", code="not_found"
                     )
+
+                if not dining_list.is_adjustable():
+                    raise ValidationError(
+                        "Dining list can no longer be adjusted", code="closed"
+                    )
+
+                creator = instance.created_by
+                if not dining_list.is_owner(creator) and not dining_list.is_open():
+                    raise ValidationError("Dining list is closed", code="closed")
+
+                if not dining_list.is_owner(creator) and not dining_list.has_room():
+                    raise ValidationError("Dining list is full", code="full")
+
+                tx = self._create_kitchen_cost_transaction(dining_list, instance)
+                if tx:
                     instance.transaction = tx
                 instance.save()
         return instance
@@ -360,6 +460,16 @@ class DiningEntryExternalForm(DiningEntryInternalForm):
 
     def get_user(self):
         return self.instance.user
+
+
+def _delete_dining_entry_and_refund(entry: DiningEntry, deleter: User):
+    """Reverses the entry's transaction (if any) and deletes the entry."""
+    tx = entry.transaction
+    if tx:
+        entry.transaction = None
+        entry.save(update_fields=["transaction"])
+        tx.reversal(deleter).save()
+    entry.delete()
 
 
 class DiningEntryDeleteForm(forms.Form):
@@ -397,15 +507,23 @@ class DiningEntryDeleteForm(forms.Form):
 
         return cleaned_data
 
-    def execute(self):
+    def execute(self) -> bool:
+        """Executes the entry deletion and reverses any associated kitchen cost transaction.
+
+        Returns:
+            bool: True if the entry was found and deleted, False if it was already deleted.
+        """
         if self.errors:
             raise ValueError("The form didn't validate.")
 
         with transaction.atomic():
-            tx = self.entry.transaction
-            if tx:
-                tx.reversal(self.deleter).save()
-            self.entry.delete()
+            entry = (
+                DiningEntry.objects.select_for_update().filter(pk=self.entry.pk).first()
+            )
+            if not entry:
+                return False
+            _delete_dining_entry_and_refund(entry, self.deleter)
+            return True
         # Todo: Inform other of removal logic here instead of in the view
 
 
@@ -434,40 +552,59 @@ class DiningListDeleteForm(forms.ModelForm):
             )
         return cleaned_data
 
-    def execute(self, deleted_by):
-        """Deletes the dining list."""
+    def execute(self, deleted_by: User) -> bool:
+        """Deletes the dining list and refunds all associated entries.
+
+        Returns:
+            bool: True if the list was found and deleted, False if already deleted.
+        """
         if self.errors:
             raise ValueError("Form didn't validate")
 
         with transaction.atomic():
+            dining_list = (
+                DiningList.objects.select_for_update()
+                .filter(pk=self.instance.pk)
+                .first()
+            )
+            if not dining_list:
+                return False
+
+            if not dining_list.is_adjustable():
+                raise ValidationError(
+                    "The dining list is locked, changes can no longer be made",
+                    code="locked",
+                )
+
+            entries = list(
+                DiningEntry.objects.select_for_update().filter(dining_list=dining_list)
+            )
+
             # Create audit log entry
             DeletedList.objects.create(
                 deleted_by=deleted_by,
                 reason=self.cleaned_data["reason"],
-                json_list=serialize(
-                    "json", DiningList.objects.filter(pk=self.instance.pk)
-                ),
-                json_diners=serialize("json", self.instance.dining_entries.all()),
+                json_list=serialize("json", [dining_list]),
+                json_diners=serialize("json", entries),
             )
 
             # Delete entries
-            for entry in self.instance.dining_entries.all():
-                form = DiningEntryDeleteForm(entry, deleted_by, {})
-                if not form.is_valid():
-                    raise RuntimeError(
-                        "Could not validate dining entry while deleting a dining list"
-                    )
-                form.execute()
+            for entry in entries:
+                _delete_dining_entry_and_refund(entry, deleted_by)
 
             # Delete dining list
-            self.instance.delete()
+            dining_list.delete()
+            return True
 
-    def execute_and_notify(self, request, day_view_url):
+    def execute_and_notify(self, request, day_view_url) -> bool:
         """Deletes the dining list and notifies diners.
 
         Args:
             request: The request user is used as deletion user.
             day_view_url: This URL is used in the email body.
+
+        Returns:
+            bool: True if the list was deleted and notifications sent, False otherwise.
         """
         deleted_by = request.user
 
@@ -491,8 +628,10 @@ class DiningListDeleteForm(forms.ModelForm):
 
         with transaction.atomic():
             # Delete and inform the diners
-            self.execute(deleted_by)
-            mail.get_connection().send_messages(messages)
+            deleted = self.execute(deleted_by)
+            if deleted:
+                mail.get_connection().send_messages(messages)
+            return deleted
 
 
 class DiningCommentForm(forms.ModelForm):

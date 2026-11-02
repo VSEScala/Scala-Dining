@@ -178,7 +178,7 @@ class TestDiningEntryInternalForm(FormValidityMixin, TestCase):
     def test_transaction_db_creation(self):
         """Asserts that the correct transaction is created."""
         # Adjust kitchen cost so we can test it takes that value
-        self.dining_list.kitchen_cost = 0.42
+        self.dining_list.kitchen_cost = Decimal("0.42")
         self.dining_list.save()
 
         added_user = User.objects.get(id=4)
@@ -229,10 +229,12 @@ class TestDiningEntryInternalForm(FormValidityMixin, TestCase):
             "Incorrect test data, user should not be owner",
         )
         # Fill the dininglist with meaningless entries
-        other_user = User.objects.get(id=1)
         for i in range(14):
+            dummy = User.objects.create_user(
+                f"dummy_internal_{i}", email=f"dummy_internal_{i}@example.com"
+            )
             DiningEntry.objects.create(
-                dining_list=self.dining_list, user=other_user, created_by=other_user
+                dining_list=self.dining_list, user=dummy, created_by=dummy
             )
         self.dining_list.max_diners = 14
 
@@ -330,7 +332,7 @@ class TestDiningEntryExternalForm(FormValidityMixin, TestCase):
     def test_transaction_db_creation(self):
         """Asserts that the correct transaction is created."""
         # Adjust kitchen cost so we can test it takes that value
-        self.dining_list.kitchen_cost = 0.37
+        self.dining_list.kitchen_cost = Decimal("0.37")
         self.dining_list.save()
 
         # Save the instance
@@ -372,10 +374,12 @@ class TestDiningEntryExternalForm(FormValidityMixin, TestCase):
             "Incorrect test data, user should not be owner",
         )
         # Fill the dininglist with meaningless entries
-        other_user = User.objects.get(id=1)
         for i in range(14):
+            dummy = User.objects.create_user(
+                f"dummy_external_{i}", email=f"dummy_external_{i}@example.com"
+            )
             DiningEntry.objects.create(
-                dining_list=self.dining_list, user=other_user, created_by=other_user
+                dining_list=self.dining_list, user=dummy, created_by=dummy
             )
         self.dining_list.max_diners = 14
 
